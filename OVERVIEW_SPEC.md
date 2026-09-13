@@ -80,9 +80,9 @@ Doc comments precede a declaration and are projected as help when a card is pick
 
 | Form | Examples |
 |---|---|
-| Keyword card | `[+]`, `[(]`, `[)]`, `[dedent]`, `[none]` |
+| Keyword card | `[+]`, `[(]`, `[)]`, `[dedent]`, `[none]`, `[list]` |
 | Printed variant | `[color:purple]`, `[bool:true]`, `[call:p5.circle]`, `[on:load]` |
-| Handwritten | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[lit(500)]` |
+| Handwritten | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[lit(500)]`, `[for(x)in]` |
 
 Some cards are two sides of one card, changed by flipping:
 
@@ -112,6 +112,7 @@ Every other card has one or more **value slots**.
 | `bool` | `[bool:true]`, `[bool:false]` |
 | `color` | `[color:midnightblue]` |
 | `none` | `[none]` |
+| `list` | `[list][lit(1)][lit(2)]` |
 
 `none` is the value of an optional parameter that was not supplied.
 
@@ -119,11 +120,11 @@ Handwriting in `[lit(…)]` resolves to `num` or `str` by casting rule: **TBD**.
 
 ## Value slots
 
-A card with slots grabs values to its right until a **stop sign**: an operator card, a `[)]`, or the end of the line.
+A card with slots grabs values to its right until a **stop sign**: a `[)]` or the end of the line. An operator card extends the expression in progress and does not end the grab.
 
 ```
 [set(x)to][lit(5)][+][lit(3)]              x = 5 + 3
-[repeat][lit(10)][*][lit(2)]               repeat 20 times
+[for(i)in][call:range][lit(10)][*][lit(2)]  range(20)
 [if][get(a)][>][lit(5)]                    if a > 5
 [call:print][call:random]                  print(random())
 [call:print][call:random][+][lit(5)]       print(random() + 5)
@@ -138,7 +139,7 @@ Grabbing stops early where a stop sign is placed:
                                                  circle(random(0, 500), 5, 5)
 ```
 
-Grabbing more values than a card accepts is an error.
+Grabbing more values than a card accepts is an error. A **variadic** slot accepts any number of values; `[list]` is the only card with one.
 
 ## Expressions
 
@@ -168,6 +169,33 @@ Operators at the same level evaluate left to right.
 [(][get(a)][>][lit(1)][)][and][(][get(b)][<][lit(2)][)]         a > 1 and b < 2
 ```
 
+## Lists
+
+```
+[set(scores)to][list][lit(10)][lit(20)][lit(30)]
+[set(empty)to][list]
+```
+
+A `[call:…]` card directly after a value calls a method on it.
+
+```
+[get(scores)][call:at][lit(0)]                10
+[get(scores)][call:at][lit(-1)]               30
+[get(scores)][call:setAt][lit(0)][lit(5)]
+[get(scores)][call:append][lit(40)]
+[call:len][get(scores)]                       4
+```
+
+Methods and keys are separate namespaces. A key named `append` does not shadow the method.
+
+```
+[for(s)in][get(scores)]
+  [call:print][get(s)]
+[dedent]
+```
+
+Dicts: **TBD**.
+
 ## Simple statements
 
 ```
@@ -179,10 +207,10 @@ Operators at the same level evaluate left to right.
 
 ## Compound statements
 
-A block's body is indented. The bottom magnet of `[repeat]` and `[if]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block.
+A block's body is indented. The bottom magnet of `[for(x)in]` and `[if]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block.
 
 ```
-[repeat][lit(100)]
+[for(i)in][call:range][lit(100)]
   [call:p5.circle][lit(10)][lit(10)][lit(5)]
 [dedent]
 
@@ -220,9 +248,31 @@ Variables are function-scoped.
 [call:print][get(n)]        error: n is not defined here
 ```
 
+A loop variable is function-scoped and outlives its loop.
+
+```
+[for(i)in][call:range][lit(3)]
+  [call:print][get(i)]
+[dedent]
+[call:print][get(i)]        2
+```
+
 Functions are global.
 
 Top-level statements run in order, like Python. There is no entry point function.
+
+## Builtins
+
+Builtins are called without a namespace.
+
+```
+[call:print][lit(hello)]
+[call:range][lit(10)]                   0 1 2 … 9
+[call:range][lit(0)][lit(500)][lit(25)] 0 25 50 … 475
+[call:len][get(scores)]
+```
+
+Full list: **TBD**.
 
 ## Modules
 
@@ -234,13 +284,16 @@ Top-level statements run in order, like Python. There is no entry point function
 [import(./shapes.snap)]                 binds to "shapes"
 ```
 
-`[extern(…)]` declares a function backed by a native implementation.
+`[extern(…)]` declares a function backed by a native implementation. A name may be declared more than once; calls dispatch on the number of arguments supplied, and a name's declarations must not accept the same count. `[define(…)]` is declared once.
 
 ```
 // mods/p5.snap
 
 [extern(createCanvas)][required(width)][required(height)]
 [extern(random)][optional(min)][lit(0)][optional(max)][lit(1)]
+
+[extern(fill)][required(color)]
+[extern(fill)][required(r)][required(g)][required(b)]
 
 [define(star)][required(x)][required(y)]
 [call(circle)][get(x)][get(y)][lit(5)]
