@@ -35,11 +35,13 @@ Every card is written as `[…]`, in the order the cards appear on the table.
 
 Three separators appear inside a card:
 
-| Separator | Meaning | Example |
-|---|---|---|
-| `.` | namespace | `[call(p5.circle)]` |
-| `:` | printed on the card | `[color:midnightblue]`, `[on:load]` |
-| `()` | handwritten on the card's whiteboard | `[define(foo)]`, `[lit(500)]` |
+
+| Separator | Meaning                              | Example                             |
+| --------- | ------------------------------------ | ----------------------------------- |
+| `.`       | namespace                            | `[call(p5.circle)]`                 |
+| `:`       | printed on the card                  | `[color:midnightblue]`, `[on:load]` |
+| `()`      | handwritten on the card's whiteboard | `[define(foo)]`, `[lit(500)]`       |
+
 
 A card family with printed variants and the same family handwritten mean the same thing:
 
@@ -78,20 +80,25 @@ Doc comments precede a declaration and are projected as help when a card is pick
 
 ## Cards
 
-| Form | Examples |
-|---|---|
-| Keyword card | `[+]`, `[(]`, `[)]`, `[dedent]`, `[none]`, `[list]` |
-| Printed variant | `[color:purple]`, `[bool:true]`, `[call:p5.circle]`, `[on:load]` |
-| Handwritten | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[lit(500)]`, `[for(x)in]` |
+
+| Form            | Examples                                                                                                               |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Keyword card    | `[+]`, `[(]`, `[)]`, `[dedent]`, `[none]`                                                                              |
+| Printed variant | `[color:purple]`, `[bool:true]`, `[call:p5.circle]`, `[on:load]`                                                       |
+| Handwritten     | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[setProp(p)to]`, `[getProp(p)]`, `[lit(500)]`, `[repeat(x)]`, `[for(x)in]` |
+
 
 Some cards are two sides of one card, changed by flipping:
 
-| | |
-|---|---|
-| `[set(x)to]` | `[get(x)]` |
-| `[define(f)]` | `[call(f)]` |
-| `[required(p)]` | `[optional(p)]` |
-| `[bool:true]` | `[bool:false]` |
+
+|                  |                 |
+| ---------------- | --------------- |
+| `[set(x)to]`     | `[get(x)]`      |
+| `[setProp(p)to]` | `[getProp(p)]`  |
+| `[define(f)]`    | `[call(f)]`     |
+| `[required(p)]`  | `[optional(p)]` |
+| `[bool:true]`    | `[bool:false]`  |
+
 
 `[lit(…)]` is a standalone card.
 
@@ -105,14 +112,17 @@ Every other card has one or more **value slots**.
 
 ## Values
 
-| Type | Written as |
-|---|---|
-| `num` | `[lit(500)]` |
-| `str` | `[lit(hello world)]` |
-| `bool` | `[bool:true]`, `[bool:false]` |
-| `color` | `[color:midnightblue]` |
-| `none` | `[none]` |
-| `list` | `[list][lit(1)][lit(2)]` |
+
+| Type     | Written as                    |
+| -------- | ----------------------------- |
+| `num`    | `[lit(500)]`                  |
+| `str`    | `[lit(hello world)]`          |
+| `bool`   | `[bool:true]`, `[bool:false]` |
+| `color`  | `[color:midnightblue]`        |
+| `none`   | `[none]`                      |
+| `list`   | `[call:list][lit(1)][lit(2)]` |
+| `object` | `[call:object]`               |
+
 
 `none` is the value of an optional parameter that was not supplied.
 
@@ -139,7 +149,17 @@ Grabbing stops early where a stop sign is placed:
                                                  circle(random(0, 500), 5, 5)
 ```
 
-Grabbing more values than a card accepts is an error. A **variadic** slot accepts any number of values; `[list]` is the only card with one.
+Grabbing more values than a card accepts is an error. A **variadic** slot accepts any number of values; `[call:list]` is the only card with one.
+
+A card placed directly after a value acts on that value and is not itself grabbed as a value. `[getProp(…)]` reads an attribute, `[call:…]` calls a method.
+
+```
+[call:print][get(a)][get(b)]               print(a, b)
+[call:print][get(a)][getProp(b)]           print(a.b)
+[call:print][get(a)][call:b]               print(a.b())
+```
+
+
 
 ## Expressions
 
@@ -172,21 +192,18 @@ Operators at the same level evaluate left to right.
 ## Lists
 
 ```
-[set(scores)to][list][lit(10)][lit(20)][lit(30)]
-[set(empty)to][list]
+[set(scores)to][call:list][lit(10)][lit(20)][lit(30)]
+[set(empty)to][call:list]
 ```
 
-A `[call:…]` card directly after a value calls a method on it.
-
 ```
-[get(scores)][call:at][lit(0)]                10
-[get(scores)][call:at][lit(-1)]               30
+[get(scores)][call:getAt][lit(0)]             10
+[get(scores)][call:getAt][lit(-1)]            30
 [get(scores)][call:setAt][lit(0)][lit(5)]
 [get(scores)][call:append][lit(40)]
-[call:len][get(scores)]                       4
+[get(scores)][call:pop]
+[call:len][get(scores)]                       3
 ```
-
-Methods and keys are separate namespaces. A key named `append` does not shadow the method.
 
 ```
 [for(s)in][get(scores)]
@@ -194,24 +211,21 @@ Methods and keys are separate namespaces. A key named `append` does not shadow t
 [dedent]
 ```
 
-Dicts: **TBD**.
-
 ## Simple statements
 
 ```
 [set(width)to][lit(500)]                       width = 500
 [set(x)to][get(width)][/][lit(2)]              x = width / 2
 [call:p5.circle][lit(10)][lit(10)][lit(5)]     circle(10, 10, 5)
-[import(./p5.snap)as(p5)]                      import p5
 ```
 
 ## Compound statements
 
-A block's body is indented. The bottom magnet of `[for(x)in]` and `[if]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block.
+A block's body is indented. The bottom magnet of `[repeat(x)]`, `[for(x)in]` and `[if]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block.
 
 ```
-[for(i)in][call:range][lit(100)]
-  [call:p5.circle][lit(10)][lit(10)][lit(5)]
+[repeat(i)][lit(100)]
+  [call:p5.circle][get(i)][lit(10)][lit(5)]
 [dedent]
 
 [if][get(score)][>][lit(10)]
@@ -221,9 +235,34 @@ A block's body is indented. The bottom magnet of `[for(x)in]` and `[if]` is inse
 
 `[dedent]`'s column in text: **TBD**.
 
+### Loops
+
+`[repeat(…)]` counts. It takes the slots of `[call:range]`, and the handwritten name is the counter.
+
+```
+[repeat(i)][lit(100)]                   for i in range(100)
+[repeat(i)][lit(0)][lit(100)]           for i in range(0, 100)
+[repeat(i)][lit(0)][lit(100)][lit(10)]  for i in range(0, 100, 10)
+```
+
+The end is excluded.
+
+```
+[repeat(i)][lit(3)]
+  [call:print][get(i)]                  0 1 2
+[dedent]
+```
+
+`[for(…)in]` iterates a value, and takes a `list` or a `range`. The two loops below are the same loop.
+
+```
+[repeat(i)][lit(100)]
+[for(i)in][call:range][lit(100)]
+```
+
 ### Functions
 
-`[define(…)]` does not indent its body, and can only appear at the top level. Its body runs to the next top-level declaration.
+`[define(…)]` does not indent its body, and can only appear at the top level. Its body runs to the next top-level declaration. It is hoisted, so its position on the table carries no meaning.
 
 ```
 [define(greet)][required(message)][optional(title)][lit(Mx)][optional(suffix)]
@@ -234,9 +273,120 @@ A block's body is indented. The bottom magnet of `[for(x)in]` and `[if]` is inse
 
 Required parameters come before optional ones. An optional parameter with no default is `none`.
 
-Declared signatures are checked. Checking semantics: **TBD**.
+Declared signatures are checked. Checking semantics: **TBD**. Returning a value from `[define(…)]`: **TBD**.
+
+## Objects
+
+Every value is an object. Values are never copied; a name holds a reference. `num`, `str`, `bool`, `color` and `none` have no mutable state.
+
+`[call:object]` makes an empty object. `[setProp(…)to]` and `[getProp(…)]` act on the value to their left.
+
+```
+[set(myobj)to][call:object]
+[get(myobj)][setProp(message)to][lit(Welcome user!)]
+[call:print][get(myobj)][getProp(message)]     Welcome user!
+```
+
+Attribute names are handwritten, and cannot be computed at run time. Reading an attribute that is not set is an error.
+
+```
+[get(myobj)][getProp(missing)]                 error
+```
+
+Attributes and methods chain.
+
+```
+[get(app)][getProp(user)][getProp(name)]
+[get(app)][getProp(user)][call:greet]
+[get(app)][getProp(items)][call:getAt][lit(0)]
+```
+
+### Methods
+
+A method is a function set as an attribute.
+
+```
+[define(greet)][required(name)]
+[call:print][get(self)][getProp(message)][+][lit( )][+][get(name)]
+
+[define(setup)]
+[set(myobj)to][call:object]
+[get(myobj)][setProp(message)to][lit(Welcome user!)]
+[get(myobj)][setProp(greet)to][get(greet)]
+
+[get(myobj)][call:greet][lit(Ada)]             Welcome user! Ada
+```
+
+`self` is the value to the left of `[call:…]` at the call, not the value the function was set on.
+
+```
+[set(other)to][call:object]
+[get(other)][setProp(message)to][lit(Hi)]
+[get(other)][setProp(greet)to][get(greet)]
+
+[get(other)][call:greet][lit(Ada)]             Hi Ada
+```
+
+### Attributes and keyed slots
+
+| Type                              | Attributes                      | Keyed slots                   |
+| --------------------------------- | ------------------------------- | ----------------------------- |
+|                                   | `[getProp(…)]` `[setProp(…)to]` | `[call:getAt]` `[call:setAt]` |
+| `object`                          | ✅                               |                               |
+| `list`                            | ✅                               | ✅                             |
+| module                            | ✅                               |                               |
+| `num` `str` `bool` `color` `none` | read only                       |                               |
+
+`getAt` and `setAt` are methods, so a key never collides with an attribute.
+
+```
+[get(scores)][getProp(append)]                 the method
+[get(scores)][call:getAt][lit(0)]              element 0
+```
+
+Objects are not iterable.
+
+A `dict` type keyed at run time: **TBD**. Error types and error handling: **TBD**.
+
+## Top level
+
+Four cards stand alone. Every other card snaps beneath a `[define(…)]` or an `[on:…]`.
+
+```
+[define(…)]    [on:…]    [import(…)as(…)]    [extern(…)]
+```
+
+All four are hoisted, so their position on the table carries no meaning. A card not connected to a `[define]` or an `[on:]` is not part of the program.
+
+```
+[define(setup)]
+[call:print][lit(hello world)]
+```
+
+`[define(…)]` and `[import(…)as(…)]` set an attribute on the module object.
 
 ## Scope
+
+`[set(x)to]` always makes a local. A bare `[get(x)]` resolves in the local scope, then on the module object. No card writes outward.
+
+```
+[define(setup)]
+[set(count)to][lit(0)]      a local, gone when setup returns
+
+[define(draw)]
+[call:print][get(count)]    error: count is not defined
+```
+
+```
+[import(./p5.snap)as(p5)]
+
+[define(helper)]
+[call:print][lit(hi)]
+
+[define(setup)]
+[call(helper)]              an attribute of the module object
+[set(f)to][get(helper)]     the function as a value
+```
 
 Variables are function-scoped.
 
@@ -251,15 +401,61 @@ Variables are function-scoped.
 A loop variable is function-scoped and outlives its loop.
 
 ```
-[for(i)in][call:range][lit(3)]
+[repeat(i)][lit(3)]
   [call:print][get(i)]
 [dedent]
 [call:print][get(i)]        2
 ```
 
-Functions are global.
+State on the module object is written through a receiver.
 
-Top-level statements run in order, like Python. There is no entry point function.
+```
+[define(setup)]
+[get(self)][setProp(count)to][lit(0)]
+
+[define(draw)]
+[get(self)][setProp(count)to][get(self)][getProp(count)][+][lit(1)]
+[call:print][get(count)]    read back by fallback
+```
+
+Module constants: **TBD**.
+
+### Bare names and `self`
+
+| The call | `self` |
+|---|---|
+| `[call(draw)]` | the module object the cards live in |
+| `[get(c)][call:draw]` | `c` |
+| `[on:…]` firing | the root module object |
+
+A bare `[get(…)]` resolves where the cards are written. `[get(self)][getProp(…)]` resolves on the receiver.
+
+```
+// greeter.snap
+
+[define(greet)]
+[call:print][get(message)]
+[call:print][get(self)][getProp(message)]
+
+[define(setup)]
+[get(self)][setProp(message)to][lit(from the module)]
+
+[set(myobj)to][call:object]
+[get(myobj)][setProp(message)to][lit(from the object)]
+[get(myobj)][setProp(greet)to][get(greet)]
+
+[call(greet)]
+[get(myobj)][call:greet]
+```
+
+```
+from the module          [call(greet)], line 1
+from the module          [call(greet)], line 2
+from the module          [get(myobj)][call:greet], line 1
+from the object          [get(myobj)][call:greet], line 2
+```
+
+After `setup` runs, `greet`, `setup` and `message` are attributes of the module object, and `message` and `greet` are attributes of `myobj`. `myobj` is a local of `setup`.
 
 ## Builtins
 
@@ -270,18 +466,27 @@ Builtins are called without a namespace.
 [call:range][lit(10)]                   0 1 2 … 9
 [call:range][lit(0)][lit(500)][lit(25)] 0 25 50 … 475
 [call:len][get(scores)]
+[call:object]                           an empty object
+[call:list][lit(1)][lit(2)]             a list
 ```
 
 Full list: **TBD**.
 
 ## Modules
 
-`[import(…)as(…)]` loads a module and binds it to a namespace. Paths and URLs resolve; nothing else does.
+A module is an object. `[import(…)as(…)]` loads a module and binds its object to a name. Paths and URLs resolve; nothing else does.
 
 ```
 [import(http://snapscript.s12.space/mods/p5.snap)as(p5)]
 [import(./shapes.snap)as(shapes)]
 [import(./shapes.snap)]                 binds to "shapes"
+```
+
+A namespace on a card and a receiver to the left are the same thing.
+
+```
+[call:shapes.star][lit(10)][lit(10)]    [get(shapes)][call:star][lit(10)][lit(10)]
+[get(shapes)][getProp(unit)]
 ```
 
 `[extern(…)]` declares a function backed by a native implementation. A name may be declared more than once; calls dispatch on the number of arguments supplied, and a name's declarations must not accept the same count. `[define(…)]` is declared once.
@@ -299,14 +504,18 @@ Full list: **TBD**.
 [call(circle)][get(x)][get(y)][lit(5)]
 ```
 
-`[on:…]` declares a handler for a global event. Like `[define]`, it does not indent its body and appears only at the top level.
+`[on:…]` declares a handler for a global event. Like `[define]`, it does not indent its body and appears only at the top level. Its `self` is the root module object.
 
 ```
+// mods/p5.snap
+
 [on:load]
-[call(setup)]
+[get(self)][call:setup]
 ```
 
-Native resolution: **TBD**. Namespace collisions: **TBD**.
+Two handlers for the same event is an error, so a file cannot add a handler its imported module already declares.
+
+Repeated execution, and the events each module declares: **TBD**. Native resolution: **TBD**. Namespace collisions: **TBD**.
 
 # The Physical System
 
@@ -326,6 +535,10 @@ The magnets on a card's top and bottom edges are off-centre, so flipping the car
 
 `[define(f)]`'s top magnet lands where nothing matches, so it can never snap beneath another card. Each function is a free-standing strip that can be moved around the table.
 
+A statement card's top magnet mates into a chain descending from a `[define]` or an `[on:]`, so an unconnected statement is inert.
+
+A statement that starts with a value card — `[get(scores)][call:append][lit(40)]` — does not align with the statement column under the rule above. Resolution: **TBD**.
+
 A camera above the table reads the card arrangement. A projector opposite displays the running sketch and draws on the cards.
 
 # Feedback
@@ -333,6 +546,7 @@ A camera above the table reads the card arrangement. A projector opposite displa
 Initial direction:
 
 - Errors light up the cards responsible.
+- Cards not connected to a `[define]` or an `[on:]` are dimmed.
 - The grouping the system inferred is outlined in light, including operator precedence and how far each card grabbed.
 - Virtual blocks show where cards can be placed.
 - Picking up a card projects its doc comment.
