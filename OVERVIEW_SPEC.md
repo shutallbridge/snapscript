@@ -8,7 +8,7 @@ Conventions:
 
 - Concise, and shows behaviour through examples rather than describing it.
 - Describes the system as it is, with no history and no distinction between built and unbuilt.
-- Carries no rationale. Decisions and the reasoning behind them live in `ADR.md`.
+- Carries no rationale. Decisions and the reasoning behind them live in `docs/adr/`.
 - Unsettled points are marked **TBD**.
 
 # Overview
