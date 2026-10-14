@@ -35,13 +35,11 @@ Every card is written as `[…]`, in the order the cards appear on the table.
 
 Three separators appear inside a card:
 
-
 | Separator | Meaning                              | Example                             |
 | --------- | ------------------------------------ | ----------------------------------- |
 | `.`       | namespace                            | `[call(p5.circle)]`                 |
 | `:`       | printed on the card                  | `[color:midnightblue]`, `[on:load]` |
-| `()`      | handwritten on the card's whiteboard | `[define(foo)]`, `[lit(500)]`       |
-
+| `()`      | handwritten on the card's whiteboard | `[define(foo)]`, `[num(500)]`       |
 
 A card family with printed variants and the same family handwritten mean the same thing:
 
@@ -69,27 +67,24 @@ Doc comments precede a declaration and are projected as help when a card is pick
 [import(http://snapscript.s12.space/mods/p5.snap)as(p5)]
 
 [define(setup)]
-[call:p5.createCanvas][lit(500)][lit(500)]
+[call:p5.createCanvas][num(500)][num(500)]
 [call:p5.background][color:midnightblue]
 
 [define(draw)]
-[set(x)to][call:p5.random][lit(0)][lit(500)]
-[set(y)to][call:p5.random][lit(0)][lit(500)]
-[call:p5.circle][get(x)][get(y)][lit(5)]
+[set(x)to][call:p5.random][num(0)][num(500)]
+[set(y)to][call:p5.random][num(0)][num(500)]
+[call:p5.circle][get(x)][get(y)][num(5)]
 ```
 
 ## Cards
 
-
-| Form            | Examples                                                                                                                                  |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Keyword card    | `[+]`, `[(]`, `[)]`, `[dedent]`, `[none]`, `[root]`                                                                                       |
-| Printed variant | `[color:purple]`, `[bool:true]`, `[call:p5.circle]`, `[get:p5.frameCount]`, `[on:load]`                                                   |
-| Handwritten     | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[setProp(p)to]`, `[getProp(p)]`, `[lit(500)]`, `[repeat(x)]`, `[for(x)in]`, `[global(x)]` |
-
+| Form            | Examples                                                                                                                                                             |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keyword card    | `[+]`, `[(]`, `[)]`, `[dedent]`, `[none]`, `[root]`                                                                                                                  |
+| Printed variant | `[color:purple]`, `[bool:true]`, `[call:p5.circle]`, `[get:p5.frameCount]`, `[on:load]`                                                                              |
+| Handwritten     | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[setProp(p)to]`, `[getProp(p)]`, `[num(500)]`, `[str(hello)]`, `[repeat(x)]`, `[for(x)in]`, `[global(x)]` |
 
 Some cards are two sides of one card, changed by flipping:
-
 
 |                  |                 |
 | ---------------- | --------------- |
@@ -98,17 +93,45 @@ Some cards are two sides of one card, changed by flipping:
 | `[define(f)]`    | `[call(f)]`     |
 | `[required(p)]`  | `[optional(p)]` |
 | `[bool:true]`    | `[bool:false]`  |
-
-
-`[lit(…)]` is a standalone card.
+| `[num(…)]`       | `[str(…)]`      |
 
 A **leaf** card holds a value and takes nothing:
 
 ```
-[lit(500)]  [get(x)]  [bool:true]  [color:purple]  [none]  [root]
+[num(500)]  [str(hi)]  [get(x)]  [bool:true]  [color:purple]  [none]  [root]
 ```
 
 Every other card has one or more **value slots**.
+
+### Handwriting
+
+Gaps in handwriting are ignored. `_` is a space.
+
+```
+[str(hello_world)]      "hello world"
+[str(hello world)]      "helloworld"
+[str(__hi)]             "  hi"
+[str()]                 ""
+[num(1 000)]            1000
+[set(frame Count)to]    frameCount
+```
+
+A literal `_` in a `[str(…)]`: **TBD**.
+
+A `[num(…)]` holds digits, with an optional `-` first and an optional `.` that has digits on both sides.
+
+```
+[num(-1)]  [num(0.5)]
+[num(.5)]  [num(5.)]  [num(1e5)]  [num()]      error
+```
+
+A name holds letters, digits and `_`. Case is significant.
+
+```
+[set(frameCount)to]     frameCount
+[set(framecount)to]     a different name
+[set()to]               error
+```
 
 ## Data model
 
@@ -119,60 +142,56 @@ Every value is an object. An object has a type, an identity, and behaviour from 
 ```
 [set(a)to][call:list]
 [set(b)to][get(a)]
-[get(b)][call:append][lit(1)]
+[get(b)][call:append][num(1)]
 [call:len][get(a)]                       1
 ```
 
 Some objects also have a **store**, which holds data put in at run time.
 
-
-| Object                            | Store                                    | Written from    |
-| --------------------------------- | ---------------------------------------- | --------------- |
-| `num` `str` `bool` `color` `none` | none                                     |                 |
-| function                          | none                                     |                 |
-| `list`                            | positions                                | anywhere        |
-| `dict`                            | attributes                               | anywhere        |
-| module                            | attributes: its top-level declarations   | its own file    |
-
+| Object                            | Store                                  | Written from |
+| --------------------------------- | -------------------------------------- | ------------ |
+| `num` `str` `bool` `color` `none` | none                                   |              |
+| function                          | none                                   |              |
+| `list`                            | positions                              | anywhere     |
+| `dict`                            | attributes                             | anywhere     |
+| module                            | attributes: its top-level declarations | its own file |
 
 Behaviour comes from the type, never from a store.
 
 ```
-[get(scores)][call:append][lit(40)]      append comes from list
+[get(scores)][call:append][num(40)]      append comes from list
 ```
 
 ### Types
 
-
-| Type       | Written as                         |
-| ---------- | ---------------------------------- |
-| `num`      | `[lit(500)]`                       |
-| `str`      | `[lit(hello world)]`               |
-| `bool`     | `[bool:true]`, `[bool:false]`      |
-| `color`    | `[color:midnightblue]`             |
-| `none`     | `[none]`                           |
-| `list`     | `[call:list][lit(1)][lit(2)]`      |
-| `dict`     | `[call:dict]`                      |
-| function   | `[define(…)]`, `[extern(…)]`       |
-| module     | `[import(…)as(…)]`                 |
-
+| Type     | Written as                    |
+| -------- | ----------------------------- |
+| `num`    | `[num(500)]`                  |
+| `str`    | `[str(hello_world)]`          |
+| `bool`   | `[bool:true]`, `[bool:false]` |
+| `color`  | `[color:midnightblue]`        |
+| `none`   | `[none]`                      |
+| `list`   | `[call:list][num(1)][num(2)]` |
+| `dict`   | `[call:dict]`                 |
+| function | `[define(…)]`, `[extern(…)]`  |
+| module   | `[import(…)as(…)]`            |
 
 `none` is the value of an optional parameter that was not supplied.
 
-Handwriting in `[lit(…)]` resolves to `num` or `str` by casting rule: **TBD**.
+The card decides the type.
 
 ### Lists
 
 ```
-[set(scores)to][call:list][lit(10)][lit(20)][lit(30)]
+[set(scores)to][call:list][num(10)][num(20)][num(30)]
 [set(empty)to][call:list]
 ```
 
 ```
-[get(scores)][call:getAt][lit(0)]             10
-[get(scores)][call:getAt][lit(-1)]            30
-[get(scores)][call:setAt][lit(0)][lit(5)]
-[get(scores)][call:append][lit(40)]
+[get(scores)][call:getAt][num(0)]             10
+[get(scores)][call:getAt][num(-1)]            30
+[get(scores)][call:setAt][num(0)][num(5)]
+[get(scores)][call:append][num(40)]
 [get(scores)][call:pop]
 [call:len][get(scores)]                       3
 ```
@@ -186,7 +205,7 @@ Handwriting in `[lit(…)]` resolves to `num` or `str` by casting rule: **TBD**.
 A list has no attributes.
 
 ```
-[get(scores)][setProp(label)to][lit(round one)]     error
+[get(scores)][setProp(label)to][str(round_one)]     error
 ```
 
 ### Dicts
@@ -195,7 +214,7 @@ A list has no attributes.
 
 ```
 [set(user)to][call:dict]
-[get(user)][setProp(message)to][lit(Welcome user!)]
+[get(user)][setProp(message)to][str(Welcome_user!)]
 [call:print][get(user)][getProp(message)]     Welcome user!
 ```
 
@@ -209,7 +228,7 @@ Attributes chain.
 
 ```
 [get(app)][getProp(user)][getProp(name)]
-[get(app)][getProp(items)][call:getAt][lit(0)]
+[get(app)][getProp(items)][call:getAt][num(0)]
 ```
 
 Dicts are not iterable.
@@ -230,7 +249,7 @@ All five are hoisted, so their position on the table carries no meaning. Any oth
 
 ```
 [define(setup)]
-[call:print][lit(hello world)]
+[call:print][str(hello_world)]
 ```
 
 `[define(…)]`, `[import(…)as(…)]`, `[extern(…)]` and `[global(…)]` each set an attribute on the module object.
@@ -241,7 +260,7 @@ A bare name resolves where the cards are written: in the local scope, then among
 
 ```
 [define(setup)]
-[set(count)to][lit(0)]      a local, gone when setup returns
+[set(count)to][num(0)]      a local, gone when setup returns
 
 [define(draw)]
 [call:print][get(count)]    error: count is not defined
@@ -251,7 +270,7 @@ A bare name resolves where the cards are written: in the local scope, then among
 [import(./p5.snap)as(p5)]
 
 [define(helper)]
-[call:print][lit(hi)]
+[call:print][str(hi)]
 
 [define(setup)]
 [call(helper)]              a top-level declaration
@@ -262,7 +281,7 @@ Variables are function-scoped.
 
 ```
 [define(a)]
-[set(n)to][lit(0)]
+[set(n)to][num(0)]
 
 [define(b)]
 [call:print][get(n)]        error: n is not defined here
@@ -271,7 +290,7 @@ Variables are function-scoped.
 A loop variable is function-scoped and outlives its loop.
 
 ```
-[repeat(i)][lit(3)]
+[repeat(i)][num(3)]
   [call:print][get(i)]
 [dedent]
 [call:print][get(i)]        2
@@ -280,11 +299,11 @@ A loop variable is function-scoped and outlives its loop.
 `[set(x)to]` makes a local, unless the file declares `[global(x)]`.
 
 ```
-[global(count)][lit(0)]
+[global(count)][num(0)]
 
 [define(draw)]
-[set(count)to][get(count)][+][lit(1)]     the global
-[set(n)to][lit(5)]                        a local
+[set(count)to][get(count)][+][num(1)]     the global
+[set(n)to][num(5)]                        a local
 ```
 
 Module constants: **TBD**.
@@ -306,7 +325,7 @@ A module is an object. `[import(…)as(…)]` loads a module and binds its objec
 A namespace on a card and a receiver to the left are the same thing.
 
 ```
-[call:shapes.star][lit(10)][lit(10)]    [get(shapes)][call:star][lit(10)][lit(10)]
+[call:shapes.star][num(10)][num(10)]    [get(shapes)][call:star][num(10)][num(10)]
 [get(shapes.unit)]                      [get(shapes)][getProp(unit)]
 ```
 
@@ -314,7 +333,7 @@ A module's attributes are read from any file, and written only in its own file.
 
 ```
 [get:p5.frameCount]
-[get(p5)][setProp(frameCount)to][lit(0)]      error
+[get(p5)][setProp(frameCount)to][num(0)]      error
 ```
 
 `[extern(…)]` declares a function backed by a native implementation. A name may be declared more than once; calls dispatch on the number of arguments supplied, and a name's declarations must not accept the same count. `[define(…)]` is declared once.
@@ -322,17 +341,17 @@ A module's attributes are read from any file, and written only in its own file.
 ```
 // mods/p5.snap
 
-[global(frameCount)][lit(0)]
+[global(frameCount)][num(0)]
 
 [extern(createCanvas)][required(width)][required(height)]
-[extern(random)][optional(min)][lit(0)][optional(max)][lit(1)]
+[extern(random)][optional(min)][num(0)][optional(max)][num(1)]
 [extern(circle)][required(x)][required(y)][required(d)]
 
 [extern(fill)][required(color)]
 [extern(fill)][required(r)][required(g)][required(b)]
 
 [define(star)][required(x)][required(y)]
-[call(circle)][get(x)][get(y)][lit(5)]
+[call(circle)][get(x)][get(y)][num(5)]
 ```
 
 `[on:…]` declares a handler for a program event. Like `[define]`, it does not indent its body and appears only at the top level. `[root]` is the module object of the file the program runs.
@@ -355,19 +374,19 @@ Repeated execution, and the events each module declares: **TBD**. Native resolut
 A card with slots grabs values to its right until a **stop sign**: a `[)]` or the end of the line. An operator card extends the expression in progress and does not end the grab.
 
 ```
-[set(x)to][lit(5)][+][lit(3)]              x = 5 + 3
-[for(i)in][call:range][lit(10)][*][lit(2)]  range(20)
-[if][get(a)][>][lit(5)]                    if a > 5
+[set(x)to][num(5)][+][num(3)]              x = 5 + 3
+[for(i)in][call:range][num(10)][*][num(2)]  range(20)
+[if][get(a)][>][num(5)]                    if a > 5
 [call:print][call:random]                  print(random())
-[call:print][call:random][+][lit(5)]       print(random() + 5)
+[call:print][call:random][+][num(5)]       print(random() + 5)
 ```
 
 Grabbing stops early where a stop sign is placed:
 
 ```
-[call:print][call:random][lit(5)]                print(random(5))
-[call:print][call:random][(][)][lit(5)]          print(random(), 5)
-[call:p5.circle][call:random][(][lit(0)][lit(500)][)][lit(5)][lit(5)]
+[call:print][call:random][num(5)]                print(random(5))
+[call:print][call:random][(][)][num(5)]          print(random(), 5)
+[call:p5.circle][call:random][(][num(0)][num(500)][)][num(5)][num(5)]
                                                  circle(random(0, 500), 5, 5)
 ```
 
@@ -386,8 +405,8 @@ A card placed directly after a value acts on that value and is not itself grabbe
 After a module, `[call:…]` calls the module's function. After any other value, it calls a method of the value's type.
 
 ```
-[get(shapes)][call:star][lit(10)][lit(10)]    the function star in shapes
-[get(scores)][call:append][lit(40)]           the method append of list
+[get(shapes)][call:star][num(10)][num(10)]    the function star in shapes
+[get(scores)][call:append][num(40)]           the method append of list
 [get(user)][call:greet]                       error: dict has no method greet
 ```
 
@@ -411,25 +430,28 @@ or               binds loosest
 Operators at the same level evaluate left to right.
 
 ```
-[lit(2)][+][lit(3)][*][lit(4)]        14
-[lit(10)][-][lit(3)][-][lit(2)]       5
+[num(2)][+][num(3)][*][num(4)]        14
+[num(10)][-][num(3)][-][num(2)]       5
+[str(score)][+][num(5)]               error
 ```
+
+Converting a value to `str`: **TBD**.
 
 ### Grouping
 
 `[(]` and `[)]` group an expression, and close a value slot early.
 
 ```
-[(][lit(2)][+][lit(3)][)][*][lit(4)]                            20
-[(][get(a)][>][lit(1)][)][and][(][get(b)][<][lit(2)][)]         a > 1 and b < 2
+[(][num(2)][+][num(3)][)][*][num(4)]                            20
+[(][get(a)][>][num(1)][)][and][(][get(b)][<][num(2)][)]         a > 1 and b < 2
 ```
 
 ## Simple statements
 
 ```
-[set(width)to][lit(500)]                       width = 500
-[set(x)to][get(width)][/][lit(2)]              x = width / 2
-[call:p5.circle][lit(10)][lit(10)][lit(5)]     circle(10, 10, 5)
+[set(width)to][num(500)]                       width = 500
+[set(x)to][get(width)][/][num(2)]              x = width / 2
+[call:p5.circle][num(10)][num(10)][num(5)]     circle(10, 10, 5)
 ```
 
 ## Compound statements
@@ -437,12 +459,12 @@ Operators at the same level evaluate left to right.
 A block's body is indented. The bottom magnet of `[repeat(x)]`, `[for(x)in]` and `[if]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block.
 
 ```
-[repeat(i)][lit(100)]
-  [call:p5.circle][get(i)][lit(10)][lit(5)]
+[repeat(i)][num(100)]
+  [call:p5.circle][get(i)][num(10)][num(5)]
 [dedent]
 
-[if][get(score)][>][lit(10)]
-  [call:print][lit(you win)]
+[if][get(score)][>][num(10)]
+  [call:print][str(you_win)]
 [dedent]
 ```
 
@@ -453,15 +475,15 @@ A block's body is indented. The bottom magnet of `[repeat(x)]`, `[for(x)in]` and
 `[repeat(…)]` counts. It takes the slots of `[call:range]`, and the handwritten name is the counter.
 
 ```
-[repeat(i)][lit(100)]                   for i in range(100)
-[repeat(i)][lit(0)][lit(100)]           for i in range(0, 100)
-[repeat(i)][lit(0)][lit(100)][lit(10)]  for i in range(0, 100, 10)
+[repeat(i)][num(100)]                   for i in range(100)
+[repeat(i)][num(0)][num(100)]           for i in range(0, 100)
+[repeat(i)][num(0)][num(100)][num(10)]  for i in range(0, 100, 10)
 ```
 
 The end is excluded.
 
 ```
-[repeat(i)][lit(3)]
+[repeat(i)][num(3)]
   [call:print][get(i)]                  0 1 2
 [dedent]
 ```
@@ -469,8 +491,8 @@ The end is excluded.
 `[for(…)in]` iterates a value, and takes a `list` or a `range`. The two loops below are the same loop.
 
 ```
-[repeat(i)][lit(100)]
-[for(i)in][call:range][lit(100)]
+[repeat(i)][num(100)]
+[for(i)in][call:range][num(100)]
 ```
 
 ### Functions
@@ -478,10 +500,10 @@ The end is excluded.
 `[define(…)]` does not indent its body, and can only appear at the top level. Its body runs to the next top-level declaration. It is hoisted, so its position on the table carries no meaning.
 
 ```
-[define(greet)][required(message)][optional(title)][lit(Mx)][optional(suffix)]
-[call:print][get(title)][+][lit( )][+][get(message)][+][get(suffix)]
+[define(greet)][required(message)][optional(title)][str(Mx)][optional(suffix)]
+[call:print][get(title)][+][str(_)][+][get(message)]
 
-[call(greet)][lit(Ada)]              title is "Mx", suffix is none
+[call(greet)][str(Ada)]              title is "Mx", suffix is none
 ```
 
 Required parameters come before optional ones. An optional parameter with no default is `none`.
@@ -493,12 +515,12 @@ Declared signatures are checked. Checking semantics: **TBD**. Returning a value 
 Builtins are called without a namespace.
 
 ```
-[call:print][lit(hello)]
-[call:range][lit(10)]                   0 1 2 … 9
-[call:range][lit(0)][lit(500)][lit(25)] 0 25 50 … 475
+[call:print][str(hello)]
+[call:range][num(10)]                   0 1 2 … 9
+[call:range][num(0)][num(500)][num(25)] 0 25 50 … 475
 [call:len][get(scores)]
 [call:dict]                             an empty dict
-[call:list][lit(1)][lit(2)]             a list
+[call:list][num(1)][num(2)]             a list
 ```
 
 Full list: **TBD**.
@@ -522,8 +544,6 @@ The magnets on a card's top and bottom edges are off-centre, so flipping the car
 `[define(f)]`'s top magnet lands where nothing matches, so it can never snap beneath another card. Each function is a free-standing strip that can be moved around the table.
 
 A statement card's top magnet mates into a chain descending from a `[define]` or an `[on:]`, so an unconnected statement is inert.
-
-A statement that starts with a value card — `[get(scores)][call:append][lit(40)]` — does not align with the statement column under the rule above. Resolution: **TBD**.
 
 A camera above the table reads the card arrangement. A projector opposite displays the running sketch and draws on the cards.
 
