@@ -371,7 +371,7 @@ Repeated execution, and the events each module declares: **TBD**. Native resolut
 
 ### Value slots
 
-A card with slots grabs values to its right until a **stop sign**: a `[)]` or the end of the line. An operator card extends the expression in progress and does not end the grab.
+A card with slots grabs values to its right until the end of the line, or until the `[)]` that closes the group it is in. An operator card extends the expression in progress and does not end the grab.
 
 ```
 [set(x)to][num(5)][+][num(3)]              x = 5 + 3
@@ -379,15 +379,18 @@ A card with slots grabs values to its right until a **stop sign**: a `[)]` or th
 [if][get(a)][>][num(5)]                    if a > 5
 [call:print][call:random]                  print(random())
 [call:print][call:random][+][num(5)]       print(random() + 5)
+[if][call:len][get(a)][>][num(5)]          if len(a > 5)
 ```
 
-Grabbing stops early where a stop sign is placed:
+A group ends every grab inside it:
 
 ```
-[call:print][call:random][num(5)]                print(random(5))
-[call:print][call:random][(][)][num(5)]          print(random(), 5)
-[call:p5.circle][call:random][(][num(0)][num(500)][)][num(5)][num(5)]
-                                                 circle(random(0, 500), 5, 5)
+[call:print][call:random][num(5)]                        print(random(5))
+[call:print][(][call:random][)][num(5)]                  print(random(), 5)
+[if][(][call:len][get(a)][)][>][num(5)]                  if len(a) > 5
+[call:p5.circle][(][call:random][num(0)][num(500)][)][num(5)][num(5)]
+                                                         circle(random(0, 500), 5, 5)
+[call:f][(][call:g][call:h][num(1)][)][num(2)]           f(g(h(1)), 2)
 ```
 
 Grabbing more values than a card accepts is an error. A **variadic** slot accepts any number of values; `[call:list]` is the only card with one.
@@ -439,11 +442,19 @@ Converting a value to `str`: **TBD**.
 
 ### Grouping
 
-`[(]` and `[)]` group an expression, and close a value slot early.
+`[(]` and `[)]` make what is between them one value.
 
 ```
 [(][num(2)][+][num(3)][)][*][num(4)]                            20
 [(][get(a)][>][num(1)][)][and][(][get(b)][<][num(2)][)]         a > 1 and b < 2
+[call:print][(][num(2)][+][num(3)][)][*][num(4)]                print((2 + 3) * 4)
+```
+
+A group holds exactly one value.
+
+```
+[(][num(0)][num(500)][)]        error
+[(][)]                          error
 ```
 
 ## Simple statements
