@@ -78,11 +78,11 @@ Doc comments precede a declaration and are projected as help when a card is pick
 
 ## Cards
 
-| Form            | Examples                                                                                                                                                             |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Keyword card    | `[+]`, `[(]`, `[)]`, `[dedent]`, `[none]`, `[root]`                                                                                                                  |
-| Printed variant | `[color:purple]`, `[bool:true]`, `[call:p5.circle]`, `[get:p5.frameCount]`, `[on:load]`                                                                              |
-| Handwritten     | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[setProp(p)to]`, `[getProp(p)]`, `[num(500)]`, `[str(hello)]`, `[repeat(x)]`, `[for(x)in]`, `[global(x)]` |
+| Form            | Examples                                                                                                                                              |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keyword card    | `[+]`, `[(]`, `[)]`, `[repeat]`, `[dedent]`, `[none]`, `[root]`                                                                                       |
+| Printed variant | `[color:purple]`, `[bool:true]`, `[call:p5.circle]`, `[get:p5.frameCount]`, `[on:load]`                                                               |
+| Handwritten     | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[setProp(p)to]`, `[getProp(p)]`, `[num(500)]`, `[str(hello)]`, `[for(x)in]`, `[global(x)]` |
 
 Some cards are two sides of one card, changed by flipping:
 
@@ -290,7 +290,7 @@ Variables are function-scoped.
 A loop variable is function-scoped and outlives its loop.
 
 ```
-[repeat(i)][num(3)]
+[for(i)in][call:range][num(3)]
   [call:print][get(i)]
 [dedent]
 [call:print][get(i)]        2
@@ -467,10 +467,10 @@ A group holds exactly one value.
 
 ## Compound statements
 
-A block's body is indented. The bottom magnet of `[repeat(x)]`, `[for(x)in]` and `[if]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block.
+A block's body is indented. The bottom magnet of `[repeat]`, `[for(x)in]` and `[if]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block.
 
 ```
-[repeat(i)][num(100)]
+[for(i)in][call:range][num(100)]
   [call:p5.circle][get(i)][num(10)][num(5)]
 [dedent]
 
@@ -483,27 +483,22 @@ A block's body is indented. The bottom magnet of `[repeat(x)]`, `[for(x)in]` and
 
 ### Loops
 
-`[repeat(…)]` counts. It takes the slots of `[call:range]`, and the handwritten name is the counter.
+`[repeat]` runs its body a number of times. It takes one value.
 
 ```
-[repeat(i)][num(100)]                   for i in range(100)
-[repeat(i)][num(0)][num(100)]           for i in range(0, 100)
-[repeat(i)][num(0)][num(100)][num(10)]  for i in range(0, 100, 10)
+[repeat][num(3)]                        for _ in range(3)
+  [call:print][str(hi)]                 hi hi hi
+[dedent]
+
+[repeat][num(0)][num(3)]                error
 ```
 
-The end is excluded.
+`[for(…)in]` iterates a value, and takes a `list` or a `range`. The handwritten name holds each item in turn.
 
 ```
-[repeat(i)][num(3)]
+[for(i)in][call:range][num(3)]          for i in range(3)
   [call:print][get(i)]                  0 1 2
 [dedent]
-```
-
-`[for(…)in]` iterates a value, and takes a `list` or a `range`. The two loops below are the same loop.
-
-```
-[repeat(i)][num(100)]
-[for(i)in][call:range][num(100)]
 ```
 
 ### Functions
