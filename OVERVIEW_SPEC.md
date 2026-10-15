@@ -535,21 +535,11 @@ Full list: **TBD**.
 
 Cards snap to one another with magnets. Statement cards connect top and bottom to form a vertical flow; value cards connect left and right to form a line.
 
-The magnets on a card's top and bottom edges are off-centre, so flipping the card mirrors them to the opposite side. A flipped card no longer aligns with the statement column:
-
-```
-  |
-[set(x)to]
-  |
-
-              |
-[get(x)]
-              |
-```
-
-`[define(f)]`'s top magnet lands where nothing matches, so it can never snap beneath another card. Each function is a free-standing strip that can be moved around the table.
+Each function is a free-standing strip that can be moved around the table.
 
 A statement card's top magnet mates into a chain descending from a `[define]` or an `[on:]`, so an unconnected statement is inert.
+
+Magnet arrangement: **TBD**.
 
 A camera above the table reads the card arrangement. A projector opposite displays the running sketch and draws on the cards.
 
