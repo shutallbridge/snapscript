@@ -78,23 +78,28 @@ class Coexist:
     never: frozenset[str]  # facing roles (bottom or top) that never coexist
     line_heads: frozenset[str]  # top roles of a card that can head a line
     not_inline: frozenset[str]  # left roles of a card that cannot sit inline
+    indents: frozenset[str]  # bottom roles whose next line head sits 1U right
+    outdents: frozenset[str]  # top roles of a line head that sits 1U left of the line above
 
     def applies(self, upper: Side, lower: Side, offset: Fraction) -> bool:
         """Whether a legal program can put `upper` over `lower` at `offset`.
 
         The next line head sits in the same column, 1U right after a block
-        head, or 1U left only for a [dedent], which has no inline cards. So a
-        line head meets an inline card below only at +1 or more, an inline
-        card meets a line head below only at -1 or less, and two inline cards
-        meet at any offset. Connect pairs are left out by the caller.
+        head, or 1U left only for a [dedent], which has no inline cards. An
+        inline card sits at least 1U right of its line head. So a line head
+        meets an inline card below only at +1 or more (+2 after a block
+        head), an inline card meets a line head below only at -1 or less (-2
+        for a [dedent]), and two inline cards meet at any offset. Connect
+        pairs are left out by the caller.
         """
-        if offset.denominator != 1 or upper.roles["bottom"] in self.never or lower.roles["top"] in self.never:
+        bottom, top = upper.roles["bottom"], lower.roles["top"]
+        if offset.denominator != 1 or bottom in self.never or top in self.never:
             return False
         upper_can_head, lower_can_head = (s.roles["top"] in self.line_heads for s in (upper, lower))
         upper_inline, lower_inline = (s.roles["left"] not in self.not_inline for s in (upper, lower))
         return (
-            (upper_can_head and lower_inline and offset >= 1)
-            or (upper_inline and lower_can_head and offset <= -1)
+            (upper_can_head and lower_inline and offset >= 1 + (bottom in self.indents))
+            or (upper_inline and lower_can_head and offset <= -1 - (top in self.outdents))
             or (upper_inline and lower_inline)
         )
 
@@ -300,8 +305,10 @@ def _parse_vertical(raw: Any, roles: Mapping[str, tuple[str, ...]], priorities: 
 
     coexist = raw.get("coexist")
     if not isinstance(coexist, Mapping):
-        raise DataError(f"{where}.coexist must be a mapping with `never`, `line_heads` and `not_inline`")
-    _no_extra_keys(coexist, {"never", "line_heads", "not_inline"}, f"{where}.coexist", DataError)
+        raise DataError(
+            f"{where}.coexist must be a mapping with `never`, `line_heads`, `not_inline`, `indents` and `outdents`"
+        )
+    _no_extra_keys(coexist, {"never", "line_heads", "not_inline", "indents", "outdents"}, f"{where}.coexist", DataError)
     return VerticalRules(
         offsets=offsets,
         connect=frozenset(connect),
@@ -313,6 +320,8 @@ def _parse_vertical(raw: Any, roles: Mapping[str, tuple[str, ...]], priorities: 
             never=_role_list(coexist.get("never") or [], facing, f"{where}.coexist.never"),
             line_heads=_role_list(coexist.get("line_heads") or [], set(roles["top"]), f"{where}.coexist.line_heads"),
             not_inline=_role_list(coexist.get("not_inline") or [], set(roles["left"]), f"{where}.coexist.not_inline"),
+            indents=_role_list(coexist.get("indents") or [], set(roles["bottom"]), f"{where}.coexist.indents"),
+            outdents=_role_list(coexist.get("outdents") or [], set(roles["top"]), f"{where}.coexist.outdents"),
         ),
     )
 

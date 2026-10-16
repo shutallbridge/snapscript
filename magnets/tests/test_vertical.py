@@ -146,8 +146,8 @@ def test_coexist_appears_exactly_where_the_narrow_rule_says():
             and not {bottom, top} & {"top_level", "free"}
             and (bottom, top, d) not in CONNECTS
             and (
-                (can_head(upper) and inline(lower) and d >= 1)
-                or (inline(upper) and can_head(lower) and d <= -1)
+                (can_head(upper) and inline(lower) and d >= (2 if bottom == "block" else 1))
+                or (inline(upper) and can_head(lower) and d <= (-2 if top == "dedent" else -1))
                 or (inline(upper) and inline(lower))
             )
         )
@@ -159,10 +159,28 @@ def test_coexist_needs_the_lower_line_head_to_sit_left_of_an_inline_card():
     # An inline card over a [dedent] that sits 1U to its right: a [dedent]
     # only ever sits 1U left of the line above it.
     assert ("coexist", "must") not in kinds(over(result, "literal.num", "dedent.dedent", 1))
-    # An inline card over a [dedent] 1U to its left: the rule only asks d <= -1.
-    assert ("coexist", "must") in kinds(over(result, "literal.num", "dedent.dedent", -1))
     # Nothing coexists with a [define] below it.
     assert ("coexist", "must") not in kinds(over(result, "literal.num", "define_call.define", -1))
+
+
+def test_an_inline_card_meets_a_dedent_below_only_two_columns_left_or_more():
+    # The [dedent] sits 1U left of the last body line's head, and an inline
+    # card at least 1U right of it:
+    #     [set(x)to][num(1)]
+    #   [dedent]
+    result = check({})
+    assert kinds(over(result, "literal.num", "dedent.dedent", -1)) == [("forbid", "should")]
+    assert kinds(over(result, "literal.num", "dedent.dedent", -2)) == [("coexist", "must")]
+
+
+def test_a_block_head_meets_an_inline_card_below_only_two_columns_right_or_more():
+    # The body's line head sits 1U right of [if], and an inline card at
+    # least 1U right of that:
+    #   [if][bool:true]
+    #     [set(x)to][num(1)]
+    result = check({})
+    assert kinds(over(result, "block_head.head", "literal.num", 1)) == [("forbid", "should")]
+    assert kinds(over(result, "block_head.head", "literal.num", 2)) == [("coexist", "must")]
 
 
 def grades(contact):

@@ -188,6 +188,10 @@ LINE_OVER_LINE = {"upper": "line", "lower": "line", "offset": 0}
         (vertical_with(connect=[{**LINE_OVER_LINE, "verdict": "connect"}]), "unknown key(s) verdict"),
         (vertical_with(priorities=[{"lower": "line", "priority": "nice"}]), "priority 'nice' is not one of should, low"),
         (vertical_with(coexist=None), "rules: vertical.coexist must be a mapping"),
+        (
+            vertical_with(coexist={"indents": ["line_head"]}),
+            "rules: vertical.coexist.indents must be a list of roles from: block, line",
+        ),
         (vertical_with(ungraded=["head"]), "rules: vertical.ungraded must be a list of roles from: block, line"),
     ],
 )
