@@ -1,0 +1,81 @@
+# Bundled test programs: whole programs in spec notation, laid out as they
+# would sit on the table and checked against an arrangement (see issue #10).
+#
+# Each program is `legal` or not, and its `text` holds cards and `//`
+# comments only. Two spaces of indentation per depth; a line head sits at
+# depth x 1U. [dedent] is written at the outer depth, where the card sits.
+# A blank line starts a new strip; contacts only happen within a strip.
+
+first_sketch:
+  legal: true
+  text: |
+    // The spec's "A first sketch".
+    [import(http://snapscript.s12.space/mods/p5.snap)as(p5)]
+
+    [define(setup)]
+    [call:p5.createCanvas][num(500)][num(500)]
+    [call:p5.background][color:midnightblue]
+
+    [define(draw)]
+    [set(x)to][call:p5.random][num(0)][num(500)]
+    [set(y)to][call:p5.random][num(0)][num(500)]
+    [call:p5.circle][get(x)][get(y)][num(5)]
+
+nested_blocks:
+  legal: true
+  text: |
+    // A [for(i)in] holding an [if], closed by two [dedent]s, then another
+    // block in the same strip.
+    [define(draw)]
+    [for(i)in][call:range][num(3)]
+      [if][get(i)][>][num(1)]
+        [call:print][get(i)]
+      [dedent]
+    [dedent]
+    [repeat][num(2)]
+      [call:print][str(hi)]
+    [dedent]
+
+parameters:
+  legal: true
+  text: |
+    // Required, then optional parameters with defaults; a call can be a default.
+    [define(greet)][required(message)][optional(title)][str(Mx)][optional(a)][call:random][optional(b)]
+    [call:print][get(title)][+][str(_)][+][get(message)]
+
+    [extern(random)][optional(min)][num(0)][optional(max)][num(1)]
+
+receivers_and_groups:
+  legal: true
+  text: |
+    // Cards that act on the value to their left, and groups.
+    [on:load]
+    [root][call:setup]
+
+    [define(setup)]
+    [set(scores)to][call:list][num(10)][num(20)]
+    [get(scores)][call:append][num(40)]
+    [get(user)][setProp(message)to][str(Welcome_user!)]
+    [call:print][get(user)][getProp(message)]
+    [set(n)to][get:p5.frameCount]
+    [call:print][(][num(2)][+][num(3)][)][*][num(4)]
+
+illegal:
+  legal: false
+  text: |
+    // Each strip holds one thing the grammar forbids.
+    [define(a)]
+    [call:print][(][)]          // an empty group
+
+    [define(b)]
+    [if][get(x)]                // an empty block body
+    [dedent]
+
+    [define(c)]
+    [set(y)to][num(1)]
+    [define(inner)]             // a [define] directly under a line
+
+    [define(d)][optional(a)][required(b)]   // optional before required
+
+    [define(e)]
+    [color:red][call:print]     // a line that starts with a value card

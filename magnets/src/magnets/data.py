@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 import math
+import re
 
 import yaml
 
@@ -36,6 +37,34 @@ class Side:
     def notation(self) -> str:
         """The first member, which names the side in reports."""
         return self.members[0]
+
+    def matches(self, card: str) -> bool:
+        """Whether a card's notation text is one of this side's members."""
+        return any(_member_pattern(m).fullmatch(card) for m in self.members)
+
+
+# In a member's notation, anything in `(…)` stands for handwriting and a `…`
+# for printed text: `[get(x)]` matches `[get(score)]`, `[call:…]` matches
+# `[call:p5.circle]`. Handwriting holds no parens and printed text no parens
+# or brackets, so `[get(x)]` never matches `[get:…]`, nor `[import(…)]`
+# `[import(…)as(…)]`.
+_PLACEHOLDER = re.compile(r"\([^()]*\)|…")
+_HANDWRITTEN = r"\([^()]*\)"
+_PRINTED = r"[^()\[\]]+"
+
+
+@cache
+def _member_pattern(member: str) -> re.Pattern:
+    parts, last = [], 0
+    for found in _PLACEHOLDER.finditer(member):
+        parts += [re.escape(member[last : found.start()]), _PRINTED if found.group() == "…" else _HANDWRITTEN]
+        last = found.end()
+    return re.compile("".join(parts) + re.escape(member[last:]))
+
+
+def matching_sides(card: str, classes: Mapping[str, "CardClass"]) -> list[Side]:
+    """Every class side the card's notation text belongs to."""
+    return [side for cls in classes.values() for side in cls.sides if side.matches(card)]
 
 
 @dataclass(frozen=True)
@@ -397,6 +426,9 @@ def _parse_class(name: str, spec: Any, grammar: Rules) -> CardClass:
 def _parse_side(name: str, raw: Any, grammar: Rules) -> Side:
     if not isinstance(raw, Mapping) or not raw:
         raise DataError(f"{name}: expected a mapping of member cards (in notation) to their roles")
+    for card in raw:
+        if not re.fullmatch(r"\[[^\[\]]+\]", str(card)):
+            raise DataError(f"{name}: member {card!r} is not a card in notation, like [get(x)]")
     members = {str(card): _parse_member_roles(f"{name} {card}", roles, grammar) for card, roles in raw.items()}
     (first, roles), *others = members.items()
     for card, other in others:
@@ -573,3 +605,29 @@ def _anchored(p: Pocket) -> str:
 
 def _u(x: Fraction) -> str:
     return str(int(x)) if x.denominator == 1 else str(float(x))
+
+
+@dataclass(frozen=True)
+class BundledProgram:
+    """A test program shipped with the tool, in spec notation."""
+
+    name: str
+    legal: bool
+    text: str
+
+
+@cache
+def bundled_programs() -> tuple[BundledProgram, ...]:
+    """The bundled test programs, in file order."""
+    raw = _bundled("programs")
+    if not isinstance(raw, Mapping) or not raw:
+        raise DataError("programs must be a mapping of program names to programs")
+    programs = []
+    for name, spec in raw.items():
+        if not isinstance(spec, Mapping):
+            raise DataError(f"program {name}: expected a mapping with `legal` and `text`")
+        _no_extra_keys(spec, {"legal", "text"}, f"program {name}", DataError)
+        if not isinstance(spec.get("legal"), bool) or not isinstance(spec.get("text"), str):
+            raise DataError(f"program {name}: `legal` must be true or false and `text` a string")
+        programs.append(BundledProgram(str(name), spec["legal"], spec["text"]))
+    return tuple(programs)

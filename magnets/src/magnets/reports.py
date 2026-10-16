@@ -1,12 +1,15 @@
-"""Check results rendered as a per-contact CSV and a summary."""
+"""Check results rendered as a per-contact CSV, a summary and a program report."""
 
 import csv
 import io
 from collections import Counter
+from collections.abc import Sequence
 from fractions import Fraction
 
-from .api import CheckResult
+from .api import CheckResult, ProgramResult
 from .contacts import Contact, Label
+from .data import BundledProgram
+from .programs import ProgramContact
 
 # Rows of the kind x result table; unavoidable is the subset of forbid that
 # no arrangement can block.
@@ -143,3 +146,76 @@ def _offset(offset: Fraction) -> str:
         return "0"
     number = str(int(offset)) if offset.denominator == 1 else str(float(offset))
     return number if offset < 0 else f"+{number}"
+
+
+def program_report_text(checked: Sequence[tuple[BundledProgram, ProgramResult]]) -> str:
+    """Each program's pass/fail with reasons if it is legal, or every forbid
+    contact with its grade if not.
+
+    A contact is named by its cards and their source lines, and listed once
+    with the number of layouts it occurs in.
+    """
+    first = checked[0][1]
+    count = len(first.layouts)
+    lines = [
+        f"Programs checked against {first.arrangement.name} (flip {first.arrangement.flip}), "
+        f"each in {count} layouts: every card at its",
+        f"minimum length, then {count - 1} draws of random lengths up to {first.max_length}U (seed {first.seed}).",
+    ]
+    for program, result in checked:
+        lines.append("")
+        lines.append(program_status(program, result))
+        if program.legal:
+            reasons = [(f.layout, f.contact, f"{_labels(f.contact)}, {f.reason}") for f in result.failures]
+            lines += _grouped(reasons, count)
+            notes = [(i.layout, i.contact, f"ungraded {i.contact.contact.result}") for i in result.info]
+            lines += [f"  info: {line[2:]}" for line in _grouped(notes, count)]
+        else:
+            lines += _grouped(_forbid_lines(result), count)
+    return "\n".join(lines) + "\n"
+
+
+def program_status(program: BundledProgram, result: ProgramResult) -> str:
+    """One line: a legal program's PASS or FAIL, or an illegal program's
+    forbid contact count."""
+    count = len(result.layouts)
+    if not program.legal:
+        return f"{program.name} (illegal): {len(_grouped(_forbid_lines(result), count))} forbid contacts in {count} layouts"
+    if result.passed:
+        return f"{program.name} (legal): PASS"
+    failed = len({f.layout for f in result.failures})
+    return f"{program.name} (legal): FAIL in {failed} of {count} layouts"
+
+
+def _forbid_lines(result: ProgramResult) -> list[tuple[str, ProgramContact, str]]:
+    found = []
+    for f in result.forbids:
+        unavoidable = ", unavoidable" if f.label.unavoidable else ""
+        found.append((f.layout, f.contact, f"forbid {f.label.priority} {f.label.grade}{unavoidable}"))
+    return found
+
+
+def _grouped(found: list[tuple[str, ProgramContact, str]], count: int) -> list[str]:
+    """Each distinct (contact, what) once, in program order, with how many
+    layouts it occurs in."""
+    # line -> (sort key, layouts)
+    seen: dict[str, tuple[tuple, set[str]]] = {}
+    for layout, pc, what in found:
+        a, b = pc.a.card, pc.b.card
+        key = (a.line, a.index, b.line, b.index, pc.contact.offset)
+        seen.setdefault(f"{_where(pc)}: {what}", (key, set()))[1].add(layout)
+    ordered = sorted(seen.items(), key=lambda item: item[1][0])
+    return [f"  {line} ({len(layouts)} of {count} layouts)" for line, (_, layouts) in ordered]
+
+
+def _where(pc: ProgramContact) -> str:
+    """`line 3 [set(x)to] [num(1)] @0` or `line 2 [if] over line 3 [dedent] @0`."""
+    a, b, offset = pc.a.card, pc.b.card, _offset(pc.contact.offset)
+    if pc.contact.axis == "horizontal":
+        return f"line {a.line} {a.text} {b.text} @{offset}"
+    return f"line {a.line} {a.text} over line {b.line} {b.text} @{offset}"
+
+
+def _labels(pc: ProgramContact) -> str:
+    kinds = "+".join(label.kind for label in pc.contact.labels)
+    return f"{kinds} {pc.contact.result}"

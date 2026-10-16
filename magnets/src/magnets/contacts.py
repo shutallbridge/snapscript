@@ -111,28 +111,40 @@ def _horizontal(
             lengths = (left.min_length, right.min_length)
             collapsed = (max_length - left.min_length + 1) * (max_length - right.min_length + 1)
             for offset in horizontal_offsets():
-                pairs = horizontal_pairs(left.edges["right"], right.edges["left"], offset)
-                attract, repel = tally(pairs)
-                result = aggregate(attract, repel)
-                kind, priority = _horizontal_verdict(
-                    rules, left.side.roles["right"], right.side.roles["left"], offset
-                )
-                unavoidable = _beside_tied(all_sides, rules, flip, left, right, offset)
-                yield Contact(
-                    axis="horizontal",
-                    a=left.side.name,
-                    edge_a="right",
-                    b=right.side.name,
-                    edge_b="left",
-                    offset=offset,
-                    lengths=lengths,
-                    collapsed=collapsed,
-                    pairs=pairs,
-                    attract=attract,
-                    repel=repel,
-                    result=result,
-                    labels=(_label(kind, priority, result, unavoidable),),
-                )
+                yield beside(all_sides, rules, flip, left, right, offset, lengths, collapsed)
+
+
+def beside(
+    all_sides: Mapping[str, SideEdges],
+    rules: Rules,
+    flip: str,
+    left: SideEdges,
+    right: SideEdges,
+    offset: Fraction,
+    lengths: tuple[int, int],
+    collapsed: int = 1,
+) -> Contact:
+    """The horizontal contact `[left][right]`, `right` sitting `offset` lower."""
+    pairs = horizontal_pairs(left.edges["right"], right.edges["left"], offset)
+    attract, repel = tally(pairs)
+    result = aggregate(attract, repel)
+    kind, priority = _horizontal_verdict(rules, left.side.roles["right"], right.side.roles["left"], offset)
+    unavoidable = _beside_tied(all_sides, rules, flip, left, right, offset)
+    return Contact(
+        axis="horizontal",
+        a=left.side.name,
+        edge_a="right",
+        b=right.side.name,
+        edge_b="left",
+        offset=offset,
+        lengths=lengths,
+        collapsed=collapsed,
+        pairs=pairs,
+        attract=attract,
+        repel=repel,
+        result=result,
+        labels=(_label(kind, priority, result, unavoidable),),
+    )
 
 
 def _horizontal_verdict(rules: Rules, right: str, left: str, offset: Fraction) -> tuple[str, str]:
@@ -196,6 +208,22 @@ def _vertical(
         for lower in all_sides.values():
             tied = _stack_tied(all_sides, rules, flip, upper, lower)
             yield from _stacks(upper, lower, rules, max_length, tied)
+
+
+def stack(
+    all_sides: Mapping[str, SideEdges],
+    rules: Rules,
+    flip: str,
+    upper: SideEdges,
+    lower: SideEdges,
+    lengths: tuple[int, int],
+    offset: Fraction,
+) -> Contact:
+    """The vertical contact of `upper` over `lower` at these lengths and offset."""
+    tied = _stack_tied(all_sides, rules, flip, upper, lower)
+    pairs = vertical_pairs(upper.edges["bottom"], lower.edges["top"], *lengths, offset)
+    labels = _vertical_labels(rules, upper.side, lower.side, offset)
+    return _stack(upper, lower, offset, lengths, 1, pairs, labels, tied is not None and tied(lengths, offset))
 
 
 def _stacks(

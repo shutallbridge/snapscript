@@ -191,3 +191,38 @@ def test_check_reports_vertical_contacts(tmp_path):
     assert "  [set(x)to] over [define(f)] @0: forbid nice snap (attract 1, repel 0, lengths 1x1)" in unavoidable_leaks
     assert summary.endswith("\nINVALID\n")
     assert summary in run.stdout
+
+
+def test_check_writes_the_program_report(tmp_path):
+    out = tmp_path / "reports"
+    run = subprocess.run(
+        [*MAGNETS, "check", "example", "--out", str(out)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    report = (out / "programs.txt").read_text()
+    assert report.startswith(
+        "Programs checked against example (flip top_bottom), each in 21 layouts: every card at its\n"
+        "minimum length, then 20 draws of random lengths up to 6U (seed 0).\n"
+    )
+    sections = report.split("\n\n")[1:]
+    titles = [s.splitlines()[0] for s in sections]
+    assert titles[:4] == [
+        "first_sketch (legal): FAIL in 21 of 21 layouts",
+        "nested_blocks (legal): FAIL in 21 of 21 layouts",
+        "parameters (legal): FAIL in 21 of 21 layouts",
+        "receivers_and_groups (legal): FAIL in 21 of 21 layouts",
+    ]
+    assert titles[4].startswith("illegal (illegal): ") and titles[4].endswith(" forbid contacts in 21 layouts")
+    # The example only designs set_get's top and bottom edges.
+    first_sketch = sections[0].splitlines()
+    assert "  line 5 [call:p5.createCanvas] [num(500)] @0: connect nothing, should snap (21 of 21 layouts)" in first_sketch
+    assert not any("[set(x)to] over [set(y)to]" in line for line in first_sketch)
+    illegal = sections[4].splitlines()
+    assert "  line 6 [if] over line 7 [dedent] @0: forbid nice weak (21 of 21 layouts)" in illegal
+    assert "  line 10 [set(y)to] over line 11 [define(inner)] @0: forbid nice weak, unavoidable (21 of 21 layouts)" in illegal
+    assert "  line 3 [(] [)] @0: forbid should weak (21 of 21 layouts)" in illegal
+    # stdout has each program's status after the summary.
+    assert "\nINVALID\n\nPrograms:\n  first_sketch (legal): FAIL in 21 of 21 layouts\n" in run.stdout
+    assert "programs.txt" in run.stdout

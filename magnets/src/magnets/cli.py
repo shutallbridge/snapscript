@@ -4,9 +4,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from .api import check
-from .data import ArrangementError
-from .reports import csv_text, summary_text
+from .api import check, check_program
+from .data import ArrangementError, bundled_programs
+from .reports import csv_text, program_report_text, program_status, summary_text
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -33,13 +33,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"magnets: {err}", file=sys.stderr)
         return 2
 
+    programs = [
+        (program, check_program(result.arrangement, program.text, max_length=args.max_length))
+        for program in bundled_programs()
+    ]
+
     out = args.out or Path("out") / result.arrangement.name
     out.mkdir(parents=True, exist_ok=True)
     summary = summary_text(result)
     (out / "summary.txt").write_text(summary, encoding="utf-8")
     (out / "contacts.csv").write_text(csv_text(result), encoding="utf-8")
+    (out / "programs.txt").write_text(program_report_text(programs), encoding="utf-8")
     print(summary, end="")
-    print(f"\nWrote {out / 'summary.txt'} and {out / 'contacts.csv'}")
+    print("\nPrograms:")
+    for program, checked in programs:
+        print(f"  {program_status(program, checked)}")
+    print(f"\nWrote {out / 'summary.txt'}, {out / 'contacts.csv'} and {out / 'programs.txt'}")
     return 0
 
 

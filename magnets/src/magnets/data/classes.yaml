@@ -5,6 +5,11 @@
 # from the front by the flip. Each side lists its member cards in notation,
 # each with the roles of its four edges. Every member of a class side must
 # have the same roles. The roles are listed in rules.yaml.
+#
+# A member's notation is also the pattern a card text in a program must
+# match: anything in `(…)` stands for handwriting and a `…` for printed text,
+# so `[get(x)]` matches `[get(score)]` and `[call:…]` matches `[call:print]`.
+# Every card text must match exactly one class side.
 
 set_get:
   min_length: 1
