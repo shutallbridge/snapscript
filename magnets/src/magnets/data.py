@@ -98,8 +98,8 @@ class Coexist:
         upper_can_head, lower_can_head = (s.roles["top"] in self.line_heads for s in (upper, lower))
         upper_inline, lower_inline = (s.roles["left"] not in self.not_inline for s in (upper, lower))
         return (
-            (upper_can_head and lower_inline and offset >= 1 + (bottom in self.indents))
-            or (upper_inline and lower_can_head and offset <= -1 - (top in self.outdents))
+            (upper_can_head and lower_inline and offset >= (2 if bottom in self.indents else 1))
+            or (upper_inline and lower_can_head and offset <= (-2 if top in self.outdents else -1))
             or (upper_inline and lower_inline)
         )
 
@@ -304,11 +304,10 @@ def _parse_vertical(raw: Any, roles: Mapping[str, tuple[str, ...]], priorities: 
                     raise DataError(f"{where}.priorities: {upper} over {lower} @{_u(offset)} matches more than one rule")
 
     coexist = raw.get("coexist")
+    coexist_keys = {"never", "line_heads", "not_inline", "indents", "outdents"}
     if not isinstance(coexist, Mapping):
-        raise DataError(
-            f"{where}.coexist must be a mapping with `never`, `line_heads`, `not_inline`, `indents` and `outdents`"
-        )
-    _no_extra_keys(coexist, {"never", "line_heads", "not_inline", "indents", "outdents"}, f"{where}.coexist", DataError)
+        raise DataError(f"{where}.coexist must be a mapping with {', '.join(f'`{k}`' for k in sorted(coexist_keys))}")
+    _no_extra_keys(coexist, coexist_keys, f"{where}.coexist", DataError)
     return VerticalRules(
         offsets=offsets,
         connect=frozenset(connect),

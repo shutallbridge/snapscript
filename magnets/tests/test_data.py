@@ -192,6 +192,10 @@ LINE_OVER_LINE = {"upper": "line", "lower": "line", "offset": 0}
             vertical_with(coexist={"indents": ["line_head"]}),
             "rules: vertical.coexist.indents must be a list of roles from: block, line",
         ),
+        (
+            vertical_with(coexist={"outdents": ["block"]}),
+            "rules: vertical.coexist.outdents must be a list of roles from: line",
+        ),
         (vertical_with(ungraded=["head"]), "rules: vertical.ungraded must be a list of roles from: block, line"),
     ],
 )
