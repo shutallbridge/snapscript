@@ -467,22 +467,50 @@ def load_arrangement(
     `source` is a bundled arrangement's name, a path to a YAML file, a
     mapping in the YAML's shape, or an already loaded arrangement.
     """
-    if isinstance(source, Arrangement):
-        raw, name = source.to_dict(), source.name
-    elif isinstance(source, Mapping):
-        raw, name = source, "<mapping>"
-    else:
-        path = Path(source)
-        bundled = _data() / "arrangements" / f"{source}.yaml"
-        if path.is_file():
-            raw, name = _read_arrangement(path), path.stem
-        elif path.suffix.lower() in (".yaml", ".yml"):
-            raise ArrangementError(f"arrangement file not found: {path}")
-        elif bundled.is_file():
-            raw, name = _read_arrangement(bundled), str(source)
-        else:
-            raise ArrangementError(f"no arrangement file or bundled arrangement named {source!r}")
+    raw, name = _arrangement_source(source)
     return _parse(raw, name, max_length, classes)
+
+
+def load_pinned(
+    source: str | Path | Mapping | Arrangement,
+    *,
+    flip: str,
+    max_length: int,
+    classes: Mapping[str, CardClass],
+) -> dict[tuple[str, str], tuple[Pocket, ...]]:
+    """The edges an arrangement pins, as (class, edge) -> its pockets.
+
+    An arrangement pins every edge it mentions, even with no pockets
+    (`right: []`); a loaded arrangement pins every edge of its classes.
+    `source` is as for `load_arrangement`; its flip must be `flip`, the
+    flip of the search it is pinned in.
+    """
+    raw, name = _arrangement_source(source)
+    loaded = _parse(raw, name, max_length, classes)
+    if loaded.flip != flip:
+        raise ArrangementError(f"{name} has flip {loaded.flip}, but the search is for {flip}")
+    if isinstance(source, Arrangement):
+        mentioned = [(cls, edge) for cls in source.fronts for edge in EDGES]
+    else:
+        mentioned = [(cls, edge) for cls, edges in (raw.get("classes") or {}).items() for edge in edges or {}]
+    return {(cls, edge): loaded.fronts[cls][edge] for cls, edge in mentioned}
+
+
+def _arrangement_source(source: str | Path | Mapping | Arrangement) -> tuple[Any, str]:
+    """An arrangement's raw YAML content and its name."""
+    if isinstance(source, Arrangement):
+        return source.to_dict(), source.name
+    if isinstance(source, Mapping):
+        return source, "<mapping>"
+    path = Path(source)
+    bundled = _data() / "arrangements" / f"{source}.yaml"
+    if path.is_file():
+        return _read_arrangement(path), path.stem
+    if path.suffix.lower() in (".yaml", ".yml"):
+        raise ArrangementError(f"arrangement file not found: {path}")
+    if bundled.is_file():
+        return _read_arrangement(bundled), str(source)
+    raise ArrangementError(f"no arrangement file or bundled arrangement named {source!r}")
 
 
 def _read_arrangement(source) -> Any:

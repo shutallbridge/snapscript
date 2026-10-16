@@ -5,6 +5,7 @@ from .contacts import Contact, Label, SideEdges
 from .data import Arrangement, ArrangementError, BundledProgram, DataError, bundled_programs
 from .physics import Pocket, PocketPair
 from .programs import Card, Failure, Forbid, Info, Layout, Line, Placed, ProgramContact, ProgramError
+from .solver import MustContact
 
 __all__ = [
     "Arrangement",
@@ -20,6 +21,7 @@ __all__ = [
     "Label",
     "Layout",
     "Line",
+    "MustContact",
     "Placed",
     "Pocket",
     "PocketPair",

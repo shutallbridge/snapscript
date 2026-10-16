@@ -7,6 +7,7 @@ Checker and CP-SAT solver for the Snapscript magnet arrangement (see issue
 uv run magnets check                 # the bundled `example` arrangement
 uv run magnets check my.yaml --out out/mine
 uv run magnets search --flip top_bottom --classes set_get,literal --time-limit 30
+uv run magnets search --flip top_bottom --pin example   # keep the example's set_get design
 uv run pytest
 ```
 
@@ -46,3 +47,12 @@ search to some card classes, and `magnets check --classes` checks the result
 the same way; the bundled programs need every class, so `programs.txt` is
 only written for a full check. With `--workers 1` the time limit is CP-SAT's
 deterministic time, so a `--seed` repeats its result exactly.
+Left/right edges never face top/bottom edges, so the two halves are solved
+as independent models that share the time limit. Unavoidable leaks cost
+nothing, since no arrangement can block them.
+`--pin <arrangement>` keeps every edge that arrangement mentions exactly as
+it is, empty ones too (`right: []`), and designs the rest; its flip must
+match `--flip`. If no valid arrangement exists, the search says
+`infeasible`, names a set of must contacts that conflict (enough to prove
+it, not always the fewest), and writes the arrangement with the fewest
+failing must contacts instead.

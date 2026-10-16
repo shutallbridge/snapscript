@@ -1,7 +1,7 @@
 """The public API: everything the CLI and the tests use."""
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from fractions import Fraction
 from pathlib import Path
 
@@ -9,9 +9,10 @@ from . import contacts as _contacts
 from . import programs as _programs
 from . import solver as _solver
 from .contacts import Contact, Label, SideEdges
-from .data import Arrangement, CardClass, Rules, load_arrangement, load_classes, load_rules
+from .data import Arrangement, CardClass, Rules, load_arrangement, load_classes, load_pinned, load_rules
 from .physics import FLIPS
 from .programs import Failure, Forbid, Info, Layout, Strip
+from .solver import MustContact
 
 
 @dataclass(frozen=True)
@@ -130,6 +131,14 @@ class SolveResult:
     (nothing found within the time limit). `objective` and `bound` are in
     cost units: a should-leak contact costs 10, a nice-leak 1, a pocket
     0.01 to 0.02. `arrangement` and `check` are None if nothing was found.
+
+    If infeasible, `conflicts` names must contacts that can't all hold
+    (enough to make it infeasible, not always the fewest), and `arrangement`
+    is the one with the fewest failing must contacts, then the least cost;
+    `fewest_status` says whether that is proven (optimal), the best found
+    (feasible) or not found (unknown). `must_failures` counts its failing
+    contacts per must contact, as the solver grades it; `check` grades it
+    again. `objective` is then its cost, and there is no `bound`.
     """
 
     flip: str
@@ -144,16 +153,23 @@ class SolveResult:
     wall_time: float
     arrangement: Arrangement | None
     check: CheckResult | None
+    conflicts: tuple[MustContact, ...] = ()
+    must_failures: Mapping[MustContact, int] = field(default_factory=dict)
+    fewest_status: str | None = None
 
 
 def solve(
     flip: str,
     *,
+    pinned: str | Path | Mapping | Arrangement | None = None,
     classes: Sequence[str] | None = None,
     seed: int = 0,
     time_limit: float = 60,
     workers: int = 8,
     max_length: int = 6,
+    class_data: str | Path | Mapping | None = None,
+    rule_data: str | Path | Mapping | None = None,
+    split: bool = True,
 ) -> SolveResult:
     """Search with CP-SAT for the best arrangement under `flip`.
 
@@ -162,22 +178,45 @@ def solve(
     forbid contact that isn't unavoidable, its priority weight times its
     grade's penalty (leak 1, partial 0.5, weak 0.2, strong 0), plus a cost
     per pocket by its shape (uniform 0.01, half 0.015, split 0.02).
-    `classes`, if given, restricts the search, and the check of its result,
-    to those card classes. The search stops after `time_limit` seconds;
-    with one worker that is CP-SAT's deterministic time, roughly seconds,
-    so a seed repeats its result exactly, even when the search stops
-    before it proves the result optimal.
+    `pinned`, an arrangement as for `check` with the same flip, fixes every
+    edge it mentions, even an empty one (`right: []`); a loaded arrangement
+    fixes every edge. Like any arrangement checked with `classes`, it may
+    only mention those classes. The search designs the rest. `classes`, if given,
+    restricts the search, and the check of its result, to those card
+    classes. `class_data` and `rule_data` are as for `check`. The search
+    stops after `time_limit` seconds; with one worker that is CP-SAT's
+    deterministic time, roughly seconds, so a seed repeats its result
+    exactly, even when the search stops before it proves the result
+    optimal. Left/right and top/bottom edges never face each other, so the
+    two halves are solved as independent models; `split=False` solves them
+    as one, which finds the same optimum. Raises `ArrangementError` for a
+    malformed pinned arrangement or one with another flip.
     """
     if flip not in FLIPS:
         raise ValueError(f"unknown flip {flip!r}; expected one of {', '.join(FLIPS)}")
-    grammar, selected = _classes(max_length, None, None, classes)
+    grammar, selected = _classes(max_length, class_data, rule_data, classes)
+    pins = None if pinned is None else load_pinned(pinned, flip=flip, max_length=max_length, classes=selected)
     found = _solver.solve(
-        flip, grammar, selected, max_length=max_length, seed=seed, time_limit=time_limit, workers=workers
+        flip,
+        grammar,
+        selected,
+        max_length=max_length,
+        seed=seed,
+        time_limit=time_limit,
+        workers=workers,
+        pinned=pins,
+        split=split,
     )
     regraded = None
     if found.arrangement is not None:
         loaded = load_arrangement(found.arrangement, max_length=max_length, classes=selected)
-        regraded = check(replace(loaded, name="search"), max_length=max_length, classes=list(selected))
+        regraded = check(
+            replace(loaded, name="search"),
+            max_length=max_length,
+            classes=list(selected),
+            class_data=class_data,
+            rule_data=rule_data,
+        )
     return SolveResult(
         flip=flip,
         classes=tuple(selected),
@@ -191,6 +230,9 @@ def solve(
         wall_time=found.wall_time,
         arrangement=regraded.arrangement if regraded else None,
         check=regraded,
+        conflicts=found.conflicts,
+        must_failures=found.must_failures,
+        fewest_status=found.fewest_status,
     )
 
 

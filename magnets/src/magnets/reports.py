@@ -12,6 +12,7 @@ from .api import CheckResult, ProgramResult, SolveResult
 from .contacts import Contact, Label
 from .data import Arrangement, BundledProgram
 from .programs import ProgramContact
+from .solver import MustContact
 
 # Rows of the kind x result table; unavoidable is the subset of forbid that
 # no arrangement can block.
@@ -110,17 +111,43 @@ def summary_text(result: CheckResult, search: SolveResult | None = None) -> str:
 
 
 def _search_lines(search: SolveResult) -> list[str]:
-    return [
+    lines = [
         f"Search: {_search_status(search)}",
         f"  classes {', '.join(search.classes)}; seed {search.seed}, "
         f"{search.workers} worker{'s' if search.workers != 1 else ''}, time limit {search.time_limit:g}s",
     ]
+    if search.status == "infeasible" and search.objective is not None:
+        failing = sum(search.must_failures.values())
+        lines.append(
+            f"  Fewest must failures ({search.fewest_status}): {failing} contacts, "
+            f"objective {_cost(search.objective)}"
+        )
+    return lines + [f"  {line}" for line in conflict_lines(search)]
 
 
 def _search_status(search: SolveResult) -> str:
-    """`optimal, objective 6108.35, bound 6108.35, in 3.2s`."""
+    """`optimal, objective 6108.35, bound 6108.35, in 3.2s`, or for no valid
+    arrangement `infeasible in 3.2s: no valid arrangement`."""
+    if search.status == "infeasible":
+        return f"infeasible in {search.wall_time:.1f}s: no valid arrangement"
     found = "" if search.objective is None else f", objective {_cost(search.objective)}, bound {_cost(search.bound)}"
     return f"{search.status}{found}, in {search.wall_time:.1f}s"
+
+
+def conflict_lines(search: SolveResult) -> list[str]:
+    """The must contacts that conflict, if the search proved there is no
+    valid arrangement: `[num(…)] [get(x)] @0: connect`."""
+    if search.status != "infeasible":
+        return []
+    if not search.conflicts:
+        return ["Conflicting must contacts: none found within the time limit"]
+    return [f"Conflicting must contacts: {len(search.conflicts)}", *(f"  {_must(m)}" for m in search.conflicts)]
+
+
+def _must(must: MustContact) -> str:
+    a, b = must.cards
+    between = " " if must.axis == "horizontal" else " over "
+    return f"{a}{between}{b} @{_offset(must.offset)}: {must.kind}"
 
 
 def _cost(cost: Fraction | None) -> str:

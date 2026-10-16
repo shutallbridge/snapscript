@@ -9,17 +9,18 @@ layers swapped and need no variables of their own.
 """
 
 import math
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections import Counter
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Literal
 
 from ortools.sat.python import cp_model
 
 from . import contacts as _contacts
-from .contacts import GRADES, Contact
+from .contacts import GRADES, Contact, Label
 from .data import MAX_POCKETS, Arrangement, CardClass, Rules, collision_length
-from .physics import EDGES, HEIGHTS, LAYERS, LEFT_RIGHT_EDGES, Pocket, flipped_edge, interact
+from .physics import EDGES, HEIGHTS, LAYERS, LEFT_RIGHT_EDGES, TOP_BOTTOM_EDGES, Pocket, flipped_edge, interact
 
 # What a forbid's grade costs, per contact, before its priority weight.
 GRADE_PENALTY = {"leak": Fraction(1), "partial": Fraction(1, 2), "weak": Fraction(1, 5), "strong": Fraction(0)}
@@ -34,23 +35,54 @@ STATUSES = {
     cp_model.FEASIBLE: "feasible",
     cp_model.INFEASIBLE: "infeasible",
 }
+# A search is only as good as its worst half.
+WORST_FIRST = ("infeasible", "unknown", "feasible", "optimal")
 
 # A candidate pocket: (class, front edge, index in that edge's candidates).
 Candidate = tuple[str, str, int]
 # One layer of a candidate: (class, front edge, index, 0 up or 1 down).
 LayerRef = tuple[str, str, int, int]
+# How a model treats must labels: as constraints; as constraints behind an
+# assumption per must contact, to find which conflict; or as costs that
+# outweigh every forbid, to find the fewest must failures.
+Musts = Literal["hard", "assumed", "soft"]
+
+
+@dataclass(frozen=True)
+class MustContact:
+    """What one must label demands of two sides at one offset, at every
+    length pair: `[a][b]` (horizontal) or `a` over `b` (vertical), with `a`
+    and `b` as for `Contact`."""
+
+    axis: str
+    a: str
+    b: str
+    offset: Fraction
+    kind: str  # connect / coexist
+    cards: tuple[str, str]  # a's and b's notation, e.g. ("[set(x)to]", "[get(x)]")
 
 
 @dataclass(frozen=True)
 class Solution:
     """What CP-SAT found: the status, the arrangement in the YAML's shape
-    if it found one, and the objective and bound in cost units."""
+    if it found one, and its objective and bound in cost units.
+
+    If no valid arrangement exists, the status is infeasible: `conflicts`
+    is a set of must contacts that can't all hold, and `arrangement` the
+    one with the fewest failing must contacts (`fewest_status` says whether
+    that is proven), which fail as `must_failures` counts them. Its
+    `objective` is then the cost of its forbids and pockets, and it has no
+    bound.
+    """
 
     status: str  # optimal / feasible / infeasible / unknown
     arrangement: Mapping | None
     objective: Fraction | None
     bound: Fraction | None
     wall_time: float
+    conflicts: tuple[MustContact, ...] = ()
+    must_failures: Mapping[MustContact, int] = field(default_factory=dict)  # failing contacts
+    fewest_status: str | None = None  # optimal / feasible / unknown, if infeasible
 
 
 def solve(
@@ -62,33 +94,126 @@ def solve(
     seed: int,
     time_limit: float,
     workers: int,
+    pinned: Mapping[tuple[str, str], tuple[Pocket, ...]] | None = None,
+    split: bool = True,
 ) -> Solution:
     """The arrangement of `classes` under `flip` with no must failures and
-    the least weighted forbid grades, then the least pocket cost."""
-    model = _Model(flip, rules, classes, max_length)
-    solver = cp_model.CpSolver()
-    solver.parameters.random_seed = seed
-    solver.parameters.num_workers = workers
-    if workers == 1:
-        # One worker is deterministic, but a wall-clock limit would cut it
-        # off at a point that varies from run to run. CP-SAT's deterministic
-        # time is roughly seconds. The pocket costs leave many near-ties, and
-        # a single worker only proves them with core-based search; more
-        # workers run it among others.
-        solver.parameters.max_deterministic_time = time_limit
-        solver.parameters.optimize_with_core = True
-    else:
-        solver.parameters.max_time_in_seconds = time_limit
-    status = STATUSES.get(solver.solve(model.model), "unknown")
-    if status not in ("optimal", "feasible"):
+    the least weighted forbid grades, then the least pocket cost.
+
+    `pinned` fixes the pockets of some front edges, as (class, edge) -> its
+    pockets; an edge with none is fixed empty. Left/right edges only face
+    left/right edges and top/bottom edges only top/bottom edges, and no
+    flip moves an edge from one group to the other, so unless `split` is
+    False each group is solved as its own model and the results are
+    combined. The models share `time_limit` in proportion to their size,
+    each getting what an earlier one left.
+    """
+    fronts = {name: {edge: candidates(cls, edge) for edge in EDGES} for name, cls in classes.items()}
+    all_sides = _contacts.sides(Arrangement("<candidates>", flip, fronts), classes)
+    found = _contacts.contacts(all_sides, rules, max_length, flip)
+
+    def builder(edges: tuple[str, ...]) -> Callable[[Musts], _Model]:
+        facing = [c for c in found if c.edge_a in edges]
+        return lambda musts: _Model(flip, rules, classes, fronts, edges, facing, max_length, pinned or {}, musts)
+
+    builders = [builder(edges) for edges in ((LEFT_RIGHT_EDGES, TOP_BOTTOM_EDGES) if split else (EDGES,))]
+    models = [build("hard") for build in builders]
+    sizes = [len(model.model.proto.variables) for model in models]
+    runner = _Runner(seed, workers)
+    halves = []
+    for i, (model, build) in enumerate(zip(models, builders)):
+        budget = (time_limit - runner.used) * sizes[i] / sum(sizes[i:])
+        halves.append(_search(model, build, runner, budget))
+    return _combine(flip, halves)
+
+
+class _Runner:
+    """Runs the solves of one search, and counts the time they take.
+
+    With one worker the limit is CP-SAT's deterministic time, roughly
+    seconds: one worker is deterministic, but a wall-clock limit would cut
+    it off at a point that varies from run to run. The pocket costs leave
+    many near-ties, and a single worker only proves them with core-based
+    search; more workers run it among others.
+    """
+
+    def __init__(self, seed: int, workers: int):
+        self.seed, self.workers = seed, workers
+        self.used = 0.0  # in the time limit's units
+        self.wall_time = 0.0
+
+    def run(self, model: "_Model", limit: float) -> tuple[str, cp_model.CpSolver]:
+        solver = cp_model.CpSolver()
+        solver.parameters.random_seed = self.seed
+        solver.parameters.num_workers = self.workers
+        if self.workers == 1:
+            solver.parameters.max_deterministic_time = max(limit, 0)
+            solver.parameters.optimize_with_core = True
+        else:
+            solver.parameters.max_time_in_seconds = max(limit, 0)
+        status = STATUSES.get(solver.solve(model.model), "unknown")
+        self.used += solver.deterministic_time if self.workers == 1 else solver.wall_time
+        self.wall_time += solver.wall_time
+        return status, solver
+
+
+def _search(model: "_Model", build: Callable[[Musts], "_Model"], runner: _Runner, budget: float) -> Solution:
+    """Solve one half within `budget`. If it has no valid arrangement, find
+    must contacts that conflict, then the arrangement with the fewest must
+    failures, in what is left."""
+    used, wall_time = runner.used, runner.wall_time
+
+    def left() -> float:
+        return budget - (runner.used - used)
+
+    status, solver = runner.run(model, budget)
+    if status in ("optimal", "feasible"):
+        bound = Fraction(math.ceil(solver.best_objective_bound - 1e-6), SCALE)
+        return Solution(status, model.arrangement(solver), model.cost(solver), bound, solver.wall_time)
+    if status == "unknown":
         return Solution(status, None, None, None, solver.wall_time)
+    assumed = build("assumed")
+    found, solver = runner.run(assumed, left() / 2)
+    conflicts = assumed.conflicts(solver) if found == "infeasible" else ()
+    soft = build("soft")
+    fewest, solver = runner.run(soft, left())
+    if fewest not in ("optimal", "feasible"):
+        return Solution(status, None, None, None, runner.wall_time - wall_time, conflicts, fewest_status="unknown")
     return Solution(
         status=status,
-        arrangement=model.arrangement(solver),
-        objective=Fraction(round(solver.objective_value), SCALE),
-        bound=Fraction(math.ceil(solver.best_objective_bound - 1e-6), SCALE),
-        wall_time=solver.wall_time,
+        arrangement=soft.arrangement(solver),
+        objective=soft.cost(solver),
+        bound=None,
+        wall_time=runner.wall_time - wall_time,
+        conflicts=conflicts,
+        must_failures=soft.failures(solver),
+        fewest_status=fewest,
     )
+
+
+def _worst(statuses: Iterable[str]) -> str:
+    return min(statuses, key=WORST_FIRST.index)
+
+
+def _combine(flip: str, halves: list[Solution]) -> Solution:
+    """One solution from the solutions of independent halves: proven
+    optimal only if every half is, and infeasible if any half is."""
+    status = _worst(half.status for half in halves)
+    wall_time = sum(half.wall_time for half in halves)
+    conflicts = tuple(m for half in halves for m in half.conflicts)
+    failures = {m: n for half in halves for m, n in half.must_failures.items()}
+    fewest = _worst(half.fewest_status or half.status for half in halves) if status == "infeasible" else None
+    chosen: dict[str, dict] = {}
+    objective = Fraction(0)
+    for half in halves:
+        if half.arrangement is None or half.objective is None:
+            return Solution(status, None, None, None, wall_time, conflicts, failures, fewest)
+        for name, edges in half.arrangement["classes"].items():
+            chosen.setdefault(name, {}).update(edges)
+        objective += half.objective
+    bounds = [half.bound for half in halves]
+    bound = None if None in bounds else sum((b for b in bounds if b is not None), Fraction(0))
+    return Solution(status, {"flip": flip, "classes": chosen}, objective, bound, wall_time, conflicts, failures, fewest)
 
 
 def candidates(cls: CardClass, edge: str) -> tuple[Pocket, ...]:
@@ -110,29 +235,73 @@ def candidates(cls: CardClass, edge: str) -> tuple[Pocket, ...]:
 
 
 class _Model:
-    def __init__(self, flip: str, rules: Rules, classes: Mapping[str, CardClass], max_length: int):
+    """The model of the pockets on `edges` (of every class's front), graded
+    on `found`, the contacts between those edges, with must labels treated
+    as `musts` says."""
+
+    def __init__(
+        self,
+        flip: str,
+        rules: Rules,
+        classes: Mapping[str, CardClass],
+        fronts: Mapping[str, Mapping[str, tuple[Pocket, ...]]],
+        edges: tuple[str, ...],
+        found: list[Contact],
+        max_length: int,
+        pinned: Mapping[tuple[str, str], tuple[Pocket, ...]],
+        musts: Musts,
+    ):
         self.model = cp_model.CpModel()
         self.flip = flip
         self.classes = classes
-        self.fronts = {name: {edge: candidates(cls, edge) for edge in EDGES} for name, cls in classes.items()}
+        self.musts = musts
+        self.notation = {side.name: side.notation for cls in classes.values() for side in cls.sides}
+        self.fronts = {name: {edge: front[edge] for edge in edges} for name, front in fronts.items()}
         # side name -> (class, whether it is the front)
         self.owners = {side.name: (name, i == 0) for name, cls in classes.items() for i, side in enumerate(cls.sides)}
         # candidate -> layer (0 up, 1 down) -> layer content -> literal; one-hot
         self.layers: dict[Candidate, tuple[dict[str, cp_model.IntVar], ...]] = {}
-        for name, edges in self.fronts.items():
-            for edge, pockets in edges.items():
+        for name, front in self.fronts.items():
+            for edge, pockets in front.items():
                 for p in pockets:
                     self.layers[name, edge, p.index] = tuple(self._one_hot(f"{name}.{edge}.{p.index}.{i}") for i in (0, 1))
+        self._pin(pinned)
         self._products: dict[tuple, cp_model.IntVar] = {}
         self._tallies: dict[tuple, tuple[cp_model.IntVar, cp_model.IntVar, cp_model.IntVar]] = {}
+        # The forbid and pocket costs, and the most they can add up to.
         self.costs: list[cp_model.LinearExprT] = []
+        self.most_cost = 0
+        # Every must label: its must contact, contacts, and the results that
+        # fail it, each 1 if it is the result.
+        self.labels: list[tuple[MustContact, int, list[cp_model.LinearExprT]]] = []
+        # musts == "assumed": must contact -> its assumption
+        self.assumed: dict[MustContact, cp_model.IntVar] = {}
+        # musts == "soft": (contacts, whether the label holds) per label
+        self.held: list[tuple[int, cp_model.IntVar]] = []
 
         self._pocket_rules(max_length)
-        arrangement = Arrangement("<candidates>", flip, self.fronts)
-        all_sides = _contacts.sides(arrangement, classes)
-        for contact in _contacts.contacts(all_sides, rules, max_length, flip):
+        for contact in found:
             self._grade(contact, rules)
-        self.model.minimize(sum(self.costs))
+        if musts == "hard":
+            self.model.minimize(sum(self.costs))
+        elif musts == "assumed":
+            self.model.add_assumptions(self.assumed.values())
+        else:
+            # One failing contact outweighs every forbid and pocket together.
+            weight = self.most_cost + 1
+            self.model.minimize(sum([*self.costs, *(weight * n * (1 - holds) for n, holds in self.held)]))
+
+    def _pin(self, pinned: Mapping[tuple[str, str], tuple[Pocket, ...]]) -> None:
+        """Fix every candidate of a pinned edge to the pinned pocket at its
+        position, or to empty."""
+        for (name, edge), pockets in pinned.items():
+            if edge not in self.fronts[name]:
+                continue  # the other half's edge
+            at_position = {(p.anchor, p.at): p for p in pockets}
+            for candidate in self.fronts[name][edge]:
+                p = at_position.get((candidate.anchor, candidate.at))
+                for level, layer in enumerate((p.up, p.down) if p else ("-", "-")):
+                    self.model.add(self.layers[name, edge, candidate.index][level][layer] == 1)
 
     def _one_hot(self, name: str) -> dict[str, cp_model.IntVar]:
         choice = {layer: self.model.new_bool_var(f"{name}={layer}") for layer in LAYERS}
@@ -156,6 +325,7 @@ class _Model:
             split = 1 - empty - uniform - half
             shapes = {"uniform": uniform, "half": half, "split": split}
             self.costs.append(sum(int(cost * SCALE) * shapes[shape] for shape, cost in SHAPE_COST.items()))
+            self.most_cost += int(max(SHAPE_COST.values()) * SCALE)
         for name, edges in self.fronts.items():
             min_length = self.classes[name].min_length
             for edge, pockets in edges.items():
@@ -213,24 +383,66 @@ class _Model:
 
     def _grade(self, contact: Contact, rules: Rules) -> None:
         """A must label never gets a FAIL grade: a connect must snap and a
-        coexist must not repel or be mixed. A forbid that
-        isn't unavoidable costs its priority weight times its grade's
-        penalty, for every contact the row holds."""
+        coexist must not repel or be mixed. A forbid that isn't unavoidable
+        costs its priority weight times its grade's penalty, for every
+        contact it groups."""
         attract, repel, both = self._tally(contact)
         # Exactly one of these is 1: the contact's result, as `aggregate` gives it.
         results = {"snap": attract - both, "mixed": both, "nothing": 1 - attract - repel + both, "repel": repel - both}
         for label in contact.labels:
             grades = GRADES[label.kind]
             if label.priority == "must":
-                for result, grade in grades.items():
-                    if grade == "FAIL":
-                        self.model.add(results[result] == 0)
+                self._must(contact, label, [results[r] for r, grade in grades.items() if grade == "FAIL"])
             elif label.kind == "forbid" and not label.unavoidable:
                 weight = rules.priorities[label.priority] * contact.collapsed
                 if weight:
                     self.costs.append(
                         sum(weight * int(GRADE_PENALTY[grades[r]] * SCALE) * held for r, held in results.items())
                     )
+                    self.most_cost += weight * int(max(GRADE_PENALTY.values()) * SCALE)
+
+    def _must(self, contact: Contact, label: Label, fails: list[cp_model.LinearExprT]) -> None:
+        """None of `fails` may be the contact's result: always, or if the
+        must contact's assumption holds, or at a cost."""
+        must = MustContact(
+            contact.axis,
+            contact.a,
+            contact.b,
+            contact.offset,
+            label.kind,
+            (self.notation[contact.a], self.notation[contact.b]),
+        )
+        self.labels.append((must, contact.collapsed, fails))
+        holds = None
+        if self.musts == "assumed":
+            if must not in self.assumed:
+                self.assumed[must] = self.model.new_bool_var(f"holds {must}")
+            holds = self.assumed[must]
+        elif self.musts == "soft":
+            holds = self.model.new_bool_var("")
+            self.held.append((contact.collapsed, holds))
+        for fail in fails:
+            constraint = self.model.add(fail == 0)
+            if holds is not None:
+                constraint.only_enforce_if(holds)
+
+    def cost(self, solver: cp_model.CpSolver) -> Fraction:
+        """The solved arrangement's forbid and pocket cost, in cost units."""
+        return Fraction(solver.value(sum(self.costs)), SCALE)
+
+    def failures(self, solver: cp_model.CpSolver) -> dict[MustContact, int]:
+        """How many contacts fail each must contact, in the solved arrangement."""
+        found: Counter[MustContact] = Counter()
+        for must, collapsed, fails in self.labels:
+            if any(solver.value(fail) for fail in fails):
+                found[must] += collapsed
+        return dict(found)
+
+    def conflicts(self, solver: cp_model.CpSolver) -> tuple[MustContact, ...]:
+        """Must contacts that can't all hold, from an infeasible solve of
+        the assumed model."""
+        by_index = {holds.index: must for must, holds in self.assumed.items()}
+        return tuple(by_index[i] for i in solver.sufficient_assumptions_for_infeasibility())
 
     def arrangement(self, solver: cp_model.CpSolver) -> dict:
         """The solved arrangement in the YAML's shape: the occupied

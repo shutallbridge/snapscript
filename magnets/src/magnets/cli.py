@@ -8,7 +8,7 @@ from pathlib import Path
 from .api import CheckResult, SolveResult, check, check_program, solve
 from .data import ArrangementError, bundled_programs
 from .physics import FLIPS
-from .reports import arrangement_text, csv_text, program_report_text, program_status, summary_text
+from .reports import arrangement_text, conflict_lines, csv_text, program_report_text, program_status, summary_text
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -35,6 +35,10 @@ def main(argv: list[str] | None = None) -> int:
         help="seconds to search; with one worker, deterministic time, so a seed repeats (default: 60)",
     )
     search_cmd.add_argument("--workers", type=int, default=8, help="parallel search workers (default: 8)")
+    search_cmd.add_argument(
+        "--pin",
+        help="an arrangement YAML file, or a bundled arrangement's name, whose edges the search keeps as they are",
+    )
     search_cmd.add_argument(
         "--out", type=Path, help="arrangement file to write; reports go next to it (default: out/search_<flip>.yaml)"
     )
@@ -63,6 +67,7 @@ def _common(command: argparse.ArgumentParser, classes_help: str) -> None:
 def _search(args: argparse.Namespace, classes: list[str] | None) -> int:
     result = solve(
         args.flip,
+        pinned=args.pin,
         classes=classes,
         seed=args.seed,
         time_limit=args.time_limit,
@@ -71,6 +76,8 @@ def _search(args: argparse.Namespace, classes: list[str] | None) -> int:
     )
     if result.check is None:
         print(f"magnets: search {result.status} after {result.wall_time:.1f}s: no arrangement found", file=sys.stderr)
+        for line in conflict_lines(result):
+            print(f"  {line}", file=sys.stderr)
         return 1
     out = args.out or Path("out") / f"search_{args.flip}.yaml"
     # Named after its file, as `magnets check` would name it.

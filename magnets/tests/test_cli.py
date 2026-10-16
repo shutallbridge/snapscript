@@ -4,6 +4,8 @@ import csv
 import subprocess
 import sys
 
+import yaml
+
 from helpers import SET_GET
 
 MAGNETS = [sys.executable, "-m", "magnets.cli"]
@@ -259,3 +261,29 @@ def test_search_writes_an_arrangement_that_check_accepts(tmp_path):
     # The bundled programs use classes outside the search.
     assert not (tmp_path / "rechecked" / "programs.txt").exists()
     assert "programs.txt" not in checked.stdout
+
+
+def test_an_infeasible_search_names_the_conflict_and_writes_the_fewest_failures(tmp_path):
+    # Nothing on the right of a [num] can snap if its right edge is empty,
+    # nor, under left_right, on the left of a [str], whose left edge it is.
+    pin = tmp_path / "pin.yaml"
+    pin.write_text("flip: left_right\nclasses:\n  literal:\n    right: []\n")
+    found = tmp_path / "found.yaml"
+    run = subprocess.run(
+        [*MAGNETS, "search", "--flip", "left_right", "--classes", "set_get,literal", "--pin", str(pin),
+         "--time-limit", "5", "--workers", "1", "--out", str(found)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    summary = (tmp_path / "found" / "summary.txt").read_text()
+    assert summary in run.stdout
+    assert summary.split("Search: ")[1].startswith("infeasible in ")
+    assert "\n  Fewest must failures (optimal): " in summary
+    listed = summary.split("  Conflicting must contacts: ")[1].splitlines()
+    conflicts = listed[1 : 1 + int(listed[0])]
+    assert conflicts and all(line.startswith("    ") and line.endswith(" @0: connect") for line in conflicts)
+    assert all(line.startswith("    [num(…)] ") or " [str(…)] @0" in line for line in conflicts)
+    assert summary.endswith("\nINVALID\n")
+    # The fewest-failures arrangement keeps the pinned empty edge.
+    assert "right" not in yaml.safe_load(found.read_text())["classes"]["literal"]
