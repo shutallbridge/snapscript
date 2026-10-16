@@ -1,6 +1,6 @@
 """The back side of a flip pair is derived from its front."""
 
-from hypothesis import assume, given
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from helpers import set_get
@@ -62,13 +62,17 @@ def set_get_arrangements(draw):
     )
 
 
+# Each example checks two arrangements in full, which can outlast
+# hypothesis's default deadline. Flips don't depend on card length, so short
+# cards keep the checks quick.
+@settings(deadline=None)
 @given(set_get_arrangements())
 def test_flipping_twice_gives_back_the_front(arrangement):
-    once = check(arrangement)
+    once = check(arrangement, max_length=2)
     # Author the derived back as a front: its derived back is the front flipped twice.
     back_as_front = {
         "flip": arrangement["flip"],
         "classes": {"set_get": edges(once, "get")},
     }
-    twice = check(back_as_front)
+    twice = check(back_as_front, max_length=2)
     assert edges(twice, "get") == edges(once, "set")

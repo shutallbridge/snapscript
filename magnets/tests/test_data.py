@@ -35,7 +35,17 @@ TOY_RULES = {
         "forbid": "should",
         "off_line": "low",
     },
-    "vertical": [{"upper": "line", "lower": "line", "offset": 0, "verdict": "connect"}],
+    "vertical": {
+        "offsets": [-1, 0, 1],
+        "connect": [
+            {"upper": "line", "lower": "line", "offset": 0},
+            {"upper": "block", "lower": "line", "offset": 1},
+        ],
+        "priorities": [],
+        "forbid": "should",
+        "off_line": "low",
+        "coexist": {"never": [], "line_heads": ["line"], "not_inline": ["head"]},
+    },
 }
 
 
@@ -146,3 +156,55 @@ def test_reads_classes_and_rules_from_files(tmp_path):
 def test_missing_data_file(tmp_path):
     with pytest.raises(DataError, match="classes file not found"):
         check({}, class_data=tmp_path / "missing.yaml")
+
+
+def vertical_with(**vertical):
+    data = copy.deepcopy(TOY_RULES)
+    data["vertical"].update(vertical)
+    return data
+
+
+LINE_OVER_LINE = {"upper": "line", "lower": "line", "offset": 0}
+
+
+@pytest.mark.parametrize(
+    "rules, message",
+    [
+        (
+            vertical_with(priorities=[{"lower": "line", "priority": "low"}]),
+            "rules: vertical: line over line @0 is both connect and forbid",
+        ),
+        (
+            vertical_with(
+                priorities=[{"upper": "block", "offset": -1, "priority": "low"}, {"lower": "line", "offset": -1, "priority": "low"}]
+            ),
+            "rules: vertical.priorities: block over line @-1 matches more than one rule",
+        ),
+        (
+            vertical_with(connect=[{**LINE_OVER_LINE, "offset": 2}]),
+            "offset 2 is not one of the vertical offsets",
+        ),
+        (vertical_with(connect=[{**LINE_OVER_LINE, "lower": "dedent"}]), "lower 'dedent' is not one of the top roles"),
+        (vertical_with(connect=[{**LINE_OVER_LINE, "verdict": "connect"}]), "unknown key(s) verdict"),
+        (vertical_with(priorities=[{"lower": "line", "priority": "nice"}]), "priority 'nice' is not one of should, low"),
+        (vertical_with(coexist=None), "rules: vertical.coexist must be a mapping"),
+        (vertical_with(ungraded=["head"]), "rules: vertical.ungraded must be a list of roles from: block, line"),
+    ],
+)
+def test_rejects_malformed_vertical_rules(rules, message):
+    with pytest.raises(DataError) as err:
+        check({}, class_data=TOY_CLASSES, rule_data=rules)
+    assert message in str(err.value)
+
+
+def test_toy_vertical_rules_grade_the_toy_classes():
+    result = check({}, class_data=TOY_CLASSES, rule_data=TOY_RULES)
+    labels = {
+        (c.a, c.b, c.offset): [(label.kind, label.priority) for label in c.labels]
+        for c in result.contacts
+        if c.axis == "vertical"
+    }
+    assert labels["block_head.head", "set_get.set", 1] == [("connect", "must")]
+    assert labels["set_get.set", "set_get.set", 1] == [("forbid", "should")]
+    # get can sit inline and set can head a line, so get over set @-1 coexists.
+    assert labels["set_get.get", "set_get.set", -1] == [("coexist", "must"), ("forbid", "should")]

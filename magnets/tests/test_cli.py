@@ -127,3 +127,57 @@ def test_check_lists_must_failures_in_notation(tmp_path):
     )
     assert "[get(x)] over [set(x)to] @0: connect repel" in run.stdout
     assert "\nINVALID\n" in run.stdout
+
+
+def test_check_reports_vertical_contacts(tmp_path):
+    # num's top and bottom repel each other; set's bottom snaps to define's top.
+    toy = tmp_path / "toy.yaml"
+    toy.write_text(
+        "flip: top_bottom\n"
+        "classes:\n"
+        "  literal:\n"
+        "    top: [{from: left, at: 0.25, layers: N/-}]\n"
+        "    bottom: [{from: left, at: 0.25, layers: N/-}]\n"
+        "  set_get:\n"
+        "    bottom: [{from: left, at: 0.25, layers: N/-}]\n"
+        "  define_call:\n"
+        "    top: [{from: left, at: 0.25, layers: S/-}]\n"
+    )
+    out = tmp_path / "reports"
+    run = subprocess.run(
+        [*MAGNETS, "check", str(toy), "--out", str(out)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    _, rows = read_csv(out / "contacts.csv")
+    num_over_num = [
+        (r["edge_a"], r["edge_b"], r["lengths"], r["collapsed"], r["kind"], r["priority"], r["result"], r["grade"])
+        for r in rows
+        if r["axis"] == "vertical"
+        and (r["upper_or_left"], r["lower_or_right"], r["offset"]) == ("literal.num", "literal.num", "0")
+    ]
+    # One row per label.
+    assert num_over_num == [
+        ("bottom", "top", "1x1", "36", "coexist", "must", "repel", "FAIL"),
+        ("bottom", "top", "1x1", "36", "forbid", "should", "repel", "strong"),
+    ]
+    # Contacts where no pockets line up have no row unless they are connect.
+    assert not any(
+        r["axis"] == "vertical" and (r["upper_or_left"], r["lower_or_right"]) == ("literal.num", "literal.num")
+        and r["offset"] != "0"
+        for r in rows
+    )
+
+    summary = (out / "summary.txt").read_text()
+    table = summary.split("Contacts by kind and result:\n")[1].split("\n\n")[0].splitlines()
+    assert [row.split()[0] for row in table[1:]] == ["connect", "forbid", "coexist", "ungraded"]
+    assert "  [num(…)] over [num(…)] @0: coexist repel (attract 0, repel 1, lengths 1x1)\n" in summary
+    # num's bottom N/- snaps to define's top S/- too.
+    nice_leaks = summary.split("Nice-leaks: 2\n")[1].split("\n\n")[0]
+    assert nice_leaks.splitlines() == [
+        "  [set(x)to] over [define(f)] @0: forbid snap (attract 1, repel 0, lengths 1x1)",
+        "  [num(…)] over [define(f)] @0: forbid snap (attract 1, repel 0, lengths 1x1)",
+    ]
+    assert summary.endswith("\nINVALID\n")
+    assert summary in run.stdout

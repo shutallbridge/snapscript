@@ -1,9 +1,9 @@
 """Every contact between card edges, with its result and grammar labels."""
 
+import math
 from collections.abc import Iterator, Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from fractions import Fraction
-from itertools import chain
 
 from .data import Arrangement, CardClass, Rules, Side
 from .physics import (
@@ -23,6 +23,7 @@ GRADES = {
     "connect": {"snap": "pass", "mixed": "FAIL", "nothing": "FAIL", "repel": "FAIL"},
     "forbid": {"snap": "leak", "mixed": "partial", "nothing": "weak", "repel": "strong"},
     "coexist": {"snap": "pass", "mixed": "FAIL", "nothing": "pass", "repel": "FAIL"},
+    "ungraded": {"snap": "info", "mixed": "info", "nothing": "info", "repel": "info"},
 }
 
 
@@ -39,8 +40,8 @@ class SideEdges:
 class Label:
     """What the grammar demands of a contact, and how well it is met."""
 
-    kind: str  # connect / forbid / coexist
-    priority: str  # must / should / nice / low
+    kind: str  # connect / forbid / coexist / ungraded
+    priority: str  # must / should / nice / low / info
     grade: str
     unavoidable: bool = False
 
@@ -53,8 +54,8 @@ class Contact:
     the right side (its left edge); `offset` is how far b sits lower than a,
     in U. For a vertical contact `a` is the upper side (its bottom edge) and `b`
     the lower side (its top edge); `offset` is b's left end minus a's, in U.
-    `lengths` is the smallest length pair with this geometry and `collapsed`
-    how many length pairs share it.
+    `lengths` is the smallest length pair with this geometry (upper or left
+    length first, then the other) and `collapsed` how many length pairs share it.
     """
 
     axis: str
@@ -85,19 +86,7 @@ def sides(arrangement: Arrangement, classes: Mapping[str, CardClass]) -> dict[st
 
 def contacts(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int) -> list[Contact]:
     """Every contact, with identical geometry collapsed."""
-    collapsed: dict[tuple, Contact] = {}
-    for contact in chain(_horizontal(all_sides, rules, max_length), _vertical(all_sides, rules, max_length)):
-        key = (
-            contact.axis,
-            contact.a,
-            contact.b,
-            contact.offset,
-            tuple((p.a.index, p.b.index) for p in contact.pairs),
-            contact.labels,
-        )
-        seen = collapsed.get(key)
-        collapsed[key] = contact if seen is None else replace(seen, collapsed=seen.collapsed + 1)
-    return list(collapsed.values())
+    return [*_horizontal(all_sides, rules, max_length), *_vertical(all_sides, rules, max_length)]
 
 
 def _horizontal(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int) -> Iterator[Contact]:
@@ -140,36 +129,104 @@ def _horizontal_verdict(rules: Rules, right: str, left: str, offset: Fraction) -
 
 
 def _vertical(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int) -> Iterator[Contact]:
-    # Equal-length cards stacked flush, at offset 0.
-    offset = Fraction(0)
     for upper in all_sides.values():
         for lower in all_sides.values():
-            bottom, top = upper.side.roles["bottom"], lower.side.roles["top"]
-            verdicts = [
-                r.verdict
-                for r in rules.vertical
-                if (r.upper, r.lower, r.offset) == (bottom, top, offset)
-            ]
-            for length in range(max(upper.min_length, lower.min_length), max_length + 1):
-                pairs = vertical_pairs(upper.edges["bottom"], lower.edges["top"], length, length, offset)
-                attract, repel = tally(pairs)
-                result = aggregate(attract, repel)
-                yield Contact(
-                    axis="vertical",
-                    a=upper.side.name,
-                    edge_a="bottom",
-                    b=lower.side.name,
-                    edge_b="top",
-                    offset=offset,
-                    lengths=(length, length),
-                    collapsed=1,
-                    pairs=pairs,
-                    attract=attract,
-                    repel=repel,
-                    result=result,
-                    # Only connect rules exist so far, and connect is always a must.
-                    labels=tuple(_label(v, "must", result) for v in verdicts),
-                )
+            yield from _stacks(upper, lower, rules, max_length)
+
+
+def _stacks(upper: SideEdges, lower: SideEdges, rules: Rules, max_length: int) -> Iterator[Contact]:
+    """Every contact of `upper` over `lower`, collapsed over length pairs.
+
+    At a given length pair, pockets line up at only a few offsets. Those
+    contacts are grouped by which pockets face which. At every other offset
+    no pockets line up, and those length pairs collapse into one contact.
+    """
+    bottom, top = upper.edges["bottom"], lower.edges["top"]
+    # offset -> aligned pocket indices -> [smallest lengths, count, pairs]
+    aligned: dict[Fraction, dict[tuple, list]] = {}
+    # offset -> the length pairs at which some pockets line up
+    aligned_lengths: dict[Fraction, set[tuple[int, int]]] = {}
+    for lengths in _length_pairs(upper.min_length, lower.min_length, max_length):
+        upper_length, lower_length = lengths
+        offsets = {a.position(upper_length) - b.position(lower_length) for a in bottom for b in top}
+        for offset in offsets:
+            if not -lower_length < offset < upper_length:
+                continue
+            pairs = vertical_pairs(bottom, top, upper_length, lower_length, offset)
+            key = tuple((p.a.index, p.b.index) for p in pairs)
+            seen = aligned.setdefault(offset, {}).setdefault(key, [lengths, 0, pairs])
+            seen[1] += 1
+            aligned_lengths.setdefault(offset, set()).add(lengths)
+
+    for step in range(-4 * max_length + 1, 4 * max_length):
+        offset = Fraction(step, 4)
+        # The edges overlap where the upper card reaches past the lower's left
+        # end and the lower reaches past the upper's.
+        upper_from = max(upper.min_length, math.floor(offset) + 1)
+        lower_from = max(lower.min_length, math.floor(-offset) + 1)
+        if upper_from > max_length or lower_from > max_length:
+            continue
+        labels = _vertical_labels(rules, upper.side, lower.side, offset)
+        for lengths, collapsed, pairs in sorted(aligned.get(offset, {}).values(), key=lambda g: g[0]):
+            yield _stack(upper, lower, offset, lengths, collapsed, pairs, labels)
+        taken = aligned_lengths.get(offset, set())
+        unaligned = (max_length - upper_from + 1) * (max_length - lower_from + 1) - len(taken)
+        if unaligned:
+            smallest = next(
+                lengths
+                for lengths in _length_pairs(upper_from, lower_from, max_length)
+                if lengths not in taken
+            )
+            yield _stack(upper, lower, offset, smallest, unaligned, (), labels)
+
+
+def _length_pairs(upper_min: int, lower_min: int, max_length: int) -> Iterator[tuple[int, int]]:
+    """Every (upper length, lower length), smallest first."""
+    for upper_length in range(upper_min, max_length + 1):
+        for lower_length in range(lower_min, max_length + 1):
+            yield upper_length, lower_length
+
+
+def _stack(
+    upper: SideEdges,
+    lower: SideEdges,
+    offset: Fraction,
+    lengths: tuple[int, int],
+    collapsed: int,
+    pairs: tuple[PocketPair, ...],
+    verdicts: list[tuple[str, str]],
+) -> Contact:
+    attract, repel = tally(pairs)
+    result = aggregate(attract, repel)
+    return Contact(
+        axis="vertical",
+        a=upper.side.name,
+        edge_a="bottom",
+        b=lower.side.name,
+        edge_b="top",
+        offset=offset,
+        lengths=lengths,
+        collapsed=collapsed,
+        pairs=pairs,
+        attract=attract,
+        repel=repel,
+        result=result,
+        labels=tuple(_label(kind, priority, result) for kind, priority in verdicts),
+    )
+
+
+def _vertical_labels(rules: Rules, upper: Side, lower: Side, offset: Fraction) -> list[tuple[str, str]]:
+    """(kind, priority) for each label of `upper` over `lower` at `offset`."""
+    vertical = rules.vertical
+    verdict = vertical.verdict(upper.roles["bottom"], lower.roles["top"], offset)
+    kind, _ = verdict
+    if kind in ("connect", "ungraded"):
+        return [verdict]
+    if not vertical.coexist.applies(upper, lower, offset):
+        return [verdict]
+    # Off the meaningful offsets coexist replaces forbid / low; on them it
+    # adds to the forbid.
+    return [("coexist", "must")] + ([verdict] if offset in vertical.offsets else [])
 
 
 def _label(kind: str, priority: str, result: Result) -> Label:

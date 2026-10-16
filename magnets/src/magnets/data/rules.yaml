@@ -27,7 +27,38 @@ horizontal:
   # Any other offset where pockets can align is forbid with this priority.
   off_line: low
 
-# Vertical: the upper card's bottom role over the lower card's top role, at
-# offset = lower's left end - upper's left end, in U.
+# Vertical: the upper card's bottom edge facing the lower card's top edge,
+# at offset = lower's left end - upper's left end, in U.
 vertical:
-  - {upper: line, lower: line, offset: 0, verdict: connect}
+  # Where the next line head can sit: the same column, 1U right after a
+  # block head, or 1U left for a [dedent].
+  offsets: [-1, 0, 1]
+  # At those offsets, these (upper bottom role, lower top role, offset)
+  # connect.
+  connect:
+    - {upper: line, lower: line, offset: 0}
+    - {upper: block, lower: line, offset: 1}
+    - {upper: line, lower: dedent, offset: -1}
+  # Every other pair at those offsets is forbid, with the priority of the
+  # rule here that matches it, or else `forbid`. A rule without `upper`,
+  # `lower` or `offset` matches any; a pair may match at most one rule.
+  priorities:
+    - {lower: top_level, priority: nice}  # top_level cards should have nothing above them
+    - {upper: block, lower: dedent, offset: 0, priority: nice}  # an empty body
+  forbid: should
+  # Any other offset is forbid with this priority, unless it is coexist.
+  off_line: low
+  # Contacts where either facing role is one of these are not graded.
+  ungraded: [free]
+  # Coexist: in a legal program, cards that touch without being neighbours
+  # must not push apart. A contact at a whole-U offset coexists if neither
+  # facing role is in `never`, no connect claims it, and either the upper
+  # card can head a line, the lower can sit inline and offset >= +1; or the
+  # upper can sit inline, the lower can head a line and offset <= -1; or both
+  # can sit inline.
+  coexist:
+    never: [top_level, free]
+    # A card can head a line if its top role is one of these.
+    line_heads: [line, dedent]
+    # A card can sit inline unless its left role is one of these.
+    not_inline: [head]
