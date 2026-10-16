@@ -1,7 +1,7 @@
 """Every contact between card edges, with its result and grammar labels."""
 
 import math
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from fractions import Fraction
 
@@ -34,6 +34,7 @@ class SideEdges:
     side: Side
     min_length: int
     edges: Edges
+    other: str | None = None  # a flip pair's other side, e.g. "set_get.get"
 
 
 @dataclass(frozen=True)
@@ -78,18 +79,31 @@ def sides(arrangement: Arrangement, classes: Mapping[str, CardClass]) -> dict[st
     found = {}
     for name, cls in classes.items():
         front = arrangement.fronts[name]
+        names = [side.name for side in cls.sides]
         for i, side in enumerate(cls.sides):
             edges = front if i == 0 else flip(front, arrangement.flip)
-            found[side.name] = SideEdges(side, cls.min_length, edges)
+            other = names[1 - i] if len(names) == 2 else None
+            found[side.name] = SideEdges(side, cls.min_length, edges, other)
     return found
 
 
-def contacts(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int) -> list[Contact]:
-    """Every contact, with identical geometry collapsed."""
-    return [*_horizontal(all_sides, rules, max_length), *_vertical(all_sides, rules, max_length)]
+def contacts(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int, flip: str) -> list[Contact]:
+    """Every contact, with identical geometry collapsed.
+
+    A back is derived from its front, so under `flip` every contact between
+    two flip pairs behaves exactly like a partner contact. A forbid
+    whose partner is a connect can never be blocked and is flagged
+    unavoidable.
+    """
+    return [
+        *_horizontal(all_sides, rules, max_length, flip),
+        *_vertical(all_sides, rules, max_length, flip),
+    ]
 
 
-def _horizontal(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int) -> Iterator[Contact]:
+def _horizontal(
+    all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int, flip: str
+) -> Iterator[Contact]:
     # Left/right pockets don't depend on length, so every length pair has the
     # same geometry: one contact per offset, collapsed over all length pairs.
     for left in all_sides.values():
@@ -103,6 +117,7 @@ def _horizontal(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: in
                 kind, priority = _horizontal_verdict(
                     rules, left.side.roles["right"], right.side.roles["left"], offset
                 )
+                unavoidable = _beside_tied(all_sides, rules, flip, left, right, offset)
                 yield Contact(
                     axis="horizontal",
                     a=left.side.name,
@@ -116,7 +131,7 @@ def _horizontal(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: in
                     attract=attract,
                     repel=repel,
                     result=result,
-                    labels=(_label(kind, priority, result),),
+                    labels=(_label(kind, priority, result, unavoidable),),
                 )
 
 
@@ -128,21 +143,77 @@ def _horizontal_verdict(rules: Rules, right: str, left: str, offset: Fraction) -
     return "forbid", rules.horizontal.forbid
 
 
-def _vertical(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int) -> Iterator[Contact]:
+def _beside_tied(
+    all_sides: Mapping[str, SideEdges], rules: Rules, flip: str, left: SideEdges, right: SideEdges, offset: Fraction
+) -> bool:
+    """Whether `[left][right]` at `offset` behaves exactly like a connect.
+
+    Under `top_bottom` it behaves like `[left'][right']` at -offset, under
+    `left_right` like `[right'][left']` at -offset, where ' is the other side.
+    """
+    if left.other is None or right.other is None:
+        return False
+    partner_left, partner_right = all_sides[left.other], all_sides[right.other]
+    if flip == "left_right":
+        partner_left, partner_right = partner_right, partner_left
+    kind, _ = _horizontal_verdict(rules, partner_left.side.roles["right"], partner_right.side.roles["left"], -offset)
+    return kind == "connect"
+
+
+# (upper length, lower length), offset -> whether a stack behaves exactly like a connect
+Tied = Callable[[tuple[int, int], Fraction], bool]
+
+
+def _stack_tied(
+    all_sides: Mapping[str, SideEdges], rules: Rules, flip: str, upper: SideEdges, lower: SideEdges
+) -> Tied | None:
+    """Whether `upper` over `lower` at some lengths and offset behaves exactly
+    like a connect; None if it never does.
+
+    Under `top_bottom` it behaves like `lower'` over `upper'` at -offset,
+    under `left_right` like `upper'` over `lower'` at upper length - lower
+    length - offset, where ' is the other side.
+    """
+    if upper.other is None or lower.other is None:
+        return None
+    if flip == "top_bottom":
+        partner_upper, partner_lower = all_sides[lower.other], all_sides[upper.other]
+    else:
+        partner_upper, partner_lower = all_sides[upper.other], all_sides[lower.other]
+    bottom, top = partner_upper.side.roles["bottom"], partner_lower.side.roles["top"]
+    connects = {d for d in rules.vertical.offsets if rules.vertical.verdict(bottom, top, d)[0] == "connect"}
+    if not connects:
+        return None
+    if flip == "top_bottom":
+        return lambda lengths, offset: -offset in connects
+    return lambda lengths, offset: lengths[0] - lengths[1] - offset in connects
+
+
+def _vertical(
+    all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int, flip: str
+) -> Iterator[Contact]:
     for upper in all_sides.values():
         for lower in all_sides.values():
-            yield from _stacks(upper, lower, rules, max_length)
+            tied = _stack_tied(all_sides, rules, flip, upper, lower)
+            yield from _stacks(upper, lower, rules, max_length, tied)
 
 
-def _stacks(upper: SideEdges, lower: SideEdges, rules: Rules, max_length: int) -> Iterator[Contact]:
+def _stacks(
+    upper: SideEdges, lower: SideEdges, rules: Rules, max_length: int, tied: Tied | None
+) -> Iterator[Contact]:
     """Every contact of `upper` over `lower`, collapsed over length pairs.
 
     At a given length pair, pockets line up at only a few offsets. Those
     contacts are grouped by which pockets face which. At every other offset
     no pockets line up, and those length pairs collapse into one contact.
+    Under a `left_right` flip whether a forbid is unavoidable can depend on
+    the lengths, so length pairs only collapse when they agree on it.
     """
     bottom, top = upper.edges["bottom"], lower.edges["top"]
-    # offset -> aligned pocket indices -> [smallest lengths, count, pairs]
+    steps = [Fraction(step, 4) for step in range(-4 * max_length + 1, 4 * max_length)]
+    labels = {offset: _vertical_labels(rules, upper.side, lower.side, offset) for offset in steps}
+    unavoidable = None if tied is None else _forbids_only(tied, labels)
+    # offset -> (aligned pocket indices, unavoidable) -> [smallest lengths, count, pairs]
     aligned: dict[Fraction, dict[tuple, list]] = {}
     # offset -> the length pairs at which some pockets line up
     aligned_lengths: dict[Fraction, set[tuple[int, int]]] = {}
@@ -153,31 +224,61 @@ def _stacks(upper: SideEdges, lower: SideEdges, rules: Rules, max_length: int) -
             if not -lower_length < offset < upper_length:
                 continue
             pairs = vertical_pairs(bottom, top, upper_length, lower_length, offset)
-            key = tuple((p.a.index, p.b.index) for p in pairs)
+            flagged = unavoidable is not None and unavoidable(lengths, offset)
+            key = (tuple((p.a.index, p.b.index) for p in pairs), flagged)
             seen = aligned.setdefault(offset, {}).setdefault(key, [lengths, 0, pairs])
             seen[1] += 1
             aligned_lengths.setdefault(offset, set()).add(lengths)
 
-    for step in range(-4 * max_length + 1, 4 * max_length):
-        offset = Fraction(step, 4)
+    for offset in steps:
         # The edges overlap where the upper card reaches past the lower's left
         # end and the lower reaches past the upper's.
         upper_from = max(upper.min_length, math.floor(offset) + 1)
         lower_from = max(lower.min_length, math.floor(-offset) + 1)
         if upper_from > max_length or lower_from > max_length:
             continue
-        labels = _vertical_labels(rules, upper.side, lower.side, offset)
-        for lengths, collapsed, pairs in sorted(aligned.get(offset, {}).values(), key=lambda g: g[0]):
-            yield _stack(upper, lower, offset, lengths, collapsed, pairs, labels)
+        groups = sorted(aligned.get(offset, {}).items(), key=lambda g: g[1][0])
+        for (_, flagged), (lengths, collapsed, pairs) in groups:
+            yield _stack(upper, lower, offset, lengths, collapsed, pairs, labels[offset], flagged)
         taken = aligned_lengths.get(offset, set())
-        unaligned = (max_length - upper_from + 1) * (max_length - lower_from + 1) - len(taken)
-        if unaligned:
-            smallest = next(
-                lengths
-                for lengths in _length_pairs(upper_from, lower_from, max_length)
-                if lengths not in taken
-            )
-            yield _stack(upper, lower, offset, smallest, unaligned, (), labels)
+        for flagged, lengths, collapsed in _unaligned(upper_from, lower_from, max_length, taken, offset, unavoidable):
+            yield _stack(upper, lower, offset, lengths, collapsed, (), labels[offset], flagged)
+
+
+def _forbids_only(tied: Tied, labels: Mapping[Fraction, list[tuple[str, str]]]) -> Tied:
+    """`tied`, but only at offsets with a forbid label: nothing else can be
+    unavoidable, so length pairs elsewhere needn't be told apart."""
+
+    def unavoidable(lengths: tuple[int, int], offset: Fraction) -> bool:
+        return any(kind == "forbid" for kind, _ in labels[offset]) and tied(lengths, offset)
+
+    return unavoidable
+
+
+def _unaligned(
+    upper_from: int,
+    lower_from: int,
+    max_length: int,
+    taken: set[tuple[int, int]],
+    offset: Fraction,
+    unavoidable: Tied | None,
+) -> list[tuple[bool, tuple[int, int], int]]:
+    """(unavoidable, smallest lengths, count) for the length pairs at `offset`
+    where no pockets line up, split by whether they are unavoidable."""
+    if unavoidable is None:
+        count = (max_length - upper_from + 1) * (max_length - lower_from + 1) - len(taken)
+        if not count:
+            return []
+        smallest = next(
+            lengths for lengths in _length_pairs(upper_from, lower_from, max_length) if lengths not in taken
+        )
+        return [(False, smallest, count)]
+    # unavoidable -> [smallest lengths, count]
+    groups: dict[bool, list] = {}
+    for lengths in _length_pairs(upper_from, lower_from, max_length):
+        if lengths not in taken:
+            groups.setdefault(unavoidable(lengths, offset), [lengths, 0])[1] += 1
+    return sorted(((flagged, lengths, count) for flagged, (lengths, count) in groups.items()), key=lambda g: g[1])
 
 
 def _length_pairs(upper_min: int, lower_min: int, max_length: int) -> Iterator[tuple[int, int]]:
@@ -195,6 +296,7 @@ def _stack(
     collapsed: int,
     pairs: tuple[PocketPair, ...],
     verdicts: list[tuple[str, str]],
+    unavoidable: bool,
 ) -> Contact:
     attract, repel = tally(pairs)
     result = aggregate(attract, repel)
@@ -211,7 +313,7 @@ def _stack(
         attract=attract,
         repel=repel,
         result=result,
-        labels=tuple(_label(kind, priority, result) for kind, priority in verdicts),
+        labels=tuple(_label(kind, priority, result, unavoidable) for kind, priority in verdicts),
     )
 
 
@@ -229,5 +331,6 @@ def _vertical_labels(rules: Rules, upper: Side, lower: Side, offset: Fraction) -
     return [("coexist", "must")] + ([verdict] if offset in vertical.offsets else [])
 
 
-def _label(kind: str, priority: str, result: Result) -> Label:
-    return Label(kind=kind, priority=priority, grade=GRADES[kind][result])
+def _label(kind: str, priority: str, result: Result, unavoidable: bool) -> Label:
+    """A label; only a forbid can be unavoidable."""
+    return Label(kind=kind, priority=priority, grade=GRADES[kind][result], unavoidable=unavoidable and kind == "forbid")

@@ -1,13 +1,14 @@
 """The back side of a flip pair is derived from its front."""
 
-from hypothesis import assume, given, settings
+from fractions import Fraction
+
+import pytest
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from helpers import set_get
+from helpers import left_right_pockets, set_get, top_bottom_pockets
 from magnets import check
 
-LAYER_PAIRS = [f"{p}/{q}" for p in "NSF-" for q in "NSF-" if (p, q) != ("-", "-")]
-ANCHORED = [(f, at) for f in ("left", "right") for at in (0.25, 0.5, 0.75)]
 
 
 def edges(result, side):
@@ -37,18 +38,68 @@ def test_top_bottom_swaps_edges_mirrors_heights_and_swaps_layers():
     }
 
 
-@st.composite
-def top_bottom_pockets(draw):
-    places = draw(st.lists(st.sampled_from(ANCHORED), max_size=2, unique=True))
-    # from: left x and from: right y meet on a 1U card when x + y = 1.
-    assume(not any(a[0] != b[0] and a[1] + b[1] == 1 for a in places for b in places))
-    return [(f, at, draw(st.sampled_from(LAYER_PAIRS))) for f, at in places]
+def test_left_right_swaps_edges_mirrors_anchors_and_swaps_layers():
+    result = check(
+        set_get(
+            "left_right",
+            top=[("left", 0.25, "N/S"), ("right", 0.5, "F/-")],
+            bottom=[("right", 0.25, "S/S")],
+            left=[(0.25, "N/F")],
+            right=[(0.5, "-/N"), (0.75, "S/N")],
+        )
+    )
+    assert edges(result, "get") == {
+        # Top and bottom stay; anchors mirror, keeping `at`.
+        "top": [
+            {"from": "right", "at": 0.25, "layers": "S/N"},
+            {"from": "left", "at": 0.5, "layers": "-/F"},
+        ],
+        "bottom": [{"from": "left", "at": 0.25, "layers": "S/S"}],
+        # Left and right swap; heights stay.
+        "left": [{"at": 0.5, "layers": "N/-"}, {"at": 0.75, "layers": "N/S"}],
+        "right": [{"at": 0.25, "layers": "F/N"}],
+    }
 
 
-@st.composite
-def left_right_pockets(draw):
-    heights = draw(st.lists(st.sampled_from([0.25, 0.5, 0.75]), max_size=3, unique=True))
-    return [(h, draw(st.sampled_from(LAYER_PAIRS))) for h in heights]
+SERIES = {Fraction(1, 4): "A", Fraction(3, 4): "A", Fraction(1, 2): "B"}
+
+
+@pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
+def test_positions_stay_in_their_series(flip):
+    # Series A = 1/4 and 3/4 of a U, series B = 1/2: at a whole-U offset a
+    # pocket only meets one in the same series, front or back.
+    result = check(
+        set_get(
+            flip,
+            top=[("left", 0.25, "N/S"), ("right", 0.5, "F/-")],
+            bottom=[("right", 0.75, "S/S")],
+            left=[(0.25, "N/F"), (0.5, "S/-")],
+            right=[(0.75, "S/N")],
+        ),
+        max_length=3,
+    )
+
+    def series(side, length):
+        return sorted(
+            (p.index, edge, SERIES[p.position(length) % 1])
+            for edge, pockets in result.sides[f"set_get.{side}"].edges.items()
+            for p in pockets
+        )
+
+    moved = {"top": "bottom", "bottom": "top"} if flip == "top_bottom" else {"left": "right", "right": "left"}
+    for length in (1, 2, 3):
+        flipped = {(i, edge): s for i, edge, s in series("get", length)}
+        for i, edge, s in series("set", length):
+            assert flipped[i, moved.get(edge, edge)] == s
+
+
+@pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
+def test_uniform_pockets_are_unchanged_by_a_flip(flip):
+    result = check(set_get(flip, top=[("left", 0.5, "N/N")], left=[(0.5, "F/F")], right=[(0.5, "S/S")]))
+    layers = {edge: [p.layers for p in pockets] for edge, pockets in result.sides["set_get.get"].edges.items()}
+    assert sorted(ly for found in layers.values() for ly in found) == ["F/F", "N/N", "S/S"]
+    shapes = [p.shape for pockets in result.sides["set_get.get"].edges.values() for p in pockets]
+    assert shapes == ["uniform"] * 3
 
 
 @st.composite

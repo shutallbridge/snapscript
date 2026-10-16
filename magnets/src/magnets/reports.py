@@ -8,7 +8,9 @@ from fractions import Fraction
 from .api import CheckResult
 from .contacts import Contact, Label
 
-KINDS = ("connect", "forbid", "coexist", "ungraded")
+# Rows of the kind x result table; unavoidable is the subset of forbid that
+# no arrangement can block.
+ROWS = ("connect", "forbid", "unavoidable", "coexist", "ungraded")
 RESULTS = ("snap", "mixed", "nothing", "repel")
 CSV_COLUMNS = (
     "axis",
@@ -73,47 +75,67 @@ def summary_text(result: CheckResult) -> str:
         *_count_table(result),
         "",
         *_listing("Must failures", result, result.must_failures),
-        *_listing("Should-leaks", result, _leaks(result, "should")),
-        *_listing("Nice-leaks", result, _leaks(result, "nice")),
+        *_listing("Avoidable should-leaks", result, _avoidable_leaks(result, "should")),
+        *_listing("Avoidable nice-leaks", result, _avoidable_leaks(result, "nice")),
+        # Unavoidable leaks mix priorities, so each names its own.
+        *_listing("Unavoidable leaks", result, _unavoidable_leaks(result), with_priority=True),
         "VALID" if result.valid else "INVALID",
     ]
     return "\n".join(lines) + "\n"
 
 
-def _leaks(result: CheckResult, priority: str) -> list[tuple[Contact, Label]]:
+def _leaks(result: CheckResult) -> list[tuple[Contact, Label]]:
     return [
         (c, label)
         for c in result.contacts
         for label in c.labels
-        if label.kind == "forbid" and label.priority == priority and label.grade == "leak"
+        if label.kind == "forbid" and label.grade == "leak"
     ]
 
 
-def _listing(title: str, result: CheckResult, found: list[tuple[Contact, Label]]) -> list[str]:
-    return [f"{title}: {len(found)}", *(f"  {_describe(result, c, label)}" for c, label in found), ""]
+def _avoidable_leaks(result: CheckResult, priority: str) -> list[tuple[Contact, Label]]:
+    return [(c, label) for c, label in _leaks(result) if label.priority == priority and not label.unavoidable]
+
+
+def _unavoidable_leaks(result: CheckResult) -> list[tuple[Contact, Label]]:
+    return [(c, label) for c, label in _leaks(result) if label.unavoidable]
+
+
+def _listing(
+    title: str, result: CheckResult, found: list[tuple[Contact, Label]], *, with_priority: bool = False
+) -> list[str]:
+    return [f"{title}: {len(found)}", *(f"  {_describe(result, c, label, with_priority)}" for c, label in found), ""]
 
 
 def _count_table(result: CheckResult) -> list[str]:
     # A contact with two labels counts once under each.
-    counts = Counter((label.kind, c.result) for c in result.contacts for label in c.labels)
+    counts: Counter[tuple[str, str]] = Counter()
+    for c in result.contacts:
+        for label in c.labels:
+            counts[label.kind, c.result] += 1
+            if label.unavoidable:
+                counts["unavoidable", c.result] += 1
     width = max(len(r) for r in RESULTS)
-    kind_width = max(len(k) for k in KINDS) + 1
+    # Room for the unavoidable row's indent under forbid, plus a space.
+    kind_width = max(len(k) for k in ROWS) + 3
     rows = [f"{'':<{kind_width}}" + "".join(f"{r:>{width + 2}}" for r in RESULTS)]
-    for kind in KINDS:
+    for kind in ROWS:
         if any(counts[kind, r] for r in RESULTS):
-            rows.append(f"{kind:<{kind_width}}" + "".join(f"{counts[kind, r]:>{width + 2}}" for r in RESULTS))
+            name = f"  {kind}" if kind == "unavoidable" else kind
+            rows.append(f"{name:<{kind_width}}" + "".join(f"{counts[kind, r]:>{width + 2}}" for r in RESULTS))
     return [f"  {row}" for row in rows]
 
 
-def _describe(result: CheckResult, contact: Contact, label: Label) -> str:
+def _describe(result: CheckResult, contact: Contact, label: Label, with_priority: bool = False) -> str:
     a = result.sides[contact.a].side.notation
     b = result.sides[contact.b].side.notation
+    kind = f"{label.kind} {label.priority}" if with_priority else label.kind
     counts = f"attract {contact.attract}, repel {contact.repel}"
     if contact.axis == "horizontal":
-        return f"{a} {b} @{_offset(contact.offset)}: {label.kind} {contact.result} ({counts})"
+        return f"{a} {b} @{_offset(contact.offset)}: {kind} {contact.result} ({counts})"
     # Top/bottom pockets can depend on length, so name the smallest length pair.
     lengths = "x".join(map(str, contact.lengths))
-    return f"{a} over {b} @{_offset(contact.offset)}: {label.kind} {contact.result} ({counts}, lengths {lengths})"
+    return f"{a} over {b} @{_offset(contact.offset)}: {kind} {contact.result} ({counts}, lengths {lengths})"
 
 
 def _offset(offset: Fraction) -> str:

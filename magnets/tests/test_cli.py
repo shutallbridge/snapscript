@@ -95,11 +95,15 @@ def test_check_reports_horizontal_contacts(tmp_path):
     }
     row = next(r for r in rows if (r["upper_or_left"], r["lower_or_right"]) == ("set_get.set", "set_get.set"))
     assert (row["edge_a"], row["edge_b"], row["lengths"], row["collapsed"]) == ("right", "left", "1x1", "36")
+    assert row["unavoidable"] == "True"
 
     assert "[get(x)] [get(x)] @0" not in run.stdout
     assert "  [set(x)to] [get(x)] @0: connect nothing" in run.stdout
-    should_leaks = run.stdout.split("Should-leaks: 1\n")[1]
-    assert should_leaks.startswith("  [set(x)to] [set(x)to] @0: forbid snap (attract 1, repel 0)\n")
+    # [set(x)to][set(x)to] snaps exactly like [get(x)][get(x)], which must
+    # snap: no arrangement can block it.
+    assert "Avoidable should-leaks: 0\n" in run.stdout
+    unavoidable = run.stdout.split("Unavoidable leaks: 1\n")[1]
+    assert unavoidable.startswith("  [set(x)to] [set(x)to] @0: forbid should snap (attract 1, repel 0)\n")
 
 
 def test_check_rejects_a_bad_arrangement(tmp_path):
@@ -171,13 +175,19 @@ def test_check_reports_vertical_contacts(tmp_path):
 
     summary = (out / "summary.txt").read_text()
     table = summary.split("Contacts by kind and result:\n")[1].split("\n\n")[0].splitlines()
-    assert [row.split()[0] for row in table[1:]] == ["connect", "forbid", "coexist", "ungraded"]
+    assert [row.split()[0] for row in table[1:]] == ["connect", "forbid", "unavoidable", "coexist", "ungraded"]
+    # Unavoidable forbids are a subset of the forbids.
+    forbid, unavoidable = ([int(n) for n in row.split()[1:]] for row in table[2:4])
+    assert all(u <= f for u, f in zip(unavoidable, forbid)) and sum(unavoidable) > 0
     assert "  [num(…)] over [num(…)] @0: coexist repel (attract 0, repel 1, lengths 1x1)\n" in summary
     # num's bottom N/- snaps to define's top S/- too.
-    nice_leaks = summary.split("Nice-leaks: 2\n")[1].split("\n\n")[0]
+    nice_leaks = summary.split("Avoidable nice-leaks: 1\n")[1].split("\n\n")[0]
     assert nice_leaks.splitlines() == [
-        "  [set(x)to] over [define(f)] @0: forbid snap (attract 1, repel 0, lengths 1x1)",
         "  [num(…)] over [define(f)] @0: forbid snap (attract 1, repel 0, lengths 1x1)",
     ]
+    # [set(x)to] over [define(f)] snaps exactly like [call(f)] over [get(x)],
+    # which must snap.
+    unavoidable_leaks = summary.split("Unavoidable leaks: ")[1].split("\n\n")[0].splitlines()
+    assert "  [set(x)to] over [define(f)] @0: forbid nice snap (attract 1, repel 0, lengths 1x1)" in unavoidable_leaks
     assert summary.endswith("\nINVALID\n")
     assert summary in run.stdout

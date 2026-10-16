@@ -1,5 +1,8 @@
 """Builders for hand-made arrangements and lookups into check results."""
 
+from hypothesis import assume
+from hypothesis import strategies as st
+
 from magnets import CheckResult, Contact
 
 SET_GET = {"set_get.set", "set_get.get"}
@@ -55,3 +58,23 @@ def beside(result: CheckResult, left: str, right: str, offset: float = 0) -> Con
     ]
     assert len(found) == 1, found
     return found[0]
+
+
+LAYER_PAIRS = [f"{p}/{q}" for p in "NSF-" for q in "NSF-" if (p, q) != ("-", "-")]
+ANCHORED = [(f, at) for f in ("left", "right") for at in (0.25, 0.5, 0.75)]
+
+
+@st.composite
+def top_bottom_pockets(draw):
+    """Up to two pockets for a 1U card's top or bottom edge, as `(from, at, layers)`."""
+    places = draw(st.lists(st.sampled_from(ANCHORED), max_size=2, unique=True))
+    # from: left x and from: right y meet on a 1U card when x + y = 1.
+    assume(not any(a[0] != b[0] and a[1] + b[1] == 1 for a in places for b in places))
+    return [(f, at, draw(st.sampled_from(LAYER_PAIRS))) for f, at in places]
+
+
+@st.composite
+def left_right_pockets(draw):
+    """Up to three pockets for a left or right edge, as `(at, layers)`."""
+    heights = draw(st.lists(st.sampled_from([0.25, 0.5, 0.75]), max_size=3, unique=True))
+    return [(h, draw(st.sampled_from(LAYER_PAIRS))) for h in heights]

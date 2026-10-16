@@ -48,7 +48,7 @@ def check(
         raise ValueError(f"max_length {max_length} is shorter than the longest minimum card length {longest_min}U")
     loaded = load_arrangement(arrangement, max_length=max_length, classes=classes)
     all_sides = _contacts.sides(loaded, classes)
-    found = _contacts.contacts(all_sides, grammar, max_length)
+    found = _contacts.contacts(all_sides, grammar, max_length, loaded.flip)
     failures = [
         (c, label)
         for c in found
