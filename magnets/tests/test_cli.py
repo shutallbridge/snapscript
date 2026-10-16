@@ -4,7 +4,34 @@ import csv
 import subprocess
 import sys
 
+from helpers import SET_GET
+
 MAGNETS = [sys.executable, "-m", "magnets.cli"]
+
+
+COLUMNS = [
+    "axis",
+    "upper_or_left",
+    "edge_a",
+    "lower_or_right",
+    "edge_b",
+    "offset",
+    "lengths",
+    "collapsed",
+    "kind",
+    "priority",
+    "attract",
+    "repel",
+    "result",
+    "grade",
+    "unavoidable",
+]
+
+
+def read_csv(path):
+    with path.open() as f:
+        reader = csv.DictReader(f)
+        return reader.fieldnames, list(reader)
 
 
 def test_check_writes_summary_and_csv(tmp_path):
@@ -16,14 +43,63 @@ def test_check_writes_summary_and_csv(tmp_path):
         check=True,
     )
     summary = (out / "summary.txt").read_text()
-    assert "VALID" in summary and "INVALID" not in summary
-    assert "Must failures: 0" in summary
     assert summary in run.stdout
+    # Only set_get's top and bottom edges have pockets, so every other connect fails.
+    assert "\nINVALID\n" in summary
 
-    with (out / "contacts.csv").open() as f:
-        rows = list(csv.DictReader(f))
-    assert len(rows) == 4
-    assert {(r["kind"], r["result"], r["grade"]) for r in rows} == {("connect", "snap", "pass")}
+    columns, rows = read_csv(out / "contacts.csv")
+    assert columns == COLUMNS
+    stacks = [
+        r
+        for r in rows
+        if r["axis"] == "vertical" and {r["upper_or_left"], r["lower_or_right"]} <= SET_GET
+    ]
+    assert len(stacks) == 4
+    assert {(r["kind"], r["result"], r["grade"]) for r in stacks} == {("connect", "snap", "pass")}
+
+
+def test_check_reports_horizontal_contacts(tmp_path):
+    # set's right and left pockets; get's are derived by the top_bottom flip.
+    toy = tmp_path / "toy.yaml"
+    toy.write_text(
+        "flip: top_bottom\n"
+        "classes:\n"
+        "  set_get:\n"
+        "    left: [{at: 0.5, layers: S/-}]\n"
+        "    right: [{at: 0.5, layers: N/-}]\n"
+    )
+    out = tmp_path / "reports"
+    run = subprocess.run(
+        [*MAGNETS, "check", str(toy), "--out", str(out)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    _, rows = read_csv(out / "contacts.csv")
+    on_line = {
+        (r["upper_or_left"], r["lower_or_right"]): (r["kind"], r["priority"], r["result"], r["grade"])
+        for r in rows
+        if r["axis"] == "horizontal"
+        and r["offset"] == "0"
+        and {r["upper_or_left"], r["lower_or_right"]} <= SET_GET
+    }
+    assert on_line == {
+        # [set][set]: open -> head. N/- meets S/- and snaps.
+        ("set_get.set", "set_get.set"): ("forbid", "should", "snap", "leak"),
+        # [get][get]: value -> value. -/N meets -/S.
+        ("set_get.get", "set_get.get"): ("connect", "must", "snap", "pass"),
+        # [set][get]: open -> value. N/- meets -/S: nothing faces.
+        ("set_get.set", "set_get.get"): ("connect", "must", "nothing", "FAIL"),
+        # [get][set]: value -> head. -/N meets S/-.
+        ("set_get.get", "set_get.set"): ("forbid", "should", "nothing", "weak"),
+    }
+    row = next(r for r in rows if (r["upper_or_left"], r["lower_or_right"]) == ("set_get.set", "set_get.set"))
+    assert (row["edge_a"], row["edge_b"], row["lengths"], row["collapsed"]) == ("right", "left", "1x1", "36")
+
+    assert "[get(x)] [get(x)] @0" not in run.stdout
+    assert "  [set(x)to] [get(x)] @0: connect nothing" in run.stdout
+    should_leaks = run.stdout.split("Should-leaks: 1\n")[1]
+    assert should_leaks.startswith("  [set(x)to] [set(x)to] @0: forbid snap (attract 1, repel 0)\n")
 
 
 def test_check_rejects_a_bad_arrangement(tmp_path):

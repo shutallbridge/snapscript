@@ -13,6 +13,8 @@ FLIPS = ("top_bottom", "left_right")
 TOP_BOTTOM_EDGES = ("top", "bottom")
 LEFT_RIGHT_EDGES = ("left", "right")
 EDGES = TOP_BOTTOM_EDGES + LEFT_RIGHT_EDGES
+# Left/right pocket heights, in U from the top edge.
+HEIGHTS = (Fraction(1, 4), Fraction(1, 2), Fraction(3, 4))
 
 Interaction = Literal["attract", "repel", "nothing"]
 Result = Literal["snap", "repel", "mixed", "nothing"]
@@ -148,6 +150,23 @@ def vertical_pairs(
         for b in lower
         if a.position(upper_length) == offset + b.position(lower_length)
     )
+
+
+def horizontal_pairs(
+    right: tuple[Pocket, ...],
+    left: tuple[Pocket, ...],
+    offset: Fraction,
+) -> tuple[PocketPair, ...]:
+    """Pockets on a left card's right edge that line up with a right card's left edge.
+
+    `offset` is how far the right card sits lower than the left card, in U.
+    """
+    return tuple(PocketPair(a, b) for a in right for b in left if a.at == offset + b.at)
+
+
+def horizontal_offsets() -> tuple[Fraction, ...]:
+    """Every offset at which some left/right pocket heights line up."""
+    return tuple(sorted({a - b for a in HEIGHTS for b in HEIGHTS}))
 
 
 def tally(pairs: tuple[PocketPair, ...]) -> tuple[int, int]:

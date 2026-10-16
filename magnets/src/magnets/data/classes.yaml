@@ -1,19 +1,150 @@
-# Card classes: one physical card each. The first side listed is the front;
-# a flip pair's second side is its back, derived from the front by the flip.
-# Roles are what each edge needs or accepts (see issue #10).
+# Card classes: one physical card design each (see issue #10).
+#
+# A class lists its sides: one side, or two for a flip pair (`flip_pair: true`).
+# The first side is the front; a flip pair's second side is its back, derived
+# from the front by the flip. Each side lists its member cards in notation,
+# each with the roles of its four edges. Every member of a class side must
+# have the same roles. The roles are listed in rules.yaml.
 
 set_get:
   min_length: 1
+  flip_pair: true
   sides:
     set:
-      notation: "[set(x)to]"
-      left: head
-      right: open
-      top: line
-      bottom: line
+      "[set(x)to]": {left: head, right: open, top: line, bottom: line}
     get:
-      notation: "[get(x)]"
-      left: value
-      right: value
-      top: line
-      bottom: line
+      "[get(x)]": {left: value, right: value, top: line, bottom: line}
+
+define_call:
+  min_length: 1
+  flip_pair: true
+  sides:
+    define:
+      "[define(f)]": {left: head, right: params, top: top_level, bottom: line}
+    call:
+      "[call(f)]": {left: call, right: call, top: line, bottom: line}
+
+prop:
+  min_length: 1
+  flip_pair: true
+  sides:
+    set_prop:
+      "[setProp(p)to]": {left: cont, right: open, top: none, bottom: none}
+    get_prop:
+      "[getProp(p)]": {left: cont, right: value, top: none, bottom: none}
+
+param:
+  min_length: 1
+  flip_pair: true
+  sides:
+    required:
+      "[required(p)]": {left: required, right: params, top: none, bottom: none}
+    optional:
+      "[optional(p)]": {left: optional, right: default, top: none, bottom: none}
+
+literal:
+  min_length: 1
+  flip_pair: true
+  sides:
+    num:
+      "[num(…)]": {left: value, right: value, top: none, bottom: none}
+    str:
+      "[str(…)]": {left: value, right: value, top: none, bottom: none}
+
+bool:
+  min_length: 1
+  flip_pair: true
+  sides:
+    "true":
+      "[bool:true]": {left: value, right: value, top: none, bottom: none}
+    "false":
+      "[bool:false]": {left: value, right: value, top: none, bottom: none}
+
+call_printed:
+  min_length: 1
+  sides:
+    call:
+      "[call:…]": {left: call, right: call, top: line, bottom: line}
+
+receiver_printed:
+  min_length: 1
+  sides:
+    receiver:
+      "[get:…]": {left: value, right: value, top: line, bottom: line}
+      "[root]": {left: value, right: value, top: line, bottom: line}
+
+value_printed:
+  min_length: 1
+  sides:
+    value:
+      "[color:…]": {left: value, right: value, top: none, bottom: none}
+      "[none]": {left: value, right: value, top: none, bottom: none}
+
+block_head:
+  min_length: 2
+  sides:
+    head:
+      "[if]": {left: head, right: open, top: line, bottom: block}
+      "[repeat]": {left: head, right: open, top: line, bottom: block}
+      "[for(x)in]": {left: head, right: open, top: line, bottom: block}
+
+dedent:
+  min_length: 2
+  sides:
+    dedent:
+      "[dedent]": {left: head, right: end, top: dedent, bottom: line}
+
+"on":
+  min_length: 1
+  sides:
+    "on":
+      "[on:…]": {left: head, right: end, top: top_level, bottom: line}
+
+operator:
+  min_length: 1
+  sides:
+    operator:
+      "[+]": {left: cont, right: open, top: none, bottom: none}
+      "[-]": {left: cont, right: open, top: none, bottom: none}
+      "[*]": {left: cont, right: open, top: none, bottom: none}
+      "[/]": {left: cont, right: open, top: none, bottom: none}
+      "[%]": {left: cont, right: open, top: none, bottom: none}
+      "[>]": {left: cont, right: open, top: none, bottom: none}
+      "[<]": {left: cont, right: open, top: none, bottom: none}
+      "[>=]": {left: cont, right: open, top: none, bottom: none}
+      "[<=]": {left: cont, right: open, top: none, bottom: none}
+      "[==]": {left: cont, right: open, top: none, bottom: none}
+      "[!=]": {left: cont, right: open, top: none, bottom: none}
+      "[and]": {left: cont, right: open, top: none, bottom: none}
+      "[or]": {left: cont, right: open, top: none, bottom: none}
+
+open_paren:
+  min_length: 1
+  sides:
+    open:
+      "[(]": {left: value, right: open, top: none, bottom: none}
+
+close_paren:
+  min_length: 1
+  sides:
+    close:
+      "[)]": {left: cont, right: value, top: none, bottom: none}
+
+import:
+  min_length: 1
+  sides:
+    import:
+      "[import(…)as(…)]": {left: head, right: end, top: free, bottom: free}
+      "[import(…)]": {left: head, right: end, top: free, bottom: free}
+
+extern:
+  min_length: 1
+  sides:
+    extern:
+      "[extern(…)]": {left: head, right: params, top: free, bottom: free}
+
+global:
+  min_length: 1
+  sides:
+    global:
+      "[global(…)]": {left: head, right: open, top: free, bottom: free}

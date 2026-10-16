@@ -1,5 +1,31 @@
 # Grammar rules: which contacts must snap (connect), may not snap (forbid),
-# or must not push apart (coexist).
+# or must not push apart (coexist). See issue #10.
+
+# The roles an edge can have: what a card needs on its left and top, and
+# what it accepts on its right and below.
+roles:
+  left: [value, call, cont, required, optional, head]
+  right: [open, call, value, params, default, end]
+  top: [line, dedent, top_level, none, free]
+  bottom: [line, block, none, free]
+
+# Forbid priorities and their weights in the solver's objective.
+priorities: {should: 10, nice: 1, low: 0}
+
+# Horizontal: the left card's right edge facing the right card's left edge.
+horizontal:
+  # At offset 0, each right role connects to these left roles.
+  connect:
+    open: [value, call]
+    call: [value, call, cont, optional]
+    value: [value, call, cont, optional]
+    params: [required, optional]
+    default: [value, call, optional]
+    end: []
+  # Every other pair at offset 0 is forbid with this priority.
+  forbid: should
+  # Any other offset where pockets can align is forbid with this priority.
+  off_line: low
 
 # Vertical: the upper card's bottom role over the lower card's top role, at
 # offset = lower's left end - upper's left end, in U.

@@ -11,14 +11,17 @@ import math
 
 import yaml
 
-from .physics import EDGES, FLIPS, LAYERS, LEFT_RIGHT_EDGES, Edges, Pocket
+from .physics import EDGES, FLIPS, HEIGHTS, LAYERS, LEFT_RIGHT_EDGES, Edges, Pocket
 
 MAX_POCKETS = {"top": 2, "bottom": 2, "left": 3, "right": 3}
-HEIGHTS = (Fraction(1, 4), Fraction(1, 2), Fraction(3, 4))
 
 
 class ArrangementError(ValueError):
     """A magnet arrangement that no physical card could have."""
+
+
+class DataError(ValueError):
+    """Card class or grammar rule data that is malformed or contradicts itself."""
 
 
 @dataclass(frozen=True)
@@ -26,8 +29,13 @@ class Side:
     """One printed face of a card class, with its edge roles."""
 
     name: str  # "class.side", e.g. "set_get.set"
-    notation: str
+    members: tuple[str, ...]  # every card on this side, in notation
     roles: Mapping[str, str]  # edge -> role
+
+    @property
+    def notation(self) -> str:
+        """The first member, which names the side in reports."""
+        return self.members[0]
 
 
 @dataclass(frozen=True)
@@ -42,6 +50,13 @@ class CardClass:
 
 
 @dataclass(frozen=True)
+class HorizontalRules:
+    connect: Mapping[str, frozenset[str]]  # right role -> left roles it connects to at offset 0
+    forbid: str  # priority of every other pair at offset 0
+    off_line: str  # priority at any other offset
+
+
+@dataclass(frozen=True)
 class VerticalRule:
     upper: str
     lower: str
@@ -51,6 +66,9 @@ class VerticalRule:
 
 @dataclass(frozen=True)
 class Rules:
+    roles: Mapping[str, tuple[str, ...]]  # edge -> its roles
+    priorities: Mapping[str, int]  # forbid priority -> weight
+    horizontal: HorizontalRules
     vertical: tuple[VerticalRule, ...]
 
 
@@ -79,38 +97,193 @@ def _read_yaml(source) -> Any:
         return yaml.safe_load(f)
 
 
-@cache
-def card_classes() -> Mapping[str, CardClass]:
-    raw = _read_yaml(_data() / "classes.yaml")
-    return {
-        name: CardClass(
-            name=name,
-            min_length=spec["min_length"],
-            sides=tuple(
-                Side(
-                    name=f"{name}.{side}",
-                    notation=s["notation"],
-                    roles={edge: s[edge] for edge in EDGES},
-                )
-                for side, s in spec["sides"].items()
-            ),
-        )
-        for name, spec in raw.items()
-    }
+def load_rules(source: str | Path | Mapping | None = None) -> Rules:
+    """The grammar rules: the bundled ones, or from a YAML file or mapping."""
+    if source is None:
+        return _bundled_rules()
+    return _parse_rules(_read_data(source, "rules"))
+
+
+def load_classes(source: str | Path | Mapping | None = None, *, grammar: Rules) -> Mapping[str, CardClass]:
+    """The card classes, their roles checked against `grammar`: the bundled
+    classes, or from a YAML file or mapping."""
+    if source is not None:
+        return _parse_classes(_read_data(source, "classes"), grammar)
+    if grammar is _bundled_rules():
+        return _bundled_classes()
+    return _parse_classes(_bundled("classes"), grammar)
 
 
 @cache
-def rules() -> Rules:
-    raw = _read_yaml(_data() / "rules.yaml")
+def _bundled_rules() -> Rules:
+    return _parse_rules(_bundled("rules"))
+
+
+@cache
+def _bundled_classes() -> Mapping[str, CardClass]:
+    return _parse_classes(_bundled("classes"), _bundled_rules())
+
+
+def _bundled(name: str) -> Any:
+    return _read_yaml(_data() / f"{name}.yaml")
+
+
+def _read_data(source: str | Path | Mapping, what: str) -> Any:
+    if isinstance(source, Mapping):
+        return source
+    path = Path(source)
+    if not path.is_file():
+        raise DataError(f"{what} file not found: {path}")
+    try:
+        return _read_yaml(path)
+    except yaml.YAMLError as err:
+        raise DataError(f"{path} is not valid YAML: {err}") from err
+
+
+def _parse_rules(raw: Any) -> Rules:
+    if not isinstance(raw, Mapping):
+        raise DataError("rules must be a mapping with `roles`, `priorities`, `horizontal` and `vertical`")
+    _no_extra_keys(raw, {"roles", "priorities", "horizontal", "vertical"}, "rules", DataError)
+    roles = _parse_roles(raw.get("roles"))
+    priorities = raw.get("priorities")
+    if not isinstance(priorities, Mapping) or not all(
+        isinstance(w, int) and not isinstance(w, bool) and w >= 0 for w in priorities.values()
+    ):
+        raise DataError("rules: `priorities` must map each forbid priority to a whole-number weight")
     return Rules(
-        vertical=tuple(
-            VerticalRule(r["upper"], r["lower"], Fraction(r["offset"]), r["verdict"])
-            for r in raw["vertical"]
-        )
+        roles=roles,
+        priorities=dict(priorities),
+        horizontal=_parse_horizontal(raw.get("horizontal"), roles, priorities),
+        vertical=_parse_vertical(raw.get("vertical") or [], roles),
     )
 
 
-def load_arrangement(source: str | Path | Mapping | Arrangement, *, max_length: int) -> Arrangement:
+def _parse_roles(raw: Any) -> dict[str, tuple[str, ...]]:
+    if not isinstance(raw, Mapping):
+        raise DataError("rules: `roles` must map each edge to its roles")
+    _no_extra_keys(raw, set(EDGES), "rules: roles", DataError)
+    roles = {}
+    for edge in EDGES:
+        listed = raw.get(edge)
+        if not isinstance(listed, list) or not listed or len(set(listed)) != len(listed):
+            raise DataError(f"rules: roles.{edge} must be a list of distinct roles")
+        roles[edge] = tuple(str(r) for r in listed)
+    return roles
+
+
+def _parse_horizontal(raw: Any, roles: Mapping[str, tuple[str, ...]], priorities: Mapping) -> HorizontalRules:
+    where = "rules: horizontal"
+    if not isinstance(raw, Mapping):
+        raise DataError(f"{where} must be a mapping with `connect`, `forbid` and `off_line`")
+    _no_extra_keys(raw, {"connect", "forbid", "off_line"}, where, DataError)
+    connect = raw.get("connect")
+    if not isinstance(connect, Mapping):
+        raise DataError(f"{where}.connect must map each right role to the left roles it connects to")
+    _no_extra_keys(connect, set(roles["right"]), f"{where}.connect", DataError)
+    parsed = {}
+    for right in roles["right"]:
+        if right not in connect:
+            raise DataError(f"{where}.connect: right role {right!r} is missing")
+        lefts = connect[right] or []
+        if not isinstance(lefts, list):
+            raise DataError(f"{where}.connect.{right}: expected a list of left roles, not {lefts!r}")
+        unknown = [left for left in lefts if left not in roles["left"]]
+        if unknown:
+            raise DataError(f"{where}.connect.{right}: unknown left role(s) {unknown}")
+        parsed[right] = frozenset(lefts)
+    for key in ("forbid", "off_line"):
+        if raw.get(key) not in priorities:
+            raise DataError(f"{where}.{key}: priority {raw.get(key)!r} is not one of {', '.join(priorities)}")
+    return HorizontalRules(connect=parsed, forbid=raw["forbid"], off_line=raw["off_line"])
+
+
+def _parse_vertical(raw: Any, roles: Mapping[str, tuple[str, ...]]) -> tuple[VerticalRule, ...]:
+    if not isinstance(raw, list):
+        raise DataError("rules: `vertical` must be a list of rules")
+    parsed = []
+    for r in raw:
+        if not isinstance(r, Mapping):
+            raise DataError(f"rules: vertical rule {r!r} must be a mapping")
+        if r.get("upper") not in roles["bottom"] or r.get("lower") not in roles["top"]:
+            raise DataError(f"rules: vertical rule {dict(r)} names an unknown role")
+        parsed.append(VerticalRule(r["upper"], r["lower"], Fraction(r["offset"]), r["verdict"]))
+    return tuple(parsed)
+
+
+def _parse_classes(raw: Any, grammar: Rules) -> dict[str, CardClass]:
+    if not isinstance(raw, Mapping) or not raw:
+        raise DataError("card classes must be a mapping of class names to classes")
+    classes = {str(name): _parse_class(str(name), spec, grammar) for name, spec in raw.items()}
+    owners: dict[str, str] = {}
+    for cls in classes.values():
+        for side in cls.sides:
+            for member in side.members:
+                if member in owners:
+                    raise DataError(f"{member} is a member of both {owners[member]} and {side.name}")
+                owners[member] = side.name
+    return classes
+
+
+def _parse_class(name: str, spec: Any, grammar: Rules) -> CardClass:
+    if not isinstance(spec, Mapping):
+        raise DataError(f"{name}: expected a mapping with `min_length` and `sides`")
+    _no_extra_keys(spec, {"min_length", "flip_pair", "sides"}, name, DataError)
+    min_length = spec.get("min_length")
+    if isinstance(min_length, bool) or not isinstance(min_length, int) or min_length < 1:
+        raise DataError(f"{name}: `min_length` must be a whole number of U, at least 1")
+    flip_pair = spec.get("flip_pair", False)
+    if not isinstance(flip_pair, bool):
+        raise DataError(f"{name}: `flip_pair` must be true or false")
+    sides = spec.get("sides")
+    if not isinstance(sides, Mapping):
+        raise DataError(f"{name}: `sides` must map side names to their members")
+    if flip_pair and len(sides) != 2:
+        raise DataError(f"{name}: a flip pair defines two sides (front and back), not {len(sides)}")
+    if not flip_pair and len(sides) != 1:
+        raise DataError(f"{name}: a class that is not a flip pair defines one side, not {len(sides)}")
+    return CardClass(
+        name=name,
+        min_length=min_length,
+        sides=tuple(_parse_side(f"{name}.{side}", members, grammar) for side, members in sides.items()),
+    )
+
+
+def _parse_side(name: str, raw: Any, grammar: Rules) -> Side:
+    if not isinstance(raw, Mapping) or not raw:
+        raise DataError(f"{name}: expected a mapping of member cards (in notation) to their roles")
+    members = {str(card): _parse_member_roles(f"{name} {card}", roles, grammar) for card, roles in raw.items()}
+    (first, roles), *others = members.items()
+    for card, other in others:
+        for edge in EDGES:
+            if other[edge] != roles[edge]:
+                raise DataError(
+                    f"{name}: members disagree on roles: {first} has {edge} {roles[edge]}, "
+                    f"{card} has {edge} {other[edge]}"
+                )
+    return Side(name=name, members=tuple(members), roles=roles)
+
+
+def _parse_member_roles(where: str, raw: Any, grammar: Rules) -> dict[str, str]:
+    if not isinstance(raw, Mapping):
+        raise DataError(f"{where}: expected a mapping of edges to roles")
+    _no_extra_keys(raw, set(EDGES), where, DataError)
+    roles = {}
+    for edge in EDGES:
+        role = raw.get(edge)
+        if role not in grammar.roles[edge]:
+            raise DataError(
+                f"{where}: {edge} role {role!r} is not one of {', '.join(grammar.roles[edge])}"
+            )
+        roles[edge] = role
+    return roles
+
+
+def load_arrangement(
+    source: str | Path | Mapping | Arrangement,
+    *,
+    max_length: int,
+    classes: Mapping[str, CardClass],
+) -> Arrangement:
     """Load and validate an arrangement.
 
     `source` is a bundled arrangement's name, a path to a YAML file, a
@@ -131,7 +304,7 @@ def load_arrangement(source: str | Path | Mapping | Arrangement, *, max_length: 
             raw, name = _read_arrangement(bundled), str(source)
         else:
             raise ArrangementError(f"no arrangement file or bundled arrangement named {source!r}")
-    return _parse(raw, name, max_length)
+    return _parse(raw, name, max_length, classes)
 
 
 def _read_arrangement(source) -> Any:
@@ -141,7 +314,7 @@ def _read_arrangement(source) -> Any:
         raise ArrangementError(f"{source} is not valid YAML: {err}") from err
 
 
-def _parse(raw: Any, name: str, max_length: int) -> Arrangement:
+def _parse(raw: Any, name: str, max_length: int, known: Mapping[str, CardClass]) -> Arrangement:
     if not isinstance(raw, Mapping):
         raise ArrangementError("an arrangement must be a mapping with `flip` and `classes`")
     _no_extra_keys(raw, {"flip", "classes"}, "the arrangement")
@@ -151,7 +324,6 @@ def _parse(raw: Any, name: str, max_length: int) -> Arrangement:
     authored = raw.get("classes") or {}
     if not isinstance(authored, Mapping):
         raise ArrangementError("`classes` must map class names to their edges")
-    known = card_classes()
     fronts: dict[str, Edges] = {}
     for cls_name in known:
         edges = authored.get(cls_name) or {}
@@ -168,10 +340,12 @@ def _parse(raw: Any, name: str, max_length: int) -> Arrangement:
     return Arrangement(name=name, flip=flip, fronts=fronts)
 
 
-def _no_extra_keys(raw: Mapping, allowed: set[str], where: str) -> None:
+def _no_extra_keys(
+    raw: Mapping, allowed: set[str], where: str, error: type[ValueError] = ArrangementError
+) -> None:
     extra = sorted(str(k) for k in raw if k not in allowed)
     if extra:
-        raise ArrangementError(f"{where}: unknown key(s) {', '.join(extra)}")
+        raise error(f"{where}: unknown key(s) {', '.join(extra)}")
 
 
 def _edge(cls: CardClass, edge: str, raw: Any, max_length: int) -> tuple[Pocket, ...]:

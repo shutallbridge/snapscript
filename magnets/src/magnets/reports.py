@@ -72,12 +72,25 @@ def summary_text(result: CheckResult) -> str:
         "Contacts by kind and result:",
         *_count_table(result),
         "",
-        f"Must failures: {len(result.must_failures)}",
-        *(f"  {_describe(result, c, label)}" for c, label in result.must_failures),
-        "",
+        *_listing("Must failures", result, result.must_failures),
+        *_listing("Should-leaks", result, _leaks(result, "should")),
+        *_listing("Nice-leaks", result, _leaks(result, "nice")),
         "VALID" if result.valid else "INVALID",
     ]
     return "\n".join(lines) + "\n"
+
+
+def _leaks(result: CheckResult, priority: str) -> list[tuple[Contact, Label]]:
+    return [
+        (c, label)
+        for c in result.contacts
+        for label in c.labels
+        if label.kind == "forbid" and label.priority == priority and label.grade == "leak"
+    ]
+
+
+def _listing(title: str, result: CheckResult, found: list[tuple[Contact, Label]]) -> list[str]:
+    return [f"{title}: {len(found)}", *(f"  {_describe(result, c, label)}" for c, label in found), ""]
 
 
 def _count_table(result: CheckResult) -> list[str]:
@@ -94,9 +107,9 @@ def _count_table(result: CheckResult) -> list[str]:
 def _describe(result: CheckResult, contact: Contact, label: Label) -> str:
     a = result.sides[contact.a].side.notation
     b = result.sides[contact.b].side.notation
-    joint = " over " if contact.axis == "vertical" else ""
+    sep = " over " if contact.axis == "vertical" else " "
     return (
-        f"{a}{joint}{b} @{_offset(contact.offset)}: {label.kind} {contact.result} "
+        f"{a}{sep}{b} @{_offset(contact.offset)}: {label.kind} {contact.result} "
         f"(attract {contact.attract}, repel {contact.repel})"
     )
 

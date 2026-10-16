@@ -2,7 +2,7 @@
 
 import pytest
 
-from helpers import set_get, stack
+from helpers import SET_GET, set_get, stack
 from magnets import check
 
 
@@ -37,10 +37,15 @@ def test_four_stacks_snap(upper, lower, upper_bottom, lower_top, up, down):
     assert (label.kind, label.priority, label.grade) == ("connect", "must", "pass")
 
 
-def test_example_is_valid():
+def test_example_fails_only_where_it_has_no_pockets():
+    # The example designs only set_get's top and bottom edges, so every other
+    # connect contact fails for want of pockets, never because of a bad one.
     result = check("example")
-    assert result.valid
-    assert result.must_failures == []
+    assert not result.valid
+    assert result.must_failures
+    for contact, label in result.must_failures:
+        assert contact.pairs == () and contact.result == "nothing", contact
+        assert not (contact.axis == "vertical" and {contact.a, contact.b} <= SET_GET)
 
 
 def test_lengths_with_identical_geometry_collapse():

@@ -2,7 +2,7 @@
 
 from .api import CheckResult, check
 from .contacts import Contact, Label, SideEdges
-from .data import Arrangement, ArrangementError
+from .data import Arrangement, ArrangementError, DataError
 from .physics import Pocket, PocketPair
 
 __all__ = [
@@ -10,6 +10,7 @@ __all__ = [
     "ArrangementError",
     "CheckResult",
     "Contact",
+    "DataError",
     "Label",
     "Pocket",
     "PocketPair",
