@@ -91,8 +91,8 @@ def contacts(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int, 
     """Every contact, with identical geometry collapsed.
 
     A back is derived from its front, so under `flip` every contact between
-    two flip pairs behaves exactly like a partner contact. A forbid
-    whose partner is a connect can never be blocked and is flagged
+    two flip pairs behaves exactly like its partner contact. A forbid
+    whose partner contact is a connect can never be blocked and is flagged
     unavoidable.
     """
     return [

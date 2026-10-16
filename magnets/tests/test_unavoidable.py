@@ -1,4 +1,4 @@
-"""A forbid whose flip partner is a connect can never be blocked: it is unavoidable.
+"""A forbid whose partner contact is a connect can never be blocked: it is unavoidable.
 
 The flag depends only on the grammar and the flip, so these tests check
 empty arrangements.
@@ -40,12 +40,12 @@ def test_top_bottom_a_define_under_a_set_or_get_line_is_unavoidable(upper):
 
 
 def test_a_forbid_tied_to_another_forbid_is_avoidable():
-    # [set(x)to][set(x)to]'s top_bottom partner [get(x)][get(x)] is a connect,
-    # but [define(f)][get(x)]'s partner [call(f)][set(x)to] is not.
+    # [set(x)to][set(x)to]'s top_bottom partner contact [get(x)][get(x)] is a connect,
+    # but [define(f)][get(x)]'s partner contact [call(f)][set(x)to] is not.
     result = check({})
     assert forbid(beside(result, "set_get.set", "set_get.set")).unavoidable
     assert not forbid(beside(result, "define_call.define", "set_get.get")).unavoidable
-    # Off the line, no partner is a connect.
+    # Off the line, no partner contact is a connect.
     assert not forbid(beside(result, "set_get.get", "set_get.set", 0.25)).unavoidable
 
 

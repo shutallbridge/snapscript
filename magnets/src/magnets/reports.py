@@ -3,7 +3,7 @@
 import csv
 import io
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from fractions import Fraction
 
 from .api import CheckResult, ProgramResult
@@ -71,17 +71,34 @@ def csv_text(result: CheckResult) -> str:
 
 def summary_text(result: CheckResult) -> str:
     arrangement = result.arrangement
+    unavoidable = _unavoidable_leaks(result)
+    unavoidable_low = [(c, label) for c, label in unavoidable if label.priority == "low"]
     lines = [
         f"Arrangement: {arrangement.name} (flip {arrangement.flip}, lengths up to {result.max_length}U)",
+        f"{len(result.contacts)} rows, {sum(c.collapsed for c in result.contacts)} contacts",
         "",
-        "Contacts by kind and result:",
-        *_count_table(result),
+        # A row groups `collapsed` contacts with one geometry, named by its
+        # smallest length pair. Under left_right a geometry can split into
+        # two rows, unavoidable at some length pairs and not others.
+        "Rows by kind and result (a row groups contacts with one geometry):",
+        *_count_table(result, lambda c: 1),
+        "",
+        "Contacts by kind and result (one with two labels counts under each):",
+        *_count_table(result, lambda c: c.collapsed),
         "",
         *_listing("Must failures", result, result.must_failures),
         *_listing("Avoidable should-leaks", result, _avoidable_leaks(result, "should")),
         *_listing("Avoidable nice-leaks", result, _avoidable_leaks(result, "nice")),
-        # Unavoidable leaks mix priorities, so each names its own.
-        *_listing("Unavoidable leaks", result, _unavoidable_leaks(result), with_priority=True),
+        # Unavoidable leaks mix should and nice, so each names its own.
+        *_listing(
+            "Unavoidable should- and nice-leaks",
+            result,
+            [(c, label) for c, label in unavoidable if label.priority != "low"],
+            with_priority=True,
+        ),
+        # Low forbids are never scored, and under left_right many are unavoidable.
+        f"Unavoidable low-leaks (not listed): {len(unavoidable_low)}",
+        "",
         "VALID" if result.valid else "INVALID",
     ]
     return "\n".join(lines) + "\n"
@@ -110,15 +127,16 @@ def _listing(
     return [f"{title}: {len(found)}", *(f"  {_describe(result, c, label, with_priority)}" for c, label in found), ""]
 
 
-def _count_table(result: CheckResult) -> list[str]:
+def _count_table(result: CheckResult, weight: Callable[[Contact], int]) -> list[str]:
+    """Kind x result counts, each of `result.contacts` counting `weight(contact)`."""
     # A contact with two labels counts once under each.
     counts: Counter[tuple[str, str]] = Counter()
     for c in result.contacts:
         for label in c.labels:
-            counts[label.kind, c.result] += 1
+            counts[label.kind, c.result] += weight(c)
             if label.unavoidable:
-                counts["unavoidable", c.result] += 1
-    width = max(len(r) for r in RESULTS)
+                counts["unavoidable", c.result] += weight(c)
+    width = max(max(len(r) for r in RESULTS), len(str(max(counts.values(), default=0))))
     # Room for the unavoidable row's indent under forbid, plus a space.
     kind_width = max(len(k) for k in ROWS) + 3
     rows = [f"{'':<{kind_width}}" + "".join(f"{r:>{width + 2}}" for r in RESULTS)]

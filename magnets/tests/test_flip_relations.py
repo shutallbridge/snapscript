@@ -6,7 +6,7 @@ With A' for the other side of A (#10, "Unavoidable leaks"):
 - left_right, horizontal: [A][B] at s behaves like [B'][A'] at -s;
 - left_right, vertical: A above B at d behaves like A' above B' at L_A - L_B - d.
 
-A forbid whose partner is a connect is unavoidable.
+A forbid whose partner contact is a connect is unavoidable.
 """
 
 from hypothesis import given, settings
@@ -69,7 +69,7 @@ def aligned(result, upper, lower, lengths, offset):
 
 
 def partner(flip, contact, other):
-    """(a, b, offset, partner lengths, pair key) of the contact tied to `contact`."""
+    """(a, b, offset, partner contact lengths, pair key) of the contact tied to `contact`."""
     a, b, s, k = other[contact.a], other[contact.b], contact.offset, key(contact.pairs)
     la, lb = contact.lengths
     if contact.axis == "horizontal":
@@ -91,13 +91,13 @@ def check_relations(flip, raw):
             continue
         a, b, offset, lengths, k = partner(flip, c, other)
         if c.axis == "vertical":
-            # The partner, at the partner lengths, lines up the same pockets.
+            # The partner contact, at its lengths, lines up the same pockets.
             assert aligned(result, a, b, lengths, offset) == k, c
         found = index.get((c.axis, a, b, offset, k))
         assert found, c
         for p in found:
             assert (p.attract, p.repel, p.result) == (c.attract, c.repel, c.result), (c, p)
-        # A forbid is unavoidable exactly when its partner is a connect.
+        # A forbid is unavoidable exactly when its partner contact is a connect.
         partner_connects = any(label.kind == "connect" for p in found for label in p.labels)
         for label in c.labels:
             if label.kind == "forbid":
