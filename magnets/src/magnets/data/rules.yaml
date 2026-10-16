@@ -1,0 +1,7 @@
+# Grammar rules: which contacts must snap (connect), may not snap (forbid),
+# or must not push apart (coexist).
+
+# Vertical: the upper card's bottom role over the lower card's top role, at
+# offset = lower's left end - upper's left end, in U.
+vertical:
+  - {upper: line, lower: line, offset: 0, verdict: connect}

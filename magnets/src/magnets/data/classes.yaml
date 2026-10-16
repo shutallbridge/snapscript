@@ -1,0 +1,19 @@
+# Card classes: one physical card each. The first side listed is the front;
+# a flip pair's second side is its back, derived from the front by the flip.
+# Roles are what each edge needs or accepts (see issue #10).
+
+set_get:
+  min_length: 1
+  sides:
+    set:
+      notation: "[set(x)to]"
+      left: head
+      right: open
+      top: line
+      bottom: line
+    get:
+      notation: "[get(x)]"
+      left: value
+      right: value
+      top: line
+      bottom: line

@@ -1,0 +1,115 @@
+"""Layer interactions, their aggregation, and pocket shapes, through `check`."""
+
+import pytest
+
+from helpers import set_get, stack
+from magnets import check
+
+LAYER_TABLE = [
+    ("-", "-", "nothing"),
+    ("-", "N", "nothing"),
+    ("-", "S", "nothing"),
+    ("-", "F", "nothing"),
+    ("N", "-", "nothing"),
+    ("F", "-", "nothing"),
+    ("F", "F", "nothing"),
+    ("N", "F", "attract"),
+    ("S", "F", "attract"),
+    ("F", "N", "attract"),
+    ("F", "S", "attract"),
+    ("N", "S", "attract"),
+    ("S", "N", "attract"),
+    ("N", "N", "repel"),
+    ("S", "S", "repel"),
+]
+
+
+def _alone_up(layer):
+    """A pocket with `layer` up and a down layer that interacts with nothing."""
+    return f"{layer}/-" if layer != "-" else "-/F"
+
+
+@pytest.mark.parametrize("upper, lower, expected", LAYER_TABLE)
+def test_layer_table(upper, lower, expected):
+    # set over set: set's bottom edge faces set's own top edge.
+    arrangement = set_get(
+        bottom=[("left", 0.25, _alone_up(upper))],
+        top=[("left", 0.25, _alone_up(lower))],
+    )
+    contact = stack(check(arrangement), "set", "set")
+    [pair] = contact.pairs
+    assert (pair.up, pair.down) == (expected, "nothing")
+    assert (contact.attract, contact.repel) == (
+        int(expected == "attract"),
+        int(expected == "repel"),
+    )
+
+
+@pytest.mark.parametrize(
+    "bottom, top, attract, repel, result",
+    [
+        # One pocket pair, both layers counted.
+        ([("left", 0.25, "N/S")], [("left", 0.25, "S/N")], 2, 0, "snap"),
+        ([("left", 0.25, "N/S")], [("left", 0.25, "N/S")], 0, 2, "repel"),
+        ([("left", 0.25, "N/N")], [("left", 0.25, "N/S")], 1, 1, "mixed"),
+        ([("left", 0.25, "F/F")], [("left", 0.25, "F/-")], 0, 0, "nothing"),
+        # Counts sum across pocket pairs.
+        (
+            [("left", 0.25, "N/-"), ("left", 0.75, "N/-")],
+            [("left", 0.25, "S/-"), ("left", 0.75, "N/-")],
+            1,
+            1,
+            "mixed",
+        ),
+        (
+            [("left", 0.25, "N/N"), ("left", 0.75, "S/-")],
+            [("left", 0.25, "F/F"), ("left", 0.75, "N/-")],
+            3,
+            0,
+            "snap",
+        ),
+        # Pockets that don't line up don't interact.
+        ([("left", 0.25, "N/N")], [("left", 0.5, "N/N")], 0, 0, "nothing"),
+        # No pockets at all.
+        ([], [], 0, 0, "nothing"),
+    ],
+)
+def test_aggregation(bottom, top, attract, repel, result):
+    contact = stack(check(set_get(bottom=bottom, top=top)), "set", "set")
+    assert (contact.attract, contact.repel, contact.result) == (attract, repel, result)
+
+
+def test_connect_grades():
+    def grade(bottom, top):
+        contact = stack(check(set_get(bottom=bottom, top=top)), "set", "set")
+        [label] = contact.labels
+        return label.kind, contact.result, label.grade
+
+    assert grade([("left", 0.25, "N/-")], [("left", 0.25, "S/-")]) == ("connect", "snap", "pass")
+    assert grade([("left", 0.25, "N/-")], [("left", 0.25, "N/-")]) == ("connect", "repel", "FAIL")
+    assert grade([("left", 0.25, "N/N")], [("left", 0.25, "N/S")]) == ("connect", "mixed", "FAIL")
+    assert grade([], []) == ("connect", "nothing", "FAIL")
+
+
+@pytest.mark.parametrize(
+    "layers, shape",
+    [
+        ("N/N", "uniform"),
+        ("S/S", "uniform"),
+        ("F/F", "uniform"),
+        ("N/-", "half"),
+        ("-/S", "half"),
+        ("F/-", "half"),
+        ("N/S", "split"),
+        ("S/N", "split"),
+        ("N/F", "split"),
+        ("F/S", "split"),
+    ],
+)
+def test_pocket_shapes(layers, shape):
+    result = check(set_get(top=[("left", 0.25, layers)], left=[(0.5, layers)]))
+    # A flip changes every split pocket's layers but never its shape.
+    for side in ("set", "get"):
+        edges = result.sides[f"set_get.{side}"].edges
+        pockets = [*edges["top"], *edges["bottom"], *edges["left"]]
+        assert [p.shape for p in pockets] == [shape, shape]

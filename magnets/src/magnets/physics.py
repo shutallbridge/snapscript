@@ -1,0 +1,156 @@
+"""Magnet physics: layers, pocket shapes, flips, and what two edges do.
+
+A pocket's layers are written `P/Q` (P = up, Q = down); each is `N`, `S`,
+`F` (steel) or `-` (empty). Facing pockets interact layer by layer.
+"""
+
+from dataclasses import dataclass, replace
+from fractions import Fraction
+from typing import Literal
+
+LAYERS = ("N", "S", "F", "-")
+FLIPS = ("top_bottom", "left_right")
+TOP_BOTTOM_EDGES = ("top", "bottom")
+LEFT_RIGHT_EDGES = ("left", "right")
+EDGES = TOP_BOTTOM_EDGES + LEFT_RIGHT_EDGES
+
+Interaction = Literal["attract", "repel", "nothing"]
+Result = Literal["snap", "repel", "mixed", "nothing"]
+Shape = Literal["uniform", "half", "split"]
+
+
+def interact(p: str, q: str) -> Interaction:
+    """What one layer does to the layer facing it."""
+    if p == "-" or q == "-" or (p == "F" and q == "F"):
+        return "nothing"
+    if p == "F" or q == "F" or p != q:
+        return "attract"
+    return "repel"
+
+
+def aggregate(attract: int, repel: int) -> Result:
+    """A contact's result from its total attractions and repulsions."""
+    if attract and repel:
+        return "mixed"
+    if attract:
+        return "snap"
+    if repel:
+        return "repel"
+    return "nothing"
+
+
+@dataclass(frozen=True)
+class Pocket:
+    """One pocket on an edge, as authored or derived.
+
+    On top/bottom edges `at` is measured in U from the `anchor` end
+    (`left` or `right`); on left/right edges it is the height in U from the
+    top edge and `anchor` is None. `index` is the pocket's place in its
+    front edge's list, kept through a flip.
+    """
+
+    edge: str
+    anchor: Literal["left", "right"] | None
+    at: Fraction
+    layers: str
+    index: int
+
+    @property
+    def up(self) -> str:
+        return self.layers[0]
+
+    @property
+    def down(self) -> str:
+        return self.layers[2]
+
+    @property
+    def shape(self) -> Shape:
+        if "-" in (self.up, self.down):
+            return "half"
+        return "uniform" if self.up == self.down else "split"
+
+    def position(self, length: int) -> Fraction:
+        """Distance from the card's left end (top/bottom) or top (left/right)."""
+        return length - self.at if self.anchor == "right" else self.at
+
+    def to_dict(self) -> dict:
+        at = int(self.at) if self.at.denominator == 1 else float(self.at)
+        if self.anchor is None:
+            return {"at": at, "layers": self.layers}
+        return {"from": self.anchor, "at": at, "layers": self.layers}
+
+
+Edges = dict[str, tuple[Pocket, ...]]
+
+_OPPOSITE = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}
+
+
+def flip(edges: Edges, how: str) -> Edges:
+    """The other side of a card whose side has these edges.
+
+    Every pocket's layers swap. `top_bottom` swaps top with bottom and
+    mirrors left/right heights; `left_right` swaps left with right and
+    mirrors top/bottom anchors.
+    """
+    moved = TOP_BOTTOM_EDGES if how == "top_bottom" else LEFT_RIGHT_EDGES
+    flipped: Edges = {}
+    for edge, pockets in edges.items():
+        new_edge = _OPPOSITE[edge] if edge in moved else edge
+        flipped[new_edge] = tuple(_flip_pocket(p, new_edge, how) for p in pockets)
+    return flipped
+
+
+def _flip_pocket(pocket: Pocket, edge: str, how: str) -> Pocket:
+    layers = f"{pocket.down}/{pocket.up}"
+    if pocket.anchor is None:
+        at = 1 - pocket.at if how == "top_bottom" else pocket.at
+        return replace(pocket, edge=edge, at=at, layers=layers)
+    anchor = pocket.anchor
+    if how == "left_right":
+        anchor = "right" if anchor == "left" else "left"
+    return replace(pocket, edge=edge, anchor=anchor, layers=layers)
+
+
+@dataclass(frozen=True)
+class PocketPair:
+    """Two pockets that line up exactly across a contact."""
+
+    a: Pocket
+    b: Pocket
+
+    @property
+    def up(self) -> Interaction:
+        return interact(self.a.up, self.b.up)
+
+    @property
+    def down(self) -> Interaction:
+        return interact(self.a.down, self.b.down)
+
+    @property
+    def interactions(self) -> tuple[Interaction, Interaction]:
+        return (self.up, self.down)
+
+
+def vertical_pairs(
+    upper: tuple[Pocket, ...],
+    lower: tuple[Pocket, ...],
+    upper_length: int,
+    lower_length: int,
+    offset: Fraction,
+) -> tuple[PocketPair, ...]:
+    """Pockets on an upper bottom edge that line up with a lower top edge.
+
+    `offset` is the lower card's left end minus the upper card's, in U.
+    """
+    return tuple(
+        PocketPair(a, b)
+        for a in upper
+        for b in lower
+        if a.position(upper_length) == offset + b.position(lower_length)
+    )
+
+
+def tally(pairs: tuple[PocketPair, ...]) -> tuple[int, int]:
+    """Total (attractions, repulsions) across every layer of every pair."""
+    found = [i for pair in pairs for i in pair.interactions]
+    return found.count("attract"), found.count("repel")

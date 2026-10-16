@@ -1,0 +1,9 @@
+# The worked set_get example: get over set, set over get and both
+# self-stacks all snap under a top-to-bottom flip.
+flip: top_bottom
+classes:
+  set_get:
+    top:
+      - {from: left, at: 0.25, layers: F/N}
+    bottom:
+      - {from: left, at: 0.25, layers: F/S}
