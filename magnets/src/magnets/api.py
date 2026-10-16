@@ -1,13 +1,16 @@
 """The public API: everything the CLI and the tests use."""
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from fractions import Fraction
 from pathlib import Path
 
 from . import contacts as _contacts
 from . import programs as _programs
+from . import solver as _solver
 from .contacts import Contact, Label, SideEdges
 from .data import Arrangement, CardClass, Rules, load_arrangement, load_classes, load_rules
+from .physics import FLIPS
 from .programs import Failure, Forbid, Info, Layout, Strip
 
 
@@ -30,6 +33,7 @@ def check(
     arrangement: str | Path | Mapping | Arrangement,
     *,
     max_length: int = 6,
+    classes: Sequence[str] | None = None,
     class_data: str | Path | Mapping | None = None,
     rule_data: str | Path | Mapping | None = None,
 ) -> CheckResult:
@@ -37,13 +41,16 @@ def check(
 
     `arrangement` is a bundled arrangement's name (e.g. "example"), a path
     to a YAML file, a mapping in the YAML's shape, or a loaded arrangement.
+    `classes`, if given, names the only card classes to grade, as for a
+    search restricted to them; the arrangement may not mention others.
     `class_data` and `rule_data` replace the bundled card classes and
     grammar rules, as a path to a YAML file or a mapping in its shape.
     Raises `DataError` for malformed class or rule data, `ArrangementError`
     if no physical card could have the arrangement, and `ValueError` if
-    `max_length` is shorter than some card's minimum.
+    `max_length` is shorter than some card's minimum or `classes` names an
+    unknown class.
     """
-    grammar, _, loaded, all_sides = _load(arrangement, max_length, class_data, rule_data)
+    grammar, _, loaded, all_sides = _load(arrangement, max_length, class_data, rule_data, classes)
     found = _contacts.contacts(all_sides, grammar, max_length, loaded.flip)
     failures = [
         (c, label)
@@ -114,16 +121,106 @@ def check_program(
     )
 
 
+@dataclass(frozen=True)
+class SolveResult:
+    """The best arrangement a search found, re-graded by the checker.
+
+    `status` is optimal (proven best), feasible (the best found within the
+    time limit), infeasible (proven to have no valid arrangement) or unknown
+    (nothing found within the time limit). `objective` and `bound` are in
+    cost units: a should-leak contact costs 10, a nice-leak 1, a pocket
+    0.01 to 0.02. `arrangement` and `check` are None if nothing was found.
+    """
+
+    flip: str
+    classes: tuple[str, ...]
+    max_length: int
+    seed: int
+    time_limit: float
+    workers: int
+    status: str
+    objective: Fraction | None
+    bound: Fraction | None
+    wall_time: float
+    arrangement: Arrangement | None
+    check: CheckResult | None
+
+
+def solve(
+    flip: str,
+    *,
+    classes: Sequence[str] | None = None,
+    seed: int = 0,
+    time_limit: float = 60,
+    workers: int = 8,
+    max_length: int = 6,
+) -> SolveResult:
+    """Search with CP-SAT for the best arrangement under `flip`.
+
+    Every connect contact must snap and every coexist contact must not
+    repel. Among those arrangements the search minimises, over every
+    forbid contact that isn't unavoidable, its priority weight times its
+    grade's penalty (leak 1, partial 0.5, weak 0.2, strong 0), plus a cost
+    per pocket by its shape (uniform 0.01, half 0.015, split 0.02).
+    `classes`, if given, restricts the search, and the check of its result,
+    to those card classes. The search stops after `time_limit` seconds;
+    with one worker that is CP-SAT's deterministic time, roughly seconds,
+    so a seed repeats its result exactly, even when the search stops
+    before it proves the result optimal.
+    """
+    if flip not in FLIPS:
+        raise ValueError(f"unknown flip {flip!r}; expected one of {', '.join(FLIPS)}")
+    grammar, selected = _classes(max_length, None, None, classes)
+    found = _solver.solve(
+        flip, grammar, selected, max_length=max_length, seed=seed, time_limit=time_limit, workers=workers
+    )
+    regraded = None
+    if found.arrangement is not None:
+        loaded = load_arrangement(found.arrangement, max_length=max_length, classes=selected)
+        regraded = check(replace(loaded, name="search"), max_length=max_length, classes=list(selected))
+    return SolveResult(
+        flip=flip,
+        classes=tuple(selected),
+        max_length=max_length,
+        seed=seed,
+        time_limit=time_limit,
+        workers=workers,
+        status=found.status,
+        objective=found.objective,
+        bound=found.bound,
+        wall_time=found.wall_time,
+        arrangement=regraded.arrangement if regraded else None,
+        check=regraded,
+    )
+
+
 def _load(
     arrangement: str | Path | Mapping | Arrangement,
     max_length: int,
     class_data: str | Path | Mapping | None,
     rule_data: str | Path | Mapping | None,
+    only: Sequence[str] | None = None,
 ) -> tuple[Rules, Mapping[str, CardClass], Arrangement, dict[str, SideEdges]]:
+    grammar, classes = _classes(max_length, class_data, rule_data, only)
+    loaded = load_arrangement(arrangement, max_length=max_length, classes=classes)
+    return grammar, classes, loaded, _contacts.sides(loaded, classes)
+
+
+def _classes(
+    max_length: int,
+    class_data: str | Path | Mapping | None,
+    rule_data: str | Path | Mapping | None,
+    only: Sequence[str] | None,
+) -> tuple[Rules, dict[str, CardClass]]:
+    """The grammar, and its card classes, only those named in `only` if given."""
     grammar = load_rules(rule_data)
-    classes = load_classes(class_data, grammar=grammar)
+    classes = dict(load_classes(class_data, grammar=grammar))
+    if only is not None:
+        unknown = [name for name in only if name not in classes]
+        if unknown or not only:
+            raise ValueError(f"unknown card class(es): {', '.join(unknown)}" if unknown else "no card classes given")
+        classes = {name: cls for name, cls in classes.items() if name in only}
     longest_min = max(cls.min_length for cls in classes.values())
     if max_length < longest_min:
         raise ValueError(f"max_length {max_length} is shorter than the longest minimum card length {longest_min}U")
-    loaded = load_arrangement(arrangement, max_length=max_length, classes=classes)
-    return grammar, classes, loaded, _contacts.sides(loaded, classes)
+    return grammar, classes

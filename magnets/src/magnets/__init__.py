@@ -1,6 +1,6 @@
-"""Checker for the Snapscript magnet arrangement."""
+"""Checker and CP-SAT solver for the Snapscript magnet arrangement."""
 
-from .api import CheckResult, ProgramResult, check, check_program
+from .api import CheckResult, ProgramResult, SolveResult, check, check_program, solve
 from .contacts import Contact, Label, SideEdges
 from .data import Arrangement, ArrangementError, BundledProgram, DataError, bundled_programs
 from .physics import Pocket, PocketPair
@@ -27,7 +27,9 @@ __all__ = [
     "ProgramError",
     "ProgramResult",
     "SideEdges",
+    "SolveResult",
     "bundled_programs",
     "check",
     "check_program",
+    "solve",
 ]

@@ -226,3 +226,36 @@ def test_check_writes_the_program_report(tmp_path):
     # stdout has each program's status after the summary.
     assert "\nINVALID\n\nPrograms:\n  first_sketch (legal): FAIL in 21 of 21 layouts\n" in run.stdout
     assert "programs.txt" in run.stdout
+
+
+def test_search_writes_an_arrangement_that_check_accepts(tmp_path):
+    found = tmp_path / "found.yaml"
+    classes = "set_get,literal,call_printed,operator"
+    run = subprocess.run(
+        [*MAGNETS, "search", "--flip", "top_bottom", "--classes", classes, "--time-limit", "2", "--workers", "1",
+         "--out", str(found)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    # The arrangement, and next to it the checker's reports on it.
+    assert found.is_file()
+    summary = (tmp_path / "found" / "summary.txt").read_text()
+    assert (tmp_path / "found" / "contacts.csv").is_file()
+    assert summary in run.stdout
+    assert summary.startswith("Arrangement: found (flip top_bottom, lengths up to 6U)\n")
+    status = summary.split("Search: ")[1].splitlines()[0]
+    assert status.startswith(("optimal", "feasible")) and "objective" in status and "bound" in status
+    assert "classes set_get, literal, call_printed, operator; seed 0, 1 worker, time limit 2s" in summary
+    assert summary.endswith("\nVALID\n")
+
+    checked = subprocess.run(
+        [*MAGNETS, "check", str(found), "--classes", classes, "--out", str(tmp_path / "rechecked")],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert (tmp_path / "rechecked" / "summary.txt").read_text().endswith("\nVALID\n")
+    # The bundled programs use classes outside the search.
+    assert not (tmp_path / "rechecked" / "programs.txt").exists()
+    assert "programs.txt" not in checked.stdout

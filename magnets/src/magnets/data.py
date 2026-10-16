@@ -514,7 +514,7 @@ def _parse(raw: Any, name: str, max_length: int, known: Mapping[str, CardClass])
         }
     for cls_name in authored:
         if cls_name not in known:
-            raise ArrangementError(f"unknown card class {cls_name!r}")
+            raise ArrangementError(f"unknown card class {cls_name!r}; expected one of {', '.join(known)}")
     return Arrangement(name=name, flip=flip, fronts=fronts)
 
 
@@ -590,13 +590,22 @@ def _check_collision(where: str, p: Pocket, q: Pocket, min_length: int, max_leng
         if p.at == q.at:
             raise ArrangementError(f"{where}: two pockets at the same position {_anchored(p)}")
         return
-    if p.anchor is None or q.anchor is None:
-        return
-    length = p.at + q.at
-    if length.denominator == 1 and min_length <= length <= max_length:
+    length = collision_length(p, q, min_length, max_length)
+    if length is not None:
         raise ArrangementError(
             f"{where}: pockets {_anchored(p)} and {_anchored(q)} collide on a card {_u(length)}U long"
         )
+
+
+def collision_length(p: Pocket, q: Pocket, min_length: int, max_length: int) -> Fraction | None:
+    """The card length at which a `from: left` and a `from: right` pocket on
+    one top or bottom edge share a position, if the card can have it."""
+    if p.anchor is None or q.anchor is None or p.anchor == q.anchor:
+        return None
+    length = p.at + q.at
+    if length.denominator == 1 and min_length <= length <= max_length:
+        return length
+    return None
 
 
 def _anchored(p: Pocket) -> str:

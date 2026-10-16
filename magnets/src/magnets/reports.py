@@ -6,9 +6,11 @@ from collections import Counter
 from collections.abc import Callable, Sequence
 from fractions import Fraction
 
-from .api import CheckResult, ProgramResult
+import yaml
+
+from .api import CheckResult, ProgramResult, SolveResult
 from .contacts import Contact, Label
-from .data import BundledProgram
+from .data import Arrangement, BundledProgram
 from .programs import ProgramContact
 
 # Rows of the kind x result table; unavoidable is the subset of forbid that
@@ -69,12 +71,15 @@ def csv_text(result: CheckResult) -> str:
     return out.getvalue()
 
 
-def summary_text(result: CheckResult) -> str:
+def summary_text(result: CheckResult, search: SolveResult | None = None) -> str:
+    """The summary of a check, and of the search that found the arrangement
+    if there was one."""
     arrangement = result.arrangement
     unavoidable = _unavoidable_leaks(result)
     unavoidable_low = [(c, label) for c, label in unavoidable if label.priority == "low"]
     lines = [
         f"Arrangement: {arrangement.name} (flip {arrangement.flip}, lengths up to {result.max_length}U)",
+        *([] if search is None else _search_lines(search)),
         f"{len(result.contacts)} rows, {sum(c.collapsed for c in result.contacts)} contacts",
         "",
         # A row groups `collapsed` contacts with one geometry, named by its
@@ -102,6 +107,34 @@ def summary_text(result: CheckResult) -> str:
         "VALID" if result.valid else "INVALID",
     ]
     return "\n".join(lines) + "\n"
+
+
+def _search_lines(search: SolveResult) -> list[str]:
+    return [
+        f"Search: {_search_status(search)}",
+        f"  classes {', '.join(search.classes)}; seed {search.seed}, "
+        f"{search.workers} worker{'s' if search.workers != 1 else ''}, time limit {search.time_limit:g}s",
+    ]
+
+
+def _search_status(search: SolveResult) -> str:
+    """`optimal, objective 6108.35, bound 6108.35, in 3.2s`."""
+    found = "" if search.objective is None else f", objective {_cost(search.objective)}, bound {_cost(search.bound)}"
+    return f"{search.status}{found}, in {search.wall_time:.1f}s"
+
+
+def _cost(cost: Fraction | None) -> str:
+    return "none" if cost is None else f"{float(cost):.3f}".rstrip("0").rstrip(".")
+
+
+def arrangement_text(arrangement: Arrangement, search: SolveResult) -> str:
+    """An arrangement found by a search, as YAML, headed by how it was found."""
+    header = [
+        f"# Found by `magnets search`, lengths up to {search.max_length}U.",
+        *(f"# {line.strip()}" for line in _search_lines(search)),
+    ]
+    body = yaml.safe_dump(arrangement.to_dict(), sort_keys=False, default_flow_style=None, width=120)
+    return "\n".join(header) + "\n" + body
 
 
 def _leaks(result: CheckResult) -> list[tuple[Contact, Label]]:

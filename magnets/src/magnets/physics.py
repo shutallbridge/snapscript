@@ -94,12 +94,18 @@ def flip(edges: Edges, how: str) -> Edges:
     mirrors left/right heights; `left_right` swaps left with right and
     mirrors top/bottom anchors.
     """
-    moved = TOP_BOTTOM_EDGES if how == "top_bottom" else LEFT_RIGHT_EDGES
     flipped: Edges = {}
     for edge, pockets in edges.items():
-        new_edge = _OPPOSITE[edge] if edge in moved else edge
+        new_edge = flipped_edge(edge, how)
         flipped[new_edge] = tuple(_flip_pocket(p, new_edge, how) for p in pockets)
     return flipped
+
+
+def flipped_edge(edge: str, how: str) -> str:
+    """The edge that `edge` becomes on the other side: flipping is its own
+    inverse, so this is also the edge it came from."""
+    moved = TOP_BOTTOM_EDGES if how == "top_bottom" else LEFT_RIGHT_EDGES
+    return _OPPOSITE[edge] if edge in moved else edge
 
 
 def _flip_pocket(pocket: Pocket, edge: str, how: str) -> Pocket:

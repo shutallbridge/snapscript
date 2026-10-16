@@ -1,10 +1,12 @@
 # magnets
 
-Checker for the Snapscript magnet arrangement (see issue #10 for the model).
+Checker and CP-SAT solver for the Snapscript magnet arrangement (see issue
+#10 for the model).
 
 ```sh
 uv run magnets check                 # the bundled `example` arrangement
 uv run magnets check my.yaml --out out/mine
+uv run magnets search --flip top_bottom --classes set_get,literal --time-limit 30
 uv run pytest
 ```
 
@@ -27,8 +29,20 @@ partner contact is a connect can never be blocked; it is flagged
 leaks, many under `left_right`, are only counted; `contacts.csv` has every
 row.
 Card classes (`classes.yaml`), grammar rules (`rules.yaml`) and bundled
-arrangements live in `src/magnets/data/`. The public API is `magnets.check`
-and `magnets.check_program` (a program text in spec notation); pass
-`class_data=` or `rule_data=` to check against other class or rule data.
+arrangements live in `src/magnets/data/`. The public API is `magnets.check`,
+`magnets.check_program` (a program text in spec notation) and
+`magnets.solve`; pass `class_data=` or `rule_data=` to check against other
+class or rule data.
 A card text resolves to a class side through the side's member notation:
 `(…)` stands for handwriting and `…` for printed text.
+
+`search` looks for the arrangement with no must failures and the least
+weighted forbid grades (a should-leak costs 10 per contact, a nice-leak 1),
+then the fewest and simplest pockets. It writes the arrangement to
+`out/search_<flip>.yaml` (or `--out`) and its checker reports next to it in
+`out/search_<flip>/`; the summary gives the status (optimal, feasible,
+infeasible or unknown), objective, bound and time. `--classes` restricts the
+search to some card classes, and `magnets check --classes` checks the result
+the same way; the bundled programs need every class, so `programs.txt` is
+only written for a full check. With `--workers 1` the time limit is CP-SAT's
+deterministic time, so a `--seed` repeats its result exactly.
