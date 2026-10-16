@@ -31,13 +31,16 @@ def _edges(edges):
 
 def stack(result: CheckResult, upper: str, lower: str, offset: float = 0) -> Contact:
     """The vertical contact with `upper` over `lower` (side names like 'set')."""
+    return over(result, f"set_get.{upper}", f"set_get.{lower}", offset)
+
+
+def over(result: CheckResult, upper: str, lower: str, offset: float = 0) -> Contact:
+    """The vertical contact with `upper` over `lower` (sides like 'set_get.set'),
+    where exactly one has this offset."""
     found = [
         c
         for c in result.contacts
-        if c.axis == "vertical"
-        and c.a == f"set_get.{upper}"
-        and c.b == f"set_get.{lower}"
-        and c.offset == offset
+        if c.axis == "vertical" and c.a == upper and c.b == lower and c.offset == offset
     ]
     assert len(found) == 1, found
     return found[0]

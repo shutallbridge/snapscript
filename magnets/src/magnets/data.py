@@ -57,11 +57,76 @@ class HorizontalRules:
 
 
 @dataclass(frozen=True)
-class VerticalRule:
-    upper: str
-    lower: str
-    offset: Fraction
-    verdict: str
+class PriorityRule:
+    """A forbid priority for the vertical pairs it matches; None matches any."""
+
+    upper: str | None
+    lower: str | None
+    offset: Fraction | None
+    priority: str
+
+    def matches(self, upper: str, lower: str, offset: Fraction) -> bool:
+        return (
+            self.upper in (None, upper)
+            and self.lower in (None, lower)
+            and self.offset in (None, offset)
+        )
+
+
+@dataclass(frozen=True)
+class Coexist:
+    never: frozenset[str]  # facing roles (bottom or top) that never coexist
+    line_heads: frozenset[str]  # top roles of a card that can head a line
+    not_inline: frozenset[str]  # left roles of a card that cannot sit inline
+    indents: frozenset[str]  # bottom roles whose next line head sits 1U right
+    outdents: frozenset[str]  # top roles of a line head that sits 1U left of the line above
+
+    def applies(self, upper: Side, lower: Side, offset: Fraction) -> bool:
+        """Whether a legal program can put `upper` over `lower` at `offset`.
+
+        The next line head sits in the same column, 1U right after a block
+        head, or 1U left only for a [dedent], which has no inline cards. An
+        inline card sits at least 1U right of its line head. So a line head
+        meets an inline card below only at +1 or more (+2 after a block
+        head), an inline card meets a line head below only at -1 or less (-2
+        for a [dedent]), and two inline cards meet at any offset. Connect
+        pairs are left out by the caller.
+        """
+        bottom, top = upper.roles["bottom"], lower.roles["top"]
+        if offset.denominator != 1 or bottom in self.never or top in self.never:
+            return False
+        upper_can_head, lower_can_head = (s.roles["top"] in self.line_heads for s in (upper, lower))
+        upper_inline, lower_inline = (s.roles["left"] not in self.not_inline for s in (upper, lower))
+        return (
+            (upper_can_head and lower_inline and offset >= (2 if bottom in self.indents else 1))
+            or (upper_inline and lower_can_head and offset <= (-2 if top in self.outdents else -1))
+            or (upper_inline and lower_inline)
+        )
+
+
+@dataclass(frozen=True)
+class VerticalRules:
+    offsets: frozenset[Fraction]  # the meaningful offsets
+    connect: frozenset[tuple[str, str, Fraction]]  # (upper bottom, lower top, offset)
+    priorities: tuple[PriorityRule, ...]
+    forbid: str  # priority of every other pair at a meaningful offset
+    off_line: str  # priority at any other offset
+    ungraded: frozenset[str]  # facing roles (bottom or top) that are not graded
+    coexist: Coexist
+
+    def verdict(self, upper: str, lower: str, offset: Fraction) -> tuple[str, str]:
+        """(kind, priority) for an upper bottom role over a lower top role,
+        before coexist."""
+        if upper in self.ungraded or lower in self.ungraded:
+            return "ungraded", "info"
+        if (upper, lower, offset) in self.connect:
+            return "connect", "must"
+        if offset not in self.offsets:
+            return "forbid", self.off_line
+        for rule in self.priorities:
+            if rule.matches(upper, lower, offset):
+                return "forbid", rule.priority
+        return "forbid", self.forbid
 
 
 @dataclass(frozen=True)
@@ -69,7 +134,7 @@ class Rules:
     roles: Mapping[str, tuple[str, ...]]  # edge -> its roles
     priorities: Mapping[str, int]  # forbid priority -> weight
     horizontal: HorizontalRules
-    vertical: tuple[VerticalRule, ...]
+    vertical: VerticalRules
 
 
 @dataclass(frozen=True)
@@ -146,15 +211,13 @@ def _parse_rules(raw: Any) -> Rules:
     _no_extra_keys(raw, {"roles", "priorities", "horizontal", "vertical"}, "rules", DataError)
     roles = _parse_roles(raw.get("roles"))
     priorities = raw.get("priorities")
-    if not isinstance(priorities, Mapping) or not all(
-        isinstance(w, int) and not isinstance(w, bool) and w >= 0 for w in priorities.values()
-    ):
+    if not isinstance(priorities, Mapping) or not all(_is_whole(w) and w >= 0 for w in priorities.values()):
         raise DataError("rules: `priorities` must map each forbid priority to a whole-number weight")
     return Rules(
         roles=roles,
         priorities=dict(priorities),
         horizontal=_parse_horizontal(raw.get("horizontal"), roles, priorities),
-        vertical=_parse_vertical(raw.get("vertical") or [], roles),
+        vertical=_parse_vertical(raw.get("vertical"), roles, priorities),
     )
 
 
@@ -197,17 +260,100 @@ def _parse_horizontal(raw: Any, roles: Mapping[str, tuple[str, ...]], priorities
     return HorizontalRules(connect=parsed, forbid=raw["forbid"], off_line=raw["off_line"])
 
 
-def _parse_vertical(raw: Any, roles: Mapping[str, tuple[str, ...]]) -> tuple[VerticalRule, ...]:
-    if not isinstance(raw, list):
-        raise DataError("rules: `vertical` must be a list of rules")
-    parsed = []
+def _parse_vertical(raw: Any, roles: Mapping[str, tuple[str, ...]], priorities: Mapping) -> VerticalRules:
+    where = "rules: vertical"
+    keys = {"offsets", "connect", "priorities", "forbid", "off_line", "ungraded", "coexist"}
+    if not isinstance(raw, Mapping):
+        raise DataError(f"{where} must be a mapping with {', '.join(f'`{k}`' for k in sorted(keys))}")
+    _no_extra_keys(raw, keys, where, DataError)
+    facing = set(roles["bottom"]) | set(roles["top"])
+    offsets = raw.get("offsets")
+    if not isinstance(offsets, list) or not offsets or not all(_is_whole(d) for d in offsets):
+        raise DataError(f"{where}.offsets must be a list of whole-U offsets")
+    offsets = frozenset(Fraction(d) for d in offsets)
+    for key in ("forbid", "off_line"):
+        if raw.get(key) not in priorities:
+            raise DataError(f"{where}.{key}: priority {raw.get(key)!r} is not one of {', '.join(priorities)}")
+    ungraded = _role_list(raw.get("ungraded") or [], facing, f"{where}.ungraded")
+
+    connect = set()
+    for r in _rule_list(raw.get("connect"), {"upper", "lower", "offset"}, f"{where}.connect"):
+        rule = _vertical_pair(r, roles, offsets, f"{where}.connect", required=True)
+        if rule[0] in ungraded or rule[1] in ungraded:
+            raise DataError(f"{where}.connect: {dict(r)} names an ungraded role")
+        connect.add(rule)
+
+    rules = []
+    for r in _rule_list(raw.get("priorities") or [], {"upper", "lower", "offset", "priority"}, f"{where}.priorities"):
+        upper, lower, offset = _vertical_pair(r, roles, offsets, f"{where}.priorities", required=False)
+        if r.get("priority") not in priorities:
+            raise DataError(
+                f"{where}.priorities: {dict(r)}: priority {r.get('priority')!r} is not one of {', '.join(priorities)}"
+            )
+        rules.append(PriorityRule(upper, lower, offset, r["priority"]))
+    # Every pair at a meaningful offset resolves to exactly one verdict.
+    for upper in roles["bottom"]:
+        for lower in roles["top"]:
+            if upper in ungraded or lower in ungraded:
+                continue
+            for offset in sorted(offsets):
+                matched = [r for r in rules if r.matches(upper, lower, offset)]
+                if (upper, lower, offset) in connect and matched:
+                    raise DataError(f"{where}: {upper} over {lower} @{_u(offset)} is both connect and forbid")
+                if len(matched) > 1:
+                    raise DataError(f"{where}.priorities: {upper} over {lower} @{_u(offset)} matches more than one rule")
+
+    coexist = raw.get("coexist")
+    coexist_keys = {"never", "line_heads", "not_inline", "indents", "outdents"}
+    if not isinstance(coexist, Mapping):
+        raise DataError(f"{where}.coexist must be a mapping with {', '.join(f'`{k}`' for k in sorted(coexist_keys))}")
+    _no_extra_keys(coexist, coexist_keys, f"{where}.coexist", DataError)
+    return VerticalRules(
+        offsets=offsets,
+        connect=frozenset(connect),
+        priorities=tuple(rules),
+        forbid=raw["forbid"],
+        off_line=raw["off_line"],
+        ungraded=ungraded,
+        coexist=Coexist(
+            never=_role_list(coexist.get("never") or [], facing, f"{where}.coexist.never"),
+            line_heads=_role_list(coexist.get("line_heads") or [], set(roles["top"]), f"{where}.coexist.line_heads"),
+            not_inline=_role_list(coexist.get("not_inline") or [], set(roles["left"]), f"{where}.coexist.not_inline"),
+            indents=_role_list(coexist.get("indents") or [], set(roles["bottom"]), f"{where}.coexist.indents"),
+            outdents=_role_list(coexist.get("outdents") or [], set(roles["top"]), f"{where}.coexist.outdents"),
+        ),
+    )
+
+
+def _rule_list(raw: Any, keys: set[str], where: str) -> list[Mapping]:
+    if not isinstance(raw, list) or not all(isinstance(r, Mapping) for r in raw):
+        raise DataError(f"{where} must be a list of rules")
     for r in raw:
-        if not isinstance(r, Mapping):
-            raise DataError(f"rules: vertical rule {r!r} must be a mapping")
-        if r.get("upper") not in roles["bottom"] or r.get("lower") not in roles["top"]:
-            raise DataError(f"rules: vertical rule {dict(r)} names an unknown role")
-        parsed.append(VerticalRule(r["upper"], r["lower"], Fraction(r["offset"]), r["verdict"]))
-    return tuple(parsed)
+        _no_extra_keys(r, keys, f"{where}: {dict(r)}", DataError)
+    return raw
+
+
+def _vertical_pair(
+    r: Mapping, roles: Mapping[str, tuple[str, ...]], offsets: frozenset[Fraction], where: str, *, required: bool
+) -> tuple:
+    for key, edge in (("upper", "bottom"), ("lower", "top")):
+        if (required or key in r) and r.get(key) not in roles[edge]:
+            raise DataError(f"{where}: {dict(r)}: {key} {r.get(key)!r} is not one of the {edge} roles")
+    if required or "offset" in r:
+        if not _is_whole(r.get("offset")) or Fraction(r["offset"]) not in offsets:
+            raise DataError(f"{where}: {dict(r)}: offset {r.get('offset')!r} is not one of the vertical offsets")
+    offset = Fraction(r["offset"]) if "offset" in r else None
+    return r.get("upper"), r.get("lower"), offset
+
+
+def _role_list(raw: Any, known: set[str], where: str) -> frozenset[str]:
+    if not isinstance(raw, list) or any(role not in known for role in raw):
+        raise DataError(f"{where} must be a list of roles from: {', '.join(sorted(known))}")
+    return frozenset(raw)
+
+
+def _is_whole(x: Any) -> bool:
+    return isinstance(x, int) and not isinstance(x, bool)
 
 
 def _parse_classes(raw: Any, grammar: Rules) -> dict[str, CardClass]:

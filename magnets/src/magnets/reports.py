@@ -8,7 +8,7 @@ from fractions import Fraction
 from .api import CheckResult
 from .contacts import Contact, Label
 
-KINDS = ("connect", "forbid", "coexist")
+KINDS = ("connect", "forbid", "coexist", "ungraded")
 RESULTS = ("snap", "mixed", "nothing", "repel")
 CSV_COLUMNS = (
     "axis",
@@ -97,21 +97,23 @@ def _count_table(result: CheckResult) -> list[str]:
     # A contact with two labels counts once under each.
     counts = Counter((label.kind, c.result) for c in result.contacts for label in c.labels)
     width = max(len(r) for r in RESULTS)
-    rows = [f"{'':<8}" + "".join(f"{r:>{width + 2}}" for r in RESULTS)]
+    kind_width = max(len(k) for k in KINDS) + 1
+    rows = [f"{'':<{kind_width}}" + "".join(f"{r:>{width + 2}}" for r in RESULTS)]
     for kind in KINDS:
         if any(counts[kind, r] for r in RESULTS):
-            rows.append(f"{kind:<8}" + "".join(f"{counts[kind, r]:>{width + 2}}" for r in RESULTS))
+            rows.append(f"{kind:<{kind_width}}" + "".join(f"{counts[kind, r]:>{width + 2}}" for r in RESULTS))
     return [f"  {row}" for row in rows]
 
 
 def _describe(result: CheckResult, contact: Contact, label: Label) -> str:
     a = result.sides[contact.a].side.notation
     b = result.sides[contact.b].side.notation
-    sep = " over " if contact.axis == "vertical" else " "
-    return (
-        f"{a}{sep}{b} @{_offset(contact.offset)}: {label.kind} {contact.result} "
-        f"(attract {contact.attract}, repel {contact.repel})"
-    )
+    counts = f"attract {contact.attract}, repel {contact.repel}"
+    if contact.axis == "horizontal":
+        return f"{a} {b} @{_offset(contact.offset)}: {label.kind} {contact.result} ({counts})"
+    # Top/bottom pockets can depend on length, so name the smallest length pair.
+    lengths = "x".join(map(str, contact.lengths))
+    return f"{a} over {b} @{_offset(contact.offset)}: {label.kind} {contact.result} ({counts}, lengths {lengths})"
 
 
 def _offset(offset: Fraction) -> str:
