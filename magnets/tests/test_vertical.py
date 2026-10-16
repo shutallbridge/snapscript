@@ -130,7 +130,7 @@ def test_coexist_appears_exactly_where_the_narrow_rule_says():
     result = check({})
 
     def can_head(side):
-        return side.roles["top"] in ("line", "dedent")
+        return side.roles["top"] in ("line", "dedent", "top_level")
 
     def inline(side):
         return side.roles["left"] != "head"
@@ -161,6 +161,18 @@ def test_coexist_needs_the_lower_line_head_to_sit_left_of_an_inline_card():
     assert ("coexist", "must") not in kinds(over(result, "literal.num", "dedent.dedent", 1))
     # Nothing coexists with a [define] below it.
     assert ("coexist", "must") not in kinds(over(result, "literal.num", "define_call.define", -1))
+
+
+def test_a_define_or_on_heads_a_line_with_inline_cards_below():
+    # The spec's first sketch: a 2U [define] over a 1U [call:…] line head
+    # puts [num(500)] under the [define] @+1.
+    #   [define(setup)]
+    #   [call:p5.createCanvas][num(500)][num(500)]
+    result = check({})
+    assert kinds(over(result, "define_call.define", "literal.num", 1)) == [("coexist", "must"), ("forbid", "should")]
+    assert kinds(over(result, "on.on", "literal.num", 1)) == [("coexist", "must"), ("forbid", "should")]
+    # Still nothing coexists with a [define] or [on:] below it.
+    assert ("coexist", "must") not in kinds(over(result, "literal.num", "on.on", -1))
 
 
 def test_an_inline_card_meets_a_dedent_below_only_two_columns_left_or_more():

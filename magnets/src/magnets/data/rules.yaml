@@ -59,8 +59,9 @@ vertical:
   # is in `outdents`); or both can sit inline.
   coexist:
     never: [top_level, free]
-    # A card can head a line if its top role is one of these.
-    line_heads: [line, dedent]
+    # A card can head a line if its top role is one of these. A [define] or
+    # [on:] heads a line too: its body goes below it, in the same column.
+    line_heads: [line, dedent, top_level]
     # A card can sit inline unless its left role is one of these.
     not_inline: [head]
     # The next line head sits 1U right of a line head with one of these
