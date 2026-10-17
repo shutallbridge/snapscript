@@ -246,10 +246,14 @@ def test_search_writes_an_arrangement_that_check_accepts(tmp_path):
     assert (tmp_path / "found" / "contacts.csv").is_file()
     assert summary in run.stdout
     assert summary.startswith("Arrangement: found (flip top_bottom, lengths up to 6U)\n")
-    status = summary.split("Search: ")[1].splitlines()[0]
+    status = summary.split("Search (goal repel): ")[1].splitlines()[0]
     assert status.startswith(("optimal", "feasible")) and "objective" in status and "bound" in status
     assert "classes set_get, literal, call_printed, operator; seed 0, 1 worker, time limit 2s" in summary
     assert summary.endswith("\nVALID\n")
+    # The arrangement's header copies the search lines, goal and all.
+    assert found.read_text().startswith(
+        "# Found by `magnets search`, lengths up to 6U.\n# Search (goal repel): "
+    )
 
     checked = subprocess.run(
         [*MAGNETS, "check", str(found), "--classes", classes, "--out", str(tmp_path / "rechecked")],
@@ -280,7 +284,8 @@ def test_an_infeasible_search_names_the_conflict_and_writes_the_fewest_failures(
     assert run.returncode == 1
     summary = (tmp_path / "found" / "summary.txt").read_text()
     assert summary in run.stdout
-    assert summary.split("Search: ")[1].startswith("infeasible in ")
+    assert summary.split("Search (goal repel): ")[1].startswith("infeasible in ")
+    assert "\n# Search (goal repel): infeasible in " in found.read_text()
     assert "\n  Fewest must failures (optimal): " in summary
     listed = summary.split("  Conflicting requirements: ")[1].splitlines()
     conflicts = listed[1 : 1 + int(listed[0])]
@@ -289,3 +294,25 @@ def test_an_infeasible_search_names_the_conflict_and_writes_the_fewest_failures(
     assert summary.endswith("\nINVALID\n")
     # The fewest-failures arrangement keeps the pinned empty edge.
     assert "right" not in yaml.safe_load(found.read_text())["classes"]["literal"]
+
+
+def test_search_names_its_default_output_after_the_flip_and_goal(tmp_path):
+    run = subprocess.run(
+        [*MAGNETS, "search", "--flip", "left_right", "--goal", "no_snap", "--classes", "set_get,literal",
+         "--time-limit", "2", "--workers", "1"],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=tmp_path,
+    )
+    out = tmp_path / "out"
+    assert (out / "search_left_right_no_snap.yaml").is_file()
+    assert (out / "search_left_right_no_snap" / "summary.txt").is_file()
+    assert (out / "search_left_right_no_snap" / "contacts.csv").is_file()
+    assert "Wrote out/search_left_right_no_snap.yaml" in run.stdout
+
+
+def test_search_rejects_an_unknown_goal():
+    run = subprocess.run([*MAGNETS, "search", "--flip", "top_bottom", "--goal", "push"], capture_output=True, text=True, check=False)
+    assert run.returncode == 2
+    assert "invalid choice: 'push'" in run.stderr

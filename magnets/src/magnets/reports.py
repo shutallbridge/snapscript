@@ -11,6 +11,7 @@ import yaml
 from .api import CheckResult, ProgramResult, SolveResult
 from .contacts import ContactGroup, Label
 from .data import Arrangement, BundledProgram
+from .physics import Shape
 from .programs import ProgramContact
 from .solver import Requirement
 
@@ -18,6 +19,7 @@ from .solver import Requirement
 # no arrangement can block.
 ROWS = ("connect", "forbid", "unavoidable", "coexist", "ungraded")
 RESULTS = ("snap", "mixed", "nothing", "repel")
+SHAPES: tuple[Shape, ...] = ("uniform", "half", "split")
 CSV_COLUMNS = (
     "axis",
     "upper_or_left",
@@ -82,6 +84,7 @@ def summary_text(result: CheckResult, search: SolveResult | None = None) -> str:
         f"Arrangement: {arrangement.name} (flip {arrangement.flip}, lengths up to {result.max_length}U)",
         *([] if search is None else _search_lines(search)),
         f"{len(result.groups)} contact groups, {sum(g.count for g in result.groups)} contacts",
+        _pocket_line(arrangement),
         "",
         # A contact group holds `count` contacts with one geometry, named by
         # its smallest length pair. Under left_right a geometry can split
@@ -111,9 +114,16 @@ def summary_text(result: CheckResult, search: SolveResult | None = None) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _pocket_line(arrangement: Arrangement) -> str:
+    """`Pockets: 41 (uniform 20, half 12, split 9)`, over every front: a
+    back shares its front's pockets."""
+    shapes = Counter(p.shape for edges in arrangement.fronts.values() for pockets in edges.values() for p in pockets)
+    return f"Pockets: {shapes.total()} ({', '.join(f'{shape} {shapes[shape]}' for shape in SHAPES)})"
+
+
 def _search_lines(search: SolveResult) -> list[str]:
     lines = [
-        f"Search: {_search_status(search)}",
+        f"Search (goal {search.goal}): {_search_status(search)}",
         f"  classes {', '.join(search.classes)}; seed {search.seed}, "
         f"{search.workers} worker{'s' if search.workers != 1 else ''}, time limit {search.time_limit:g}s",
     ]

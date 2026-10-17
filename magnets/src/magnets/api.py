@@ -143,6 +143,7 @@ class SolveResult:
     """
 
     flip: str
+    goal: str
     classes: tuple[str, ...]
     max_length: int
     seed: int
@@ -162,6 +163,7 @@ class SolveResult:
 def solve(
     flip: str,
     *,
+    goal: str = "repel",
     pinned: str | Path | Mapping | Arrangement | None = None,
     classes: Sequence[str] | None = None,
     seed: int = 0,
@@ -177,8 +179,12 @@ def solve(
     Every connect contact must snap and every coexist contact must not
     repel. Among those arrangements the search minimises, over every
     forbid contact that isn't unavoidable, its priority weight times its
-    grade's penalty (leak 1, partial 0.5, weak 0.2, strong 0), plus a cost
-    per pocket by its shape (uniform 0.01, half 0.015, split 0.02).
+    grade's penalty, plus a cost per pocket by its shape (uniform 0.01,
+    half 0.015, split 0.02). The penalties depend on the search `goal`:
+    under "repel" the search tries to push illegal neighbours apart (leak
+    1, partial 0.5, weak 0.2, strong 0); under "no_snap" it is enough that
+    they don't snap (weak 0 too). Objectives found with different goals
+    can't be compared; `check` grades the same way for both.
     `pinned`, an arrangement as for `check` with the same flip, fixes every
     edge it mentions, even an empty one (`right: []`); a loaded arrangement
     fixes every edge. Like any arrangement checked with `classes`, it may
@@ -195,12 +201,15 @@ def solve(
     """
     if flip not in FLIPS:
         raise ValueError(f"unknown flip {flip!r}; expected one of {', '.join(FLIPS)}")
+    if goal not in _solver.GOALS:
+        raise ValueError(f"unknown goal {goal!r}; expected one of {', '.join(_solver.GOALS)}")
     grammar, selected = _classes(max_length, class_data, rule_data, classes)
     pins = None if pinned is None else load_pinned(pinned, flip=flip, max_length=max_length, classes=selected)
     found = _solver.solve(
         flip,
         grammar,
         selected,
+        goal=goal,
         max_length=max_length,
         seed=seed,
         time_limit=time_limit,
@@ -220,6 +229,7 @@ def solve(
         )
     return SolveResult(
         flip=flip,
+        goal=goal,
         classes=tuple(selected),
         max_length=max_length,
         seed=seed,

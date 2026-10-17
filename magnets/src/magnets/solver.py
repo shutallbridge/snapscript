@@ -22,13 +22,22 @@ from .contacts import GRADES, ContactGroup, Label
 from .data import MAX_POCKETS, Arrangement, CardClass, Rules, collision_length
 from .physics import EDGES, HEIGHTS, LAYERS, LEFT_RIGHT_EDGES, TOP_BOTTOM_EDGES, Pocket, flipped_edge, interact
 
-# What a forbid's grade costs, per contact, before its priority weight.
-GRADE_PENALTY = {"leak": Fraction(1), "partial": Fraction(1, 2), "weak": Fraction(1, 5), "strong": Fraction(0)}
+# What the search tries to make a forbid do: repel, or only not snap.
+Goal = Literal["repel", "no_snap"]
+GOALS: tuple[Goal, ...] = ("repel", "no_snap")
+# What a forbid's grade costs, per contact, before its priority weight. Under
+# no_snap "nothing" is enough, so weak costs nothing; partial still costs,
+# since its magnets pull as well as push.
+GRADE_PENALTY: dict[Goal, dict[str, Fraction]] = {
+    "repel": {"leak": Fraction(1), "partial": Fraction(1, 2), "weak": Fraction(1, 5), "strong": Fraction(0)},
+    "no_snap": {"leak": Fraction(1), "partial": Fraction(1, 2), "weak": Fraction(0), "strong": Fraction(0)},
+}
 # What each occupied pocket costs, so the solver uses a second layer, or two
 # different pieces, only where the grammar needs it.
 SHAPE_COST = {"uniform": Fraction(1, 100), "half": Fraction(3, 200), "split": Fraction(1, 50)}
 # CP-SAT needs integers: every cost times SCALE is whole.
-SCALE = math.lcm(*(cost.denominator for cost in (*GRADE_PENALTY.values(), *SHAPE_COST.values())))
+COSTS = [*(cost for penalty in GRADE_PENALTY.values() for cost in penalty.values()), *SHAPE_COST.values()]
+SCALE = math.lcm(*(cost.denominator for cost in COSTS))
 
 STATUSES = {
     cp_model.OPTIMAL: "optimal",
@@ -91,6 +100,7 @@ def solve(
     rules: Rules,
     classes: Mapping[str, CardClass],
     *,
+    goal: Goal = "repel",
     max_length: int,
     seed: int,
     time_limit: float,
@@ -99,7 +109,8 @@ def solve(
     split: bool = True,
 ) -> Solution:
     """The arrangement of `classes` under `flip` with no must failures and
-    the least weighted forbid grades, then the least pocket cost.
+    the least weighted forbid grades, costed as `goal` says, then the least
+    pocket cost.
 
     `pinned` fixes the pockets of some front edges, as (class, edge) -> its
     pockets; an edge with none is fixed empty. Left/right edges only face
@@ -115,7 +126,9 @@ def solve(
 
     def builder(edges: tuple[str, ...]) -> Callable[[Musts], _Model]:
         facing = [c for c in found if c.edge_a in edges]
-        return lambda musts: _Model(flip, rules, classes, fronts, edges, facing, max_length, pinned or {}, musts)
+        return lambda musts: _Model(
+            flip, rules, classes, fronts, edges, facing, max_length, pinned or {}, musts, GRADE_PENALTY[goal]
+        )
 
     builders = [builder(edges) for edges in ((LEFT_RIGHT_EDGES, TOP_BOTTOM_EDGES) if split else (EDGES,))]
     models = [build("hard") for build in builders]
@@ -238,7 +251,7 @@ def candidates(cls: CardClass, edge: str) -> tuple[Pocket, ...]:
 class _Model:
     """The model of the pockets on `edges` (of every class's front), graded
     on `found`, the contact groups between those edges, with must labels treated
-    as `musts` says."""
+    as `musts` says and forbid grades costing `penalty`."""
 
     def __init__(
         self,
@@ -251,11 +264,13 @@ class _Model:
         max_length: int,
         pinned: Mapping[tuple[str, str], tuple[Pocket, ...]],
         musts: Musts,
+        penalty: Mapping[str, Fraction],
     ):
         self.model = cp_model.CpModel()
         self.flip = flip
         self.classes = classes
         self.musts = musts
+        self.penalty = penalty
         self.notation = {side.name: side.notation for cls in classes.values() for side in cls.sides}
         self.fronts = {name: {edge: front[edge] for edge in edges} for name, front in fronts.items()}
         # side name -> (class, whether it is the front)
@@ -385,8 +400,8 @@ class _Model:
     def _grade(self, group: ContactGroup, rules: Rules) -> None:
         """A must label never gets a FAIL grade: a connect must snap and a
         coexist must not repel or be mixed. A forbid that isn't unavoidable
-        costs its priority weight times its grade's penalty, for every
-        contact in the group."""
+        costs its priority weight times its grade's penalty under the goal,
+        for every contact in the group."""
         attract, repel, both = self._tally(group)
         # Exactly one of these is 1: the group's result, as `aggregate` gives it.
         results = {"snap": attract - both, "mixed": both, "nothing": 1 - attract - repel + both, "repel": repel - both}
@@ -398,9 +413,9 @@ class _Model:
                 weight = rules.priorities[label.priority] * group.count
                 if weight:
                     self.costs.append(
-                        sum(weight * int(GRADE_PENALTY[grades[r]] * SCALE) * held for r, held in results.items())
+                        sum(weight * int(self.penalty[grades[r]] * SCALE) * held for r, held in results.items())
                     )
-                    self.most_cost += weight * int(max(GRADE_PENALTY.values()) * SCALE)
+                    self.most_cost += weight * int(max(self.penalty.values()) * SCALE)
 
     def _must(self, group: ContactGroup, label: Label, fails: list[cp_model.LinearExprT]) -> None:
         """None of `fails` may be the group's result: always, or if the

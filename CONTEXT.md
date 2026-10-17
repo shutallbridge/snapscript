@@ -140,8 +140,11 @@ Said of a forbid contact whose partner contact is a connect. It snaps whenever i
 ## Search
 
 **Objective**:
-The number that the search makes as small as possible for a valid arrangement. Each avoidable forbid contact adds a cost for its priority and its grade. A leak costs the most, and a low forbid costs nothing. Each pocket adds a small cost for its shape, so that, of two arrangements that are otherwise equal, the search chooses the simpler one. The priority weights are data in `rules.yaml`; the grade and shape costs are in `solver.py`.
+The number that the search makes as small as possible for a valid arrangement. Each avoidable forbid contact adds a cost for its priority and its grade. A leak costs the most, and a low forbid costs nothing. Each pocket adds a small cost for its shape, so that, of two arrangements that are otherwise equal, the search chooses the simpler one. The grade costs depend on the **search goal**. The priority weights are data in `rules.yaml`; the grade and shape costs are in `solver.py`.
 _Avoid_: score
+
+**Search goal**:
+What the search tries to make a forbid do. **repel** (the default): the illegal neighbours must not snap, and the search also tries to push them apart, so a weak forbid still costs a little. **no snap**: "nothing" is enough, so a weak forbid costs nothing, and the search adds magnets only where a contact needs them. The goal is an option of one search run, not part of the arrangement: `check` grades the same way for both. Two objectives found with different goals can't be compared.
 
 **Bound**:
 The smallest objective that the search has not yet ruled out. When the objective equals the bound, the arrangement is proven the best.

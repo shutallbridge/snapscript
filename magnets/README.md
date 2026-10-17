@@ -8,6 +8,7 @@ uv run magnets check                 # the bundled `example` arrangement
 uv run magnets check my.yaml --out out/mine
 uv run magnets search --flip top_bottom --classes set_get,literal --time-limit 30
 uv run magnets search --flip top_bottom --pin example   # keep the example's set_get design
+uv run magnets search --flip left_right --goal no_snap  # illegal neighbours need only not snap
 uv run pytest
 ```
 
@@ -18,7 +19,9 @@ contact group, named by its smallest length pair, with a `count` of the
 contacts it holds; under `left_right` a geometry can split into two contact
 groups. `contacts.csv` has one row per contact group and label, leaving out
 those where no pockets line up, unless the label is connect.
-`summary.txt` counts both: contact groups by kind and result, then contacts
+`summary.txt` counts the pockets of every front by shape (`Pockets: 41
+(uniform 20, half 12, split 9)`; a flip pair's back shares its front's), and
+both kinds of count: contact groups by kind and result, then contacts
 (the sum of `count`), where a contact with two labels counts once under
 each. It lists must failures and should and nice leaks. `programs.txt`
 lays each bundled test program (`src/magnets/data/programs.yaml`) out on
@@ -41,10 +44,18 @@ A card text resolves to a class side through the side's member notation:
 
 `search` looks for the arrangement with no must failures and the least
 weighted forbid grades (a should-leak costs 10 per contact, a nice-leak 1),
-then the fewest and simplest pockets. It writes the arrangement to
-`out/search_<flip>.yaml` (or `--out`) and its checker reports next to it in
-`out/search_<flip>/`; the summary gives the status (optimal, feasible,
-infeasible or unknown), objective, bound and time. `--classes` restricts the
+then the fewest and simplest pockets. `--goal` says what a forbid must
+achieve: `repel` (the default) makes illegal neighbours not snap and also
+tries to push them apart, so a weak forbid costs 0.2 of a leak; `no_snap`
+is satisfied with "nothing", so a weak forbid costs nothing and pockets go
+only where a contact needs them. Objectives found with different goals can't
+be compared; `check` grades the same way for both. It writes the arrangement
+to `out/search_<flip>_<goal>.yaml` (or `--out`), e.g.
+`out/search_top_bottom_no_snap.yaml`, and its checker reports next to it in
+`out/search_<flip>_<goal>/`; the summary's first search line gives the goal,
+the status (optimal, feasible, infeasible or unknown), objective, bound and
+time (`Search (goal repel): optimal, objective 6108.35, bound 6108.35, in
+3.2s`), and the arrangement's YAML header repeats it. `--classes` restricts the
 search to some card classes, and `magnets check --classes` checks the result
 the same way; the bundled programs need every class, so `programs.txt` is
 only written for a full check. With `--workers 1` the time limit is CP-SAT's

@@ -9,6 +9,7 @@ from .api import CheckResult, SolveResult, check, check_program, solve
 from .data import ArrangementError, bundled_programs
 from .physics import FLIPS
 from .reports import arrangement_text, conflict_lines, csv_text, program_report_text, program_status, summary_text
+from .solver import GOALS
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -27,6 +28,12 @@ def main(argv: list[str] | None = None) -> int:
 
     search_cmd = commands.add_parser("search", help="search with CP-SAT for the best arrangement")
     search_cmd.add_argument("--flip", choices=FLIPS, required=True, help="how flip pairs turn over")
+    search_cmd.add_argument(
+        "--goal",
+        choices=GOALS,
+        default="repel",
+        help="what a forbid must do: repel, or only not snap (default: repel)",
+    )
     search_cmd.add_argument("--seed", type=int, default=0, help="random seed (default: 0)")
     search_cmd.add_argument(
         "--time-limit",
@@ -40,7 +47,9 @@ def main(argv: list[str] | None = None) -> int:
         help="an arrangement YAML file, or a bundled arrangement's name, whose edges the search keeps as they are",
     )
     search_cmd.add_argument(
-        "--out", type=Path, help="arrangement file to write; reports go next to it (default: out/search_<flip>.yaml)"
+        "--out",
+        type=Path,
+        help="arrangement file to write; reports go next to it (default: out/search_<flip>_<goal>.yaml)",
     )
     _common(search_cmd, "search only these card classes")
 
@@ -67,6 +76,7 @@ def _common(command: argparse.ArgumentParser, classes_help: str) -> None:
 def _search(args: argparse.Namespace, classes: list[str] | None) -> int:
     result = solve(
         args.flip,
+        goal=args.goal,
         pinned=args.pin,
         classes=classes,
         seed=args.seed,
@@ -79,7 +89,7 @@ def _search(args: argparse.Namespace, classes: list[str] | None) -> int:
         for line in conflict_lines(result):
             print(f"  {line}", file=sys.stderr)
         return 1
-    out = args.out or Path("out") / f"search_{args.flip}.yaml"
+    out = args.out or Path("out") / f"search_{args.flip}_{args.goal}.yaml"
     # Named after its file, as `magnets check` would name it.
     checked = replace(result.check, arrangement=replace(result.check.arrangement, name=out.stem))
     out.parent.mkdir(parents=True, exist_ok=True)

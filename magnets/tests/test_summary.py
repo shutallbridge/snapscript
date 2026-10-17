@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 from helpers import set_get
-from magnets import check
-from magnets.reports import summary_text
+from magnets import check, solve
+from magnets.reports import arrangement_text, summary_text
 
 GROUPS_HEADING = "Contact groups by kind and result"
 CONTACTS_HEADING = "Contacts by kind and result"
@@ -77,6 +77,16 @@ def test_contact_counts_sum_group_counts(flips, flip):
     assert {k: n for k, n in table(summary, GROUPS_HEADING).items() if n} == groups
 
 
+def test_the_pocket_line_counts_front_pockets_by_shape():
+    # The example designs set_get's top (F/N) and bottom (F/S); get, its
+    # back, shares them.
+    lines = summary_text(check("example")).splitlines()
+    # Right after the contact group line.
+    assert lines[1].endswith(" contacts") and lines[2] == "Pockets: 2 (uniform 0, half 0, split 2)"
+    toy = set_get(top=[("left", 0.25, "N/N")], bottom=[("left", 0.25, "N/-")], left=[(0.5, "-/S")], right=[])
+    assert "\nPockets: 3 (uniform 1, half 2, split 0)\n" in summary_text(check(toy))
+
+
 def test_unavoidable_low_leaks_are_counted_not_listed():
     # Under left_right a 3U [set(x)to] over a 1U [set(x)to] @+2 (forbid low)
     # snaps exactly like [get(x)] over [get(x)] @0 (connect), and
@@ -107,3 +117,14 @@ def test_partner_is_always_a_partner_contact(path):
     # `partner_left` and the like are names, not text.
     bare = re.findall(r"\bpartner\b(?! contact)(?!_)", path.read_text())
     assert not bare
+
+
+def test_an_infeasible_search_names_its_goal():
+    # Nothing on the right of a [num] can snap if its right edge is empty.
+    pinned = {"flip": "left_right", "classes": {"literal": {"right": []}}}
+    result = solve(
+        "left_right", goal="no_snap", classes=["set_get", "literal"], pinned=pinned, time_limit=5, workers=1
+    )
+    assert result.status == "infeasible"
+    assert "\nSearch (goal no_snap): infeasible in " in summary_text(result.check, result)
+    assert "\n# Search (goal no_snap): infeasible in " in arrangement_text(result.arrangement, result)

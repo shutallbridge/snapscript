@@ -36,14 +36,19 @@ def test_the_same_seed_with_one_worker_repeats_its_arrangement():
 # The objective, from issue #10: a forbid's priority weight times its grade's
 # penalty, for every contact; plus a cost per pocket by its shape.
 WEIGHTS = {"should": 10, "nice": 1, "low": 0}
-PENALTIES = {"leak": 1, "partial": Fraction(1, 2), "weak": Fraction(1, 5), "strong": 0}
+# The penalties depend on the search goal: under no_snap, nothing is enough.
+PENALTIES = {
+    "repel": {"leak": 1, "partial": Fraction(1, 2), "weak": Fraction(1, 5), "strong": 0},
+    "no_snap": {"leak": 1, "partial": Fraction(1, 2), "weak": 0, "strong": 0},
+}
 SHAPE_COSTS = {"uniform": Fraction(1, 100), "half": Fraction(15, 1000), "split": Fraction(2, 100)}
 
 
-def objective(checked):
-    """The objective of a checked arrangement, from its grades and pockets."""
+def objective(checked, goal="repel"):
+    """The objective of a checked arrangement under a search goal, from its
+    grades and pockets."""
     forbids = sum(
-        WEIGHTS[label.priority] * PENALTIES[label.grade] * group.count
+        WEIGHTS[label.priority] * PENALTIES[goal][label.grade] * group.count
         for group in checked.groups
         for label in group.labels
         if label.kind == "forbid" and not label.unavoidable
@@ -222,15 +227,62 @@ def whole_arrangements(draw):
 
 
 @settings(max_examples=15, deadline=None)
-@given(whole_arrangements())
-def test_the_solver_grades_a_pinned_arrangement_as_the_checker_does(pinned):
+@given(whole_arrangements(), st.sampled_from(["repel", "no_snap"]))
+def test_the_solver_grades_a_pinned_arrangement_as_the_checker_does(pinned, goal):
     # ADR 0002: the solver model is a second description of the physics.
     # Pinned everywhere, the search can only return the pinned arrangement,
-    # and its own grading of it must be the checker's.
+    # and its own grading of it must be the checker's, at the goal's costs.
     small = dict(classes=AGREEMENT_CLASSES, max_length=2)
     checked = check(pinned, **small)
-    result = solve(pinned["flip"], pinned=pinned, time_limit=10, workers=1, **small)
+    result = solve(pinned["flip"], pinned=pinned, goal=goal, time_limit=10, workers=1, **small)
     assert design(result.arrangement) == design(checked.arrangement)
     assert result.status == ("optimal" if checked.valid else "infeasible")
     assert {(r.axis, r.a, r.b, r.offset, r.kind): n for r, n in result.must_failures.items()} == must_failures(checked)
-    assert result.objective == objective(checked)
+    assert result.objective == objective(checked, goal)
+
+
+# A toy grammar: one single-sided 1U class whose left edge is a line head,
+# so [lone][lone] is forbid / should, and nothing else is graded but low.
+LONE = {"left": "head", "right": "end", "top": "free", "bottom": "free"}
+LONE_CLASSES = {"lone": {"min_length": 1, "sides": {"lone": {"[lone]": LONE}}}}
+LONE_RULES = {
+    "roles": {"left": ["head"], "right": ["end"], "top": ["free"], "bottom": ["free"]},
+    "priorities": {"should": 10, "low": 0},
+    "horizontal": {"connect": {"end": []}, "forbid": "should", "off_line": "low"},
+    "vertical": {
+        "offsets": [0],
+        "connect": [],
+        "forbid": "should",
+        "off_line": "low",
+        "ungraded": ["free"],
+        "coexist": {"never": ["free"], "line_heads": [], "not_inline": ["head"]},
+    },
+}
+LONE_PROBLEM = dict(class_data=LONE_CLASSES, rule_data=LONE_RULES, max_length=2, time_limit=5, workers=1)
+
+
+def pocket_count(arrangement):
+    return sum(len(pockets) for edges in arrangement.fronts.values() for pockets in edges.values())
+
+
+def test_no_snap_leaves_a_forbid_weak_where_repel_adds_pockets():
+    repel, no_snap = (solve("top_bottom", goal=goal, **LONE_PROBLEM) for goal in ("repel", "no_snap"))
+    assert (repel.goal, no_snap.goal) == ("repel", "no_snap")
+    assert (repel.status, no_snap.status) == ("optimal", "optimal")
+    grades = [beside(r.check, "lone.lone", "lone.lone").labels[0].grade for r in (repel, no_snap)]
+    # Repel pushes [lone][lone] apart with a pocket on each edge; under
+    # no_snap "nothing" is enough, and costs nothing.
+    assert grades == ["strong", "weak"]
+    assert pocket_count(no_snap.arrangement) < pocket_count(repel.arrangement)
+    assert no_snap.objective == objective(no_snap.check, "no_snap") == 0
+
+
+def test_the_default_goal_is_repel():
+    result = solve("top_bottom", **LONE_PROBLEM)
+    assert result.goal == "repel"
+    assert beside(result.check, "lone.lone", "lone.lone").labels[0].grade == "strong"
+
+
+def test_an_unknown_goal_is_rejected():
+    with pytest.raises(ValueError, match="unknown goal 'push'; expected one of repel, no_snap"):
+        solve("top_bottom", goal="push", **LONE_PROBLEM)
