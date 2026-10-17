@@ -3,7 +3,7 @@
 import pytest
 
 from helpers import arrangement
-from magnets import ProgramError, card_sheet, check
+from magnets import ProgramError, bundled_programs, card_sheet, check, check_program
 
 
 def pieces(sheet):
@@ -128,7 +128,7 @@ def test_program_text_above_its_cards_on_as_many_a4_pages_as_needed():
     text = "// thirty cards\n" + "".join(f"[if][num({i})]\n" for i in range(15))
     sheet = card_sheet("example", text)
     first = sheet.pages[0]
-    assert [line.text for line in first.text] == text.splitlines()
+    assert [line.text for line in first.text] == ["min lengths", *text.splitlines()]
     assert first.pieces[0].front.y > first.text[-1].y
     assert all((page.width, page.height) == (210, 297) for page in sheet.pages)
     assert len(sheet.pages) > 1 and all(page.pieces for page in sheet.pages)
@@ -221,3 +221,68 @@ def test_a_row_that_fits_exactly_is_full(per_row):
     text = "".join(f"[num({i})]" for i in range(per_row))
     (page,) = card_sheet("example", text, unit=190 / per_row).pages
     assert [len(row) for row in rows(page)] == [per_row]
+
+
+BUNDLED = ["first_sketch", "nested_blocks", "parameters", "receivers_and_groups", "illegal"]
+
+
+def test_with_no_program_every_bundled_program_from_a_new_page():
+    sheet = card_sheet("example")
+    programs = {p.name: p for p in bundled_programs()}
+    starts = [i for i, page in enumerate(sheet.pages) if i == 0 or page.program != sheet.pages[i - 1].program]
+    assert [sheet.pages[i].program for i in starts] == BUNDLED
+    for i in starts:
+        page = sheet.pages[i]
+        program = programs[page.program]
+        heading, *text = [line.text for line in page.text]
+        assert heading == f"{program.name} (min lengths)"
+        note = ["these neighbours should not snap"] if program.name == "illegal" else []
+        assert text == program.text.rstrip("\n").splitlines() + note
+    # Every program's cards, in order, each on its own program's pages.
+    for name in BUNDLED:
+        found = [p.card.text for page in sheet.pages if page.program == name for p in page.pieces]
+        strips = check_program("example", programs[name].text).program
+        assert found == [card.text for strip in strips for line in strip for card in line.cards]
+
+
+def test_a_bundled_program_by_name():
+    sheet = card_sheet("example", "nested_blocks")
+    assert {page.program for page in sheet.pages} == {"nested_blocks"}
+    assert sheet.pages[0].text[0].text == "nested_blocks (min lengths)"
+
+
+def test_an_unknown_program_name_lists_the_bundled_names():
+    with pytest.raises(ValueError, match="no bundled program named 'nope'; expected one of " + ", ".join(BUNDLED)):
+        card_sheet("example", "nope")
+
+
+@pytest.mark.parametrize("draw", [1, 7, 20])
+def test_a_draw_prints_each_card_at_its_length_in_checks_layout(draw):
+    for program in bundled_programs():
+        layouts = {layout.name: layout for layout in check_program("example", program.text).layouts}
+        expected = [placed.length for placed in layouts[f"draw {draw}"].cards]
+        sheet = card_sheet("example", program.name, draw=draw)
+        found = [p for page in sheet.pages for p in page.pieces]
+        assert [p.length for p in found] == expected
+        assert all(p.front.width == p.length * 30 for p in found)
+    assert len(set(expected)) > 1  # not all at one length
+
+
+def test_without_a_draw_every_card_is_at_its_minimum_length():
+    sides = check("example").sides
+    sheet = card_sheet("example")
+    assert all(p.length == sides[p.card.side].min_length for page in sheet.pages for p in page.pieces)
+
+
+@pytest.mark.parametrize("draw, label", [(None, "min lengths"), (3, "draw 3, seed 0")])
+def test_every_page_states_its_lengths(draw, label):
+    sheet = card_sheet("example", draw=draw)
+    assert len(sheet.pages) > len(BUNDLED)  # some program runs over a page
+    for page in sheet.pages:
+        assert page.lengths == label
+        assert page.text[0].text == f"{page.program} ({label})"
+
+
+def test_a_draw_below_one():
+    with pytest.raises(ValueError, match="draw must be 1 or more"):
+        card_sheet("example", draw=0)

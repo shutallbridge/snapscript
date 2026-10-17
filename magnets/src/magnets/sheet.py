@@ -1,4 +1,4 @@
-"""The paper prototype: a program's cards laid out on A4 or letter pages as
+"""The paper prototype: programs' cards laid out on A4 or letter pages as
 folded pieces, packed to cut out with as few cuts as possible.
 
 Each card is one piece of two panels, its class's front over its back,
@@ -12,7 +12,7 @@ are in mm, from the page's top left.
 """
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Literal
@@ -20,7 +20,7 @@ from typing import Literal
 from .contacts import SideEdges
 from .data import Arrangement, CardClass, carry_over
 from .physics import Edges, Pocket, flip
-from .programs import Card, Strip
+from .programs import Card, Strip, all_cards
 
 Paper = Literal["a4", "letter"]  # also the CSS @page size keyword
 PAPERS: dict[Paper, tuple[float, float]] = {"a4": (210.0, 297.0), "letter": (215.9, 279.4)}  # portrait
@@ -90,8 +90,14 @@ class Ruler:
 
 @dataclass(frozen=True)
 class Page:
+    """One page of one program: `program` is its name (None for a program
+    text), `lengths` the card lengths it uses ("min lengths" or "draw 3,
+    seed 0"); the first text line names both."""
+
     width: float
     height: float
+    program: str | None
+    lengths: str
     text: tuple[TextLine, ...]
     pieces: tuple[Piece, ...]
     ruler: Ruler
@@ -105,70 +111,92 @@ class CardSheet:
     pages: tuple[Page, ...]
 
 
+@dataclass(frozen=True)
+class Section:
+    """One program to print: its cards' lengths in reading order, and a
+    `note` to print over its cards, if any."""
+
+    name: str | None
+    text: str
+    strips: tuple[Strip, ...]
+    lengths: tuple[int, ...]
+    note: str | None = None
+
+    def heading(self, label: str) -> str:
+        return label if self.name is None else f"{self.name} ({label})"
+
+
 def card_sheet(
     arrangement: Arrangement,
     classes: Mapping[str, CardClass],
     all_sides: Mapping[str, SideEdges],
-    strips: tuple[Strip, ...],
-    program_text: str,
+    sections: Sequence[Section],
+    label: str,
     unit: float,
     paper: Paper,
 ) -> CardSheet:
-    """Every card of the program once, at its minimum length, in program
-    order: each piece after the last in its row, a new row when the row is
-    full, a new page when the page is, under the program's text."""
+    """Every card of each program once, at the section's lengths, in program
+    order: each program from a new page, under a heading naming it and
+    `label`, the lengths used, then its text and its note; each piece after the last in its row,
+    a new row when the row is full, a new page when the page is, every page
+    headed alike."""
     if unit <= 0:
         raise ValueError(f"unit must be positive, not {unit}")
     if paper not in PAPERS:
         raise ValueError(f"unknown paper {paper!r}; expected one of {', '.join(PAPERS)}")
     owner = {side.name: cls for cls in classes.values() for side in cls.sides}
-    cards = [card for strip in strips for line in strip for card in line.cards]
     width, height = PAPERS[paper]
     bottom = height - MARGIN - RULER_HEIGHT
     ruler = Ruler(MARGIN, bottom, RULER_LENGTH, RULER_HEIGHT)
+    _check_fit(
+        [(card, length) for section in sections for card, length in zip(all_cards(section.strips), section.lengths)],
+        unit,
+        paper,
+        width - 2 * MARGIN,
+        bottom - MARGIN - TEXT_LINE,
+    )
     pages: list[Page] = []
-    text: list[TextLine] = []
-    placed: list[Piece] = []
-    y = MARGIN
+    for section in sections:
+        heading = section.heading(label)
+        text: list[TextLine] = []
+        placed: list[Piece] = []
+        y = MARGIN
 
-    def new_page() -> None:
-        nonlocal text, placed, y
-        pages.append(Page(width, height, tuple(text), tuple(placed), ruler))
-        text, placed, y = [], [], MARGIN
+        def new_page() -> None:
+            nonlocal text, placed, y
+            pages.append(Page(width, height, section.name, label, tuple(text), tuple(placed), ruler))
+            text, placed, y = [TextLine(MARGIN, MARGIN, heading)], [], MARGIN + TEXT_LINE
 
-    for line in program_text.rstrip("\n").splitlines():
-        if y + TEXT_LINE > bottom:
-            new_page()
-        text.append(TextLine(MARGIN, y, line))
-        y += TEXT_LINE
-    if text:
+        lines = [heading, *section.text.rstrip("\n").splitlines()]
+        if section.note is not None:
+            lines.append(section.note)
+        for line in lines:
+            if y + TEXT_LINE > bottom:
+                new_page()
+            text.append(TextLine(MARGIN, y, line))
+            y += TEXT_LINE
         y += GAP
-    _check_fit(cards, owner, unit, paper, width - 2 * MARGIN, bottom - MARGIN)
-    used = 0  # U along the current row, counted whole so that a row fits exactly
-    for card in cards:
-        cls = owner[card.side]
-        if (used + cls.min_length) * unit > width - 2 * MARGIN + SLACK:
-            # Start a new row, edge to edge with the last.
-            used, y = 0, y + 2 * unit
-        if y + 2 * unit > bottom + SLACK and (text or placed):
-            new_page()
-            used = 0
-        placed.append(_piece(card, cls, arrangement, all_sides, MARGIN + used * unit, y, unit))
-        used += cls.min_length
-    new_page()
+        used = 0  # U along the current row, counted whole so that a row fits exactly
+        for card, length in zip(all_cards(section.strips), section.lengths):
+            if (used + length) * unit > width - 2 * MARGIN + SLACK:
+                # Start a new row, edge to edge with the last.
+                used, y = 0, y + 2 * unit
+            if y + 2 * unit > bottom + SLACK:
+                new_page()
+                used = 0
+            placed.append(_piece(card, owner[card.side], length, arrangement, all_sides, MARGIN + used * unit, y, unit))
+            used += length
+        new_page()
     return CardSheet(arrangement, unit, paper, tuple(pages))
 
 
-def _check_fit(
-    cards: list[Card], owner: Mapping[str, CardClass], unit: float, paper: Paper, across: float, down: float
-) -> None:
+def _check_fit(cards: list[tuple[Card, int]], unit: float, paper: Paper, across: float, down: float) -> None:
     """Raise if a piece is bigger than the `across` by `down` mm left for
     pieces, naming the card that limits the unit and the largest that fits."""
     if not cards:
         return
     # A piece is its length in U across and 2U down; the longest card limits.
-    card = max(cards, key=lambda card: owner[card.side].min_length)
-    length = owner[card.side].min_length
+    card, length = max(cards, key=lambda pair: pair[1])
     largest = min(across / length, down / 2)
     if unit > largest + SLACK:
         raise ValueError(
@@ -181,6 +209,7 @@ def _check_fit(
 def _piece(
     card: Card,
     cls: CardClass,
+    length: int,
     arrangement: Arrangement,
     all_sides: Mapping[str, SideEdges],
     x: float,
@@ -201,7 +230,6 @@ def _piece(
         back_edges = flip(front_edges, arrangement.flip)
         front_text, back_text = card.text, None
     rotated = arrangement.flip == "left_right"
-    length = cls.min_length
     return Piece(
         card=card,
         length=length,

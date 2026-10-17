@@ -1,6 +1,7 @@
 """The `magnets` command: argument parsing around the public API."""
 
 import argparse
+import re
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -54,9 +55,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     _common(search_cmd, "search only these card classes")
 
-    print_cmd = commands.add_parser("print", help="print a program's cards as paper pieces to cut out and fold")
+    print_cmd = commands.add_parser("print", help="print programs' cards as paper pieces to cut out and fold")
     print_cmd.add_argument("arrangement", help="an arrangement YAML file, or a bundled arrangement's name")
-    print_cmd.add_argument("--program", type=Path, required=True, help="a program file in spec notation")
+    print_cmd.add_argument(
+        "--program",
+        help="a program file in spec notation, or a bundled program's name (default: every bundled program)",
+    )
+    print_cmd.add_argument(
+        "--seed",
+        type=int,
+        help="print each card at its length in check's draw N layout (default: every card at its minimum length)",
+    )
+    print_cmd.add_argument("--max-length", type=int, default=6, help="longest card, in U (default: 6)")
     print_cmd.add_argument("--unit", type=float, default=30, help="the size of a U, in mm (default: 30)")
     print_cmd.add_argument("--paper", choices=PAPERS, default="a4", help="paper size (default: a4)")
     print_cmd.add_argument("--out", type=Path, help="HTML file to write (default: out/<arrangement>/cards.html)")
@@ -84,9 +94,19 @@ def _common(command: argparse.ArgumentParser, classes_help: str) -> None:
 
 
 def _print(args: argparse.Namespace) -> int:
-    if not args.program.is_file():
-        raise ValueError(f"program file not found: {args.program}")
-    sheet = card_sheet(args.arrangement, args.program.read_text(encoding="utf-8"), unit=args.unit, paper=args.paper)
+    if args.seed is not None and args.seed < 1:
+        raise ValueError(f"--seed names one of check's draws, 1 or more, not {args.seed}")
+    program = args.program
+    if program is not None:
+        path = Path(program)
+        # A name is tried as a bundled program when it isn't a file.
+        if path.is_file():
+            program = path.read_text(encoding="utf-8")
+        elif not re.fullmatch(r"\w+", program):
+            raise ValueError(f"program file not found: {path}")
+    sheet = card_sheet(
+        args.arrangement, program, draw=args.seed, unit=args.unit, paper=args.paper, max_length=args.max_length
+    )
     out = args.out or Path("out") / sheet.arrangement.name / "cards.html"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(cards_html(sheet), encoding="utf-8")

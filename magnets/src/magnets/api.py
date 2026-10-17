@@ -1,5 +1,6 @@
 """The public API: everything the CLI and the tests use."""
 
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from fractions import Fraction
@@ -10,7 +11,7 @@ from . import programs as _programs
 from . import sheet as _sheet
 from . import solver as _solver
 from .contacts import ContactGroup, Label, SideEdges
-from .data import Arrangement, CardClass, Rules, load_arrangement, load_classes, load_pinned, load_rules
+from .data import Arrangement, CardClass, Rules, bundled_programs, load_arrangement, load_classes, load_pinned, load_rules
 from .physics import FLIPS
 from .programs import Failure, Forbid, Info, Layout, Strip
 from .sheet import CardSheet, Paper
@@ -127,31 +128,58 @@ def check_program(
 
 def card_sheet(
     arrangement: str | Path | Mapping | Arrangement,
-    program_text: str,
+    program: str | None = None,
     *,
+    draw: int | None = None,
+    seed: int = 0,
     unit: float = 30,
     paper: Paper = "a4",
     max_length: int = 6,
     class_data: str | Path | Mapping | None = None,
     rule_data: str | Path | Mapping | None = None,
 ) -> CardSheet:
-    """A paper prototype of a program's cards, to print, cut out and fold.
+    """A paper prototype of programs' cards, to print, cut out and fold.
 
-    Every card of the program in spec notation is one piece at its minimum
-    length: its class's front on the upper panel, its back below, upright
-    under `top_bottom` and rotated 180° under `left_right`, each panel
-    showing every pocket's layer nearest that face. Pieces are packed in
-    program order into rows edge to edge, so neighbours share cut lines,
-    and every page has a 50 mm ruler. `unit` is the size of a U in mm;
-    every position is in mm on a portrait `paper` page, `"a4"` or
-    `"letter"`. `arrangement`, `class_data` and `rule_data` are as for
-    `check`. Raises `ProgramError` for a program that can't be read, and
-    `ValueError` for an unknown paper or a `unit` too big for a piece to
-    fit on a page, naming the card and the largest unit that fits.
+    `program` is a bundled program's name, a program text in spec notation,
+    or None for every bundled program, one after another. Each program
+    starts a new page, headed by its name and the lengths used, then its
+    text; an illegal bundled program's cards are headed "these neighbours
+    should not snap". Every card is one piece, at its minimum length, or
+    with `draw` at its length in `check_program`'s "draw N" layout from
+    `seed` up to `max_length`: its class's front on the upper panel, its
+    back below, upright under `top_bottom` and rotated 180° under
+    `left_right`, each panel showing every pocket's layer nearest that
+    face. Pieces are packed in program order into rows edge to edge, so
+    neighbours share cut lines, and every page has a 50 mm ruler. `unit` is
+    the size of a U in mm; every position is in mm on a portrait `paper`
+    page, `"a4"` or `"letter"`. `arrangement`, `class_data` and `rule_data`
+    are as for `check`. Raises `ProgramError` for a program that can't be
+    read, and `ValueError` for an unknown program name, a `draw` below 1,
+    an unknown paper or a `unit` too big for a piece to fit on a page,
+    naming the card and the largest unit that fits.
     """
+    if draw is not None and draw < 1:
+        raise ValueError(f"draw must be 1 or more, not {draw}")
     _, classes, loaded, all_sides = _load(arrangement, max_length, class_data, rule_data)
-    strips = _programs.parse(program_text, classes)
-    return _sheet.card_sheet(loaded, classes, all_sides, strips, program_text, unit, paper)
+    bundled = {p.name: p for p in bundled_programs()}
+    if program is None:
+        chosen = [(p.name, p.text, p.legal) for p in bundled.values()]
+    elif program in bundled:
+        chosen = [(program, bundled[program].text, bundled[program].legal)]
+    elif re.fullmatch(r"\w+", program):
+        raise ValueError(f"no bundled program named {program!r}; expected one of {', '.join(bundled)}")
+    else:
+        chosen = [(None, program, True)]
+    sections = []
+    for name, text, legal in chosen:
+        strips = _programs.parse(text, classes)
+        minimum = [all_sides[card.side].min_length for card in _programs.all_cards(strips)]
+        # Every draw before it too, so the random lengths match check_program's.
+        lengths = minimum if draw is None else _programs.drawn_lengths(minimum, max_length, seed, draw)[-1]
+        note = None if legal else "these neighbours should not snap"
+        sections.append(_sheet.Section(name, text, strips, tuple(lengths), note))
+    label = "min lengths" if draw is None else f"draw {draw}, seed {seed}"
+    return _sheet.card_sheet(loaded, classes, all_sides, sections, label, unit, paper)
 
 
 @dataclass(frozen=True)

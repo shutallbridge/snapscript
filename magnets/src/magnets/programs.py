@@ -163,6 +163,11 @@ def _resolve(text: str, number: int, classes: Mapping[str, CardClass]) -> str:
     return sides[0].name
 
 
+def all_cards(strips: tuple[Strip, ...]) -> list[Card]:
+    """Every card of the program, in reading order."""
+    return [card for strip in strips for line in strip for card in line.cards]
+
+
 # --- layout ----------------------------------------------------------------
 
 
@@ -179,17 +184,22 @@ def layouts(
 ) -> list[Layout]:
     """The given lengths' layout, or one at every card's minimum length plus
     `draws` of seeded random lengths up to `max_length`."""
-    cards = [card for strip in strips for line in strip for card in line.cards]
+    cards = all_cards(strips)
     minimum = [all_sides[card.side].min_length for card in cards]
     if lengths is not None:
         _check_lengths(cards, minimum, list(lengths), max_length)
         return [lay_out("given lengths", strips, list(lengths), all_sides, rules, flip)]
-    rng = random.Random(seed)
     found = [lay_out("min lengths", strips, minimum, all_sides, rules, flip)]
-    for draw in range(1, draws + 1):
-        drawn = [rng.randint(low, max_length) for low in minimum]
+    for draw, drawn in enumerate(drawn_lengths(minimum, max_length, seed, draws), start=1):
         found.append(lay_out(f"draw {draw}", strips, drawn, all_sides, rules, flip))
     return found
+
+
+def drawn_lengths(minimum: Sequence[int], max_length: int, seed: int, draws: int) -> list[list[int]]:
+    """`draws` lists of random card lengths from `seed`, each card from its
+    `minimum` up to `max_length`: draw N is the (N-1)th."""
+    rng = random.Random(seed)
+    return [[rng.randint(low, max_length) for low in minimum] for _ in range(draws)]
 
 
 def _check_lengths(cards: list[Card], minimum: list[int], lengths: list[int], max_length: int) -> None:

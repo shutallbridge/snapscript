@@ -9,7 +9,9 @@ uv run magnets check my.yaml --out out/mine
 uv run magnets search --flip top_bottom --classes set_get,literal --time-limit 30
 uv run magnets search --flip top_bottom --pin example   # keep the example's set_get design
 uv run magnets search --flip left_right --goal no_snap  # illegal neighbours need only not snap
-uv run magnets print example --program my_program.txt --unit 30 --paper letter  # paper cards to cut and fold
+uv run magnets print example         # every bundled program's cards, to cut and fold
+uv run magnets print example --program nested_blocks --seed 3   # at the lengths of programs.txt's draw 3
+uv run magnets print example --program my_program.txt --unit 30 --paper letter
 uv run pytest
 ```
 
@@ -71,13 +73,25 @@ match `--flip`. If no valid arrangement exists, the search says
 it, not always the smallest), and writes the arrangement with the fewest
 must failures instead.
 
-`magnets print <arrangement> --program <file>` makes a paper prototype of
-a program's cards, to check an arrangement's contacts by eye without
-magnets. The arrangement (a file or a bundled name, as for `check`) says
-where the pockets go; the program, in spec notation, which cards to print.
-It writes one HTML file of SVG pages, `out/<arrangement>/cards.html`
-(or `--out`), to print at 100%: the program's text, then every card once at
-its minimum length, in program order. `--paper` is `a4` (the default) or
+`magnets print <arrangement>` makes a paper prototype of programs' cards,
+to check an arrangement's contacts by eye without magnets. The arrangement
+(a file or a bundled name, as for `check`) says where the pockets go; the
+programs which cards to print. With no `--program` it prints every
+bundled program, one after another; `--program <name>` prints one of
+them, and `--program <file>` a program file in spec notation (a name is
+tried as a bundled program when it isn't a file; an unknown one exits 2
+and lists the bundled names). It writes one HTML file of SVG pages,
+`out/<arrangement>/cards.html` (or `--out`), to print at 100%. Each
+program starts on a new page, under its name and text; `illegal`'s cards
+are headed "these neighbours should not snap", since building it checks
+that its forbids don't snap. Then come its cards, every card once, in
+program order. Every card is at its minimum length, unless `--seed N`
+prints each at its length in `check`'s "draw N" layout in `programs.txt`
+(seed 0, up to `--max-length`, 6 by default), drawn per card, so two
+`call` cards can differ; that way a failure in `programs.txt` can be
+laid out on the table. Every page's first line names its program and the
+lengths it used: `nested_blocks (min lengths)` or `nested_blocks (draw 3,
+seed 0)`. `--paper` is `a4` (the default) or
 `letter`; nothing prints within 10 mm of the page's edge. The pieces are
 packed to cut out with few cuts: every piece is 2U tall, so each row is a
 2U strip of pieces butted end to end and rows sit edge to edge, so one cut
@@ -95,11 +109,12 @@ unlabelled back. Each pocket is a tick in from its edge with the layer
 nearest that face: `N` red, `S` blue, `F` grey, `–` empty. Ticks and
 letters stay inside their own panel, so neighbours sharing a cut line keep
 their pockets apart. `--unit` is the size of a U in mm (30 by default), a
-print option, not a spec value. The API is `magnets.card_sheet`, which
-returns the pages, pieces, panels, marks and ruler in mm. It exits 2 for an
-invalid arrangement, a missing program file, a card that matches no class
-side, or a card too long for the page at `--unit`; that error names the
-card and the largest unit that fits.
+print option, not a spec value. The API is `magnets.card_sheet` (`draw=N` for
+`--seed N`), which returns the pages, pieces, panels, marks and ruler in
+mm. It exits 2 for an invalid arrangement, a missing program file, an
+unknown program name, a card that matches no class side, or a card too
+long for the page at `--unit`; that error names the card and the largest
+unit that fits.
 
 `magnets search` exits 0 only when it writes a valid arrangement (optimal
 or feasible). It exits 1 when the search is infeasible, even though it

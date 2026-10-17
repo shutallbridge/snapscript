@@ -353,7 +353,9 @@ def test_print_rejects_bad_input(tmp_path):
     for args, message in [
         ([str(bad), "--program", str(program)], "invalid arrangement: unknown flip"),
         (["example", "--program", str(tmp_path / "missing.txt")], "program file not found"),
+        (["example", "--program", "my-prog"], "program file not found: my-prog"),
         (["example", "--program", str(unknown)], "unknown card [nope]"),
+        (["example", "--seed", "0"], "--seed names one of check's draws, 1 or more, not 0"),
     ]:
         run = subprocess.run([*MAGNETS, "print", *args], capture_output=True, text=True, cwd=tmp_path)
         assert run.returncode == 2, args
@@ -390,3 +392,35 @@ def test_print_rejects_a_card_too_long_for_the_page(tmp_path):
     assert run.returncode == 2
     assert "[if] is too long for a4 paper" in run.stderr
     assert "the largest unit that fits is 95 mm" in run.stderr
+
+
+BUNDLED = ["first_sketch", "nested_blocks", "parameters", "receivers_and_groups", "illegal"]
+
+
+def test_print_every_bundled_program_by_default(tmp_path):
+    run = subprocess.run([*MAGNETS, "print", "example"], capture_output=True, text=True, check=True, cwd=tmp_path)
+    html = (tmp_path / "out" / "example" / "cards.html").read_text()
+    assert "Wrote out/example/cards.html" in run.stdout
+    headings = [html.index(f">{name} (min lengths)<") for name in BUNDLED]
+    assert headings == sorted(headings)
+    assert html.count("these neighbours should not snap") == 1
+    assert headings[-1] < html.index("these neighbours should not snap")
+
+
+def test_print_a_bundled_program_by_name_at_a_draws_lengths(tmp_path):
+    out = tmp_path / "cards.html"
+    subprocess.run(
+        [*MAGNETS, "print", "example", "--program", "nested_blocks", "--seed", "3", "--out", str(out)],
+        capture_output=True,
+        check=True,
+        cwd=tmp_path,
+    )
+    html = out.read_text()
+    assert html.count(">nested_blocks (draw 3, seed 0)<") == html.count("<svg ")
+    assert not any(name in html for name in BUNDLED if name != "nested_blocks")
+
+
+def test_print_rejects_an_unknown_program_name(tmp_path):
+    run = subprocess.run([*MAGNETS, "print", "example", "--program", "nope"], capture_output=True, text=True, cwd=tmp_path)
+    assert run.returncode == 2
+    assert f"no bundled program named 'nope'; expected one of {', '.join(BUNDLED)}" in run.stderr
