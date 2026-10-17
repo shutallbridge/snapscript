@@ -13,7 +13,7 @@ from .contacts import ContactGroup, Label, SideEdges
 from .data import Arrangement, CardClass, Rules, load_arrangement, load_classes, load_pinned, load_rules
 from .physics import FLIPS
 from .programs import Failure, Forbid, Info, Layout, Strip
-from .sheet import CardSheet
+from .sheet import CardSheet, Paper
 from .solver import Requirement
 
 
@@ -130,6 +130,7 @@ def card_sheet(
     program_text: str,
     *,
     unit: float = 30,
+    paper: Paper = "a4",
     max_length: int = 6,
     class_data: str | Path | Mapping | None = None,
     rule_data: str | Path | Mapping | None = None,
@@ -139,15 +140,18 @@ def card_sheet(
     Every card of the program in spec notation is one piece at its minimum
     length: its class's front on the upper panel, its back below, upright
     under `top_bottom` and rotated 180° under `left_right`, each panel
-    showing every pocket's layer nearest that face. `unit` is the size of a
-    U in mm; every position is in mm on an A4 portrait page. `arrangement`,
-    `class_data` and `rule_data` are as for `check`. Raises `ProgramError`
-    for a program that can't be read, and `ValueError` for a `unit` too
-    big for a piece to fit on a page.
+    showing every pocket's layer nearest that face. Pieces are packed in
+    program order into rows edge to edge, so neighbours share cut lines,
+    and every page has a 50 mm ruler. `unit` is the size of a U in mm;
+    every position is in mm on a portrait `paper` page, `"a4"` or
+    `"letter"`. `arrangement`, `class_data` and `rule_data` are as for
+    `check`. Raises `ProgramError` for a program that can't be read, and
+    `ValueError` for an unknown paper or a `unit` too big for a piece to
+    fit on a page, naming the card and the largest unit that fits.
     """
     _, classes, loaded, all_sides = _load(arrangement, max_length, class_data, rule_data)
     strips = _programs.parse(program_text, classes)
-    return _sheet.card_sheet(loaded, classes, all_sides, strips, program_text, unit)
+    return _sheet.card_sheet(loaded, classes, all_sides, strips, program_text, unit, paper)
 
 
 @dataclass(frozen=True)

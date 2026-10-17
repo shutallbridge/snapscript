@@ -9,7 +9,7 @@ uv run magnets check my.yaml --out out/mine
 uv run magnets search --flip top_bottom --classes set_get,literal --time-limit 30
 uv run magnets search --flip top_bottom --pin example   # keep the example's set_get design
 uv run magnets search --flip left_right --goal no_snap  # illegal neighbours need only not snap
-uv run magnets print example --program my_program.txt --unit 30  # paper cards to cut and fold
+uv run magnets print example --program my_program.txt --unit 30 --paper letter  # paper cards to cut and fold
 uv run pytest
 ```
 
@@ -75,20 +75,31 @@ must failures instead.
 a program's cards, to check an arrangement's contacts by eye without
 magnets. The arrangement (a file or a bundled name, as for `check`) says
 where the pockets go; the program, in spec notation, which cards to print.
-It writes one HTML file of A4 SVG pages, `out/<arrangement>/cards.html`
+It writes one HTML file of SVG pages, `out/<arrangement>/cards.html`
 (or `--out`), to print at 100%: the program's text, then every card once at
-its minimum length, each piece below the last. A piece is the class's front over
-its back, sharing a dashed fold line; cut it out and fold it, and every
-pocket's two faces line up. Under `top_bottom` the back is upright and the
-fold is marked `↕`; under `left_right` it is rotated 180° and marked `↔`.
-The front is always on top, so a `[get(x)]` prints as `[set(x)to]` over
-`[get(x)]`, the handwriting carried over; a card that is not a flip pair
-gets an unlabelled back. Each pocket is a tick on its edge with the layer
-nearest that face: `N` red, `S` blue, `F` grey, `–` empty. `--unit` is the
-size of a U in mm (30 by default), a print option, not a spec value. The
-API is `magnets.card_sheet`, which returns the pages, pieces, panels and
-marks in mm. It exits 2 for an invalid arrangement, a missing program file,
-or a card that matches no class side.
+its minimum length, in program order. `--paper` is `a4` (the default) or
+`letter`; nothing prints within 10 mm of the page's edge. The pieces are
+packed to cut out with few cuts: every piece is 2U tall, so each row is a
+2U strip of pieces butted end to end and rows sit edge to edge, so one cut
+separates two neighbours, and the only waste is at the end of each row and
+page. A piece never breaks across pages. Every page has a 50 mm ruler at
+its foot: if it doesn't measure 50 mm, the printer scaled the page.
+
+A piece is the class's front over its back, sharing a dashed fold line;
+cut it out and fold it, and every pocket's two faces line up. Under
+`top_bottom` the back is upright and the fold is marked `↕`; under
+`left_right` it is rotated 180° and marked `↔`. The front is always on
+top, so a `[get(x)]` prints as `[set(x)to]` over `[get(x)]`, the
+handwriting carried over; a card that is not a flip pair gets an
+unlabelled back. Each pocket is a tick in from its edge with the layer
+nearest that face: `N` red, `S` blue, `F` grey, `–` empty. Ticks and
+letters stay inside their own panel, so neighbours sharing a cut line keep
+their pockets apart. `--unit` is the size of a U in mm (30 by default), a
+print option, not a spec value. The API is `magnets.card_sheet`, which
+returns the pages, pieces, panels, marks and ruler in mm. It exits 2 for an
+invalid arrangement, a missing program file, a card that matches no class
+side, or a card too long for the page at `--unit`; that error names the
+card and the largest unit that fits.
 
 `magnets search` exits 0 only when it writes a valid arrangement (optimal
 or feasible). It exits 1 when the search is infeasible, even though it

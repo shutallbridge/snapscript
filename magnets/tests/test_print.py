@@ -47,10 +47,10 @@ def test_every_card_once_at_min_length_front_above_back():
         assert p.front.width == p.back.width == p.length * 30
         assert p.front.y + p.front.height == p.fold_y == p.back.y
         assert p.front.x == p.back.x
-    # Each piece below the last, never overlapping.
+    # Each piece after the last, in its row or a row below, never overlapping.
     for page in sheet.pages:
         for a, b in zip(page.pieces, page.pieces[1:]):
-            assert b.front.y >= a.back.y + a.back.height
+            assert b.front.x >= a.front.x + a.front.width or b.front.y >= a.back.y + a.back.height
 
 
 @pytest.mark.parametrize(
@@ -124,20 +124,100 @@ def test_back_folds_onto_front(flip, rotated, fold):
 
 
 def test_program_text_above_its_cards_on_as_many_a4_pages_as_needed():
-    text = "// six cards\n" + "[set(x)to][num(1)]\n" * 3
+    # 30 cards, 2U and 1U at 30 mm, four to a row: more rows than a page holds.
+    text = "// thirty cards\n" + "".join(f"[if][num({i})]\n" for i in range(15))
     sheet = card_sheet("example", text)
     first = sheet.pages[0]
     assert [line.text for line in first.text] == text.splitlines()
     assert first.pieces[0].front.y > first.text[-1].y
     assert all((page.width, page.height) == (210, 297) for page in sheet.pages)
     assert len(sheet.pages) > 1 and all(page.pieces for page in sheet.pages)
-    assert sum(len(page.pieces) for page in sheet.pages) == 6
+    # In program order, across pages, each piece whole on one page.
+    found = [p.card.text for p in pieces(sheet)]
+    assert found == [card for i in range(15) for card in ("[if]", f"[num({i})]")]
     for page in sheet.pages:
         assert all(10 <= p.front.y and p.back.y + p.back.height <= 297 - 10 for p in page.pieces)
 
 
-def test_unknown_card_and_oversized_unit():
+def test_unknown_card():
     with pytest.raises(ProgramError, match="unknown card"):
         card_sheet("example", "[nope]")
-    with pytest.raises(ValueError, match="too big"):
-        card_sheet("example", "[if]", unit=100)
+
+
+@pytest.mark.parametrize(
+    "text, unit, paper, card, largest",
+    [
+        # 2U at 100 mm is 200 mm, over A4's 190 mm printable width.
+        ("[num(1)]\n[if]", 100, "a4", "[if]", "95"),
+        # Letter is 195.9 mm wide inside its margins.
+        ("[if]", 100, "letter", "[if]", "97.9"),
+        # The longest card names the unit that fits the whole program.
+        ("[if][num(1)]\n[dedent]\n[define(f)]", 96, "a4", "[if]", "95"),
+    ],
+)
+def test_a_card_too_long_for_the_page_names_the_largest_unit(text, unit, paper, card, largest):
+    with pytest.raises(ValueError) as err:
+        card_sheet("example", text, unit=unit, paper=paper)
+    message = str(err.value)
+    assert message.startswith(f"{card} is too long")
+    assert f"the largest unit that fits is {largest} mm" in message
+
+
+def rows(page):
+    """The page's pieces grouped by the y of their top edge, in order."""
+    found = {}
+    for p in page.pieces:
+        found.setdefault(p.front.y, []).append(p)
+    return list(found.values())
+
+
+def test_pieces_in_a_row_and_rows_touch_inside_the_printable_area():
+    # 1U and 2U cards at 30 mm: a 190 mm wide printable area holds six U per row.
+    text = "[if][get(score)]\n" * 5
+    (page,) = card_sheet("example", text, unit=30).pages
+    lengths = [[p.length for p in row] for row in rows(page)]
+    assert lengths == [[2, 1, 2, 1], [2, 1, 2, 1], [2, 1]]
+    for row in rows(page):
+        assert row[0].front.x == 10
+        for a, b in zip(row, row[1:]):
+            assert b.front.x == a.front.x + a.front.width
+    tops = [row[0].front.y for row in rows(page)]
+    assert [b - a for a, b in zip(tops, tops[1:])] == [60, 60]
+    for p in page.pieces:
+        assert 10 <= p.front.x and p.front.x + p.front.width <= 200
+        assert 10 <= p.front.y and p.back.y + p.back.height <= 287
+
+
+@pytest.mark.parametrize("paper", ["a4", "letter"])
+def test_every_page_has_a_50_mm_ruler_clear_of_the_pieces(paper):
+    text = "".join(f"[if][num({i})]\n" for i in range(20))
+    sheet = card_sheet("example", text, paper=paper)
+    assert len(sheet.pages) > 1
+    for page in sheet.pages:
+        ruler = page.ruler
+        assert ruler.length == 50
+        assert 10 <= ruler.x and ruler.x + ruler.length <= page.width - 10
+        assert 10 <= ruler.y <= ruler.y + ruler.height <= page.height - 10
+        assert all(p.back.y + p.back.height <= ruler.y for p in page.pieces)
+
+
+def test_letter_paper_and_a4_by_default():
+    text = "".join(f"[if][num({i})]\n" for i in range(20))
+    assert card_sheet("example", text).paper == "a4"
+    sheet = card_sheet("example", text, paper="letter")
+    assert sheet.paper == "letter"
+    for page in sheet.pages:
+        assert (page.width, page.height) == (215.9, 279.4)
+        for p in page.pieces:
+            assert 10 <= p.front.x and p.front.x + p.front.width <= 215.9 - 10
+            assert 10 <= p.front.y and p.back.y + p.back.height <= 279.4 - 10
+    with pytest.raises(ValueError, match="unknown paper 'a3'"):
+        card_sheet("example", "[if]", paper="a3")
+
+
+@pytest.mark.parametrize("per_row", [3, 11])
+def test_a_row_that_fits_exactly_is_full(per_row):
+    # 1U cards at a unit that divides the 190 mm printable width exactly.
+    text = "".join(f"[num({i})]" for i in range(per_row))
+    (page,) = card_sheet("example", text, unit=190 / per_row).pages
+    assert [len(row) for row in rows(page)] == [per_row]

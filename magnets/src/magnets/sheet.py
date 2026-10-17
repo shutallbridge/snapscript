@@ -1,25 +1,35 @@
-"""The paper prototype: a program's cards laid out on A4 pages as folded pieces.
+"""The paper prototype: a program's cards laid out on A4 or letter pages as
+folded pieces, packed to cut out with as few cuts as possible.
 
 Each card is one piece of two panels, its class's front over its back,
 sharing a fold line. Under `top_bottom` the back is printed upright, under
 `left_right` rotated 180°, so that after folding along the line every
 pocket's two faces line up. Each panel shows the up layer of every pocket
-of its side, nearest that face. Lengths are in mm, from the page's top left.
+of its side, nearest that face. Pieces sit edge to edge in rows, each row
+one 2U strip, rows edge to edge too, so one cut separates two neighbours.
+Every page has a 50 mm ruler to check the printer kept the scale. Lengths
+are in mm, from the page's top left.
 """
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from fractions import Fraction
+from typing import Literal
 
 from .contacts import SideEdges
 from .data import Arrangement, CardClass, carry_over
 from .physics import Edges, Pocket, flip
 from .programs import Card, Strip
 
-PAGE = (210.0, 297.0)  # A4 portrait
-MARGIN = 10.0
+Paper = Literal["a4", "letter"]  # also the CSS @page size keyword
+PAPERS: dict[Paper, tuple[float, float]] = {"a4": (210.0, 297.0), "letter": (215.9, 279.4)}  # portrait
+MARGIN = 10.0  # the unprinted edge of the page, which most printers manage
 TEXT_LINE = 5.0  # the program text's line height
-GAP = 6.0  # between the text and the pieces, and between pieces
+GAP = 6.0  # between the text and the pieces
+RULER_LENGTH = 50.0
+RULER_HEIGHT = 7.0  # the ruler and its label, along the printable area's foot
+SLACK = 1e-6  # mm, so float rounding never pushes out a piece that fits exactly
 FOLDS = {"top_bottom": "↕", "left_right": "↔"}
 EMPTY = "–"
 
@@ -68,17 +78,30 @@ class TextLine:
 
 
 @dataclass(frozen=True)
+class Ruler:
+    """A `length` mm scale bar, its left end at `x`, in a band `height` tall
+    from `y`: a printout at true scale measures `length` mm along it."""
+
+    x: float
+    y: float
+    length: float
+    height: float
+
+
+@dataclass(frozen=True)
 class Page:
     width: float
     height: float
     text: tuple[TextLine, ...]
     pieces: tuple[Piece, ...]
+    ruler: Ruler
 
 
 @dataclass(frozen=True)
 class CardSheet:
     arrangement: Arrangement
     unit: float
+    paper: Paper
     pages: tuple[Page, ...]
 
 
@@ -89,15 +112,20 @@ def card_sheet(
     strips: tuple[Strip, ...],
     program_text: str,
     unit: float,
+    paper: Paper,
 ) -> CardSheet:
-    """Every card of the program once, at its minimum length, each piece
-    below the last, on as many pages as it takes, under the program's text."""
+    """Every card of the program once, at its minimum length, in program
+    order: each piece after the last in its row, a new row when the row is
+    full, a new page when the page is, under the program's text."""
     if unit <= 0:
         raise ValueError(f"unit must be positive, not {unit}")
+    if paper not in PAPERS:
+        raise ValueError(f"unknown paper {paper!r}; expected one of {', '.join(PAPERS)}")
     owner = {side.name: cls for cls in classes.values() for side in cls.sides}
     cards = [card for strip in strips for line in strip for card in line.cards]
-    width, height = PAGE
-    bottom = height - MARGIN
+    width, height = PAPERS[paper]
+    bottom = height - MARGIN - RULER_HEIGHT
+    ruler = Ruler(MARGIN, bottom, RULER_LENGTH, RULER_HEIGHT)
     pages: list[Page] = []
     text: list[TextLine] = []
     placed: list[Piece] = []
@@ -105,7 +133,7 @@ def card_sheet(
 
     def new_page() -> None:
         nonlocal text, placed, y
-        pages.append(Page(width, height, tuple(text), tuple(placed)))
+        pages.append(Page(width, height, tuple(text), tuple(placed), ruler))
         text, placed, y = [], [], MARGIN
 
     for line in program_text.rstrip("\n").splitlines():
@@ -115,20 +143,39 @@ def card_sheet(
         y += TEXT_LINE
     if text:
         y += GAP
+    _check_fit(cards, owner, unit, paper, width - 2 * MARGIN, bottom - MARGIN)
+    used = 0  # U along the current row, counted whole so that a row fits exactly
     for card in cards:
         cls = owner[card.side]
-        piece_width, piece_height = cls.min_length * unit, 2 * unit
-        if piece_width > width - 2 * MARGIN or piece_height > height - 2 * MARGIN:
-            raise ValueError(
-                f"{card.text} is {piece_width:g} by {piece_height:g} mm folded out at {unit:g} mm per U, "
-                "too big for an A4 page"
-            )
-        if y + piece_height > bottom and (text or placed):
+        if (used + cls.min_length) * unit > width - 2 * MARGIN + SLACK:
+            # Start a new row, edge to edge with the last.
+            used, y = 0, y + 2 * unit
+        if y + 2 * unit > bottom + SLACK and (text or placed):
             new_page()
-        placed.append(_piece(card, cls, arrangement, all_sides, MARGIN, y, unit))
-        y += piece_height + GAP
+            used = 0
+        placed.append(_piece(card, cls, arrangement, all_sides, MARGIN + used * unit, y, unit))
+        used += cls.min_length
     new_page()
-    return CardSheet(arrangement, unit, tuple(pages))
+    return CardSheet(arrangement, unit, paper, tuple(pages))
+
+
+def _check_fit(
+    cards: list[Card], owner: Mapping[str, CardClass], unit: float, paper: Paper, across: float, down: float
+) -> None:
+    """Raise if a piece is bigger than the `across` by `down` mm left for
+    pieces, naming the card that limits the unit and the largest that fits."""
+    if not cards:
+        return
+    # A piece is its length in U across and 2U down; the longest card limits.
+    card = max(cards, key=lambda card: owner[card.side].min_length)
+    length = owner[card.side].min_length
+    largest = min(across / length, down / 2)
+    if unit > largest + SLACK:
+        raise ValueError(
+            f"{card.text} is too long for {paper} paper at {unit:g} mm per U: folded out it is "
+            f"{length * unit:g} by {2 * unit:g} mm, and the printable area leaves {across:g} by {down:g} mm; "
+            f"the largest unit that fits is {math.floor(largest * 10) / 10:g} mm"
+        )
 
 
 def _piece(

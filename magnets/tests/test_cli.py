@@ -358,3 +358,35 @@ def test_print_rejects_bad_input(tmp_path):
         run = subprocess.run([*MAGNETS, "print", *args], capture_output=True, text=True, cwd=tmp_path)
         assert run.returncode == 2, args
         assert message in run.stderr
+
+
+def test_print_on_letter_paper_with_a_ruler_on_every_page(tmp_path):
+    program = tmp_path / "prog.txt"
+    program.write_text("".join(f"[if][num({i})]\n" for i in range(20)))
+    out = tmp_path / "cards.html"
+    run = subprocess.run(
+        [*MAGNETS, "print", "example", "--program", str(program), "--paper", "letter", "--out", str(out)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    html = out.read_text()
+    pages = html.count("<svg ")
+    assert pages > 1 and f"on {pages} page(s)" in run.stdout
+    assert html.count('width="215.9mm" height="279.4mm"') == pages
+    assert "size: letter portrait" in html
+    assert html.count("50 mm") == pages
+
+
+def test_print_rejects_a_card_too_long_for_the_page(tmp_path):
+    program = tmp_path / "prog.txt"
+    program.write_text("[if]\n")
+    run = subprocess.run(
+        [*MAGNETS, "print", "example", "--program", str(program), "--unit", "100"],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+    )
+    assert run.returncode == 2
+    assert "[if] is too long for a4 paper" in run.stderr
+    assert "the largest unit that fits is 95 mm" in run.stderr

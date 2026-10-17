@@ -15,7 +15,7 @@ from .contacts import ContactGroup, Label
 from .data import Arrangement, BundledProgram
 from .physics import Shape
 from .programs import ProgramContact
-from .sheet import CardSheet, Panel, Piece
+from .sheet import CardSheet, Page, Panel, Piece, Ruler
 from .solver import Requirement
 
 # Rows of the kind x result table; unavoidable is the subset of forbid that
@@ -321,25 +321,25 @@ def _labels(pc: ProgramContact) -> str:
 _LETTER_COLOURS = {"N": "#d62728", "S": "#1f5fbf", "F": "#888888"}
 _OPPOSITE_EDGE = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}
 _INWARD = {"top": (0, 1), "bottom": (0, -1), "left": (1, 0), "right": (-1, 0)}
-_TICK = 3.0  # mm across the edge
+_TICK = 3.0  # mm in from the edge, never over a neighbour's shared cut line
 _LETTER_INSET = 4.5  # mm from the edge to the letter's centre
 _SMALL = 3.5  # mm, the size of the program text, letters and fold mark
 
 
 def cards_html(sheet: CardSheet) -> str:
-    """The card sheet as one HTML file of A4 SVG pages, to print at 100%."""
+    """The card sheet as one HTML file of SVG pages, to print at 100%."""
     pages = "\n".join(_page_svg(page) for page in sheet.pages)
     title = html.escape(f"{sheet.arrangement.name} cards")
     return (
         "<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n"
         f"<title>{title}</title>\n"
-        "<style>@page { size: A4 portrait; margin: 0 } body { margin: 0 } "
+        f"<style>@page {{ size: {sheet.paper} portrait; margin: 0 }} body {{ margin: 0 }} "
         "svg { display: block; break-after: page }</style>\n"
         f"</head>\n<body>\n{pages}\n</body>\n</html>\n"
     )
 
 
-def _page_svg(page) -> str:
+def _page_svg(page: Page) -> str:
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{page.width:g}mm" height="{page.height:g}mm" '
         f'viewBox="0 0 {page.width:g} {page.height:g}">'
@@ -351,6 +351,7 @@ def _page_svg(page) -> str:
         )
     for piece in page.pieces:
         parts += _piece_svg(piece)
+    parts += _ruler_svg(page.ruler)
     parts.append("</svg>")
     return "\n".join(parts)
 
@@ -387,10 +388,10 @@ def _panel_svg(panel: Panel) -> list[str]:
     for mark in panel.marks:
         edge = _OPPOSITE_EDGE[mark.edge] if panel.rotated else mark.edge
         dx, dy = _INWARD[edge]
-        # The tick runs across the edge, perpendicular to it.
+        # The tick runs in from the edge, perpendicular to it.
         parts.append(
-            f'<line x1="{mark.x - dx * _TICK / 2:g}" y1="{mark.y - dy * _TICK / 2:g}" '
-            f'x2="{mark.x + dx * _TICK / 2:g}" y2="{mark.y + dy * _TICK / 2:g}" stroke="black" stroke-width="0.3"/>'
+            f'<line x1="{mark.x:g}" y1="{mark.y:g}" x2="{mark.x + dx * _TICK:g}" y2="{mark.y + dy * _TICK:g}" '
+            'stroke="black" stroke-width="0.3"/>'
         )
         colour = _LETTER_COLOURS.get(mark.letter, "black")
         parts.append(
@@ -398,4 +399,24 @@ def _panel_svg(panel: Panel) -> list[str]:
             f'font-size="{_SMALL:g}" font-weight="bold" fill="{colour}" text-anchor="middle" '
             f'dominant-baseline="central">{mark.letter}</text>'
         )
+    return parts
+
+
+def _ruler_svg(ruler: Ruler) -> list[str]:
+    """A bar with a tick every 10 mm, labelled to its right."""
+    mid = ruler.y + ruler.height / 2
+    parts = [
+        f'<line x1="{ruler.x:g}" y1="{mid:g}" x2="{ruler.x + ruler.length:g}" y2="{mid:g}" '
+        'stroke="black" stroke-width="0.3"/>'
+    ]
+    for mm in range(0, int(ruler.length) + 1, 10):
+        half = 2.0 if mm in (0, ruler.length) else 1.0
+        parts.append(
+            f'<line x1="{ruler.x + mm:g}" y1="{mid - half:g}" x2="{ruler.x + mm:g}" y2="{mid + half:g}" '
+            'stroke="black" stroke-width="0.3"/>'
+        )
+    parts.append(
+        f'<text x="{ruler.x + ruler.length + 3:g}" y="{mid:g}" font-family="sans-serif" font-size="{_SMALL:g}" '
+        f'dominant-baseline="central">{ruler.length:g} mm: if it measures otherwise, print at 100% scale</text>'
+    )
     return parts

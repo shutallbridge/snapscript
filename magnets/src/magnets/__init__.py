@@ -5,7 +5,7 @@ from .contacts import ContactGroup, Label, SideEdges
 from .data import Arrangement, ArrangementError, BundledProgram, DataError, bundled_programs
 from .physics import Pocket, PocketPair
 from .programs import Card, Failure, Forbid, Info, Layout, Line, Placed, ProgramContact, ProgramError
-from .sheet import CardSheet, Mark, Page, Panel, Piece, TextLine
+from .sheet import CardSheet, Mark, Page, Panel, Piece, Ruler, TextLine
 from .solver import Requirement
 
 __all__ = [
@@ -34,6 +34,7 @@ __all__ = [
     "ProgramError",
     "ProgramResult",
     "Requirement",
+    "Ruler",
     "SideEdges",
     "SolveResult",
     "TextLine",

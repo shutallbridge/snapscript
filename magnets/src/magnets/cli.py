@@ -9,6 +9,7 @@ from .api import CheckResult, SolveResult, card_sheet, check, check_program, sol
 from .data import ArrangementError, bundled_programs
 from .physics import FLIPS
 from .reports import arrangement_text, cards_html, conflict_lines, csv_text, program_report_text, program_status, summary_text
+from .sheet import PAPERS
 from .solver import GOALS
 
 
@@ -57,6 +58,7 @@ def main(argv: list[str] | None = None) -> int:
     print_cmd.add_argument("arrangement", help="an arrangement YAML file, or a bundled arrangement's name")
     print_cmd.add_argument("--program", type=Path, required=True, help="a program file in spec notation")
     print_cmd.add_argument("--unit", type=float, default=30, help="the size of a U, in mm (default: 30)")
+    print_cmd.add_argument("--paper", choices=PAPERS, default="a4", help="paper size (default: a4)")
     print_cmd.add_argument("--out", type=Path, help="HTML file to write (default: out/<arrangement>/cards.html)")
 
     args = parser.parse_args(argv)
@@ -84,7 +86,7 @@ def _common(command: argparse.ArgumentParser, classes_help: str) -> None:
 def _print(args: argparse.Namespace) -> int:
     if not args.program.is_file():
         raise ValueError(f"program file not found: {args.program}")
-    sheet = card_sheet(args.arrangement, args.program.read_text(encoding="utf-8"), unit=args.unit)
+    sheet = card_sheet(args.arrangement, args.program.read_text(encoding="utf-8"), unit=args.unit, paper=args.paper)
     out = args.out or Path("out") / sheet.arrangement.name / "cards.html"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(cards_html(sheet), encoding="utf-8")
