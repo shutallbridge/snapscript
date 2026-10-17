@@ -13,22 +13,24 @@ uv run pytest
 
 `check` writes `summary.txt`, `contacts.csv` and `programs.txt` to
 `out/<arrangement>/`. A contact is two edges of two cards at given lengths,
-facing at some offset. Contacts with the same geometry are grouped into one
-row, named by its smallest length pair, with a `collapsed` count; under
-`left_right` a geometry can split into two rows. `summary.txt` counts both:
-rows by kind and result, then contacts (the sum of `collapsed`), where a
-contact with two labels counts once under each. It lists must failures and
-should and nice leaks. `programs.txt` lays each bundled test program
-(`src/magnets/data/programs.yaml`) out on the table, once at minimum card
-lengths and 20 times at seeded random lengths, and reports a legal program's
-PASS or FAIL with the contacts that fail, or every forbid contact of an
-illegal program with its grade.
+facing at some offset. Contacts with the same geometry and labels make one
+contact group, named by its smallest length pair, with a `count` of the
+contacts it holds; under `left_right` a geometry can split into two contact
+groups. `contacts.csv` has one row per contact group and label, leaving out
+those where no pockets line up, unless the label is connect.
+`summary.txt` counts both: contact groups by kind and result, then contacts
+(the sum of `count`), where a contact with two labels counts once under
+each. It lists must failures and should and nice leaks. `programs.txt`
+lays each bundled test program (`src/magnets/data/programs.yaml`) out on
+the table, once at minimum card lengths and 20 times at seeded random
+lengths, and reports a legal program's PASS or FAIL with the contacts that
+fail, or every forbid contact of an illegal program with its grade.
 An arrangement's `flip` is `top_bottom` (the default) or `left_right`. A
 flip pair's back is derived from its front, so a forbid contact whose
 partner contact is a connect can never be blocked; it is flagged
 `unavoidable` and listed apart from the avoidable leaks. Unavoidable low
-leaks, many under `left_right`, are only counted; `contacts.csv` has every
-row.
+leaks, many under `left_right`, are only counted; `contacts.csv` lists
+them.
 Card classes (`classes.yaml`), grammar rules (`rules.yaml`) and bundled
 arrangements live in `src/magnets/data/`. The public API is `magnets.check`,
 `magnets.check_program` (a program text in spec notation) and
@@ -53,6 +55,13 @@ nothing, since no arrangement can block them.
 `--pin <arrangement>` keeps every edge that arrangement mentions exactly as
 it is, empty ones too (`right: []`), and designs the rest; its flip must
 match `--flip`. If no valid arrangement exists, the search says
-`infeasible`, names a set of must contacts that conflict (enough to prove
-it, not always the fewest), and writes the arrangement with the fewest
-failing must contacts instead.
+`infeasible`, names a set of requirements that conflict (enough to prove
+it, not always the smallest), and writes the arrangement with the fewest
+must failures instead.
+
+`magnets search` exits 0 only when it writes a valid arrangement (optimal
+or feasible). It exits 1 when the search is infeasible, even though it
+still writes the arrangement with the fewest must failures, and when it is
+unknown (nothing found in the time limit: it writes no files). `magnets
+check` exits 0 whenever it writes its reports, valid or not. Both exit 2 for
+an invalid arrangement or argument.

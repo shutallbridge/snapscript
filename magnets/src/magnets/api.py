@@ -8,22 +8,23 @@ from pathlib import Path
 from . import contacts as _contacts
 from . import programs as _programs
 from . import solver as _solver
-from .contacts import Contact, Label, SideEdges
+from .contacts import ContactGroup, Label, SideEdges
 from .data import Arrangement, CardClass, Rules, load_arrangement, load_classes, load_pinned, load_rules
 from .physics import FLIPS
 from .programs import Failure, Forbid, Info, Layout, Strip
-from .solver import MustContact
+from .solver import Requirement
 
 
 @dataclass(frozen=True)
 class CheckResult:
-    """Every contact of an arrangement, graded against the grammar."""
+    """Every contact of an arrangement, graded against the grammar, in
+    contact groups."""
 
     arrangement: Arrangement
     max_length: int
     sides: Mapping[str, SideEdges]  # "class.side" -> pockets, backs derived
-    contacts: list[Contact]
-    must_failures: list[tuple[Contact, Label]]
+    groups: list[ContactGroup]
+    must_failures: list[tuple[ContactGroup, Label]]
 
     @property
     def valid(self) -> bool:
@@ -132,12 +133,12 @@ class SolveResult:
     cost units: a should-leak contact costs 10, a nice-leak 1, a pocket
     0.01 to 0.02. `arrangement` and `check` are None if nothing was found.
 
-    If infeasible, `conflicts` names must contacts that can't all hold
+    If infeasible, `conflicts` names requirements that can't all hold
     (enough to make it infeasible, not always the fewest), and `arrangement`
-    is the one with the fewest failing must contacts, then the least cost;
+    is the one with the fewest must failures, then the least cost;
     `fewest_status` says whether that is proven (optimal), the best found
     (feasible) or not found (unknown). `must_failures` counts its failing
-    contacts per must contact, as the solver grades it; `check` grades it
+    contacts per requirement, as the solver grades it; `check` grades it
     again. `objective` is then its cost, and there is no `bound`.
     """
 
@@ -153,8 +154,8 @@ class SolveResult:
     wall_time: float
     arrangement: Arrangement | None
     check: CheckResult | None
-    conflicts: tuple[MustContact, ...] = ()
-    must_failures: Mapping[MustContact, int] = field(default_factory=dict)
+    conflicts: tuple[Requirement, ...] = ()
+    must_failures: Mapping[Requirement, int] = field(default_factory=dict)
     fewest_status: str | None = None
 
 

@@ -55,7 +55,7 @@ def test_a_forbid_between_single_sided_cards_is_never_unavoidable(flip):
     classes = [name.split(".")[0] for name in result.sides]
     single = {name for name in result.sides if classes.count(name.split(".")[0]) == 1}
     checked = 0
-    for c in result.contacts:
+    for c in result.groups:
         if c.a in single or c.b in single:
             for label in c.labels:
                 assert not label.unavoidable, c
@@ -65,7 +65,7 @@ def test_a_forbid_between_single_sided_cards_is_never_unavoidable(flip):
 
 def test_only_forbid_labels_are_unavoidable():
     for flip in ("top_bottom", "left_right"):
-        for c in check({"flip": flip}).contacts:
+        for c in check({"flip": flip}).groups:
             for label in c.labels:
                 if label.unavoidable:
                     assert label.kind == "forbid", c
@@ -82,10 +82,10 @@ def test_left_right_ties_line_neighbours_the_other_way_round():
 
 
 def stacks(result, upper, lower, offset):
-    """(lengths, collapsed, unavoidable) of every contact of `upper` over `lower` at `offset`."""
+    """(lengths, count, unavoidable) of every contact of `upper` over `lower` at `offset`."""
     return sorted(
-        (c.lengths, c.collapsed, forbid(c).unavoidable)
-        for c in result.contacts
+        (c.lengths, c.count, forbid(c).unavoidable)
+        for c in result.groups
         if c.axis == "vertical" and (c.a, c.b, c.offset) == (upper, lower, offset)
     )
 
@@ -121,14 +121,14 @@ def test_left_right_unavoidable_stacks_with_pockets():
         }
     )
     found = sorted(
-        (c.lengths, c.collapsed, c.result, forbid(c).unavoidable, forbid(c).grade)
-        for c in result.contacts
+        (c.lengths, c.count, c.result, forbid(c).unavoidable, forbid(c).grade)
+        for c in result.groups
         if c.axis == "vertical" and (c.a, c.b, c.offset) == ("set_get.set", "define_call.define", 0)
     )
     assert found == [((1, 1), 6, "snap", True, "leak"), ((1, 2), 30, "snap", False, "leak")]
     partner = sorted(
         (c.lengths, c.result)
-        for c in result.contacts
+        for c in result.groups
         if c.axis == "vertical" and (c.a, c.b, c.offset) == ("set_get.get", "define_call.call", 0)
     )
     assert partner == [((1, 1), "snap"), ((1, 2), "nothing")]

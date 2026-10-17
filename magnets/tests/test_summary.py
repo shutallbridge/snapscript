@@ -1,4 +1,4 @@
-"""The summary counts both rows and contacts, and lists unavoidable leaks
+"""The summary counts both contact groups and contacts, and lists unavoidable leaks
 at should and nice only."""
 
 import re
@@ -11,7 +11,7 @@ from helpers import set_get
 from magnets import check
 from magnets.reports import summary_text
 
-ROWS_HEADING = "Rows by kind and result"
+GROUPS_HEADING = "Contact groups by kind and result"
 CONTACTS_HEADING = "Contacts by kind and result"
 KINDS = ("connect", "forbid", "coexist", "ungraded")
 
@@ -40,41 +40,41 @@ def flips():
     return {flip: check({"flip": flip}) for flip in ("top_bottom", "left_right")}
 
 
-def test_rows_are_not_called_contacts(flips):
+def test_contact_groups_are_not_called_contacts(flips):
     summary = summary_text(flips["top_bottom"])
-    assert f"\n{ROWS_HEADING} " in summary
+    assert f"\n{GROUPS_HEADING}:" in summary
     assert f"\n{CONTACTS_HEADING} " in summary
 
 
-def test_both_flips_have_the_same_contacts_in_different_rows(flips):
-    rows = {flip: table(summary_text(r), ROWS_HEADING) for flip, r in flips.items()}
+def test_both_flips_have_the_same_contacts_in_different_contact_groups(flips):
+    groups = {flip: table(summary_text(r), GROUPS_HEADING) for flip, r in flips.items()}
     contacts = {flip: table(summary_text(r), CONTACTS_HEADING) for flip, r in flips.items()}
 
     def by_kind(counts):
         return {k: sum(n for (kind, _), n in counts.items() if kind == k) for k in KINDS}
 
     assert by_kind(contacts["top_bottom"]) == by_kind(contacts["left_right"])
-    assert "\n29952 rows, 650928 contacts\n" in summary_text(flips["top_bottom"])
-    assert "\n30044 rows, 650928 contacts\n" in summary_text(flips["left_right"])
-    # left_right splits some forbid rows by whether they are unavoidable.
-    assert by_kind(rows["top_bottom"]) != by_kind(rows["left_right"])
+    assert "\n29952 contact groups, 650928 contacts\n" in summary_text(flips["top_bottom"])
+    assert "\n30044 contact groups, 650928 contacts\n" in summary_text(flips["left_right"])
+    # left_right splits some forbid contact groups by whether they are unavoidable.
+    assert by_kind(groups["top_bottom"]) != by_kind(groups["left_right"])
 
 
 @pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
-def test_contact_counts_sum_collapsed(flips, flip):
+def test_contact_counts_sum_group_counts(flips, flip):
     result = flips[flip]
     expected: Counter = Counter()
-    rows: Counter = Counter()
-    for c in result.contacts:
-        for label in c.labels:
-            expected[label.kind, c.result] += c.collapsed
-            rows[label.kind, c.result] += 1
+    groups: Counter = Counter()
+    for g in result.groups:
+        for label in g.labels:
+            expected[label.kind, g.result] += g.count
+            groups[label.kind, g.result] += 1
             if label.unavoidable:
-                expected["unavoidable", c.result] += c.collapsed
-                rows["unavoidable", c.result] += 1
+                expected["unavoidable", g.result] += g.count
+                groups["unavoidable", g.result] += 1
     summary = summary_text(result)
     assert {k: n for k, n in table(summary, CONTACTS_HEADING).items() if n} == expected
-    assert {k: n for k, n in table(summary, ROWS_HEADING).items() if n} == rows
+    assert {k: n for k, n in table(summary, GROUPS_HEADING).items() if n} == groups
 
 
 def test_unavoidable_low_leaks_are_counted_not_listed():

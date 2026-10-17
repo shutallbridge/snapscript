@@ -11,7 +11,7 @@ def test_offsets_are_every_quarter_u_where_the_edges_overlap():
     result = check({})
     offsets = {
         c.offset
-        for c in result.contacts
+        for c in result.groups
         if c.axis == "vertical" and (c.a, c.b) == ("set_get.set", "set_get.set")
     }
     assert offsets == {Fraction(k, 4) for k in range(-23, 24)}
@@ -19,7 +19,7 @@ def test_offsets_are_every_quarter_u_where_the_edges_overlap():
 
 def test_contacts_cover_every_ordered_pair_of_sides_including_a_side_with_itself():
     result = check({})
-    pairs = {(c.a, c.b) for c in result.contacts if c.axis == "vertical" and c.offset == 0}
+    pairs = {(c.a, c.b) for c in result.groups if c.axis == "vertical" and c.offset == 0}
     assert pairs == {(a, b) for a in result.sides for b in result.sides}
 
 
@@ -27,13 +27,13 @@ def test_an_offset_only_occurs_at_lengths_where_the_edges_overlap():
     # [set(x)to] over [call:…] @+1 needs set at least 2U long; @-1 needs call 2U.
     result = check({}, max_length=6)
     assert over(result, "set_get.set", "call_printed.call", 1).lengths == (2, 1)
-    assert over(result, "set_get.set", "call_printed.call", 1).collapsed == 5 * 6
+    assert over(result, "set_get.set", "call_printed.call", 1).count == 5 * 6
     assert over(result, "set_get.set", "call_printed.call", -1).lengths == (1, 2)
     assert over(result, "set_get.set", "call_printed.call", 5.75).lengths == (6, 1)
-    assert over(result, "set_get.set", "call_printed.call", 5.75).collapsed == 6
+    assert over(result, "set_get.set", "call_printed.call", 5.75).count == 6
     # [if] is at least 2U long.
     assert over(result, "block_head.head", "set_get.set", 0).lengths == (2, 1)
-    assert over(result, "block_head.head", "set_get.set", 0).collapsed == 5 * 6
+    assert over(result, "block_head.head", "set_get.set", 0).count == 5 * 6
 
 
 BOTTOM_ROLES = ("line", "block", "none", "free")
@@ -64,7 +64,7 @@ def grammar_labels(contact):
 def test_every_role_triple_at_a_meaningful_offset_has_exactly_one_verdict():
     result = check({})
     found: dict[tuple, set] = {}
-    for c in result.contacts:
+    for c in result.groups:
         if c.axis == "vertical" and c.offset in MEANINGFUL:
             roles = (result.sides[c.a].side.roles["bottom"], result.sides[c.b].side.roles["top"])
             found.setdefault((*roles, c.offset), set()).update(grammar_labels(c))
@@ -78,7 +78,7 @@ def test_every_role_triple_at_a_meaningful_offset_has_exactly_one_verdict():
 
 def test_other_offsets_are_forbid_low_unless_coexist_or_ungraded():
     result = check({})
-    for c in result.contacts:
+    for c in result.groups:
         if c.axis == "vertical" and c.offset not in MEANINGFUL:
             roles = {result.sides[c.a].side.roles["bottom"], result.sides[c.b].side.roles["top"]}
             if "free" in roles:
@@ -135,7 +135,7 @@ def test_coexist_appears_exactly_where_the_narrow_rule_says():
     def inline(side):
         return side.roles["left"] != "head"
 
-    for c in result.contacts:
+    for c in result.groups:
         if c.axis != "vertical":
             continue
         upper, lower = result.sides[c.a].side, result.sides[c.b].side
@@ -222,21 +222,21 @@ def test_a_from_right_pocket_only_aligns_at_some_length_pairs():
         )
     )
     snapped, missed = sorted(
-        (c for c in result.contacts if c.axis == "vertical"
+        (c for c in result.groups if c.axis == "vertical"
          and (c.a, c.b, c.offset) == ("set_get.set", "call_printed.call", 0)),
-        key=lambda c: c.collapsed,
+        key=lambda c: c.count,
     )
-    assert (snapped.lengths, snapped.collapsed, snapped.result) == ((1, 1), 6, "snap")
+    assert (snapped.lengths, snapped.count, snapped.result) == ((1, 1), 6, "snap")
     assert grades(snapped) == [("connect", "pass")]
-    assert (missed.lengths, missed.collapsed, missed.result) == ((1, 2), 30, "nothing")
+    assert (missed.lengths, missed.count, missed.result) == ((1, 2), 30, "nothing")
     assert grades(missed) == [("connect", "FAIL")]
     # @+1 they line up when set is 1U longer: 2x1, 3x2, ..., 6x5.
     indented = [
-        c for c in result.contacts
+        c for c in result.groups
         if c.axis == "vertical" and (c.a, c.b, c.offset) == ("set_get.set", "call_printed.call", 1) and c.pairs
     ]
     [contact] = indented
-    assert (contact.lengths, contact.collapsed, contact.result) == ((2, 1), 5, "snap")
+    assert (contact.lengths, contact.count, contact.result) == ((2, 1), 5, "snap")
     assert grades(contact) == [("coexist", "pass"), ("forbid", "leak")]
 
 
@@ -252,7 +252,7 @@ def test_a_block_heads_indent_pocket_meets_the_body_line_head():
     contact = over(result, "block_head.head", "set_get.set", 1)
     [pair] = contact.pairs
     assert (pair.a.layers, pair.b.layers) == ("N/-", "S/-")
-    assert (contact.lengths, contact.collapsed) == ((2, 1), 5 * 6)
+    assert (contact.lengths, contact.count) == ((2, 1), 5 * 6)
     assert grades(contact) == [("connect", "pass")]
     # In the same column the pockets miss each other.
     assert over(result, "block_head.head", "set_get.set", 0).pairs == ()
@@ -269,5 +269,5 @@ def test_a_dedent_meets_the_last_body_line_one_column_left():
     )
     contact = over(result, "set_get.set", "dedent.dedent", -1)
     assert contact.pairs and contact.result == "snap"
-    assert (contact.lengths, contact.collapsed) == ((1, 2), 6 * 5)
+    assert (contact.lengths, contact.count) == ((1, 2), 6 * 5)
     assert grades(contact) == [("connect", "pass")]

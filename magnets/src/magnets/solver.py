@@ -1,6 +1,6 @@
 """The CP-SAT search for the best magnet arrangement.
 
-The model is built from the checker's own contact list, enumerated on a
+The model is built from the checker's own contact groups, enumerated on a
 card that has a pocket candidate at every allowed position, so which
 candidates face each other at every contact is fixed geometry and the
 solver only chooses what each candidate's layers hold. A back is derived
@@ -18,7 +18,7 @@ from typing import Literal
 from ortools.sat.python import cp_model
 
 from . import contacts as _contacts
-from .contacts import GRADES, Contact, Label
+from .contacts import GRADES, ContactGroup, Label
 from .data import MAX_POCKETS, Arrangement, CardClass, Rules, collision_length
 from .physics import EDGES, HEIGHTS, LAYERS, LEFT_RIGHT_EDGES, TOP_BOTTOM_EDGES, Pocket, flipped_edge, interact
 
@@ -43,16 +43,17 @@ Candidate = tuple[str, str, int]
 # One layer of a candidate: (class, front edge, index, 0 up or 1 down).
 LayerRef = tuple[str, str, int, int]
 # How a model treats must labels: as constraints; as constraints behind an
-# assumption per must contact, to find which conflict; or as costs that
+# assumption per requirement, to find which conflict; or as costs that
 # outweigh every forbid, to find the fewest must failures.
 Musts = Literal["hard", "assumed", "soft"]
 
 
 @dataclass(frozen=True)
-class MustContact:
-    """What one must label demands of two sides at one offset, at every
-    length pair: `[a][b]` (horizontal) or `a` over `b` (vertical), with `a`
-    and `b` as for `Contact`."""
+class Requirement:
+    """One must label on two sides and their facing edges at one offset,
+    at every length pair: `[a][b]` (horizontal) or `a` over `b` (vertical),
+    with `a` and `b` as for `ContactGroup`. It holds when all its contacts
+    snap (connect) or none repel or are mixed (coexist)."""
 
     axis: str
     a: str
@@ -68,8 +69,8 @@ class Solution:
     if it found one, and its objective and bound in cost units.
 
     If no valid arrangement exists, the status is infeasible: `conflicts`
-    is a set of must contacts that can't all hold, and `arrangement` the
-    one with the fewest failing must contacts (`fewest_status` says whether
+    is a set of requirements that can't all hold, and `arrangement` the
+    one with the fewest must failures (`fewest_status` says whether
     that is proven), which fail as `must_failures` counts them. Its
     `objective` is then the cost of its forbids and pockets, and it has no
     bound.
@@ -80,8 +81,8 @@ class Solution:
     objective: Fraction | None
     bound: Fraction | None
     wall_time: float
-    conflicts: tuple[MustContact, ...] = ()
-    must_failures: Mapping[MustContact, int] = field(default_factory=dict)  # failing contacts
+    conflicts: tuple[Requirement, ...] = ()
+    must_failures: Mapping[Requirement, int] = field(default_factory=dict)  # failing contacts
     fewest_status: str | None = None  # optimal / feasible / unknown, if infeasible
 
 
@@ -159,7 +160,7 @@ class _Runner:
 
 def _search(model: "_Model", build: Callable[[Musts], "_Model"], runner: _Runner, budget: float) -> Solution:
     """Solve one half within `budget`. If it has no valid arrangement, find
-    must contacts that conflict, then the arrangement with the fewest must
+    requirements that conflict, then the arrangement with the fewest must
     failures, in what is left."""
     used, wall_time = runner.used, runner.wall_time
 
@@ -200,8 +201,8 @@ def _combine(flip: str, halves: list[Solution]) -> Solution:
     optimal only if every half is, and infeasible if any half is."""
     status = _worst(half.status for half in halves)
     wall_time = sum(half.wall_time for half in halves)
-    conflicts = tuple(m for half in halves for m in half.conflicts)
-    failures = {m: n for half in halves for m, n in half.must_failures.items()}
+    conflicts = tuple(r for half in halves for r in half.conflicts)
+    failures = {r: n for half in halves for r, n in half.must_failures.items()}
     fewest = _worst(half.fewest_status or half.status for half in halves) if status == "infeasible" else None
     chosen: dict[str, dict] = {}
     objective = Fraction(0)
@@ -236,7 +237,7 @@ def candidates(cls: CardClass, edge: str) -> tuple[Pocket, ...]:
 
 class _Model:
     """The model of the pockets on `edges` (of every class's front), graded
-    on `found`, the contacts between those edges, with must labels treated
+    on `found`, the contact groups between those edges, with must labels treated
     as `musts` says."""
 
     def __init__(
@@ -246,7 +247,7 @@ class _Model:
         classes: Mapping[str, CardClass],
         fronts: Mapping[str, Mapping[str, tuple[Pocket, ...]]],
         edges: tuple[str, ...],
-        found: list[Contact],
+        found: list[ContactGroup],
         max_length: int,
         pinned: Mapping[tuple[str, str], tuple[Pocket, ...]],
         musts: Musts,
@@ -271,17 +272,17 @@ class _Model:
         # The forbid and pocket costs, and the most they can add up to.
         self.costs: list[cp_model.LinearExprT] = []
         self.most_cost = 0
-        # Every must label: its must contact, contacts, and the results that
+        # Every must label: its requirement, contacts, and the results that
         # fail it, each 1 if it is the result.
-        self.labels: list[tuple[MustContact, int, list[cp_model.LinearExprT]]] = []
-        # musts == "assumed": must contact -> its assumption
-        self.assumed: dict[MustContact, cp_model.IntVar] = {}
+        self.labels: list[tuple[Requirement, int, list[cp_model.LinearExprT]]] = []
+        # musts == "assumed": requirement -> its assumption
+        self.assumed: dict[Requirement, cp_model.IntVar] = {}
         # musts == "soft": (contacts, whether the label holds) per label
         self.held: list[tuple[int, cp_model.IntVar]] = []
 
         self._pocket_rules(max_length)
-        for contact in found:
-            self._grade(contact, rules)
+        for group in found:
+            self._grade(group, rules)
         if musts == "hard":
             self.model.minimize(sum(self.costs))
         elif musts == "assumed":
@@ -359,12 +360,12 @@ class _Model:
                 found.append(self._products[key])
         return found
 
-    def _tally(self, contact: Contact) -> tuple[cp_model.IntVar, cp_model.IntVar, cp_model.IntVar]:
+    def _tally(self, group: ContactGroup) -> tuple[cp_model.IntVar, cp_model.IntVar, cp_model.IntVar]:
         """Literals for a > 0, r > 0, and both, across every aligned pocket
-        pair of the contact."""
+        pair of the contact group."""
         layer_pairs = tuple(
-            (self._layer(contact.a, pair.a, level), self._layer(contact.b, pair.b, level))
-            for pair in contact.pairs
+            (self._layer(group.a, pair.a, level), self._layer(group.b, pair.b, level))
+            for pair in group.pairs
             for level in (0, 1)
         )
         if layer_pairs not in self._tallies:
@@ -381,46 +382,46 @@ class _Model:
             self._tallies[layer_pairs] = (attract, repel, self._and(attract, repel))
         return self._tallies[layer_pairs]
 
-    def _grade(self, contact: Contact, rules: Rules) -> None:
+    def _grade(self, group: ContactGroup, rules: Rules) -> None:
         """A must label never gets a FAIL grade: a connect must snap and a
         coexist must not repel or be mixed. A forbid that isn't unavoidable
         costs its priority weight times its grade's penalty, for every
-        contact it groups."""
-        attract, repel, both = self._tally(contact)
-        # Exactly one of these is 1: the contact's result, as `aggregate` gives it.
+        contact in the group."""
+        attract, repel, both = self._tally(group)
+        # Exactly one of these is 1: the group's result, as `aggregate` gives it.
         results = {"snap": attract - both, "mixed": both, "nothing": 1 - attract - repel + both, "repel": repel - both}
-        for label in contact.labels:
+        for label in group.labels:
             grades = GRADES[label.kind]
             if label.priority == "must":
-                self._must(contact, label, [results[r] for r, grade in grades.items() if grade == "FAIL"])
+                self._must(group, label, [results[r] for r, grade in grades.items() if grade == "FAIL"])
             elif label.kind == "forbid" and not label.unavoidable:
-                weight = rules.priorities[label.priority] * contact.collapsed
+                weight = rules.priorities[label.priority] * group.count
                 if weight:
                     self.costs.append(
                         sum(weight * int(GRADE_PENALTY[grades[r]] * SCALE) * held for r, held in results.items())
                     )
                     self.most_cost += weight * int(max(GRADE_PENALTY.values()) * SCALE)
 
-    def _must(self, contact: Contact, label: Label, fails: list[cp_model.LinearExprT]) -> None:
-        """None of `fails` may be the contact's result: always, or if the
-        must contact's assumption holds, or at a cost."""
-        must = MustContact(
-            contact.axis,
-            contact.a,
-            contact.b,
-            contact.offset,
+    def _must(self, group: ContactGroup, label: Label, fails: list[cp_model.LinearExprT]) -> None:
+        """None of `fails` may be the group's result: always, or if the
+        requirement's assumption holds, or at a cost."""
+        requirement = Requirement(
+            group.axis,
+            group.a,
+            group.b,
+            group.offset,
             label.kind,
-            (self.notation[contact.a], self.notation[contact.b]),
+            (self.notation[group.a], self.notation[group.b]),
         )
-        self.labels.append((must, contact.collapsed, fails))
+        self.labels.append((requirement, group.count, fails))
         holds = None
         if self.musts == "assumed":
-            if must not in self.assumed:
-                self.assumed[must] = self.model.new_bool_var(f"holds {must}")
-            holds = self.assumed[must]
+            if requirement not in self.assumed:
+                self.assumed[requirement] = self.model.new_bool_var(f"holds {requirement}")
+            holds = self.assumed[requirement]
         elif self.musts == "soft":
             holds = self.model.new_bool_var("")
-            self.held.append((contact.collapsed, holds))
+            self.held.append((group.count, holds))
         for fail in fails:
             constraint = self.model.add(fail == 0)
             if holds is not None:
@@ -430,18 +431,18 @@ class _Model:
         """The solved arrangement's forbid and pocket cost, in cost units."""
         return Fraction(solver.value(sum(self.costs)), SCALE)
 
-    def failures(self, solver: cp_model.CpSolver) -> dict[MustContact, int]:
-        """How many contacts fail each must contact, in the solved arrangement."""
-        found: Counter[MustContact] = Counter()
-        for must, collapsed, fails in self.labels:
+    def failures(self, solver: cp_model.CpSolver) -> dict[Requirement, int]:
+        """How many contacts fail each requirement, in the solved arrangement."""
+        found: Counter[Requirement] = Counter()
+        for requirement, count, fails in self.labels:
             if any(solver.value(fail) for fail in fails):
-                found[must] += collapsed
+                found[requirement] += count
         return dict(found)
 
-    def conflicts(self, solver: cp_model.CpSolver) -> tuple[MustContact, ...]:
-        """Must contacts that can't all hold, from an infeasible solve of
+    def conflicts(self, solver: cp_model.CpSolver) -> tuple[Requirement, ...]:
+        """Requirements that can't all hold, from an infeasible solve of
         the assumed model."""
-        by_index = {holds.index: must for must, holds in self.assumed.items()}
+        by_index = {holds.index: requirement for requirement, holds in self.assumed.items()}
         return tuple(by_index[i] for i in solver.sufficient_assumptions_for_infeasibility())
 
     def arrangement(self, solver: cp_model.CpSolver) -> dict:

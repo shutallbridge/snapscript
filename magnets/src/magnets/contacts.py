@@ -48,15 +48,17 @@ class Label:
 
 
 @dataclass(frozen=True)
-class Contact:
-    """Two edges facing each other at an offset.
+class ContactGroup:
+    """Contacts with the same geometry: two sides' facing edges at one
+    offset, the same pockets facing, and the same labels, at `count` length
+    pairs.
 
     For a horizontal contact `a` is the left side (its right edge) and `b`
     the right side (its left edge); `offset` is how far b sits lower than a,
     in U. For a vertical contact `a` is the upper side (its bottom edge) and `b`
     the lower side (its top edge); `offset` is b's left end minus a's, in U.
     `lengths` is the smallest length pair with this geometry (upper or left
-    length first, then the other) and `collapsed` how many length pairs share it.
+    length first, then the other) and `count` how many contacts it holds.
     """
 
     axis: str
@@ -66,7 +68,7 @@ class Contact:
     edge_b: str
     offset: Fraction
     lengths: tuple[int, int]
-    collapsed: int
+    count: int
     pairs: tuple[PocketPair, ...]
     attract: int
     repel: int
@@ -87,8 +89,8 @@ def sides(arrangement: Arrangement, classes: Mapping[str, CardClass]) -> dict[st
     return found
 
 
-def contacts(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int, flip: str) -> list[Contact]:
-    """Every contact, with identical geometry collapsed.
+def contacts(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int, flip: str) -> list[ContactGroup]:
+    """Every contact, in contact groups.
 
     A back is derived from its front, so under `flip` every contact between
     two flip pairs behaves exactly like its partner contact. A forbid
@@ -103,15 +105,15 @@ def contacts(all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int, 
 
 def _horizontal(
     all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int, flip: str
-) -> Iterator[Contact]:
+) -> Iterator[ContactGroup]:
     # Left/right pockets don't depend on length, so every length pair has the
-    # same geometry: one contact per offset, collapsed over all length pairs.
+    # same geometry: one contact group per offset, holding every length pair.
     for left in all_sides.values():
         for right in all_sides.values():
             lengths = (left.min_length, right.min_length)
-            collapsed = (max_length - left.min_length + 1) * (max_length - right.min_length + 1)
+            count = (max_length - left.min_length + 1) * (max_length - right.min_length + 1)
             for offset in horizontal_offsets():
-                yield beside(all_sides, rules, flip, left, right, offset, lengths, collapsed)
+                yield beside(all_sides, rules, flip, left, right, offset, lengths, count)
 
 
 def beside(
@@ -122,15 +124,16 @@ def beside(
     right: SideEdges,
     offset: Fraction,
     lengths: tuple[int, int],
-    collapsed: int = 1,
-) -> Contact:
-    """The horizontal contact `[left][right]`, `right` sitting `offset` lower."""
+    count: int = 1,
+) -> ContactGroup:
+    """The horizontal contact group `[left][right]`, `right` sitting `offset`
+    lower, holding `count` contacts."""
     pairs = horizontal_pairs(left.edges["right"], right.edges["left"], offset)
     attract, repel = tally(pairs)
     result = aggregate(attract, repel)
     kind, priority = _horizontal_verdict(rules, left.side.roles["right"], right.side.roles["left"], offset)
     unavoidable = _beside_tied(all_sides, rules, flip, left, right, offset)
-    return Contact(
+    return ContactGroup(
         axis="horizontal",
         a=left.side.name,
         edge_a="right",
@@ -138,7 +141,7 @@ def beside(
         edge_b="left",
         offset=offset,
         lengths=lengths,
-        collapsed=collapsed,
+        count=count,
         pairs=pairs,
         attract=attract,
         repel=repel,
@@ -203,7 +206,7 @@ def _stack_tied(
 
 def _vertical(
     all_sides: Mapping[str, SideEdges], rules: Rules, max_length: int, flip: str
-) -> Iterator[Contact]:
+) -> Iterator[ContactGroup]:
     for upper in all_sides.values():
         for lower in all_sides.values():
             tied = _stack_tied(all_sides, rules, flip, upper, lower)
@@ -218,8 +221,9 @@ def stack(
     lower: SideEdges,
     lengths: tuple[int, int],
     offset: Fraction,
-) -> Contact:
-    """The vertical contact of `upper` over `lower` at these lengths and offset."""
+) -> ContactGroup:
+    """The one vertical contact of `upper` over `lower` at these lengths and
+    offset, as a contact group of one."""
     tied = _stack_tied(all_sides, rules, flip, upper, lower)
     pairs = vertical_pairs(upper.edges["bottom"], lower.edges["top"], *lengths, offset)
     labels = _vertical_labels(rules, upper.side, lower.side, offset)
@@ -228,14 +232,15 @@ def stack(
 
 def _stacks(
     upper: SideEdges, lower: SideEdges, rules: Rules, max_length: int, tied: Tied | None
-) -> Iterator[Contact]:
-    """Every contact of `upper` over `lower`, collapsed over length pairs.
+) -> Iterator[ContactGroup]:
+    """Every contact of `upper` over `lower`, in contact groups.
 
     At a given length pair, pockets line up at only a few offsets. Those
     contacts are grouped by which pockets face which. At every other offset
-    no pockets line up, and those length pairs collapse into one contact.
+    no pockets line up, and those length pairs make one contact group.
     Under a `left_right` flip whether a forbid is unavoidable can depend on
-    the lengths, so length pairs only collapse when they agree on it.
+    the lengths, so length pairs only share a contact group when they agree
+    on it.
     """
     bottom, top = upper.edges["bottom"], lower.edges["top"]
     steps = [Fraction(step, 4) for step in range(-4 * max_length + 1, 4 * max_length)]
@@ -266,11 +271,11 @@ def _stacks(
         if upper_from > max_length or lower_from > max_length:
             continue
         groups = sorted(aligned.get(offset, {}).items(), key=lambda g: g[1][0])
-        for (_, flagged), (lengths, collapsed, pairs) in groups:
-            yield _stack(upper, lower, offset, lengths, collapsed, pairs, labels[offset], flagged)
+        for (_, flagged), (lengths, count, pairs) in groups:
+            yield _stack(upper, lower, offset, lengths, count, pairs, labels[offset], flagged)
         taken = aligned_lengths.get(offset, set())
-        for flagged, lengths, collapsed in _unaligned(upper_from, lower_from, max_length, taken, offset, unavoidable):
-            yield _stack(upper, lower, offset, lengths, collapsed, (), labels[offset], flagged)
+        for flagged, lengths, count in _unaligned(upper_from, lower_from, max_length, taken, offset, unavoidable):
+            yield _stack(upper, lower, offset, lengths, count, (), labels[offset], flagged)
 
 
 def _forbids_only(tied: Tied, labels: Mapping[Fraction, list[tuple[str, str]]]) -> Tied:
@@ -321,14 +326,14 @@ def _stack(
     lower: SideEdges,
     offset: Fraction,
     lengths: tuple[int, int],
-    collapsed: int,
+    count: int,
     pairs: tuple[PocketPair, ...],
     verdicts: list[tuple[str, str]],
     unavoidable: bool,
-) -> Contact:
+) -> ContactGroup:
     attract, repel = tally(pairs)
     result = aggregate(attract, repel)
-    return Contact(
+    return ContactGroup(
         axis="vertical",
         a=upper.side.name,
         edge_a="bottom",
@@ -336,7 +341,7 @@ def _stack(
         edge_b="top",
         offset=offset,
         lengths=lengths,
-        collapsed=collapsed,
+        count=count,
         pairs=pairs,
         attract=attract,
         repel=repel,

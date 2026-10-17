@@ -43,9 +43,9 @@ SHAPE_COSTS = {"uniform": Fraction(1, 100), "half": Fraction(15, 1000), "split":
 def objective(checked):
     """The objective of a checked arrangement, from its grades and pockets."""
     forbids = sum(
-        WEIGHTS[label.priority] * PENALTIES[label.grade] * contact.collapsed
-        for contact in checked.contacts
-        for label in contact.labels
+        WEIGHTS[label.priority] * PENALTIES[label.grade] * group.count
+        for group in checked.groups
+        for label in group.labels
         if label.kind == "forbid" and not label.unavoidable
     )
     pockets = sum(
@@ -65,7 +65,7 @@ def test_the_reported_objective_is_the_checkers():
 
 def test_a_check_can_be_restricted_to_some_classes():
     result = check("example", classes=["set_get", "literal"])
-    assert {name for c in result.contacts for name in (c.a, c.b)} == {
+    assert {name for c in result.groups for name in (c.a, c.b)} == {
         "set_get.set",
         "set_get.get",
         "literal.num",
@@ -125,6 +125,13 @@ def test_pinned_empty_edges_stay_empty():
     assert result.check.valid
 
 
+def test_a_pin_may_not_mention_a_class_outside_the_search():
+    # As for `check(..., classes=...)`: the pin names a class the search leaves out.
+    pinned = {"flip": "top_bottom", "classes": {"set_get": {"top": []}}}
+    with pytest.raises(ValueError, match="unknown card class 'set_get'"):
+        solve("top_bottom", classes=["literal", "operator"], pinned=pinned, time_limit=1, workers=1)
+
+
 # A contradictory toy grammar: a 1U line head must take the next line in the
 # same column, indented by 1U and outdented by 1U. An indent onto a shorter
 # card needs a `from: right` pocket on the bottom edge, an outdent under a
@@ -149,11 +156,11 @@ CROWDED = dict(class_data=CROWDED_CLASSES, rule_data=CROWDED_RULES, max_length=2
 
 
 def must_failures(checked):
-    """Failing contacts per must contact, from the checker."""
+    """Failing contacts per requirement, from the checker."""
     found = {}
     for c, label in checked.must_failures:
         key = (c.axis, c.a, c.b, c.offset, label.kind)
-        found[key] = found.get(key, 0) + c.collapsed
+        found[key] = found.get(key, 0) + c.count
     return found
 
 
@@ -162,16 +169,16 @@ def test_a_contradictory_grammar_is_infeasible_and_names_the_conflict():
     assert result.status == "infeasible"
     assert result.bound is None
     head_over_head = {("vertical", "line_head.head", "line_head.head", Fraction(d), "connect") for d in (-1, 0, 1)}
-    conflicts = {(m.axis, m.a, m.b, m.offset, m.kind) for m in result.conflicts}
+    conflicts = {(r.axis, r.a, r.b, r.offset, r.kind) for r in result.conflicts}
     assert len(conflicts) >= 2 and conflicts <= head_over_head
-    assert {m.cards for m in result.conflicts} == {("[head]", "[head]")}
+    assert {r.cards for r in result.conflicts} == {("[head]", "[head]")}
 
     # It still returns the arrangement with the fewest must failures, which
     # the checker grades the way the solver did.
     assert result.fewest_status == "optimal"
     regraded = check(result.arrangement, **CROWDED)
     assert not regraded.valid
-    assert {(m.axis, m.a, m.b, m.offset, m.kind): n for m, n in result.must_failures.items()} == must_failures(regraded)
+    assert {(r.axis, r.a, r.b, r.offset, r.kind): n for r, n in result.must_failures.items()} == must_failures(regraded)
     assert result.objective == objective(regraded)
     # Fewer than with no pockets at all, where every connect contact fails.
     empty = check({}, **CROWDED)
@@ -225,5 +232,5 @@ def test_the_solver_grades_a_pinned_arrangement_as_the_checker_does(pinned):
     result = solve(pinned["flip"], pinned=pinned, time_limit=10, workers=1, **small)
     assert design(result.arrangement) == design(checked.arrangement)
     assert result.status == ("optimal" if checked.valid else "infeasible")
-    assert {(m.axis, m.a, m.b, m.offset, m.kind): n for m, n in result.must_failures.items()} == must_failures(checked)
+    assert {(r.axis, r.a, r.b, r.offset, r.kind): n for r, n in result.must_failures.items()} == must_failures(checked)
     assert result.objective == objective(checked)

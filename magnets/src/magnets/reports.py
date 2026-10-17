@@ -1,4 +1,4 @@
-"""Check results rendered as a per-contact CSV, a summary and a program report."""
+"""Check results rendered as a CSV of contact groups, a summary and a program report."""
 
 import csv
 import io
@@ -9,10 +9,10 @@ from fractions import Fraction
 import yaml
 
 from .api import CheckResult, ProgramResult, SolveResult
-from .contacts import Contact, Label
+from .contacts import ContactGroup, Label
 from .data import Arrangement, BundledProgram
 from .programs import ProgramContact
-from .solver import MustContact
+from .solver import Requirement
 
 # Rows of the kind x result table; unavoidable is the subset of forbid that
 # no arrangement can block.
@@ -26,7 +26,7 @@ CSV_COLUMNS = (
     "edge_b",
     "offset",
     "lengths",
-    "collapsed",
+    "count",
     "kind",
     "priority",
     "attract",
@@ -38,33 +38,33 @@ CSV_COLUMNS = (
 
 
 def csv_text(result: CheckResult) -> str:
-    """One row per (contact, label).
+    """One row per (contact group, label).
 
-    Rows where no pockets line up and the label isn't connect are left out:
-    their result is "nothing" by construction.
+    Contact groups where no pockets line up are left out unless the label
+    is connect: their result is "nothing" by construction.
     """
     out = io.StringIO()
     writer = csv.writer(out, lineterminator="\n")
     writer.writerow(CSV_COLUMNS)
-    for contact in result.contacts:
-        for label in contact.labels:
-            if not contact.pairs and label.kind != "connect":
+    for group in result.groups:
+        for label in group.labels:
+            if not group.pairs and label.kind != "connect":
                 continue
             writer.writerow(
                 (
-                    contact.axis,
-                    contact.a,
-                    contact.edge_a,
-                    contact.b,
-                    contact.edge_b,
-                    _offset(contact.offset),
-                    "x".join(map(str, contact.lengths)),
-                    contact.collapsed,
+                    group.axis,
+                    group.a,
+                    group.edge_a,
+                    group.b,
+                    group.edge_b,
+                    _offset(group.offset),
+                    "x".join(map(str, group.lengths)),
+                    group.count,
                     label.kind,
                     label.priority,
-                    contact.attract,
-                    contact.repel,
-                    contact.result,
+                    group.attract,
+                    group.repel,
+                    group.result,
                     label.grade,
                     label.unavoidable,
                 )
@@ -81,16 +81,17 @@ def summary_text(result: CheckResult, search: SolveResult | None = None) -> str:
     lines = [
         f"Arrangement: {arrangement.name} (flip {arrangement.flip}, lengths up to {result.max_length}U)",
         *([] if search is None else _search_lines(search)),
-        f"{len(result.contacts)} rows, {sum(c.collapsed for c in result.contacts)} contacts",
+        f"{len(result.groups)} contact groups, {sum(g.count for g in result.groups)} contacts",
         "",
-        # A row groups `collapsed` contacts with one geometry, named by its
-        # smallest length pair. Under left_right a geometry can split into
-        # two rows, unavoidable at some length pairs and not others.
-        "Rows by kind and result (a row groups contacts with one geometry):",
+        # A contact group holds `count` contacts with one geometry, named by
+        # its smallest length pair. Under left_right a geometry can split
+        # into two contact groups, unavoidable at some length pairs and not
+        # others.
+        "Contact groups by kind and result:",
         *_count_table(result, lambda c: 1),
         "",
         "Contacts by kind and result (one with two labels counts under each):",
-        *_count_table(result, lambda c: c.collapsed),
+        *_count_table(result, lambda c: c.count),
         "",
         *_listing("Must failures", result, result.must_failures),
         *_listing("Avoidable should-leaks", result, _avoidable_leaks(result, "should")),
@@ -102,7 +103,7 @@ def summary_text(result: CheckResult, search: SolveResult | None = None) -> str:
             [(c, label) for c, label in unavoidable if label.priority != "low"],
             with_priority=True,
         ),
-        # Low forbids are never scored, and under left_right many are unavoidable.
+        # Low forbids cost nothing, and under left_right many are unavoidable.
         f"Unavoidable low-leaks (not listed): {len(unavoidable_low)}",
         "",
         "VALID" if result.valid else "INVALID",
@@ -135,19 +136,22 @@ def _search_status(search: SolveResult) -> str:
 
 
 def conflict_lines(search: SolveResult) -> list[str]:
-    """The must contacts that conflict, if the search proved there is no
+    """The requirements that conflict, if the search proved there is no
     valid arrangement: `[num(…)] [get(x)] @0: connect`."""
     if search.status != "infeasible":
         return []
     if not search.conflicts:
-        return ["Conflicting must contacts: none found within the time limit"]
-    return [f"Conflicting must contacts: {len(search.conflicts)}", *(f"  {_must(m)}" for m in search.conflicts)]
+        return ["Conflicting requirements: none found within the time limit"]
+    return [
+        f"Conflicting requirements: {len(search.conflicts)}",
+        *(f"  {_requirement(r)}" for r in search.conflicts),
+    ]
 
 
-def _must(must: MustContact) -> str:
-    a, b = must.cards
-    between = " " if must.axis == "horizontal" else " over "
-    return f"{a}{between}{b} @{_offset(must.offset)}: {must.kind}"
+def _requirement(requirement: Requirement) -> str:
+    a, b = requirement.cards
+    between = " " if requirement.axis == "horizontal" else " over "
+    return f"{a}{between}{b} @{_offset(requirement.offset)}: {requirement.kind}"
 
 
 def _cost(cost: Fraction | None) -> str:
@@ -164,34 +168,34 @@ def arrangement_text(arrangement: Arrangement, search: SolveResult) -> str:
     return "\n".join(header) + "\n" + body
 
 
-def _leaks(result: CheckResult) -> list[tuple[Contact, Label]]:
+def _leaks(result: CheckResult) -> list[tuple[ContactGroup, Label]]:
     return [
         (c, label)
-        for c in result.contacts
+        for c in result.groups
         for label in c.labels
         if label.kind == "forbid" and label.grade == "leak"
     ]
 
 
-def _avoidable_leaks(result: CheckResult, priority: str) -> list[tuple[Contact, Label]]:
+def _avoidable_leaks(result: CheckResult, priority: str) -> list[tuple[ContactGroup, Label]]:
     return [(c, label) for c, label in _leaks(result) if label.priority == priority and not label.unavoidable]
 
 
-def _unavoidable_leaks(result: CheckResult) -> list[tuple[Contact, Label]]:
+def _unavoidable_leaks(result: CheckResult) -> list[tuple[ContactGroup, Label]]:
     return [(c, label) for c, label in _leaks(result) if label.unavoidable]
 
 
 def _listing(
-    title: str, result: CheckResult, found: list[tuple[Contact, Label]], *, with_priority: bool = False
+    title: str, result: CheckResult, found: list[tuple[ContactGroup, Label]], *, with_priority: bool = False
 ) -> list[str]:
     return [f"{title}: {len(found)}", *(f"  {_describe(result, c, label, with_priority)}" for c, label in found), ""]
 
 
-def _count_table(result: CheckResult, weight: Callable[[Contact], int]) -> list[str]:
-    """Kind x result counts, each of `result.contacts` counting `weight(contact)`."""
-    # A contact with two labels counts once under each.
+def _count_table(result: CheckResult, weight: Callable[[ContactGroup], int]) -> list[str]:
+    """Kind x result counts, each of `result.groups` counting `weight(group)`."""
+    # A contact group with two labels counts once under each.
     counts: Counter[tuple[str, str]] = Counter()
-    for c in result.contacts:
+    for c in result.groups:
         for label in c.labels:
             counts[label.kind, c.result] += weight(c)
             if label.unavoidable:
@@ -207,16 +211,16 @@ def _count_table(result: CheckResult, weight: Callable[[Contact], int]) -> list[
     return [f"  {row}" for row in rows]
 
 
-def _describe(result: CheckResult, contact: Contact, label: Label, with_priority: bool = False) -> str:
-    a = result.sides[contact.a].side.notation
-    b = result.sides[contact.b].side.notation
+def _describe(result: CheckResult, group: ContactGroup, label: Label, with_priority: bool = False) -> str:
+    a = result.sides[group.a].side.notation
+    b = result.sides[group.b].side.notation
     kind = f"{label.kind} {label.priority}" if with_priority else label.kind
-    counts = f"attract {contact.attract}, repel {contact.repel}"
-    if contact.axis == "horizontal":
-        return f"{a} {b} @{_offset(contact.offset)}: {kind} {contact.result} ({counts})"
+    counts = f"attract {group.attract}, repel {group.repel}"
+    if group.axis == "horizontal":
+        return f"{a} {b} @{_offset(group.offset)}: {kind} {group.result} ({counts})"
     # Top/bottom pockets can depend on length, so name the smallest length pair.
-    lengths = "x".join(map(str, contact.lengths))
-    return f"{a} over {b} @{_offset(contact.offset)}: {kind} {contact.result} ({counts}, lengths {lengths})"
+    lengths = "x".join(map(str, group.lengths))
+    return f"{a} over {b} @{_offset(group.offset)}: {kind} {group.result} ({counts}, lengths {lengths})"
 
 
 def _offset(offset: Fraction) -> str:

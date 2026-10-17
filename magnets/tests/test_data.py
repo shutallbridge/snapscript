@@ -69,7 +69,7 @@ def test_check_uses_the_given_classes_and_rules():
     assert result.sides["block_head.head"].side.members == ("[if]", "[repeat]")
     on_line = {
         (c.a, c.b): (c.labels[0].kind, c.labels[0].priority)
-        for c in result.contacts
+        for c in result.groups
         if c.axis == "horizontal" and c.offset == 0
     }
     assert on_line[("set_get.set", "set_get.get")] == ("connect", "must")
@@ -209,7 +209,7 @@ def test_toy_vertical_rules_grade_the_toy_classes():
     result = check({}, class_data=TOY_CLASSES, rule_data=TOY_RULES)
     labels = {
         (c.a, c.b, c.offset): [(label.kind, label.priority) for label in c.labels]
-        for c in result.contacts
+        for c in result.groups
         if c.axis == "vertical"
     }
     assert labels["block_head.head", "set_get.set", 1] == [("connect", "must")]

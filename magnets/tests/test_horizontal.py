@@ -25,7 +25,7 @@ def verdict(label):
 def test_every_role_pair_has_exactly_one_verdict_at_offset_0():
     result = check({})
     found: dict[tuple[str, str], set] = {}
-    for c in result.contacts:
+    for c in result.groups:
         if c.axis == "horizontal" and c.offset == 0:
             roles = (result.sides[c.a].side.roles["right"], result.sides[c.b].side.roles["left"])
             found.setdefault(roles, set()).update(verdict(label) for label in c.labels)
@@ -38,26 +38,26 @@ def test_every_role_pair_has_exactly_one_verdict_at_offset_0():
 
 
 def test_every_contact_has_exactly_one_label():
-    for c in check({}).contacts:
+    for c in check({}).groups:
         if c.axis == "horizontal":
             assert len(c.labels) == 1, c
 
 
 def test_contacts_cover_every_ordered_pair_of_sides_including_a_side_with_itself():
     result = check({})
-    pairs = {(c.a, c.b) for c in result.contacts if c.axis == "horizontal" and c.offset == 0}
+    pairs = {(c.a, c.b) for c in result.groups if c.axis == "horizontal" and c.offset == 0}
     assert pairs == {(a, b) for a in result.sides for b in result.sides}
     assert ("set_get.set", "set_get.set") in pairs
 
 
 def test_offsets_are_every_quarter_u_where_pockets_can_align():
     result = check({})
-    offsets = {c.offset for c in result.contacts if c.axis == "horizontal"}
+    offsets = {c.offset for c in result.groups if c.axis == "horizontal"}
     assert offsets == {-0.5, -0.25, 0, 0.25, 0.5}
 
 
 def test_off_line_contacts_are_forbid_low():
-    for c in check({}).contacts:
+    for c in check({}).groups:
         if c.axis == "horizontal" and c.offset != 0:
             assert [verdict(label) for label in c.labels] == [("forbid", "low")], c
 
@@ -142,7 +142,7 @@ def test_contacts_are_independent_of_length():
     # Left/right pockets have no anchor, so every length pair collapses into one.
     contact = beside(check({}, max_length=6), "block_head.head", "literal.num")
     assert contact.lengths == (2, 1)
-    assert contact.collapsed == 5 * 6
+    assert contact.count == 5 * 6
 
 
 @pytest.mark.parametrize("height", [0.25, 0.5, 0.75])

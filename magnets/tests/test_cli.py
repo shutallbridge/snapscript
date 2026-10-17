@@ -19,7 +19,7 @@ COLUMNS = [
     "edge_b",
     "offset",
     "lengths",
-    "collapsed",
+    "count",
     "kind",
     "priority",
     "attract",
@@ -96,7 +96,7 @@ def test_check_reports_horizontal_contacts(tmp_path):
         ("set_get.get", "set_get.set"): ("forbid", "should", "nothing", "weak"),
     }
     row = next(r for r in rows if (r["upper_or_left"], r["lower_or_right"]) == ("set_get.set", "set_get.set"))
-    assert (row["edge_a"], row["edge_b"], row["lengths"], row["collapsed"]) == ("right", "left", "1x1", "36")
+    assert (row["edge_a"], row["edge_b"], row["lengths"], row["count"]) == ("right", "left", "1x1", "36")
     assert row["unavoidable"] == "True"
 
     assert "[get(x)] [get(x)] @0" not in run.stdout
@@ -158,7 +158,7 @@ def test_check_reports_vertical_contacts(tmp_path):
     )
     _, rows = read_csv(out / "contacts.csv")
     num_over_num = [
-        (r["edge_a"], r["edge_b"], r["lengths"], r["collapsed"], r["kind"], r["priority"], r["result"], r["grade"])
+        (r["edge_a"], r["edge_b"], r["lengths"], r["count"], r["kind"], r["priority"], r["result"], r["grade"])
         for r in rows
         if r["axis"] == "vertical"
         and (r["upper_or_left"], r["lower_or_right"], r["offset"]) == ("literal.num", "literal.num", "0")
@@ -168,7 +168,7 @@ def test_check_reports_vertical_contacts(tmp_path):
         ("bottom", "top", "1x1", "36", "coexist", "must", "repel", "FAIL"),
         ("bottom", "top", "1x1", "36", "forbid", "should", "repel", "strong"),
     ]
-    # Contacts where no pockets line up have no row unless they are connect.
+    # Contact groups where no pockets line up have no row unless they are connect.
     assert not any(
         r["axis"] == "vertical" and (r["upper_or_left"], r["lower_or_right"]) == ("literal.num", "literal.num")
         and r["offset"] != "0"
@@ -274,13 +274,15 @@ def test_an_infeasible_search_names_the_conflict_and_writes_the_fewest_failures(
          "--time-limit", "5", "--workers", "1", "--out", str(found)],
         capture_output=True,
         text=True,
-        check=True,
+        check=False,
     )
+    # It writes an arrangement, but not a valid one.
+    assert run.returncode == 1
     summary = (tmp_path / "found" / "summary.txt").read_text()
     assert summary in run.stdout
     assert summary.split("Search: ")[1].startswith("infeasible in ")
     assert "\n  Fewest must failures (optimal): " in summary
-    listed = summary.split("  Conflicting must contacts: ")[1].splitlines()
+    listed = summary.split("  Conflicting requirements: ")[1].splitlines()
     conflicts = listed[1 : 1 + int(listed[0])]
     assert conflicts and all(line.startswith("    ") and line.endswith(" @0: connect") for line in conflicts)
     assert all(line.startswith("    [num(…)] ") or " [str(…)] @0" in line for line in conflicts)

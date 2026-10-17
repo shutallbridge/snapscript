@@ -85,7 +85,10 @@ def _search(args: argparse.Namespace, classes: list[str] | None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(arrangement_text(checked.arrangement, result), encoding="utf-8")
     print(f"Wrote {out}\n")
-    return _write_reports(checked, out.with_suffix(""), classes, result)
+    _write_reports(checked, out.with_suffix(""), classes, result)
+    # 0 only for a valid arrangement: an infeasible search still writes the
+    # one with the fewest must failures.
+    return 0 if result.status in ("optimal", "feasible") else 1
 
 
 def _write_reports(

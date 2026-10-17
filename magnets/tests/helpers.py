@@ -3,7 +3,7 @@
 from hypothesis import assume
 from hypothesis import strategies as st
 
-from magnets import CheckResult, Contact
+from magnets import CheckResult, ContactGroup
 
 SET_GET = {"set_get.set", "set_get.get"}
 
@@ -32,28 +32,28 @@ def _edges(edges):
     return authored
 
 
-def stack(result: CheckResult, upper: str, lower: str, offset: float = 0) -> Contact:
+def stack(result: CheckResult, upper: str, lower: str, offset: float = 0) -> ContactGroup:
     """The vertical contact with `upper` over `lower` (side names like 'set')."""
     return over(result, f"set_get.{upper}", f"set_get.{lower}", offset)
 
 
-def over(result: CheckResult, upper: str, lower: str, offset: float = 0) -> Contact:
+def over(result: CheckResult, upper: str, lower: str, offset: float = 0) -> ContactGroup:
     """The vertical contact with `upper` over `lower` (sides like 'set_get.set'),
     where exactly one has this offset."""
     found = [
         c
-        for c in result.contacts
+        for c in result.groups
         if c.axis == "vertical" and c.a == upper and c.b == lower and c.offset == offset
     ]
     assert len(found) == 1, found
     return found[0]
 
 
-def beside(result: CheckResult, left: str, right: str, offset: float = 0) -> Contact:
+def beside(result: CheckResult, left: str, right: str, offset: float = 0) -> ContactGroup:
     """The horizontal contact `[left][right]` (sides like 'set_get.set')."""
     found = [
         c
-        for c in result.contacts
+        for c in result.groups
         if c.axis == "horizontal" and c.a == left and c.b == right and c.offset == offset
     ]
     assert len(found) == 1, found

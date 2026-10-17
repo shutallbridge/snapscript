@@ -83,10 +83,10 @@ def check_relations(flip, raw):
     result = check(raw, max_length=MAX_LENGTH)
     other = other_sides(result)
     index = {}
-    for c in result.contacts:
+    for c in result.groups:
         index.setdefault((c.axis, c.a, c.b, c.offset, key(c.pairs)), []).append(c)
     tied = 0
-    for c in result.contacts:
+    for c in result.groups:
         if c.a not in other or c.b not in other:
             continue
         a, b, offset, lengths, k = partner(flip, c, other)
@@ -126,7 +126,7 @@ def test_a_flip_pair_contact_and_its_partner_in_numbers():
     result = check(arrangement(set_get={"left": [(0.5, "N/S")], "right": [(0.5, "N/S")]}))
     pairs = {
         (c.a, c.b): (c.attract, c.repel, c.result)
-        for c in result.contacts
+        for c in result.groups
         if c.axis == "horizontal" and c.offset == 0 and c.a.startswith("set_get") and c.b.startswith("set_get")
     }
     assert pairs[("set_get.get", "set_get.set")] == pairs[("set_get.set", "set_get.get")] == (2, 0, "snap")

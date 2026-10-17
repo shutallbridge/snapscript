@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 
 from . import contacts as _contacts
-from .contacts import Contact, Label, SideEdges
+from .contacts import ContactGroup, Label, SideEdges
 from .data import CardClass, Rules, matching_sides
 
 
@@ -60,12 +60,13 @@ class ProgramContact:
 
     `a` is the left or upper card, `b` the right or lower one. `intended` is
     a line head over the next line head at a meaningful offset: the column
-    contact the program is built on.
+    contact the program is built on. `contact` is graded at the layout's
+    lengths: a contact group of one.
     """
 
     a: Placed
     b: Placed
-    contact: Contact
+    contact: ContactGroup
     intended: bool
 
 
