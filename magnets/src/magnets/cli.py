@@ -5,10 +5,10 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
-from .api import CheckResult, SolveResult, check, check_program, solve
+from .api import CheckResult, SolveResult, card_sheet, check, check_program, solve
 from .data import ArrangementError, bundled_programs
 from .physics import FLIPS
-from .reports import arrangement_text, conflict_lines, csv_text, program_report_text, program_status, summary_text
+from .reports import arrangement_text, cards_html, conflict_lines, csv_text, program_report_text, program_status, summary_text
 from .solver import GOALS
 
 
@@ -53,9 +53,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     _common(search_cmd, "search only these card classes")
 
+    print_cmd = commands.add_parser("print", help="print a program's cards as paper pieces to cut out and fold")
+    print_cmd.add_argument("arrangement", help="an arrangement YAML file, or a bundled arrangement's name")
+    print_cmd.add_argument("--program", type=Path, required=True, help="a program file in spec notation")
+    print_cmd.add_argument("--unit", type=float, default=30, help="the size of a U, in mm (default: 30)")
+    print_cmd.add_argument("--out", type=Path, help="HTML file to write (default: out/<arrangement>/cards.html)")
+
     args = parser.parse_args(argv)
-    classes = args.classes.split(",") if args.classes else None
+    classes = args.classes.split(",") if getattr(args, "classes", None) else None
     try:
+        if args.command == "print":
+            return _print(args)
         if args.command == "check":
             result = check(args.arrangement, max_length=args.max_length, classes=classes)
             return _write_reports(result, args.out or Path("out") / result.arrangement.name, classes)
@@ -71,6 +79,18 @@ def main(argv: list[str] | None = None) -> int:
 def _common(command: argparse.ArgumentParser, classes_help: str) -> None:
     command.add_argument("--max-length", type=int, default=6, help="longest card, in U (default: 6)")
     command.add_argument("--classes", help=f"{classes_help}, comma-separated (default: every class)")
+
+
+def _print(args: argparse.Namespace) -> int:
+    if not args.program.is_file():
+        raise ValueError(f"program file not found: {args.program}")
+    sheet = card_sheet(args.arrangement, args.program.read_text(encoding="utf-8"), unit=args.unit)
+    out = args.out or Path("out") / sheet.arrangement.name / "cards.html"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(cards_html(sheet), encoding="utf-8")
+    count = sum(len(page.pieces) for page in sheet.pages)
+    print(f"Wrote {out}: {count} cards on {len(sheet.pages)} page(s); print at 100% scale")
+    return 0
 
 
 def _search(args: argparse.Namespace, classes: list[str] | None) -> int:

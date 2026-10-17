@@ -7,11 +7,13 @@ from pathlib import Path
 
 from . import contacts as _contacts
 from . import programs as _programs
+from . import sheet as _sheet
 from . import solver as _solver
 from .contacts import ContactGroup, Label, SideEdges
 from .data import Arrangement, CardClass, Rules, load_arrangement, load_classes, load_pinned, load_rules
 from .physics import FLIPS
 from .programs import Failure, Forbid, Info, Layout, Strip
+from .sheet import CardSheet
 from .solver import Requirement
 
 
@@ -121,6 +123,31 @@ def check_program(
         forbids=tuple(_programs.forbids(found)),
         info=tuple(_programs.info(found)),
     )
+
+
+def card_sheet(
+    arrangement: str | Path | Mapping | Arrangement,
+    program_text: str,
+    *,
+    unit: float = 30,
+    max_length: int = 6,
+    class_data: str | Path | Mapping | None = None,
+    rule_data: str | Path | Mapping | None = None,
+) -> CardSheet:
+    """A paper prototype of a program's cards, to print, cut out and fold.
+
+    Every card of the program in spec notation is one piece at its minimum
+    length: its class's front on the upper panel, its back below, upright
+    under `top_bottom` and rotated 180° under `left_right`, each panel
+    showing every pocket's layer nearest that face. `unit` is the size of a
+    U in mm; every position is in mm on an A4 portrait page. `arrangement`,
+    `class_data` and `rule_data` are as for `check`. Raises `ProgramError`
+    for a program that can't be read, and `ValueError` for a `unit` too
+    big for a piece to fit on a page.
+    """
+    _, classes, loaded, all_sides = _load(arrangement, max_length, class_data, rule_data)
+    strips = _programs.parse(program_text, classes)
+    return _sheet.card_sheet(loaded, classes, all_sides, strips, program_text, unit)
 
 
 @dataclass(frozen=True)

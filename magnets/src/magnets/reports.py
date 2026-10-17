@@ -1,6 +1,8 @@
-"""Check results rendered as a CSV of contact groups, a summary and a program report."""
+"""Check results rendered as a CSV of contact groups, a summary and a program
+report; a card sheet rendered as printable HTML."""
 
 import csv
+import html
 import io
 from collections import Counter
 from collections.abc import Callable, Sequence
@@ -13,6 +15,7 @@ from .contacts import ContactGroup, Label
 from .data import Arrangement, BundledProgram
 from .physics import Shape
 from .programs import ProgramContact
+from .sheet import CardSheet, Panel, Piece
 from .solver import Requirement
 
 # Rows of the kind x result table; unavoidable is the subset of forbid that
@@ -311,3 +314,88 @@ def _where(pc: ProgramContact) -> str:
 def _labels(pc: ProgramContact) -> str:
     kinds = "+".join(label.kind for label in pc.contact.labels)
     return f"{kinds} {pc.contact.result}"
+
+
+# --- card sheet ------------------------------------------------------------
+
+_LETTER_COLOURS = {"N": "#d62728", "S": "#1f5fbf", "F": "#888888"}
+_OPPOSITE_EDGE = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}
+_INWARD = {"top": (0, 1), "bottom": (0, -1), "left": (1, 0), "right": (-1, 0)}
+_TICK = 3.0  # mm across the edge
+_LETTER_INSET = 4.5  # mm from the edge to the letter's centre
+_SMALL = 3.5  # mm, the size of the program text, letters and fold mark
+
+
+def cards_html(sheet: CardSheet) -> str:
+    """The card sheet as one HTML file of A4 SVG pages, to print at 100%."""
+    pages = "\n".join(_page_svg(page) for page in sheet.pages)
+    title = html.escape(f"{sheet.arrangement.name} cards")
+    return (
+        "<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n"
+        f"<title>{title}</title>\n"
+        "<style>@page { size: A4 portrait; margin: 0 } body { margin: 0 } "
+        "svg { display: block; break-after: page }</style>\n"
+        f"</head>\n<body>\n{pages}\n</body>\n</html>\n"
+    )
+
+
+def _page_svg(page) -> str:
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{page.width:g}mm" height="{page.height:g}mm" '
+        f'viewBox="0 0 {page.width:g} {page.height:g}">'
+    ]
+    for line in page.text:
+        parts.append(
+            f'<text x="{line.x:g}" y="{line.y + _SMALL:g}" font-family="monospace" font-size="{_SMALL:g}" '
+            f'xml:space="preserve">{html.escape(line.text)}</text>'
+        )
+    for piece in page.pieces:
+        parts += _piece_svg(piece)
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+def _piece_svg(piece: Piece) -> list[str]:
+    front, back = piece.front, piece.back
+    right = front.x + front.width
+    parts = [
+        f'<rect x="{front.x:g}" y="{front.y:g}" width="{front.width:g}" '
+        f'height="{front.height + back.height:g}" fill="none" stroke="black" stroke-width="0.3"/>',
+        f'<line x1="{front.x:g}" y1="{piece.fold_y:g}" x2="{right:g}" y2="{piece.fold_y:g}" '
+        'stroke="black" stroke-width="0.2" stroke-dasharray="2 1.5"/>',
+        # On the fold line, inside the cut, clear of the nearest pocket (¼ U in).
+        f'<text x="{right - 2.5:g}" y="{piece.fold_y:g}" font-size="{_SMALL:g}" text-anchor="middle" '
+        f'dominant-baseline="central" stroke="white" stroke-width="0.8" paint-order="stroke">{piece.fold}</text>',
+    ]
+    for panel in (front, back):
+        parts += _panel_svg(panel)
+    return parts
+
+
+def _panel_svg(panel: Panel) -> list[str]:
+    parts = []
+    if panel.notation is not None:
+        # A monospace glyph is about 0.6 of its size wide; a long label shrinks
+        # to fit the card, keeping clear of the letters.
+        size = min(panel.height * 0.2, (panel.width - 4) / (0.6 * len(panel.notation)))
+        cx, cy = panel.x + panel.width / 2, panel.y + panel.height / 2
+        turn = f' transform="rotate(180 {cx:g} {cy:g})"' if panel.rotated else ""
+        parts.append(
+            f'<text x="{cx:g}" y="{cy:g}" font-family="monospace" font-size="{size:.2f}" text-anchor="middle" '
+            f'dominant-baseline="central"{turn}>{html.escape(panel.notation)}</text>'
+        )
+    for mark in panel.marks:
+        edge = _OPPOSITE_EDGE[mark.edge] if panel.rotated else mark.edge
+        dx, dy = _INWARD[edge]
+        # The tick runs across the edge, perpendicular to it.
+        parts.append(
+            f'<line x1="{mark.x - dx * _TICK / 2:g}" y1="{mark.y - dy * _TICK / 2:g}" '
+            f'x2="{mark.x + dx * _TICK / 2:g}" y2="{mark.y + dy * _TICK / 2:g}" stroke="black" stroke-width="0.3"/>'
+        )
+        colour = _LETTER_COLOURS.get(mark.letter, "black")
+        parts.append(
+            f'<text x="{mark.x + dx * _LETTER_INSET:g}" y="{mark.y + dy * _LETTER_INSET:g}" font-family="sans-serif" '
+            f'font-size="{_SMALL:g}" font-weight="bold" fill="{colour}" text-anchor="middle" '
+            f'dominant-baseline="central">{mark.letter}</text>'
+        )
+    return parts

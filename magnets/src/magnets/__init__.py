@@ -1,10 +1,11 @@
 """Checker and CP-SAT solver for the Snapscript magnet arrangement."""
 
-from .api import CheckResult, ProgramResult, SolveResult, check, check_program, solve
+from .api import CheckResult, ProgramResult, SolveResult, card_sheet, check, check_program, solve
 from .contacts import ContactGroup, Label, SideEdges
 from .data import Arrangement, ArrangementError, BundledProgram, DataError, bundled_programs
 from .physics import Pocket, PocketPair
 from .programs import Card, Failure, Forbid, Info, Layout, Line, Placed, ProgramContact, ProgramError
+from .sheet import CardSheet, Mark, Page, Panel, Piece, TextLine
 from .solver import Requirement
 
 __all__ = [
@@ -12,6 +13,7 @@ __all__ = [
     "ArrangementError",
     "BundledProgram",
     "Card",
+    "CardSheet",
     "CheckResult",
     "ContactGroup",
     "DataError",
@@ -21,6 +23,10 @@ __all__ = [
     "Label",
     "Layout",
     "Line",
+    "Mark",
+    "Page",
+    "Panel",
+    "Piece",
     "Placed",
     "Pocket",
     "PocketPair",
@@ -30,7 +36,9 @@ __all__ = [
     "Requirement",
     "SideEdges",
     "SolveResult",
+    "TextLine",
     "bundled_programs",
+    "card_sheet",
     "check",
     "check_program",
     "solve",

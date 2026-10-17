@@ -57,9 +57,26 @@ _PRINTED = r"[^()\[\]]+"
 def _member_pattern(member: str) -> re.Pattern:
     parts, last = [], 0
     for found in _PLACEHOLDER.finditer(member):
-        parts += [re.escape(member[last : found.start()]), _PRINTED if found.group() == "…" else _HANDWRITTEN]
+        parts += [re.escape(member[last : found.start()]), f"({_PRINTED if found.group() == '…' else _HANDWRITTEN})"]
         last = found.end()
     return re.compile("".join(parts) + re.escape(member[last:]))
+
+
+def carry_over(card: str, side: Side, other: Side) -> str:
+    """The card as written on `other`, the other side of the same card: its
+    handwriting and printed text, in order, fill `other`'s placeholders of
+    the same kind. `[get(score)]` on set_get's back is `[set(score)to]`."""
+    member, match = next((m, found) for m in side.members if (found := _member_pattern(m).fullmatch(card)))
+    fills = {printed: [] for printed in (True, False)}
+    for placeholder, text in zip(_PLACEHOLDER.finditer(member), match.groups()):
+        fills[placeholder.group() == "…"].append(text)
+    filled, last = [], 0
+    target = other.notation
+    for found in _PLACEHOLDER.finditer(target):
+        queue = fills[found.group() == "…"]
+        filled += [target[last : found.start()], queue.pop(0) if queue else found.group()]
+        last = found.end()
+    return "".join(filled) + target[last:]
 
 
 def matching_sides(card: str, classes: Mapping[str, "CardClass"]) -> list[Side]:

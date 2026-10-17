@@ -316,3 +316,45 @@ def test_search_rejects_an_unknown_goal():
     run = subprocess.run([*MAGNETS, "search", "--flip", "top_bottom", "--goal", "push"], capture_output=True, text=True, check=False)
     assert run.returncode == 2
     assert "invalid choice: 'push'" in run.stderr
+
+
+def test_print_writes_the_cards_as_html(tmp_path):
+    program = tmp_path / "prog.txt"
+    program.write_text("// two cards\n[set(score)to][num(500)]\n")
+    run = subprocess.run(
+        [*MAGNETS, "print", "example", "--program", str(program)],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=tmp_path,
+    )
+    html = (tmp_path / "out" / "example" / "cards.html").read_text()
+    assert "Wrote out/example/cards.html" in run.stdout
+    assert 'width="210mm" height="297mm"' in html
+    assert "// two cards" in html
+    assert "[set(score)to]" in html and "[get(score)]" in html and "[str(500)]" in html
+
+    other = tmp_path / "elsewhere.html"
+    subprocess.run(
+        [*MAGNETS, "print", "example", "--program", str(program), "--unit", "20", "--out", str(other)],
+        check=True,
+        capture_output=True,
+    )
+    assert other.is_file()
+
+
+def test_print_rejects_bad_input(tmp_path):
+    program = tmp_path / "prog.txt"
+    program.write_text("[set(x)to]\n")
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("flip: sideways\n")
+    unknown = tmp_path / "unknown.txt"
+    unknown.write_text("[nope]\n")
+    for args, message in [
+        ([str(bad), "--program", str(program)], "invalid arrangement: unknown flip"),
+        (["example", "--program", str(tmp_path / "missing.txt")], "program file not found"),
+        (["example", "--program", str(unknown)], "unknown card [nope]"),
+    ]:
+        run = subprocess.run([*MAGNETS, "print", *args], capture_output=True, text=True, cwd=tmp_path)
+        assert run.returncode == 2, args
+        assert message in run.stderr

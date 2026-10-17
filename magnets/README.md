@@ -9,6 +9,7 @@ uv run magnets check my.yaml --out out/mine
 uv run magnets search --flip top_bottom --classes set_get,literal --time-limit 30
 uv run magnets search --flip top_bottom --pin example   # keep the example's set_get design
 uv run magnets search --flip left_right --goal no_snap  # illegal neighbours need only not snap
+uv run magnets print example --program my_program.txt --unit 30  # paper cards to cut and fold
 uv run pytest
 ```
 
@@ -69,6 +70,25 @@ match `--flip`. If no valid arrangement exists, the search says
 `infeasible`, names a set of requirements that conflict (enough to prove
 it, not always the smallest), and writes the arrangement with the fewest
 must failures instead.
+
+`magnets print <arrangement> --program <file>` makes a paper prototype of
+a program's cards, to check an arrangement's contacts by eye without
+magnets. The arrangement (a file or a bundled name, as for `check`) says
+where the pockets go; the program, in spec notation, which cards to print.
+It writes one HTML file of A4 SVG pages, `out/<arrangement>/cards.html`
+(or `--out`), to print at 100%: the program's text, then every card once at
+its minimum length, each piece below the last. A piece is the class's front over
+its back, sharing a dashed fold line; cut it out and fold it, and every
+pocket's two faces line up. Under `top_bottom` the back is upright and the
+fold is marked `↕`; under `left_right` it is rotated 180° and marked `↔`.
+The front is always on top, so a `[get(x)]` prints as `[set(x)to]` over
+`[get(x)]`, the handwriting carried over; a card that is not a flip pair
+gets an unlabelled back. Each pocket is a tick on its edge with the layer
+nearest that face: `N` red, `S` blue, `F` grey, `–` empty. `--unit` is the
+size of a U in mm (30 by default), a print option, not a spec value. The
+API is `magnets.card_sheet`, which returns the pages, pieces, panels and
+marks in mm. It exits 2 for an invalid arrangement, a missing program file,
+or a card that matches no class side.
 
 `magnets search` exits 0 only when it writes a valid arrangement (optimal
 or feasible). It exits 1 when the search is infeasible, even though it
