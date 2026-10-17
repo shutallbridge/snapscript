@@ -327,6 +327,8 @@ def _classes(
     """The grammar, and its card classes, only those named in `only` if given."""
     grammar = load_rules(rule_data)
     classes = dict(load_classes(class_data, grammar=grammar))
+    # Any class can head the next line, so a restricted check keeps the full classes' shortest line head.
+    grammar = grammar.for_classes(classes)
     if only is not None:
         unknown = [name for name in only if name not in classes]
         if unknown or not only:

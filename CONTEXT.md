@@ -46,7 +46,7 @@ A free-standing group of lines that snap together, such as one function, and can
 ## Magnets
 
 **U**:
-The unit of length on the table. Every card is 1U tall and a whole number of U long; an indent is 1U.
+The unit of length on the table. Every card is 1U tall and a whole number of U long; an indent is 1U. Most cards are at least 2U long, because their written text needs it.
 
 **Edge**:
 One of a side's four edges: top, bottom, left, right.
@@ -55,6 +55,9 @@ _Avoid_: side edge (say "left/right edges")
 **Pocket**:
 A place on an edge that holds magnets or steel pieces.
 _Avoid_: slot, magnet slot
+
+**Pocket reach**:
+How far a top or bottom pocket may sit from its end of the card: less than the reach, measured from the left or the right end. Most card classes reach 1U, so a pocket sits ¼, ½ or ¾U from an end; block heads and `[dedent]` reach 2U, for the indent pocket. It keeps the pockets near the ends, and the search small.
 
 **Layer**:
 One of a pocket's two levels through the card's thickness: up (towards the ceiling) or down (towards the table).
@@ -73,7 +76,7 @@ Two edges of two cards, each of a given length, facing each other at some offset
 _Avoid_: joint
 
 **Contact group**:
-Contacts with the same geometry: the same two sides and edges, the same offset, the same pockets facing, and the same labels (unavoidable included). A report shows one contact group on one line, named by its smallest length pair, with the number of contacts it holds. Example: `[set(x)to] [num(…)] @0` is one contact group of 36 contacts, one for each pair of lengths from 1U×1U to 6U×6U.
+Contacts with the same geometry: the same two sides and edges, the same offset, the same pockets facing, and the same labels (unavoidable included). A report shows one contact group on one line, named by its smallest length pair, with the number of contacts it holds. Example: `[set(x)to] [num(…)] @0` is one contact group of 25 contacts, one for each pair of lengths from 2U×2U to 6U×6U.
 _Avoid_: row, summary row, collapsed contact
 
 **Offset**:
@@ -91,7 +94,7 @@ What a contact does: its magnets only pull the cards together, only push them ap
 What one edge of a side needs from the edge that faces it. For example, `head` on a left edge means that nothing may be on its left.
 
 **Card class**:
-A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, all operator cards, or `[get:…]` and `[root]`.
+A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, all operator cards, or `[get:…]` and `[root]`. A class also has a shortest length, 2U for every class for now, and a pocket reach.
 
 **Connect**:
 A contact between two cards that the grammar lets be neighbours there. It must snap.
@@ -124,11 +127,11 @@ A connect contact that does not snap, or a coexist contact that repels or is mix
 Said of a magnet arrangement with no must failures.
 
 **Requirement**:
-One must label (connect or coexist) on two sides and their facing edges at one offset, at every pair of card lengths. Example: `[set(x)to] [get(x)] @0: connect` is one requirement. It holds when all 36 of its contacts snap. The search names conflicts in requirements and counts must failures for each one.
+One must label (connect or coexist) on two sides and their facing edges at one offset, at every pair of card lengths. Example: `[set(x)to] [get(x)] @0: connect` is one requirement. It holds when all 25 of its contacts snap. The search names conflicts in requirements and counts must failures for each one.
 _Avoid_: must contact (it is not one contact), must rule (grammar rules are the role-level rules in `rules.yaml`)
 
 **Conflict**:
-A set of requirements that cannot all hold at the same time. It proves that no valid magnet arrangement exists. The search names one such set; it is not always the smallest. Example: a 1U line head that must connect to the next line at −1, 0 and +1. On a 1U card, the three pockets would collide.
+A set of requirements that cannot all hold at the same time. It proves that no valid magnet arrangement exists. The search names one such set; it is not always the smallest. Example: a line head that could be 1U long and must connect to the next line at −1, 0 and +1. On a 1U card, the three pockets would collide.
 
 **Partner contact**:
 For a contact between two flip pairs, the contact between their other sides where the same pockets face each other, so it always does the same thing. Which contact it is depends on the flip direction.

@@ -38,7 +38,12 @@ partner contact is a connect can never be blocked; it is flagged
 leaks, many under `left_right`, are only counted; `contacts.csv` lists
 them.
 Card classes (`classes.yaml`), grammar rules (`rules.yaml`) and bundled
-arrangements live in `src/magnets/data/`. The public API is `magnets.check`,
+arrangements live in `src/magnets/data/`. A class has a `min_length`, its
+shortest card (2U for every class for now; a class can be set to 1U), and a
+`pocket_reach`: a top or bottom pocket sits less than the reach from its end
+(1U, or 2U on block heads and `[dedent]`). Contacts, program checks and the
+print sheet use the lengths; the search tries every pocket position within
+the reach. The public API is `magnets.check`,
 `magnets.check_program` (a program text in spec notation) and
 `magnets.solve`; pass `class_data=` or `rule_data=` to check against other
 class or rule data.

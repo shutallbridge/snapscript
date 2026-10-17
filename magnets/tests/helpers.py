@@ -1,11 +1,18 @@
 """Builders for hand-made arrangements and lookups into check results."""
 
-from hypothesis import assume
+from importlib import resources
+
+import yaml
 from hypothesis import strategies as st
 
 from magnets import CheckResult, ContactGroup
 
 SET_GET = {"set_get.set", "set_get.get"}
+
+
+def bundled_classes():
+    """The bundled card class data, as a mapping to change and pass as `class_data`."""
+    return yaml.safe_load((resources.files("magnets") / "data" / "classes.yaml").read_text(encoding="utf-8"))
 
 
 def arrangement(flip="top_bottom", **classes):
@@ -66,10 +73,11 @@ ANCHORED = [(f, at) for f in ("left", "right") for at in (0.25, 0.5, 0.75)]
 
 @st.composite
 def top_bottom_pockets(draw):
-    """Up to two pockets for a 1U card's top or bottom edge, as `(from, at, layers)`."""
+    """Up to two pockets for a top or bottom edge with a 1U pocket reach, as `(from, at, layers)`.
+
+    No two collide on a class 2U at its shortest: their distances add up to 1.5U at most.
+    """
     places = draw(st.lists(st.sampled_from(ANCHORED), max_size=2, unique=True))
-    # from: left x and from: right y meet on a 1U card when x + y = 1.
-    assume(not any(a[0] != b[0] and a[1] + b[1] == 1 for a in places for b in places))
     return [(f, at, draw(st.sampled_from(LAYER_PAIRS))) for f, at in places]
 
 

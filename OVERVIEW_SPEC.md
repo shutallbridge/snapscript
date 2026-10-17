@@ -543,6 +543,8 @@ Magnet arrangement: **TBD**.
 
 A camera above the table reads the card arrangement. A projector opposite displays the running sketch and draws on the cards.
 
+Lengths on the table are measured in U. Every card is 1U tall and a whole number of U long. Most cards are at least 2U long, because their written text needs it: a handwritten name such as `[define(drawCircle)]`, or a reserved word such as `[repeat]`. Each side of a card also holds a marker, a printed pattern that the camera reads to learn which side it is, where it lies and how it is turned. Which one-symbol cards, such as `[(]`, `[)]` and `[+]`, can be 1U long depends on the marker's size and placement: **TBD**.
+
 # Feedback
 
 Initial direction:

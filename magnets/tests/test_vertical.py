@@ -2,12 +2,12 @@
 
 from fractions import Fraction
 
-from helpers import arrangement, over
+from helpers import arrangement, bundled_classes, over
 from magnets import check
 
 
 def test_offsets_are_every_quarter_u_where_the_edges_overlap():
-    # set_get is 1U to 6U long, so set over set overlaps for -6 < d < 6.
+    # set_get is 2U to 6U long, so set over set overlaps for -6 < d < 6.
     result = check({})
     offsets = {
         c.offset
@@ -24,16 +24,27 @@ def test_contacts_cover_every_ordered_pair_of_sides_including_a_side_with_itself
 
 
 def test_an_offset_only_occurs_at_lengths_where_the_edges_overlap():
-    # [set(x)to] over [call:…] @+1 needs set at least 2U long; @-1 needs call 2U.
+    # Every class is 2U to 6U long. [set(x)to] over [call:…] @+2 needs set at least 3U long.
     result = check({}, max_length=6)
+    assert over(result, "set_get.set", "call_printed.call", 0).lengths == (2, 2)
+    assert over(result, "set_get.set", "call_printed.call", 0).count == 5 * 5
+    assert over(result, "set_get.set", "call_printed.call", 2).lengths == (3, 2)
+    assert over(result, "set_get.set", "call_printed.call", 2).count == 4 * 5
+    assert over(result, "set_get.set", "call_printed.call", -1).lengths == (2, 2)
+    assert over(result, "set_get.set", "call_printed.call", 5.75).lengths == (6, 2)
+    assert over(result, "set_get.set", "call_printed.call", 5.75).count == 5
+    assert over(result, "block_head.head", "set_get.set", 0).lengths == (2, 2)
+    assert over(result, "block_head.head", "set_get.set", 0).count == 5 * 5
+
+
+def test_a_class_set_back_to_1u_is_graded_at_1u():
+    classes = bundled_classes()
+    classes["call_printed"]["min_length"] = 1
+    result = check({}, class_data=classes, max_length=6)
+    # [set(x)to] over a 1U [call:…] @+1: set is 2U, so the call sits under its second U.
     assert over(result, "set_get.set", "call_printed.call", 1).lengths == (2, 1)
     assert over(result, "set_get.set", "call_printed.call", 1).count == 5 * 6
-    assert over(result, "set_get.set", "call_printed.call", -1).lengths == (1, 2)
-    assert over(result, "set_get.set", "call_printed.call", 5.75).lengths == (6, 1)
-    assert over(result, "set_get.set", "call_printed.call", 5.75).count == 6
-    # [if] is at least 2U long.
-    assert over(result, "block_head.head", "set_get.set", 0).lengths == (2, 1)
-    assert over(result, "block_head.head", "set_get.set", 0).count == 5 * 6
+    assert over(result, "set_get.set", "call_printed.call", -1).lengths == (2, 2)
 
 
 BOTTOM_ROLES = ("line", "block", "none", "free")
@@ -99,12 +110,13 @@ def kinds(contact):
     return [(label.kind, label.priority) for label in contact.labels]
 
 
-def test_a_line_head_over_an_inline_card_one_column_right_is_coexist_and_forbid():
-    # [set(x)to] (2U) over [call:append] @+1: `[set(x)to][call:…]` can't be a
-    # line, but a 2U [set(x)to] heads one line with [call:append] inline in the next.
-    contact = over(check({}), "set_get.set", "call_printed.call", 1)
-    assert contact.lengths == (2, 1)
-    assert kinds(contact) == [("coexist", "must"), ("forbid", "should")]
+def test_a_line_head_over_an_inline_card_coexists_two_columns_right_or_more():
+    # [set(x)to] over [call:append] @+1: `[set(x)to][call:…]` can't be a line,
+    # and [call:append] inline in the next line sits at least 2U right of its 2U line head.
+    result = check({})
+    assert kinds(over(result, "set_get.set", "call_printed.call", 1)) == [("forbid", "should")]
+    # @+2 is off the meaningful offsets, so coexist replaces forbid / low.
+    assert kinds(over(result, "set_get.set", "call_printed.call", 2)) == [("coexist", "must")]
 
 
 def test_a_line_head_over_an_inline_card_in_the_same_column_is_forbid_only():
@@ -127,6 +139,7 @@ def test_two_inline_cards_coexist_at_any_whole_offset():
 
 
 def test_coexist_appears_exactly_where_the_narrow_rule_says():
+    # Every line head is at least 2U long, so an inline card sits at least 2U right of its line head.
     result = check({})
 
     def can_head(side):
@@ -146,8 +159,8 @@ def test_coexist_appears_exactly_where_the_narrow_rule_says():
             and not {bottom, top} & {"top_level", "free"}
             and (bottom, top, d) not in CONNECTS
             and (
-                (can_head(upper) and inline(lower) and d >= (2 if bottom == "block" else 1))
-                or (inline(upper) and can_head(lower) and d <= (-2 if top == "dedent" else -1))
+                (can_head(upper) and inline(lower) and d >= (3 if bottom == "block" else 2))
+                or (inline(upper) and can_head(lower) and d <= (-3 if top == "dedent" else -1))
                 or (inline(upper) and inline(lower))
             )
         )
@@ -164,35 +177,68 @@ def test_coexist_needs_the_lower_line_head_to_sit_left_of_an_inline_card():
 
 
 def test_a_define_or_on_heads_a_line_with_inline_cards_below():
-    # The spec's first sketch: a 2U [define] over a 1U [call:…] line head
-    # puts [num(500)] under the [define] @+1.
+    # The spec's first sketch: a [define] over a 2U [call:…] line head
+    # puts [num(500)] under the [define] @+2, never @+1.
     #   [define(setup)]
     #   [call:p5.createCanvas][num(500)][num(500)]
     result = check({})
-    assert kinds(over(result, "define_call.define", "literal.num", 1)) == [("coexist", "must"), ("forbid", "should")]
-    assert kinds(over(result, "on.on", "literal.num", 1)) == [("coexist", "must"), ("forbid", "should")]
+    assert kinds(over(result, "define_call.define", "literal.num", 1)) == [("forbid", "should")]
+    assert kinds(over(result, "define_call.define", "literal.num", 2)) == [("coexist", "must")]
+    assert kinds(over(result, "on.on", "literal.num", 2)) == [("coexist", "must")]
     # Still nothing coexists with a [define] or [on:] below it.
-    assert ("coexist", "must") not in kinds(over(result, "literal.num", "on.on", -1))
+    assert ("coexist", "must") not in kinds(over(result, "literal.num", "on.on", -2))
 
 
-def test_an_inline_card_meets_a_dedent_below_only_two_columns_left_or_more():
+def test_an_inline_card_meets_a_line_head_below_one_column_left_when_the_body_is_indented():
+    # An inline card can't tell whether its line head indents the next line:
+    #   [if][num(1)]
+    #     [set(y)to]
+    result = check({})
+    assert kinds(over(result, "literal.num", "set_get.set", 0)) == [("forbid", "should")]
+    assert kinds(over(result, "literal.num", "set_get.set", -1)) == [("coexist", "must"), ("forbid", "should")]
+
+
+def test_a_1u_line_head_lets_an_inline_card_sit_1u_right_of_it():
+    # With [call:…] 1U again in the data, `[call:p5.createCanvas][num(500)]`
+    # puts [num(500)] 1U right of the line head, under a [define] @+1.
+    classes = bundled_classes()
+    classes["call_printed"]["min_length"] = 1
+    result = check({}, class_data=classes)
+    assert kinds(over(result, "define_call.define", "literal.num", 1)) == [("coexist", "must"), ("forbid", "should")]
+    assert kinds(over(result, "block_head.head", "literal.num", 2)) == [("coexist", "must")]
+    assert kinds(over(result, "literal.num", "dedent.dedent", -2)) == [("coexist", "must")]
+    # Block heads are still 2U, so an inline card sits at least 1U right of the
+    # next line's head, indented body or not.
+    assert kinds(over(result, "literal.num", "set_get.set", 0)) == [("forbid", "should")]
+    assert kinds(over(result, "literal.num", "set_get.set", -1)) == [("coexist", "must"), ("forbid", "should")]
+
+
+def test_the_shortest_line_head_counts_even_when_its_class_is_not_graded():
+    # A restricted check still knows a [call:…] can be 1U and head the next line.
+    classes = bundled_classes()
+    classes["call_printed"]["min_length"] = 1
+    result = check({}, class_data=classes, classes=["define_call", "literal"])
+    assert ("coexist", "must") in kinds(over(result, "define_call.define", "literal.num", 1))
+
+
+def test_an_inline_card_meets_a_dedent_below_only_three_columns_left_or_more():
     # The [dedent] sits 1U left of the last body line's head, and an inline
-    # card at least 1U right of it:
+    # card at least 2U right of it:
     #     [set(x)to][num(1)]
     #   [dedent]
     result = check({})
-    assert kinds(over(result, "literal.num", "dedent.dedent", -1)) == [("forbid", "should")]
-    assert kinds(over(result, "literal.num", "dedent.dedent", -2)) == [("coexist", "must")]
+    assert kinds(over(result, "literal.num", "dedent.dedent", -2)) == [("forbid", "low")]
+    assert kinds(over(result, "literal.num", "dedent.dedent", -3)) == [("coexist", "must")]
 
 
-def test_a_block_head_meets_an_inline_card_below_only_two_columns_right_or_more():
+def test_a_block_head_meets_an_inline_card_below_only_three_columns_right_or_more():
     # The body's line head sits 1U right of [if], and an inline card at
-    # least 1U right of that:
+    # least 2U right of that:
     #   [if][bool:true]
     #     [set(x)to][num(1)]
     result = check({})
-    assert kinds(over(result, "block_head.head", "literal.num", 1)) == [("forbid", "should")]
-    assert kinds(over(result, "block_head.head", "literal.num", 2)) == [("coexist", "must")]
+    assert kinds(over(result, "block_head.head", "literal.num", 2)) == [("forbid", "low")]
+    assert kinds(over(result, "block_head.head", "literal.num", 3)) == [("coexist", "must")]
 
 
 def grades(contact):
@@ -226,18 +272,18 @@ def test_a_from_right_pocket_only_aligns_at_some_length_pairs():
          and (c.a, c.b, c.offset) == ("set_get.set", "call_printed.call", 0)),
         key=lambda c: c.count,
     )
-    assert (snapped.lengths, snapped.count, snapped.result) == ((1, 1), 6, "snap")
+    assert (snapped.lengths, snapped.count, snapped.result) == ((2, 2), 5, "snap")
     assert grades(snapped) == [("connect", "pass")]
-    assert (missed.lengths, missed.count, missed.result) == ((1, 2), 30, "nothing")
+    assert (missed.lengths, missed.count, missed.result) == ((2, 3), 20, "nothing")
     assert grades(missed) == [("connect", "FAIL")]
-    # @+1 they line up when set is 1U longer: 2x1, 3x2, ..., 6x5.
+    # @+1 they line up when set is 1U longer: 3x2, 4x3, 5x4, 6x5.
     indented = [
         c for c in result.groups
         if c.axis == "vertical" and (c.a, c.b, c.offset) == ("set_get.set", "call_printed.call", 1) and c.pairs
     ]
     [contact] = indented
-    assert (contact.lengths, contact.count, contact.result) == ((2, 1), 5, "snap")
-    assert grades(contact) == [("coexist", "pass"), ("forbid", "leak")]
+    assert (contact.lengths, contact.count, contact.result) == ((3, 2), 4, "snap")
+    assert grades(contact) == [("forbid", "leak")]
 
 
 def test_a_block_heads_indent_pocket_meets_the_body_line_head():
@@ -252,7 +298,7 @@ def test_a_block_heads_indent_pocket_meets_the_body_line_head():
     contact = over(result, "block_head.head", "set_get.set", 1)
     [pair] = contact.pairs
     assert (pair.a.layers, pair.b.layers) == ("N/-", "S/-")
-    assert (contact.lengths, contact.count) == ((2, 1), 5 * 6)
+    assert (contact.lengths, contact.count) == ((2, 2), 5 * 5)
     assert grades(contact) == [("connect", "pass")]
     # In the same column the pockets miss each other.
     assert over(result, "block_head.head", "set_get.set", 0).pairs == ()
@@ -269,5 +315,5 @@ def test_a_dedent_meets_the_last_body_line_one_column_left():
     )
     contact = over(result, "set_get.set", "dedent.dedent", -1)
     assert contact.pairs and contact.result == "snap"
-    assert (contact.lengths, contact.count) == ((1, 2), 6 * 5)
+    assert (contact.lengths, contact.count) == ((2, 2), 5 * 5)
     assert grades(contact) == [("connect", "pass")]

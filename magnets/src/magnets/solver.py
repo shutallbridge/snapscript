@@ -234,7 +234,7 @@ def candidates(cls: CardClass, edge: str) -> tuple[Pocket, ...]:
     """A pocket at every position an arrangement may use on this edge.
 
     Top/bottom pockets sit on the 1/4 U grid, off the cell boundaries,
-    inside the card at its minimum length, anchored at either end.
+    less than the class's pocket reach from either end.
     Left/right pockets sit at the three heights.
     """
     if edge in LEFT_RIGHT_EDGES:
@@ -242,7 +242,7 @@ def candidates(cls: CardClass, edge: str) -> tuple[Pocket, ...]:
     places: list[tuple[Literal["left", "right"], Fraction]] = [
         (anchor, Fraction(quarter, 4))
         for anchor in ("left", "right")
-        for quarter in range(1, 4 * cls.min_length)
+        for quarter in range(1, 4 * cls.pocket_reach)
         if quarter % 4
     ]
     return tuple(Pocket(edge, anchor, at, "-/-", i) for i, (anchor, at) in enumerate(places))

@@ -15,7 +15,7 @@ from hypothesis import strategies as st
 from helpers import arrangement, left_right_pockets, top_bottom_pockets
 from magnets import check
 
-# Every flip pair is 1U at minimum.
+# Every flip pair is 2U at its shortest.
 FLIP_PAIRS = ("set_get", "define_call", "prop", "param", "literal", "bool")
 MAX_LENGTH = 3
 

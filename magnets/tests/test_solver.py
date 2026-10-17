@@ -144,7 +144,7 @@ def test_a_pin_may_not_mention_a_class_outside_the_search():
 # same column takes a `from: left` and a `from: right` pocket that collide
 # on a 1U card. (Real block heads and [dedent] are 2U for this reason.)
 HEAD = {"left": "head", "right": "end", "top": "line", "bottom": "line"}
-CROWDED_CLASSES = {"line_head": {"min_length": 1, "sides": {"head": {"[head]": HEAD}}}}
+CROWDED_CLASSES = {"line_head": {"min_length": 1, "pocket_reach": 1, "sides": {"head": {"[head]": HEAD}}}}
 CROWDED_RULES = {
     "roles": {"left": ["head"], "right": ["end"], "top": ["line"], "bottom": ["line"]},
     "priorities": {"should": 10, "low": 0},
@@ -203,11 +203,11 @@ def test_an_unavoidable_leak_costs_nothing():
     assert [r.fewest_status for r in results] == ["optimal", "optimal"]
     grades = [beside(r.check, "set_get.set", "set_get.set").labels for r in results]
     assert [(label.unavoidable, label.grade) for (label,) in grades] == [(True, "leak"), (True, "strong")]
-    # Ten per contact for a should-leak, over 36 length pairs, if it counted.
+    # Ten per contact for a should-leak, over 25 length pairs, if it counted.
     assert results[0].objective == results[1].objective
 
 
-# Two flip pairs and a single-sided class, all 1U at minimum.
+# Two flip pairs and a single-sided class, all 2U at their shortest with a 1U pocket reach.
 AGREEMENT_CLASSES = ["set_get", "literal", "operator"]
 
 
@@ -244,7 +244,7 @@ def test_the_solver_grades_a_pinned_arrangement_as_the_checker_does(pinned, goal
 # A toy grammar: one single-sided 1U class whose left edge is a line head,
 # so [lone][lone] is forbid / should, and nothing else is graded but low.
 LONE = {"left": "head", "right": "end", "top": "free", "bottom": "free"}
-LONE_CLASSES = {"lone": {"min_length": 1, "sides": {"lone": {"[lone]": LONE}}}}
+LONE_CLASSES = {"lone": {"min_length": 1, "pocket_reach": 1, "sides": {"lone": {"[lone]": LONE}}}}
 LONE_RULES = {
     "roles": {"left": ["head"], "right": ["end"], "top": ["free"], "bottom": ["free"]},
     "priorities": {"should": 10, "low": 0},

@@ -29,7 +29,7 @@ def test_example_set_marks(unit):
     top = [m for m in back.marks if m.edge == "top"]
     assert [(m.x - back.x, m.y, m.letter) for m in top] == [(0.25 * unit, back.y, "S")]
     assert [m.letter for m in back.marks if m.edge == "bottom"] == ["N"]
-    assert (front.width, front.height) == (unit, unit)
+    assert (front.width, front.height) == (2 * unit, unit)
 
 
 def test_every_card_once_at_min_length_front_above_back():
@@ -39,7 +39,7 @@ def test_every_card_once_at_min_length_front_above_back():
     assert [p.card.text for p in found] == [
         "[define(f)]", "[if]", "[get(score)]", "[call:print]", "[get(score)]", "[num(500)]", "[dedent]",
     ]
-    assert [p.length for p in found] == [1, 2, 1, 1, 1, 1, 2]
+    assert [p.length for p in found] == [2] * 7
     # A card on the back side is printed with the class's front on top.
     get = found[2]
     assert (get.front.notation, get.back.notation) == ("[set(score)to]", "[get(score)]")
@@ -124,7 +124,7 @@ def test_back_folds_onto_front(flip, rotated, fold):
 
 
 def test_program_text_above_its_cards_on_as_many_a4_pages_as_needed():
-    # 30 cards, 2U and 1U at 30 mm, four to a row: more rows than a page holds.
+    # 30 cards, 2U at 30 mm, three to a row: more rows than a page holds.
     text = "// thirty cards\n" + "".join(f"[if][num({i})]\n" for i in range(15))
     sheet = card_sheet("example", text)
     first = sheet.pages[0]
@@ -147,8 +147,8 @@ def test_unknown_card():
 @pytest.mark.parametrize(
     "text, unit, paper, card, largest",
     [
-        # 2U at 100 mm is 200 mm, over A4's 190 mm printable width.
-        ("[num(1)]\n[if]", 100, "a4", "[if]", "95"),
+        # 2U at 100 mm is 200 mm, over A4's 190 mm printable width; the first card names it.
+        ("[num(1)]\n[if]", 100, "a4", "[num(1)]", "95"),
         # Letter is 195.9 mm wide inside its margins.
         ("[if]", 100, "letter", "[if]", "97.9"),
         # The longest card names the unit that fits the whole program.
@@ -172,11 +172,11 @@ def rows(page):
 
 
 def test_pieces_in_a_row_and_rows_touch_inside_the_printable_area():
-    # 1U and 2U cards at 30 mm: a 190 mm wide printable area holds six U per row.
-    text = "[if][get(score)]\n" * 5
+    # 2U cards at 30 mm: a 190 mm wide printable area holds six U per row.
+    text = "[if][get(score)]\n" * 4
     (page,) = card_sheet("example", text, unit=30).pages
     lengths = [[p.length for p in row] for row in rows(page)]
-    assert lengths == [[2, 1, 2, 1], [2, 1, 2, 1], [2, 1]]
+    assert lengths == [[2, 2, 2], [2, 2, 2], [2, 2]]
     for row in rows(page):
         assert row[0].front.x == 10
         for a, b in zip(row, row[1:]):
@@ -217,9 +217,9 @@ def test_letter_paper_and_a4_by_default():
 
 @pytest.mark.parametrize("per_row", [3, 11])
 def test_a_row_that_fits_exactly_is_full(per_row):
-    # 1U cards at a unit that divides the 190 mm printable width exactly.
+    # 2U cards at a unit that divides the 190 mm printable width exactly.
     text = "".join(f"[num({i})]" for i in range(per_row))
-    (page,) = card_sheet("example", text, unit=190 / per_row).pages
+    (page,) = card_sheet("example", text, unit=190 / (2 * per_row)).pages
     assert [len(row) for row in rows(page)] == [per_row]
 
 

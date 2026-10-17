@@ -1,6 +1,6 @@
 """Card classes, grammar rules and arrangements, loaded from YAML and validated."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from fractions import Fraction
 from functools import cache
 from importlib import resources
@@ -87,7 +87,8 @@ def matching_sides(card: str, classes: Mapping[str, "CardClass"]) -> list[Side]:
 @dataclass(frozen=True)
 class CardClass:
     name: str
-    min_length: int
+    min_length: int  # the shortest card, in U
+    pocket_reach: int  # a top or bottom pocket sits less than this from its end, in U
     sides: tuple[Side, ...]  # front first; a flip pair's back second
 
     @property
@@ -126,28 +127,50 @@ class Coexist:
     not_inline: frozenset[str]  # left roles of a card that cannot sit inline
     indents: frozenset[str]  # bottom roles whose next line head sits 1U right
     outdents: frozenset[str]  # top roles of a line head that sits 1U left of the line above
+    shortest_head: int | None = None  # U: the shortest class that can head a line; set by `for_classes`
+    shortest_block: int | None = None  # U: the shortest class whose bottom role indents, if any
+
+    def for_classes(self, classes: Mapping[str, "CardClass"]) -> "Coexist":
+        """This rule, knowing how short the line heads of `classes` can be."""
+        sides = [(cls.min_length, side) for cls in classes.values() for side in cls.sides]
+        heads = [length for length, side in sides if side.roles["top"] in self.line_heads]
+        blocks = [length for length, side in sides if side.roles["bottom"] in self.indents]
+        return replace(self, shortest_head=min(heads, default=1), shortest_block=min(blocks, default=None))
 
     def applies(self, upper: Side, lower: Side, offset: Fraction) -> bool:
         """Whether a legal program can put `upper` over `lower` at `offset`.
 
         The next line head sits in the same column, 1U right after a block
         head, or 1U left only for a [dedent], which has no inline cards. An
-        inline card sits at least 1U right of its line head. So a line head
-        meets an inline card below only at +1 or more (+2 after a block
-        head), an inline card meets a line head below only at -1 or less (-2
-        for a [dedent]), and two inline cards meet at any offset. Connect
-        pairs are left out by the caller.
+        inline card sits at least `shortest_head` right of its line head, so
+        a line head meets an inline card below only at +`shortest_head` or
+        more (1U more after a block head). An inline card meets a line head
+        below at -`shortest_head` or less; if its own line head is a block
+        head, the next line is indented, so at 1 - `shortest_block` or less.
+        It meets a [dedent] 1U further left. Two inline cards meet at any
+        offset. Connect pairs are left out by the caller.
         """
+        if self.shortest_head is None:
+            raise ValueError("coexist needs the card classes' lengths: fit the rules with `for_classes`")
         bottom, top = upper.roles["bottom"], lower.roles["top"]
         if offset.denominator != 1 or bottom in self.never or top in self.never:
             return False
         upper_can_head, lower_can_head = (s.roles["top"] in self.line_heads for s in (upper, lower))
         upper_inline, lower_inline = (s.roles["left"] not in self.not_inline for s in (upper, lower))
         return (
-            (upper_can_head and lower_inline and offset >= (2 if bottom in self.indents else 1))
-            or (upper_inline and lower_can_head and offset <= (-2 if top in self.outdents else -1))
+            (upper_can_head and lower_inline and offset >= self.shortest_head + (bottom in self.indents))
+            or (upper_inline and lower_can_head and offset <= self._most_right_head_below(top, self.shortest_head))
             or (upper_inline and lower_inline)
         )
+
+    def _most_right_head_below(self, top: str, shortest_head: int) -> int:
+        """The largest offset at which a line head below, with this top role,
+        meets an inline card above."""
+        if top in self.outdents:
+            return -shortest_head - 1
+        if self.shortest_block is None:
+            return -shortest_head
+        return max(-shortest_head, 1 - self.shortest_block)
 
 
 @dataclass(frozen=True)
@@ -181,6 +204,11 @@ class Rules:
     priorities: Mapping[str, int]  # forbid priority -> weight
     horizontal: HorizontalRules
     vertical: VerticalRules
+
+    def for_classes(self, classes: Mapping[str, "CardClass"]) -> "Rules":
+        """These rules, with coexist knowing how short the line heads of `classes` can be."""
+        coexist = self.vertical.coexist.for_classes(classes)
+        return replace(self, vertical=replace(self.vertical, coexist=coexist))
 
 
 @dataclass(frozen=True)
@@ -418,11 +446,14 @@ def _parse_classes(raw: Any, grammar: Rules) -> dict[str, CardClass]:
 
 def _parse_class(name: str, spec: Any, grammar: Rules) -> CardClass:
     if not isinstance(spec, Mapping):
-        raise DataError(f"{name}: expected a mapping with `min_length` and `sides`")
-    _no_extra_keys(spec, {"min_length", "flip_pair", "sides"}, name, DataError)
-    min_length = spec.get("min_length")
-    if isinstance(min_length, bool) or not isinstance(min_length, int) or min_length < 1:
+        raise DataError(f"{name}: expected a mapping with `min_length`, `pocket_reach` and `sides`")
+    _no_extra_keys(spec, {"min_length", "pocket_reach", "flip_pair", "sides"}, name, DataError)
+    min_length = _whole_u(spec.get("min_length"), 1, None)
+    if min_length is None:
         raise DataError(f"{name}: `min_length` must be a whole number of U, at least 1")
+    reach = _whole_u(spec.get("pocket_reach"), 1, min_length)
+    if reach is None:
+        raise DataError(f"{name}: `pocket_reach` must be a whole number of U, from 1 to `min_length` {min_length}")
     flip_pair = spec.get("flip_pair", False)
     if not isinstance(flip_pair, bool):
         raise DataError(f"{name}: `flip_pair` must be true or false")
@@ -436,8 +467,16 @@ def _parse_class(name: str, spec: Any, grammar: Rules) -> CardClass:
     return CardClass(
         name=name,
         min_length=min_length,
+        pocket_reach=reach,
         sides=tuple(_parse_side(f"{name}.{side}", members, grammar) for side, members in sides.items()),
     )
+
+
+def _whole_u(raw: Any, least: int, most: int | None) -> int | None:
+    """`raw` if it is a whole number of U from `least` to `most`, else None."""
+    if isinstance(raw, bool) or not isinstance(raw, int) or raw < least or (most is not None and raw > most):
+        return None
+    return raw
 
 
 def _parse_side(name: str, raw: Any, grammar: Rules) -> Side:
@@ -606,9 +645,9 @@ def _pocket(cls: CardClass, edge: str, index: int, raw: Any) -> Pocket:
             f"{where}: at {_u(at)} is off the grid; positions sit at 1/4, 1/2 and 3/4 of a U, "
             "never on a cell boundary"
         )
-    if not 0 < at < cls.min_length:
+    if not 0 < at < cls.pocket_reach:
         raise ArrangementError(
-            f"{where}: at {_u(at)} is outside the card at its minimum length {cls.min_length}U"
+            f"{where}: at {_u(at)} is beyond its pocket reach {cls.pocket_reach}U from the {anchor} end"
         )
     return Pocket(edge=edge, anchor=anchor, at=at, layers=layers, index=index)
 

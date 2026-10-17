@@ -96,13 +96,13 @@ def test_left_right_ties_a_stack_to_its_mirror_image_which_depends_on_lengths():
     # [get(x)] over [call(f)], a connect, only on cards of equal length.
     result = check({"flip": "left_right"})
     assert stacks(result, "set_get.set", "define_call.define", 0) == [
-        ((1, 1), 6, True),
-        ((1, 2), 30, False),
+        ((2, 2), 5, True),
+        ((2, 3), 20, False),
     ]
     # @+1 it is tied to the connect @0 when [set(x)to] is 1U longer.
     assert stacks(result, "set_get.set", "define_call.define", 1) == [
-        ((2, 1), 5, True),
-        ((2, 2), 25, False),
+        ((2, 2), 21, False),
+        ((3, 2), 4, True),
     ]
 
 
@@ -125,10 +125,10 @@ def test_left_right_unavoidable_stacks_with_pockets():
         for c in result.groups
         if c.axis == "vertical" and (c.a, c.b, c.offset) == ("set_get.set", "define_call.define", 0)
     )
-    assert found == [((1, 1), 6, "snap", True, "leak"), ((1, 2), 30, "snap", False, "leak")]
+    assert found == [((2, 2), 5, "snap", True, "leak"), ((2, 3), 20, "snap", False, "leak")]
     partner = sorted(
         (c.lengths, c.result)
         for c in result.groups
         if c.axis == "vertical" and (c.a, c.b, c.offset) == ("set_get.get", "define_call.call", 0)
     )
-    assert partner == [((1, 1), "snap"), ((1, 2), "nothing")]
+    assert partner == [((2, 2), "snap"), ((2, 3), "nothing")]

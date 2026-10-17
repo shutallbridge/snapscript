@@ -20,7 +20,7 @@ SPEC_CARDS = {
         "[get(shapes)]", "[get(title)]", "[get(user)]", "[get(width)]", "[get(x)]", "[get(y)]",
     ],
     "define_call.define": [
-        "[define(…)]", "[define(a)]", "[define(b)]", "[define(draw)]", "[define(f)]", "[define(foo)]",
+        "[define(…)]", "[define(a)]", "[define(b)]", "[define(draw)]", "[define(drawCircle)]", "[define(f)]", "[define(foo)]",
         "[define(greet)]", "[define(helper)]", "[define(setup)]", "[define(star)]",
     ],
     "define_call.call": [
@@ -128,8 +128,8 @@ def test_an_unknown_card_is_a_clear_error(card):
 def test_a_card_matching_two_sides_is_a_clear_error():
     line = {"left": "head", "right": "end", "top": "line", "bottom": "line"}
     classes = {
-        "printed": {"min_length": 1, "sides": {"call": {"[call:…]": line}}},
-        "print": {"min_length": 1, "sides": {"print": {"[call:print]": line}}},
+        "printed": {"min_length": 1, "pocket_reach": 1, "sides": {"call": {"[call:…]": line}}},
+        "print": {"min_length": 1, "pocket_reach": 1, "sides": {"print": {"[call:print]": line}}},
     }
     with pytest.raises(ProgramError) as err:
         check_program({}, "[call:print]", class_data=classes)

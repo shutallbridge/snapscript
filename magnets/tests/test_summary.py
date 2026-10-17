@@ -54,8 +54,10 @@ def test_both_flips_have_the_same_contacts_in_different_contact_groups(flips):
         return {k: sum(n for (kind, _), n in counts.items() if kind == k) for k in KINDS}
 
     assert by_kind(contacts["top_bottom"]) == by_kind(contacts["left_right"])
-    assert "\n29952 contact groups, 650928 contacts\n" in summary_text(flips["top_bottom"])
-    assert "\n30044 contact groups, 650928 contacts\n" in summary_text(flips["left_right"])
+    # 24 sides, each pair at 25 length pairs (2U to 6U): 5 horizontal
+    # offsets each, and 875 (length pair, quarter-U offset) overlaps above each other.
+    assert "\n29952 contact groups, 518400 contacts\n" in summary_text(flips["top_bottom"])
+    assert "\n30028 contact groups, 518400 contacts\n" in summary_text(flips["left_right"])
     # left_right splits some forbid contact groups by whether they are unavoidable.
     assert by_kind(groups["top_bottom"]) != by_kind(groups["left_right"])
 
@@ -88,7 +90,7 @@ def test_the_pocket_line_counts_front_pockets_by_shape():
 
 
 def test_unavoidable_low_leaks_are_counted_not_listed():
-    # Under left_right a 3U [set(x)to] over a 1U [set(x)to] @+2 (forbid low)
+    # Under left_right a 4U [set(x)to] over a 2U [set(x)to] @+2 (forbid low)
     # snaps exactly like [get(x)] over [get(x)] @0 (connect), and
     # [set(x)to][set(x)to] (forbid should) like [get(x)][get(x)].
     toy = set_get(
@@ -102,10 +104,10 @@ def test_unavoidable_low_leaks_are_counted_not_listed():
     count, listed = section(summary, "Unavoidable should- and nice-leaks")
     assert count == len(listed) == 3
     assert "  [set(x)to] [set(x)to] @0: forbid should snap (attract 1, repel 0)" in listed
-    assert "  [set(x)to] over [set(x)to] @+1: forbid should snap (attract 1, repel 0, lengths 2x1)" in listed
+    assert "  [set(x)to] over [set(x)to] @+1: forbid should snap (attract 1, repel 0, lengths 3x2)" in listed
     assert not any(" low " in line for line in summary.splitlines() if line.startswith("  "))
     low, listed = section(summary, "Unavoidable low-leaks (not listed)")
-    assert (low, listed) == (8, [])
+    assert (low, listed) == (6, [])
 
 
 ROOT = Path(__file__).parents[1]

@@ -141,8 +141,8 @@ def test_pockets_at_different_heights_meet_off_line_as_forbid_low():
 def test_contacts_are_independent_of_length():
     # Left/right pockets have no anchor, so every length pair collapses into one.
     contact = beside(check({}, max_length=6), "block_head.head", "literal.num")
-    assert contact.lengths == (2, 1)
-    assert contact.count == 5 * 6
+    assert contact.lengths == (2, 2)
+    assert contact.count == 5 * 5
 
 
 @pytest.mark.parametrize("height", [0.25, 0.5, 0.75])

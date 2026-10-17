@@ -51,8 +51,8 @@ def test_example_fails_only_where_it_has_no_pockets():
 def test_lengths_with_identical_geometry_collapse():
     # Both pockets are anchored on the left, so every length pair lines them up.
     contact = stack(check("example", max_length=6), "set", "get")
-    assert contact.lengths == (1, 1)
-    assert contact.count == 6 * 6
+    assert contact.lengths == (2, 2)
+    assert contact.count == 5 * 5
 
 
 def test_nn_on_set_get_top_fails_get_over_set():

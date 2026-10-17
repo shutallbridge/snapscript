@@ -10,9 +10,16 @@
 # match: anything in `(…)` stands for handwriting and a `…` for printed text,
 # so `[get(x)]` matches `[get(score)]` and `[call:…]` matches `[call:print]`.
 # Every card text must match exactly one class side.
+#
+# `min_length` is the shortest card of the class, in whole U: most cards hold
+# written text, which needs 2U. Which one-symbol cards (`[(]`, `[+]`, …) may be
+# 1U is TBD, decided with the marker (#26, #32). `pocket_reach` keeps a top or
+# bottom pocket near its end: it sits less than the reach from its end of the
+# card. Block heads and `[dedent]` reach 2U, for the indent pocket.
 
 set_get:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   flip_pair: true
   sides:
     set:
@@ -21,7 +28,8 @@ set_get:
       "[get(x)]": {left: value, right: value, top: line, bottom: line}
 
 define_call:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   flip_pair: true
   sides:
     define:
@@ -30,7 +38,8 @@ define_call:
       "[call(f)]": {left: call, right: call, top: line, bottom: line}
 
 prop:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   flip_pair: true
   sides:
     set_prop:
@@ -39,7 +48,8 @@ prop:
       "[getProp(p)]": {left: cont, right: value, top: none, bottom: none}
 
 param:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   flip_pair: true
   sides:
     required:
@@ -48,7 +58,8 @@ param:
       "[optional(p)]": {left: optional, right: default, top: none, bottom: none}
 
 literal:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   flip_pair: true
   sides:
     num:
@@ -57,7 +68,8 @@ literal:
       "[str(…)]": {left: value, right: value, top: none, bottom: none}
 
 bool:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   flip_pair: true
   sides:
     "true":
@@ -66,20 +78,23 @@ bool:
       "[bool:false]": {left: value, right: value, top: none, bottom: none}
 
 call_printed:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   sides:
     call:
       "[call:…]": {left: call, right: call, top: line, bottom: line}
 
 receiver_printed:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   sides:
     receiver:
       "[get:…]": {left: value, right: value, top: line, bottom: line}
       "[root]": {left: value, right: value, top: line, bottom: line}
 
 value_printed:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   sides:
     value:
       "[color:…]": {left: value, right: value, top: none, bottom: none}
@@ -87,6 +102,7 @@ value_printed:
 
 block_head:
   min_length: 2
+  pocket_reach: 2
   sides:
     head:
       "[if]": {left: head, right: open, top: line, bottom: block}
@@ -95,18 +111,21 @@ block_head:
 
 dedent:
   min_length: 2
+  pocket_reach: 2
   sides:
     dedent:
       "[dedent]": {left: head, right: end, top: dedent, bottom: line}
 
 "on":
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   sides:
     "on":
       "[on:…]": {left: head, right: end, top: top_level, bottom: line}
 
 operator:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   sides:
     operator:
       "[+]": {left: cont, right: open, top: none, bottom: none}
@@ -124,32 +143,37 @@ operator:
       "[or]": {left: cont, right: open, top: none, bottom: none}
 
 open_paren:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   sides:
     open:
       "[(]": {left: value, right: open, top: none, bottom: none}
 
 close_paren:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   sides:
     close:
       "[)]": {left: cont, right: value, top: none, bottom: none}
 
 import:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   sides:
     import:
       "[import(…)as(…)]": {left: head, right: end, top: free, bottom: free}
       "[import(…)]": {left: head, right: end, top: free, bottom: free}
 
 extern:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   sides:
     extern:
       "[extern(…)]": {left: head, right: params, top: free, bottom: free}
 
 global:
-  min_length: 1
+  min_length: 2
+  pocket_reach: 1
   sides:
     global:
       "[global(…)]": {left: head, right: open, top: free, bottom: free}

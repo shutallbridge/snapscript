@@ -12,12 +12,14 @@ IF = {"left": "head", "right": "open", "top": "line", "bottom": "block"}
 
 TOY_CLASSES = {
     "set_get": {
-        "min_length": 1,
+        "min_length": 2,
+        "pocket_reach": 1,
         "flip_pair": True,
         "sides": {"set": {"[set(x)to]": SET}, "get": {"[get(x)]": GET}},
     },
     "block_head": {
         "min_length": 2,
+        "pocket_reach": 2,
         "sides": {"head": {"[if]": IF, "[repeat]": IF}},
     },
 }
@@ -112,6 +114,9 @@ def test_bundled_members_resolve_to_one_side_each():
             "[set(x)to] is a member of both set_get.set and block_head.head",
         ),
         (classes_with(block_head__min_length=0), "block_head: `min_length` must be"),
+        (classes_with(block_head__pocket_reach=None), "block_head: `pocket_reach` must be"),
+        (classes_with(block_head__pocket_reach=0), "block_head: `pocket_reach` must be"),
+        (classes_with(block_head__pocket_reach=3), "from 1 to `min_length` 2"),
         (classes_with(block_head__colour="red"), "block_head: unknown key(s) colour"),
         (classes_with(block_head__sides={"head": {}}), "block_head.head: expected a mapping of member cards"),
     ],
@@ -214,5 +219,7 @@ def test_toy_vertical_rules_grade_the_toy_classes():
     }
     assert labels["block_head.head", "set_get.set", 1] == [("connect", "must")]
     assert labels["set_get.set", "set_get.set", 1] == [("forbid", "should")]
-    # get can sit inline and set can head a line, so get over set @-1 coexists.
-    assert labels["set_get.get", "set_get.set", -1] == [("coexist", "must"), ("forbid", "should")]
+    # Two gets can both sit inline, so get over get @-1 coexists.
+    assert labels["set_get.get", "set_get.get", -1] == [("coexist", "must"), ("forbid", "should")]
+    # set heads a line at least 2U long, so a get inline in the line above sits at least 2U right of it.
+    assert labels["set_get.get", "set_get.set", -1] == [("forbid", "should")]

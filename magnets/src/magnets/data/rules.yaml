@@ -53,10 +53,14 @@ vertical:
   # Coexist: in a legal program, cards that touch without being neighbours
   # must not push apart. A contact at a whole-U offset coexists if neither
   # facing role is in `never`, no connect claims it, and either the upper
-  # card can head a line, the lower can sit inline and offset >= +1 (+2 if
+  # card can head a line, the lower can sit inline and offset >= +L (+L+1 if
   # the upper's bottom role is in `indents`); or the upper can sit inline,
-  # the lower can head a line and offset <= -1 (-2 if the lower's top role
-  # is in `outdents`); or both can sit inline.
+  # the lower can head a line and offset <= -L, or <= 1-B when the upper's
+  # line head is a block head that indents the lower line (-L-1 if the
+  # lower's top role is in `outdents`); or both can sit inline. L is the
+  # shortest length of a class that can head a line, B of a class whose
+  # bottom role is in `indents`: an inline card sits at least that far right
+  # of its line head. With every class 2U at its shortest, L and B are 2.
   coexist:
     never: [top_level, free]
     # A card can head a line if its top role is one of these. A [define] or

@@ -96,7 +96,7 @@ def test_check_reports_horizontal_contacts(tmp_path):
         ("set_get.get", "set_get.set"): ("forbid", "should", "nothing", "weak"),
     }
     row = next(r for r in rows if (r["upper_or_left"], r["lower_or_right"]) == ("set_get.set", "set_get.set"))
-    assert (row["edge_a"], row["edge_b"], row["lengths"], row["count"]) == ("right", "left", "1x1", "36")
+    assert (row["edge_a"], row["edge_b"], row["lengths"], row["count"]) == ("right", "left", "2x2", "25")
     assert row["unavoidable"] == "True"
 
     assert "[get(x)] [get(x)] @0" not in run.stdout
@@ -165,8 +165,8 @@ def test_check_reports_vertical_contacts(tmp_path):
     ]
     # One row per label.
     assert num_over_num == [
-        ("bottom", "top", "1x1", "36", "coexist", "must", "repel", "FAIL"),
-        ("bottom", "top", "1x1", "36", "forbid", "should", "repel", "strong"),
+        ("bottom", "top", "2x2", "25", "coexist", "must", "repel", "FAIL"),
+        ("bottom", "top", "2x2", "25", "forbid", "should", "repel", "strong"),
     ]
     # Contact groups where no pockets line up have no row unless they are connect.
     assert not any(
@@ -181,16 +181,16 @@ def test_check_reports_vertical_contacts(tmp_path):
     # Unavoidable forbids are a subset of the forbids.
     forbid, unavoidable = ([int(n) for n in row.split()[1:]] for row in table[2:4])
     assert all(u <= f for u, f in zip(unavoidable, forbid)) and sum(unavoidable) > 0
-    assert "  [num(…)] over [num(…)] @0: coexist repel (attract 0, repel 1, lengths 1x1)\n" in summary
+    assert "  [num(…)] over [num(…)] @0: coexist repel (attract 0, repel 1, lengths 2x2)\n" in summary
     # num's bottom N/- snaps to define's top S/- too.
     nice_leaks = summary.split("Avoidable nice-leaks: 1\n")[1].split("\n\n")[0]
     assert nice_leaks.splitlines() == [
-        "  [num(…)] over [define(f)] @0: forbid snap (attract 1, repel 0, lengths 1x1)",
+        "  [num(…)] over [define(f)] @0: forbid snap (attract 1, repel 0, lengths 2x2)",
     ]
     # [set(x)to] over [define(f)] snaps exactly like [call(f)] over [get(x)],
     # which must snap.
     unavoidable_leaks = summary.split("Unavoidable should- and nice-leaks: ")[1].split("\n\n")[0].splitlines()
-    assert "  [set(x)to] over [define(f)] @0: forbid nice snap (attract 1, repel 0, lengths 1x1)" in unavoidable_leaks
+    assert "  [set(x)to] over [define(f)] @0: forbid nice snap (attract 1, repel 0, lengths 2x2)" in unavoidable_leaks
     assert summary.endswith("\nINVALID\n")
     assert summary in run.stdout
 

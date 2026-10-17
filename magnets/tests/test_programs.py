@@ -122,37 +122,37 @@ def test_nested_blocks_intended_column_contacts():
 
 def test_inline_cards_follow_their_line_head_at_their_lengths():
     text = "[define(f)]\n[for(i)in][call:range][num(3)]\n  [call:print][get(i)]\n[dedent]"
-    [layout] = check_program("example", text, lengths=[1, 3, 2, 1, 1, 4, 2]).layouts
+    [layout] = check_program("example", text, lengths=[2, 3, 2, 2, 3, 4, 2]).layouts
     assert [(p.card.text, p.x, p.length) for p in layout.cards] == [
-        ("[define(f)]", 0, 1),
+        ("[define(f)]", 0, 2),
         ("[for(i)in]", 0, 3),
         ("[call:range]", 3, 2),
-        ("[num(3)]", 5, 1),
-        ("[call:print]", 1, 1),
-        ("[get(i)]", 2, 4),
+        ("[num(3)]", 5, 2),
+        ("[call:print]", 1, 3),
+        ("[get(i)]", 4, 4),
         ("[dedent]", 0, 2),
     ]
     vertical = {where(pc)[1:] for pc in layout.contacts if pc.contact.axis == "vertical"}
     assert vertical == {
         ((1, "[define(f)]"), (2, "[for(i)in]"), 0),
-        # for spans 0..3, range 3..5, num 5..6; print 1..2, get(i) 2..6.
+        # for spans 0..3, range 3..5, num 5..7; print 1..4, get(i) 4..8.
         ((2, "[for(i)in]"), (3, "[call:print]"), 1),
-        ((2, "[for(i)in]"), (3, "[get(i)]"), 2),
-        ((2, "[call:range]"), (3, "[get(i)]"), -1),
-        ((2, "[num(3)]"), (3, "[get(i)]"), -3),
+        ((2, "[call:range]"), (3, "[call:print]"), -2),
+        ((2, "[call:range]"), (3, "[get(i)]"), 1),
+        ((2, "[num(3)]"), (3, "[get(i)]"), -1),
         # dedent spans 0..2.
         ((3, "[call:print]"), (4, "[dedent]"), -1),
     }
     lengths = {(where(pc)[1:]): pc.contact.lengths for pc in layout.contacts}
-    assert lengths[(2, "[call:range]"), (3, "[get(i)]"), -1] == (2, 4)
+    assert lengths[(2, "[call:range]"), (3, "[get(i)]"), 1] == (2, 4)
 
 
 @pytest.mark.parametrize(
     "lengths, message",
     [
         ([1, 1], "lengths: 2 given for 3 cards"),
-        ([1, 1, 1], "lengths: [dedent] on line 3 is at least 2U long, not 1"),
-        ([1, 1, 7], "lengths: [dedent] on line 3 is longer than max_length 6U"),
+        ([2, 2, 1], "lengths: [dedent] on line 3 is at least 2U long, not 1"),
+        ([2, 2, 7], "lengths: [dedent] on line 3 is longer than max_length 6U"),
     ],
 )
 def test_given_lengths_are_checked(lengths, message):
@@ -165,7 +165,7 @@ def test_min_lengths_then_seeded_draws():
     result = check_program("example", NESTED, seed=7)
     assert [layout.name for layout in result.layouts] == ["min lengths", *(f"draw {i}" for i in range(1, 21))]
     minimum, *draws = result.layouts
-    assert [p.length for p in minimum.cards] == [2 if p.card.side in ("block_head.head", "dedent.dedent") else 1 for p in minimum.cards]
+    assert [p.length for p in minimum.cards] == [2] * len(minimum.cards)
     for layout in draws:
         assert all(m.length <= p.length <= 6 for m, p in zip(minimum.cards, layout.cards))
     assert len({tuple(p.length for p in layout.cards) for layout in draws}) > 1
@@ -185,7 +185,7 @@ def test_the_same_seed_gives_the_same_lengths():
 
 def test_draws_stay_within_max_length():
     result = check_program("example", NESTED, max_length=3, draws=50)
-    assert {p.length for layout in result.layouts for p in layout.cards} == {1, 2, 3}
+    assert {p.length for layout in result.layouts for p in layout.cards} == {2, 3}
 
 
 # --- legal programs ----------------------------------------------------------
