@@ -14,7 +14,7 @@ One printed face of a card. Most cards have one side; a flip pair has two.
 A card with a different card on each side, changed by flipping it over. Both sides take the same roles: `[num(…)]` / `[str(…)]`, `[bool:true]` / `[bool:false]`, `[+]` / `[-]`, `[*]` / `[/]`, `[<]` / `[>]`, `[<=]` / `[>=]`, `[==]` / `[!=]`, `[and]` / `[or]`. Every other card has one side, `[%]`, `[set(x)to]`, `[get(x)]`, `[define(f)]` and `[call(f)]` among them.
 
 **Marker**:
-The printed pattern on a card's side that the camera reads to learn which side it is, where it lies and how it is turned. A marker names the side's kind and, for handwritten sides, its length; it does not name the physical card. Two `[get(x)]` cards of the same length carry the same marker and are told apart by where they lie.
+The printed pattern on a card's side that the camera reads to learn which side it is, where it lies and how it is turned. A marker names a keyword (`[repeat]`), a handwritten kind and its length (`[get(…)]` at 3U), or a printed card registered by a library (`[call:p5.fill]`); it does not name the physical card. Two `[get(x)]` cards of the same length carry the same marker and are told apart by where they lie.
 _Avoid_: fiducial, tag, code
 
 **Printed / handwritten**:
