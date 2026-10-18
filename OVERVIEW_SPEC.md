@@ -80,7 +80,7 @@ Doc comments precede a declaration and are projected as help when a card is pick
 
 | Form            | Examples                                                                                                                                              |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Keyword card    | `[+]`, `[(]`, `[)]`, `[repeat]`, `[dedent]`, `[none]`, `[root]`                                                                                       |
+| Keyword card    | `[+]`, `[(]`, `[)]`, `[not]`, `[repeat]`, `[dedent]`, `[none]`, `[root]`                                                                              |
 | Printed variant | `[color:purple]`, `[bool:true]`, `[call:p5.circle]`, `[get:p5.frameCount]`, `[on:load]`                                                               |
 | Handwritten     | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[setProp(p)to]`, `[getProp(p)]`, `[num(500)]`, `[str(hello)]`, `[for(x)in]`, `[global(x)]` |
 
@@ -430,6 +430,7 @@ A function held in a dict is called from a name.
 *  /  %          binds tightest
 +  -
 >  <  >=  <=  ==  !=
+not
 and
 or               binds loosest
 ```
@@ -440,6 +441,14 @@ Operators at the same level evaluate left to right.
 [num(2)][+][num(3)][*][num(4)]        14
 [num(10)][-][num(3)][-][num(2)]       5
 [str(score)][+][num(5)]               error
+```
+
+`[not]` negates the value to its right. It takes the place of a value and needs a value next, like `[(]`.
+
+```
+[if][not][get(done)]                  if not done
+[not][get(a)][>][num(1)]              not (a > 1)
+[not][get(a)][and][get(b)]            (not a) and b
 ```
 
 Converting a value to `str`: **TBD**.

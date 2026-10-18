@@ -15,7 +15,7 @@ SPEC_CARDS = {
         "[set(scores)to]", "[set(user)to]", "[set(width)to]", "[set(x)to]", "[set(y)to]",
     ],
     "get.get": [
-        "[get(a)]", "[get(app)]", "[get(b)]", "[get(count)]", "[get(helper)]", "[get(i)]", "[get(message)]",
+        "[get(a)]", "[get(app)]", "[get(b)]", "[get(count)]", "[get(done)]", "[get(helper)]", "[get(i)]", "[get(message)]",
         "[get(n)]", "[get(p5)]", "[get(s)]", "[get(score)]", "[get(scores)]", "[get(shapes.unit)]",
         "[get(shapes)]", "[get(title)]", "[get(user)]", "[get(width)]", "[get(x)]", "[get(y)]",
     ],
@@ -66,6 +66,7 @@ SPEC_CARDS = {
     "operator.front": ["[*]", "[+]", "[<]", "[<=]", "[==]", "[and]"],
     "operator.back": ["[-]", "[/]", "[>]", "[>=]", "[!=]", "[or]"],
     "modulo.modulo": ["[%]"],
+    "not.not": ["[not]"],
     "open_paren.open": ["[(]"],
     "close_paren.close": ["[)]"],
     "import.import": [

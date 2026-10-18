@@ -28,7 +28,7 @@ nested_blocks:
     // block in the same strip.
     [define(draw)]
     [for(i)in][call:range][num(3)]
-      [if][get(i)][>][num(1)]
+      [if][not][get(i)][>][num(1)]
         [call:print][get(i)]
       [dedent]
     [dedent]

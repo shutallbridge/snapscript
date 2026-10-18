@@ -172,6 +172,15 @@ modulo:
     modulo:
       "[%]": {left: cont, right: open, top: none, bottom: none}
 
+# `[not]` takes the roles of `[(]`: it sits where a value goes and needs a
+# value next.
+"not":
+  min_length: 2
+  pocket_reach: 1
+  sides:
+    "not":
+      "[not]": {left: value, right: open, top: none, bottom: none}
+
 open_paren:
   min_length: 2
   pocket_reach: 1

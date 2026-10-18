@@ -53,17 +53,17 @@ def test_both_flips_have_the_same_contacts_in_different_contact_groups(flips):
     def counts(results, heading):
         return {flip: by_kind(table(summary_text(r), heading)) for flip, r in results.items()}
 
-    # 26 sides, each pair at 25 length pairs (2U to 6U): 5 horizontal
+    # 27 sides, each pair at 25 length pairs (2U to 6U): 5 horizontal
     # offsets each, and 875 (length pair, quarter-U offset) overlaps above each other.
-    assert "\n35152 contact groups, 608400 contacts\n" in summary_text(flips["top_bottom"])
-    assert "\n35152 contact groups, 608400 contacts\n" in summary_text(flips["left_right"])
+    assert "\n37908 contact groups, 656100 contacts\n" in summary_text(flips["top_bottom"])
+    assert "\n37908 contact groups, 656100 contacts\n" in summary_text(flips["left_right"])
     # With nothing unavoidable, the bundled card set's contact groups are the same under both flips.
     assert counts(flips, GROUPS_HEADING)["top_bottom"] == counts(flips, GROUPS_HEADING)["left_right"]
     # With the TOY_PAIRS data, left_right splits some forbid contact groups by
     # whether they are unavoidable.
     toy = {flip: check_pairs({"flip": flip}) for flip in flips}
     assert counts(toy, CONTACTS_HEADING)["top_bottom"] == counts(toy, CONTACTS_HEADING)["left_right"]
-    assert "\n35228 contact groups, 608400 contacts\n" in summary_text(toy["left_right"])
+    assert "\n37984 contact groups, 656100 contacts\n" in summary_text(toy["left_right"])
     assert counts(toy, GROUPS_HEADING)["top_bottom"] != counts(toy, GROUPS_HEADING)["left_right"]
 
 
