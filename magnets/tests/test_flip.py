@@ -6,8 +6,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from helpers import left_right_pockets, set_get, top_bottom_pockets
-from magnets import check
+from helpers import check_pairs, left_right_pockets, set_get, top_bottom_pockets
 
 
 
@@ -19,7 +18,7 @@ def edges(result, side):
 
 
 def test_top_bottom_swaps_edges_mirrors_heights_and_swaps_layers():
-    result = check(
+    result = check_pairs(
         set_get(
             top=[("left", 0.25, "N/S"), ("right", 0.5, "F/-")],
             bottom=[("right", 0.25, "S/S")],
@@ -39,7 +38,7 @@ def test_top_bottom_swaps_edges_mirrors_heights_and_swaps_layers():
 
 
 def test_left_right_swaps_edges_mirrors_anchors_and_swaps_layers():
-    result = check(
+    result = check_pairs(
         set_get(
             "left_right",
             top=[("left", 0.25, "N/S"), ("right", 0.5, "F/-")],
@@ -68,7 +67,7 @@ SERIES = {Fraction(1, 4): "A", Fraction(3, 4): "A", Fraction(1, 2): "B"}
 def test_positions_stay_in_their_series(flip):
     # Series A = 1/4 and 3/4 of a U, series B = 1/2: at a whole-U offset a
     # pocket only meets one in the same series, front or back.
-    result = check(
+    result = check_pairs(
         set_get(
             flip,
             top=[("left", 0.25, "N/S"), ("right", 0.5, "F/-")],
@@ -95,7 +94,7 @@ def test_positions_stay_in_their_series(flip):
 
 @pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
 def test_uniform_pockets_are_unchanged_by_a_flip(flip):
-    result = check(set_get(flip, top=[("left", 0.5, "N/N")], left=[(0.5, "F/F")], right=[(0.5, "S/S")]))
+    result = check_pairs(set_get(flip, top=[("left", 0.5, "N/N")], left=[(0.5, "F/F")], right=[(0.5, "S/S")]))
     layers = {edge: [p.layers for p in pockets] for edge, pockets in result.sides["set_get.get"].edges.items()}
     assert sorted(ly for found in layers.values() for ly in found) == ["F/F", "N/N", "S/S"]
     shapes = [p.shape for pockets in result.sides["set_get.get"].edges.values() for p in pockets]
@@ -119,11 +118,11 @@ def set_get_arrangements(draw):
 @settings(deadline=None)
 @given(set_get_arrangements())
 def test_flipping_twice_gives_back_the_front(arrangement):
-    once = check(arrangement, max_length=2)
+    once = check_pairs(arrangement, max_length=2)
     # Author the derived back as a front: its derived back is the front flipped twice.
     back_as_front = {
         "flip": arrangement["flip"],
         "classes": {"set_get": edges(once, "get")},
     }
-    twice = check(back_as_front, max_length=2)
+    twice = check_pairs(back_as_front, max_length=2)
     assert edges(twice, "get") == edges(once, "set")

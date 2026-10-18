@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from helpers import set_get
+from helpers import check_pairs, set_get
 from magnets import check, solve
 from magnets.reports import arrangement_text, summary_text
 
@@ -47,19 +47,24 @@ def test_contact_groups_are_not_called_contacts(flips):
 
 
 def test_both_flips_have_the_same_contacts_in_different_contact_groups(flips):
-    groups = {flip: table(summary_text(r), GROUPS_HEADING) for flip, r in flips.items()}
-    contacts = {flip: table(summary_text(r), CONTACTS_HEADING) for flip, r in flips.items()}
-
     def by_kind(counts):
         return {k: sum(n for (kind, _), n in counts.items() if kind == k) for k in KINDS}
 
-    assert by_kind(contacts["top_bottom"]) == by_kind(contacts["left_right"])
-    # 24 sides, each pair at 25 length pairs (2U to 6U): 5 horizontal
+    def counts(results, heading):
+        return {flip: by_kind(table(summary_text(r), heading)) for flip, r in results.items()}
+
+    # 26 sides, each pair at 25 length pairs (2U to 6U): 5 horizontal
     # offsets each, and 875 (length pair, quarter-U offset) overlaps above each other.
-    assert "\n29952 contact groups, 518400 contacts\n" in summary_text(flips["top_bottom"])
-    assert "\n30028 contact groups, 518400 contacts\n" in summary_text(flips["left_right"])
-    # left_right splits some forbid contact groups by whether they are unavoidable.
-    assert by_kind(groups["top_bottom"]) != by_kind(groups["left_right"])
+    assert "\n35152 contact groups, 608400 contacts\n" in summary_text(flips["top_bottom"])
+    assert "\n35152 contact groups, 608400 contacts\n" in summary_text(flips["left_right"])
+    # With nothing unavoidable, the bundled card set's contact groups are the same under both flips.
+    assert counts(flips, GROUPS_HEADING)["top_bottom"] == counts(flips, GROUPS_HEADING)["left_right"]
+    # With the TOY_PAIRS data, left_right splits some forbid contact groups by
+    # whether they are unavoidable.
+    toy = {flip: check_pairs({"flip": flip}) for flip in flips}
+    assert counts(toy, CONTACTS_HEADING)["top_bottom"] == counts(toy, CONTACTS_HEADING)["left_right"]
+    assert "\n35228 contact groups, 608400 contacts\n" in summary_text(toy["left_right"])
+    assert counts(toy, GROUPS_HEADING)["top_bottom"] != counts(toy, GROUPS_HEADING)["left_right"]
 
 
 @pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
@@ -80,17 +85,17 @@ def test_contact_counts_sum_group_counts(flips, flip):
 
 
 def test_the_pocket_line_counts_front_pockets_by_shape():
-    # The example designs set_get's top (F/N) and bottom (F/S); get, its
-    # back, shares them.
+    # The example designs set's and get's top (F/F) and bottom (N/S), and
+    # literal's left (F/F) and right (N/S); str, literal's back, shares them.
     lines = summary_text(check("example")).splitlines()
     # Right after the contact group line.
-    assert lines[1].endswith(" contacts") and lines[2] == "Pockets: 2 (uniform 0, half 0, split 2)"
+    assert lines[1].endswith(" contacts") and lines[2] == "Pockets: 6 (uniform 3, half 0, split 3)"
     toy = set_get(top=[("left", 0.25, "N/N")], bottom=[("left", 0.25, "N/-")], left=[(0.5, "-/S")], right=[])
-    assert "\nPockets: 3 (uniform 1, half 2, split 0)\n" in summary_text(check(toy))
+    assert "\nPockets: 3 (uniform 1, half 2, split 0)\n" in summary_text(check_pairs(toy))
 
 
 def test_unavoidable_low_leaks_are_counted_not_listed():
-    # Under left_right a 4U [set(x)to] over a 2U [set(x)to] @+2 (forbid low)
+    # On the TOY_PAIRS data, under left_right a 4U [set(x)to] over a 2U [set(x)to] @+2 (forbid low)
     # snaps exactly like [get(x)] over [get(x)] @0 (connect), and
     # [set(x)to][set(x)to] (forbid should) like [get(x)][get(x)].
     toy = set_get(
@@ -100,7 +105,7 @@ def test_unavoidable_low_leaks_are_counted_not_listed():
         left=[(0.5, "S/-")],
         right=[(0.5, "N/-")],
     )
-    summary = summary_text(check(toy))
+    summary = summary_text(check_pairs(toy))
     count, listed = section(summary, "Unavoidable should- and nice-leaks")
     assert count == len(listed) == 3
     assert "  [set(x)to] [set(x)to] @0: forbid should snap (attract 1, repel 0)" in listed
@@ -125,7 +130,7 @@ def test_an_infeasible_search_names_its_goal():
     # Nothing on the right of a [num] can snap if its right edge is empty.
     pinned = {"flip": "left_right", "classes": {"literal": {"right": []}}}
     result = solve(
-        "left_right", goal="no_snap", classes=["set_get", "literal"], pinned=pinned, time_limit=5, workers=1
+        "left_right", goal="no_snap", classes=["set", "literal"], pinned=pinned, time_limit=5, workers=1
     )
     assert result.status == "infeasible"
     assert "\nSearch (goal no_snap): infeasible in " in summary_text(result.check, result)

@@ -20,15 +20,15 @@ def marks(panel):
 
 
 @pytest.mark.parametrize("unit", [30, 20])
-def test_example_set_marks(unit):
-    (piece,) = pieces(card_sheet("example", "[set(x)to]\n", unit=unit))
+def test_example_num_marks(unit):
+    (piece,) = pieces(card_sheet("example", "[str(hi)]\n", unit=unit))
     front, back = piece.front, piece.back
-    assert (front.notation, back.notation) == ("[set(x)to]", "[get(x)]")
-    assert marks(front) == [("bottom", 0.25 * unit, "F"), ("top", 0.25 * unit, "F")]
-    # The get panel's top edge sits on the fold, behind the F/S pocket.
-    top = [m for m in back.marks if m.edge == "top"]
-    assert [(m.x - back.x, m.y, m.letter) for m in top] == [(0.25 * unit, back.y, "S")]
-    assert [m.letter for m in back.marks if m.edge == "bottom"] == ["N"]
+    assert (front.notation, back.notation) == ("[num(hi)]", "[str(hi)]")
+    assert marks(front) == [("left", 0.5 * unit, "F"), ("right", 0.5 * unit, "N")]
+    # The str panel's right edge holds num's N/S pocket flipped: S/N.
+    right = [m for m in back.marks if m.edge == "right"]
+    assert [(m.x - back.x, m.y - back.y, m.letter) for m in right] == [(2 * unit, 0.5 * unit, "S")]
+    assert [m.letter for m in back.marks if m.edge == "left"] == ["F"]
     assert (front.width, front.height) == (2 * unit, unit)
 
 
@@ -40,9 +40,9 @@ def test_every_card_once_at_min_length_front_above_back():
         "[define(f)]", "[if]", "[get(score)]", "[call:print]", "[get(score)]", "[num(500)]", "[dedent]",
     ]
     assert [p.length for p in found] == [2] * 7
-    # A card on the back side is printed with the class's front on top.
+    # A card that is not a flip pair has an unlabelled back.
     get = found[2]
-    assert (get.front.notation, get.back.notation) == ("[set(score)to]", "[get(score)]")
+    assert (get.front.notation, get.back.notation) == ("[get(score)]", None)
     for p in found:
         assert p.front.width == p.back.width == p.length * 30
         assert p.front.y + p.front.height == p.fold_y == p.back.y
@@ -56,14 +56,14 @@ def test_every_card_once_at_min_length_front_above_back():
 @pytest.mark.parametrize(
     "card, front, back",
     [
-        ("[set(score)to]", "[set(score)to]", "[get(score)]"),
-        ("[get(score)]", "[set(score)to]", "[get(score)]"),
         ("[str(500)]", "[num(500)]", "[str(500)]"),
         ("[num(7)]", "[num(7)]", "[str(7)]"),
-        ("[call(draw)]", "[define(draw)]", "[call(draw)]"),
-        ("[getProp(message)]", "[setProp(message)to]", "[getProp(message)]"),
-        ("[optional(title)]", "[required(title)]", "[optional(title)]"),
         ("[bool:false]", "[bool:true]", "[bool:false]"),
+        # Each operator card pairs the members at the same place on each side.
+        ("[+]", "[+]", "[-]"),
+        ("[/]", "[*]", "[/]"),
+        ("[>=]", "[<=]", "[>=]"),
+        ("[or]", "[and]", "[or]"),
     ],
 )
 def test_back_labels_carry_the_handwriting_over(card, front, back):
@@ -71,10 +71,18 @@ def test_back_labels_carry_the_handwriting_over(card, front, back):
     assert (piece.front.notation, piece.back.notation) == (front, back)
 
 
-# set_get with a pocket on every edge, from both ends, half pockets too; and
-# a block head, which is not a flip pair.
+@pytest.mark.parametrize(
+    "card", ["[set(x)to]", "[get(x)]", "[define(f)]", "[call(f)]", "[getProp(p)]", "[optional(p)]", "[%]"]
+)
+def test_a_card_that_is_not_a_flip_pair_has_an_unlabelled_back(card):
+    (piece,) = pieces(card_sheet("example", card))
+    assert (piece.front.notation, piece.back.notation) == (card, None)
+
+
+# The literal flip pair with a pocket on every edge, from both ends, half
+# pockets too; and a block head, which is not a flip pair.
 EVERY_EDGE = dict(
-    set_get={
+    literal={
         "top": [("left", 0.25, "N/-"), ("right", 0.5, "F/S")],
         "bottom": [("left", 0.75, "-/S")],
         "left": [(0.25, "S/N")],
@@ -101,9 +109,9 @@ def test_letters_are_the_layer_nearest_each_face():
 def test_back_letters_are_the_checkers_derived_up_layers(flip):
     arr = arrangement(flip, **EVERY_EDGE)
     sides = check(arr).sides
-    for card, side in [("[set(x)to]", "set_get.set"), ("[get(x)]", "set_get.get")]:
+    for card, side in [("[num(1)]", "literal.num"), ("[str(1)]", "literal.str")]:
         (piece,) = pieces(card_sheet(arr, card))
-        panel = piece.front if side == "set_get.set" else piece.back
+        panel = piece.front if side == "literal.num" else piece.back
         expected = sorted(
             (edge, "–" if p.up == "-" else p.up) for edge, ps in sides[side].edges.items() for p in ps
         )
@@ -112,7 +120,7 @@ def test_back_letters_are_the_checkers_derived_up_layers(flip):
 
 @pytest.mark.parametrize("flip, rotated, fold", [("top_bottom", False, "↕"), ("left_right", True, "↔")])
 def test_back_folds_onto_front(flip, rotated, fold):
-    sheet = card_sheet(arrangement(flip, **EVERY_EDGE), "[if][get(x)]", unit=25)
+    sheet = card_sheet(arrangement(flip, **EVERY_EDGE), "[if][num(1)]", unit=25)
     for piece in pieces(sheet):
         assert piece.fold == fold
         assert piece.back.rotated is rotated and piece.front.rotated is False

@@ -9,36 +9,36 @@ from magnets import ProgramError, check, check_program
 
 # Every card text in OVERVIEW_SPEC.md, by the class side it belongs to.
 SPEC_CARDS = {
-    "set_get.set": [
+    "set.set": [
         "[set()to]", "[set(a)to]", "[set(b)to]", "[set(count)to]", "[set(empty)to]", "[set(f)to]",
         "[set(frame Count)to]", "[set(framecount)to]", "[set(frameCount)to]", "[set(n)to]",
         "[set(scores)to]", "[set(user)to]", "[set(width)to]", "[set(x)to]", "[set(y)to]",
     ],
-    "set_get.get": [
+    "get.get": [
         "[get(a)]", "[get(app)]", "[get(b)]", "[get(count)]", "[get(helper)]", "[get(i)]", "[get(message)]",
         "[get(n)]", "[get(p5)]", "[get(s)]", "[get(score)]", "[get(scores)]", "[get(shapes.unit)]",
         "[get(shapes)]", "[get(title)]", "[get(user)]", "[get(width)]", "[get(x)]", "[get(y)]",
     ],
-    "define_call.define": [
-        "[define(…)]", "[define(a)]", "[define(b)]", "[define(draw)]", "[define(drawCircle)]", "[define(f)]", "[define(foo)]",
+    "define.define": [
+        "[define(…)]", "[define(a)]", "[define(b)]", "[define(draw)]", "[define(drawCircle)]", "[define(foo)]",
         "[define(greet)]", "[define(helper)]", "[define(setup)]", "[define(star)]",
     ],
-    "define_call.call": [
+    "call.call": [
         "[call(circle)]", "[call(f)]", "[call(foo)]", "[call(greet)]", "[call(helper)]", "[call(p5.circle)]",
     ],
-    "prop.set_prop": [
+    "set_prop.set_prop": [
         "[setProp(…)to]", "[setProp(frameCount)to]", "[setProp(label)to]", "[setProp(message)to]", "[setProp(p)to]",
     ],
-    "prop.get_prop": [
+    "get_prop.get_prop": [
         "[getProp(…)]", "[getProp(b)]", "[getProp(greet)]", "[getProp(items)]", "[getProp(message)]",
         "[getProp(missing)]", "[getProp(name)]", "[getProp(p)]", "[getProp(unit)]", "[getProp(user)]",
     ],
-    "param.required": [
+    "required.required": [
         "[required(b)]", "[required(color)]", "[required(d)]", "[required(g)]", "[required(height)]",
-        "[required(message)]", "[required(p)]", "[required(r)]", "[required(width)]", "[required(x)]", "[required(y)]",
+        "[required(message)]", "[required(r)]", "[required(width)]", "[required(x)]", "[required(y)]",
     ],
-    "param.optional": [
-        "[optional(max)]", "[optional(min)]", "[optional(p)]", "[optional(suffix)]", "[optional(title)]",
+    "optional.optional": [
+        "[optional(max)]", "[optional(min)]", "[optional(suffix)]", "[optional(title)]",
     ],
     "literal.num": [
         "[num(-1)]", "[num(.5)]", "[num()]", "[num(…)]", "[num(0.5)]", "[num(0)]", "[num(1 000)]", "[num(1)]",
@@ -63,7 +63,9 @@ SPEC_CARDS = {
     "block_head.head": ["[for(…)in]", "[for(i)in]", "[for(s)in]", "[for(x)in]", "[if]", "[repeat]"],
     "dedent.dedent": ["[dedent]"],
     "on.on": ["[on:…]", "[on:load]"],
-    "operator.operator": ["[-]", "[*]", "[/]", "[+]", "[<]", "[>]", "[and]"],
+    "operator.front": ["[*]", "[+]", "[<]", "[<=]", "[==]", "[and]"],
+    "operator.back": ["[-]", "[/]", "[>]", "[>=]", "[!=]", "[or]"],
+    "modulo.modulo": ["[%]"],
     "open_paren.open": ["[(]"],
     "close_paren.close": ["[)]"],
     "import.import": [
@@ -106,9 +108,9 @@ def test_every_class_member_resolves_to_its_own_side():
 @pytest.mark.parametrize(
     "card, side",
     [
-        ("[get(x)]", "set_get.get"),
+        ("[get(x)]", "get.get"),
         ("[get:x]", "receiver_printed.receiver"),
-        ("[call(f)]", "define_call.call"),
+        ("[call(f)]", "call.call"),
         ("[call:f]", "call_printed.call"),
         ("[import(https://a.b/c.snap)as(c)]", "import.import"),
         ("[import(https://a.b/c.snap)]", "import.import"),

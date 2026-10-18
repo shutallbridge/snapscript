@@ -11,7 +11,7 @@ One physical piece that lies flat on the table and stands for one block of the p
 One printed face of a card. Most cards have one side; a flip pair has two.
 
 **Flip pair**:
-A card with a different card on each side, changed by flipping it over: `[set(x)to]` / `[get(x)]`, `[define(f)]` / `[call(f)]`, `[required(p)]` / `[optional(p)]`, `[setProp(p)to]` / `[getProp(p)]`, `[num(…)]` / `[str(…)]`, `[bool:true]` / `[bool:false]`.
+A card with a different card on each side, changed by flipping it over. Both sides take the same roles: `[num(…)]` / `[str(…)]`, `[bool:true]` / `[bool:false]`, `[+]` / `[-]`, `[*]` / `[/]`, `[<]` / `[>]`, `[<=]` / `[>=]`, `[==]` / `[!=]`, `[and]` / `[or]`. Every other card has one side, `[%]`, `[set(x)to]`, `[get(x)]`, `[define(f)]` and `[call(f)]` among them.
 
 **Marker**:
 The printed pattern on a card's side that the camera reads to learn which side it is, where it lies and how it is turned. A marker names the side's kind and, for handwritten sides, its length; it does not name the physical card. Two `[get(x)]` cards of the same length carry the same marker and are told apart by where they lie.
@@ -73,7 +73,7 @@ How a pocket's two layers are filled: **uniform** (both layers the same and not 
 The choice of pockets and their contents on every card.
 
 **Flip direction**:
-How every flip pair turns over: top-to-bottom (top and bottom edges change places) or left-to-right (left and right edges change places). One flip direction applies to a whole magnet arrangement.
+How every flip pair turns over: top-to-bottom (top and bottom edges change places) or left-to-right (left and right edges change places). One flip direction applies to a whole magnet arrangement. Snapscript's flip pairs turn top-to-bottom; the magnets tool can check and search both.
 
 **Contact**:
 Two edges of two cards, each of a given length, facing each other at some offset. The same two sides at other lengths make other contacts, even when the same pockets face each other.
@@ -98,7 +98,7 @@ What a contact does: its magnets only pull the cards together, only push them ap
 What one edge of a side needs from the edge that faces it. For example, `head` on a left edge means that nothing may be on its left.
 
 **Card class**:
-A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, all operator cards, or `[get:…]` and `[root]`. A class also has a shortest length, 2U for every class for now, and a pocket reach.
+A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, the operator cards but `[%]`, or `[get:…]` and `[root]`. A class also has a shortest length, 2U for every class for now, and a pocket reach.
 
 **Connect**:
 A contact between two cards that the grammar lets be neighbours there. It must snap.
@@ -142,7 +142,7 @@ For a contact between two flip pairs, the contact between their other sides wher
 _Avoid_: partner (on its own), flip partner
 
 **Unavoidable**:
-Said of a forbid contact whose partner contact is a connect. It snaps whenever its partner contact snaps, so a valid magnet arrangement always has the leak. Every other forbid is **avoidable**.
+Said of a forbid contact whose partner contact is a connect. It snaps whenever its partner contact snaps, so a valid magnet arrangement always has the leak. Every other forbid is **avoidable**. Only a flip pair whose sides take different roles makes one, so Snapscript's cards have none.
 
 ## Search
 

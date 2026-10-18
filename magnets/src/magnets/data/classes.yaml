@@ -6,6 +6,12 @@
 # each with the roles of its four edges. Every member of a class side must
 # have the same roles. The roles are listed in rules.yaml.
 #
+# A flip pair's two sides list their members in the same order: each card has
+# the n-th front member on one side and the n-th back member on the other, so
+# `[*]` is on the back of `[/]`. Both sides of each flip pair here take the
+# same roles (ADR 0003): a pair whose sides differ ties some illegal
+# neighbours to legal ones, so they always snap.
+#
 # A member's notation is also the pattern a card text in a program must
 # match: anything in `(…)` stands for handwriting and a `…` for printed text,
 # so `[get(x)]` matches `[get(score)]` and `[call:…]` matches `[call:print]`.
@@ -17,43 +23,59 @@
 # bottom pocket near its end: it sits less than the reach from its end of the
 # card. Block heads and `[dedent]` reach 2U, for the indent pocket.
 
-set_get:
+set:
   min_length: 2
   pocket_reach: 1
-  flip_pair: true
   sides:
     set:
       "[set(x)to]": {left: head, right: open, top: line, bottom: line}
+
+get:
+  min_length: 2
+  pocket_reach: 1
+  sides:
     get:
       "[get(x)]": {left: value, right: value, top: line, bottom: line}
 
-define_call:
+define:
   min_length: 2
   pocket_reach: 1
-  flip_pair: true
   sides:
     define:
       "[define(f)]": {left: head, right: params, top: top_level, bottom: line}
+
+call:
+  min_length: 2
+  pocket_reach: 1
+  sides:
     call:
       "[call(f)]": {left: call, right: call, top: line, bottom: line}
 
-prop:
+set_prop:
   min_length: 2
   pocket_reach: 1
-  flip_pair: true
   sides:
     set_prop:
       "[setProp(p)to]": {left: cont, right: open, top: none, bottom: none}
+
+get_prop:
+  min_length: 2
+  pocket_reach: 1
+  sides:
     get_prop:
       "[getProp(p)]": {left: cont, right: value, top: none, bottom: none}
 
-param:
+required:
   min_length: 2
   pocket_reach: 1
-  flip_pair: true
   sides:
     required:
       "[required(p)]": {left: required, right: params, top: none, bottom: none}
+
+optional:
+  min_length: 2
+  pocket_reach: 1
+  sides:
     optional:
       "[optional(p)]": {left: optional, right: default, top: none, bottom: none}
 
@@ -126,21 +148,29 @@ dedent:
 operator:
   min_length: 2
   pocket_reach: 1
+  flip_pair: true
   sides:
-    operator:
+    front:
       "[+]": {left: cont, right: open, top: none, bottom: none}
-      "[-]": {left: cont, right: open, top: none, bottom: none}
       "[*]": {left: cont, right: open, top: none, bottom: none}
-      "[/]": {left: cont, right: open, top: none, bottom: none}
-      "[%]": {left: cont, right: open, top: none, bottom: none}
-      "[>]": {left: cont, right: open, top: none, bottom: none}
       "[<]": {left: cont, right: open, top: none, bottom: none}
-      "[>=]": {left: cont, right: open, top: none, bottom: none}
       "[<=]": {left: cont, right: open, top: none, bottom: none}
       "[==]": {left: cont, right: open, top: none, bottom: none}
-      "[!=]": {left: cont, right: open, top: none, bottom: none}
       "[and]": {left: cont, right: open, top: none, bottom: none}
+    back:
+      "[-]": {left: cont, right: open, top: none, bottom: none}
+      "[/]": {left: cont, right: open, top: none, bottom: none}
+      "[>]": {left: cont, right: open, top: none, bottom: none}
+      "[>=]": {left: cont, right: open, top: none, bottom: none}
+      "[!=]": {left: cont, right: open, top: none, bottom: none}
       "[or]": {left: cont, right: open, top: none, bottom: none}
+
+modulo:
+  min_length: 2
+  pocket_reach: 1
+  sides:
+    modulo:
+      "[%]": {left: cont, right: open, top: none, bottom: none}
 
 open_paren:
   min_length: 2

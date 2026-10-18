@@ -29,7 +29,7 @@ class DataError(ValueError):
 class Side:
     """One printed face of a card class, with its edge roles."""
 
-    name: str  # "class.side", e.g. "set_get.set"
+    name: str  # "class.side", e.g. "literal.num"
     members: tuple[str, ...]  # every card on this side, in notation
     roles: Mapping[str, str]  # edge -> role
 
@@ -63,15 +63,18 @@ def _member_pattern(member: str) -> re.Pattern:
 
 
 def carry_over(card: str, side: Side, other: Side) -> str:
-    """The card as written on `other`, the other side of the same card: its
-    handwriting and printed text, in order, fill `other`'s placeholders of
-    the same kind. `[get(score)]` on set_get's back is `[set(score)to]`."""
-    member, match = next((m, found) for m in side.members if (found := _member_pattern(m).fullmatch(card)))
+    """The card as written on `other`, the other side of the same card: the
+    member at the same place on `other`, its placeholders filled with the
+    card's handwriting and printed text, in order, by kind. `[str(500)]` on
+    literal's front is `[num(500)]`, and `[/]` on operator's is `[*]`."""
+    place, member, match = next(
+        (i, m, found) for i, m in enumerate(side.members) if (found := _member_pattern(m).fullmatch(card))
+    )
     fills = {printed: [] for printed in (True, False)}
     for placeholder, text in zip(_PLACEHOLDER.finditer(member), match.groups()):
         fills[placeholder.group() == "…"].append(text)
     filled, last = [], 0
-    target = other.notation
+    target = other.members[place]
     for found in _PLACEHOLDER.finditer(target):
         queue = fills[found.group() == "…"]
         filled += [target[last : found.start()], queue.pop(0) if queue else found.group()]
@@ -464,12 +467,14 @@ def _parse_class(name: str, spec: Any, grammar: Rules) -> CardClass:
         raise DataError(f"{name}: a flip pair defines two sides (front and back), not {len(sides)}")
     if not flip_pair and len(sides) != 1:
         raise DataError(f"{name}: a class that is not a flip pair defines one side, not {len(sides)}")
-    return CardClass(
-        name=name,
-        min_length=min_length,
-        pocket_reach=reach,
-        sides=tuple(_parse_side(f"{name}.{side}", members, grammar) for side, members in sides.items()),
-    )
+    parsed = tuple(_parse_side(f"{name}.{side}", members, grammar) for side, members in sides.items())
+    if flip_pair and len(parsed[0].members) != len(parsed[1].members):
+        front, back = sides
+        raise DataError(
+            f"{name}: a flip pair's sides pair their members in order, but {front} has "
+            f"{len(parsed[0].members)} and {back} has {len(parsed[1].members)}"
+        )
+    return CardClass(name=name, min_length=min_length, pocket_reach=reach, sides=parsed)
 
 
 def _whole_u(raw: Any, least: int, most: int | None) -> int | None:

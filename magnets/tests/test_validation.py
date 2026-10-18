@@ -2,8 +2,8 @@
 
 import pytest
 
-from helpers import arrangement, bundled_classes, set_get
-from magnets import ArrangementError, check
+from helpers import arrangement, check_pairs, pair_classes, set_get
+from magnets import ArrangementError
 
 
 @pytest.mark.parametrize(
@@ -47,56 +47,56 @@ from magnets import ArrangementError, check
 )
 def test_rejects(arrangement, message):
     with pytest.raises(ArrangementError) as err:
-        check(arrangement)
+        check_pairs(arrangement)
     assert message in str(err.value)
 
 
 def test_pockets_that_never_share_a_whole_length_do_not_collide():
     # 0.25 + 0.5 = 0.75 is not a card length.
-    check(set_get(top=[("left", 0.25, "N/-"), ("right", 0.5, "S/-")]))
+    check_pairs(set_get(top=[("left", 0.25, "N/-"), ("right", 0.5, "S/-")]))
 
 
 def test_pockets_meeting_below_the_shortest_length_do_not_collide():
     # from: left 0.25 and from: right 0.75 meet on a 1U card, but set_get is 2U at its shortest.
-    check(set_get(top=[("left", 0.25, "N/-"), ("right", 0.75, "S/-")]))
+    check_pairs(set_get(top=[("left", 0.25, "N/-"), ("right", 0.75, "S/-")]))
 
 
 def test_a_class_set_back_to_1u_checks_its_collisions_at_1u():
-    classes = bundled_classes()
+    classes = pair_classes()
     classes["set_get"]["min_length"] = 1
     with pytest.raises(ArrangementError, match="collide on a card 1U long"):
-        check(set_get(top=[("left", 0.25, "N/-"), ("right", 0.75, "S/-")]), class_data=classes)
+        check_pairs(set_get(top=[("left", 0.25, "N/-"), ("right", 0.75, "S/-")]), class_data=classes)
 
 
 def test_unknown_bundled_arrangement():
     with pytest.raises(ArrangementError, match="no arrangement file or bundled arrangement"):
-        check("nonexistent")
+        check_pairs("nonexistent")
 
 
 def test_missing_arrangement_file(tmp_path):
     with pytest.raises(ArrangementError, match="not found"):
-        check(tmp_path / "missing.yaml")
+        check_pairs(tmp_path / "missing.yaml")
 
 
 @pytest.mark.parametrize("at", [float("inf"), float("nan")])
 def test_rejects_non_finite_positions(at):
     with pytest.raises(ArrangementError, match="`at` must be a number"):
-        check(set_get(top=[("left", at, "N/-")]))
+        check_pairs(set_get(top=[("left", at, "N/-")]))
 
 
 def test_rejects_malformed_yaml(tmp_path):
     bad = tmp_path / "bad.yaml"
     bad.write_text("flip: [\n")
     with pytest.raises(ArrangementError, match="not valid YAML"):
-        check(bad)
+        check_pairs(bad)
 
 
 def test_reads_an_existing_file_whatever_its_extension(tmp_path):
     mine = tmp_path / "mine"
     mine.write_text("flip: top_bottom\n")
-    assert check(mine).arrangement.name == "mine"
+    assert check_pairs(mine).arrangement.name == "mine"
 
 
 def test_rejects_max_length_below_a_minimum_card_length():
     with pytest.raises(ValueError, match="max_length 0"):
-        check("example", max_length=0)
+        check_pairs("example", max_length=0)

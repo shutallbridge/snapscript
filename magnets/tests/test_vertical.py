@@ -2,13 +2,12 @@
 
 from fractions import Fraction
 
-from helpers import arrangement, bundled_classes, over
-from magnets import check
+from helpers import arrangement, check_pairs, over, pair_classes
 
 
 def test_offsets_are_every_quarter_u_where_the_edges_overlap():
     # set_get is 2U to 6U long, so set over set overlaps for -6 < d < 6.
-    result = check({})
+    result = check_pairs({})
     offsets = {
         c.offset
         for c in result.groups
@@ -18,14 +17,14 @@ def test_offsets_are_every_quarter_u_where_the_edges_overlap():
 
 
 def test_contacts_cover_every_ordered_pair_of_sides_including_a_side_with_itself():
-    result = check({})
+    result = check_pairs({})
     pairs = {(c.a, c.b) for c in result.groups if c.axis == "vertical" and c.offset == 0}
     assert pairs == {(a, b) for a in result.sides for b in result.sides}
 
 
 def test_an_offset_only_occurs_at_lengths_where_the_edges_overlap():
     # Every class is 2U to 6U long. [set(x)to] over [call:…] @+2 needs set at least 3U long.
-    result = check({}, max_length=6)
+    result = check_pairs({}, max_length=6)
     assert over(result, "set_get.set", "call_printed.call", 0).lengths == (2, 2)
     assert over(result, "set_get.set", "call_printed.call", 0).count == 5 * 5
     assert over(result, "set_get.set", "call_printed.call", 2).lengths == (3, 2)
@@ -38,9 +37,9 @@ def test_an_offset_only_occurs_at_lengths_where_the_edges_overlap():
 
 
 def test_a_class_set_back_to_1u_is_graded_at_1u():
-    classes = bundled_classes()
+    classes = pair_classes()
     classes["call_printed"]["min_length"] = 1
-    result = check({}, class_data=classes, max_length=6)
+    result = check_pairs({}, class_data=classes, max_length=6)
     # [set(x)to] over a 1U [call:…] @+1: set is 2U, so the call sits under its second U.
     assert over(result, "set_get.set", "call_printed.call", 1).lengths == (2, 1)
     assert over(result, "set_get.set", "call_printed.call", 1).count == 5 * 6
@@ -73,7 +72,7 @@ def grammar_labels(contact):
 
 
 def test_every_role_triple_at_a_meaningful_offset_has_exactly_one_verdict():
-    result = check({})
+    result = check_pairs({})
     found: dict[tuple, set] = {}
     for c in result.groups:
         if c.axis == "vertical" and c.offset in MEANINGFUL:
@@ -88,7 +87,7 @@ def test_every_role_triple_at_a_meaningful_offset_has_exactly_one_verdict():
 
 
 def test_other_offsets_are_forbid_low_unless_coexist_or_ungraded():
-    result = check({})
+    result = check_pairs({})
     for c in result.groups:
         if c.axis == "vertical" and c.offset not in MEANINGFUL:
             roles = {result.sides[c.a].side.roles["bottom"], result.sides[c.b].side.roles["top"]}
@@ -101,7 +100,7 @@ def test_other_offsets_are_forbid_low_unless_coexist_or_ungraded():
 
 
 def test_ungraded_contacts_have_one_info_label():
-    contact = over(check({}), "import.import", "set_get.set", 0)
+    contact = over(check_pairs({}), "import.import", "set_get.set", 0)
     [label] = contact.labels
     assert (label.kind, label.priority, label.grade) == ("ungraded", "info", "info")
 
@@ -113,7 +112,7 @@ def kinds(contact):
 def test_a_line_head_over_an_inline_card_coexists_two_columns_right_or_more():
     # [set(x)to] over [call:append] @+1: `[set(x)to][call:…]` can't be a line,
     # and [call:append] inline in the next line sits at least 2U right of its 2U line head.
-    result = check({})
+    result = check_pairs({})
     assert kinds(over(result, "set_get.set", "call_printed.call", 1)) == [("forbid", "should")]
     # @+2 is off the meaningful offsets, so coexist replaces forbid / low.
     assert kinds(over(result, "set_get.set", "call_printed.call", 2)) == [("coexist", "must")]
@@ -122,11 +121,11 @@ def test_a_line_head_over_an_inline_card_coexists_two_columns_right_or_more():
 def test_a_line_head_over_an_inline_card_in_the_same_column_is_forbid_only():
     # [set(x)to] over [color:red] @0: [set(x)to] can't sit inline and
     # [color:red] can't head a line, so no legal program puts them so.
-    assert kinds(over(check({}), "set_get.set", "value_printed.value", 0)) == [("forbid", "should")]
+    assert kinds(over(check_pairs({}), "set_get.set", "value_printed.value", 0)) == [("forbid", "should")]
 
 
 def test_two_inline_cards_coexist_at_any_whole_offset():
-    result = check({})
+    result = check_pairs({})
     assert kinds(over(result, "literal.num", "literal.num", 0)) == [("coexist", "must"), ("forbid", "should")]
     # Off the meaningful offsets, coexist replaces forbid / low.
     assert kinds(over(result, "literal.num", "literal.num", 2)) == [("coexist", "must")]
@@ -140,7 +139,7 @@ def test_two_inline_cards_coexist_at_any_whole_offset():
 
 def test_coexist_appears_exactly_where_the_narrow_rule_says():
     # Every line head is at least 2U long, so an inline card sits at least 2U right of its line head.
-    result = check({})
+    result = check_pairs({})
 
     def can_head(side):
         return side.roles["top"] in ("line", "dedent", "top_level")
@@ -168,7 +167,7 @@ def test_coexist_appears_exactly_where_the_narrow_rule_says():
 
 
 def test_coexist_needs_the_lower_line_head_to_sit_left_of_an_inline_card():
-    result = check({})
+    result = check_pairs({})
     # An inline card over a [dedent] that sits 1U to its right: a [dedent]
     # only ever sits 1U left of the line above it.
     assert ("coexist", "must") not in kinds(over(result, "literal.num", "dedent.dedent", 1))
@@ -181,7 +180,7 @@ def test_a_define_or_on_heads_a_line_with_inline_cards_below():
     # puts [num(500)] under the [define] @+2, never @+1.
     #   [define(setup)]
     #   [call:p5.createCanvas][num(500)][num(500)]
-    result = check({})
+    result = check_pairs({})
     assert kinds(over(result, "define_call.define", "literal.num", 1)) == [("forbid", "should")]
     assert kinds(over(result, "define_call.define", "literal.num", 2)) == [("coexist", "must")]
     assert kinds(over(result, "on.on", "literal.num", 2)) == [("coexist", "must")]
@@ -193,7 +192,7 @@ def test_an_inline_card_meets_a_line_head_below_one_column_left_when_the_body_is
     # An inline card can't tell whether its line head indents the next line:
     #   [if][num(1)]
     #     [set(y)to]
-    result = check({})
+    result = check_pairs({})
     assert kinds(over(result, "literal.num", "set_get.set", 0)) == [("forbid", "should")]
     assert kinds(over(result, "literal.num", "set_get.set", -1)) == [("coexist", "must"), ("forbid", "should")]
 
@@ -201,9 +200,9 @@ def test_an_inline_card_meets_a_line_head_below_one_column_left_when_the_body_is
 def test_a_1u_line_head_lets_an_inline_card_sit_1u_right_of_it():
     # With [call:…] 1U again in the data, `[call:p5.createCanvas][num(500)]`
     # puts [num(500)] 1U right of the line head, under a [define] @+1.
-    classes = bundled_classes()
+    classes = pair_classes()
     classes["call_printed"]["min_length"] = 1
-    result = check({}, class_data=classes)
+    result = check_pairs({}, class_data=classes)
     assert kinds(over(result, "define_call.define", "literal.num", 1)) == [("coexist", "must"), ("forbid", "should")]
     assert kinds(over(result, "block_head.head", "literal.num", 2)) == [("coexist", "must")]
     assert kinds(over(result, "literal.num", "dedent.dedent", -2)) == [("coexist", "must")]
@@ -215,9 +214,9 @@ def test_a_1u_line_head_lets_an_inline_card_sit_1u_right_of_it():
 
 def test_the_shortest_line_head_counts_even_when_its_class_is_not_graded():
     # A restricted check still knows a [call:…] can be 1U and head the next line.
-    classes = bundled_classes()
+    classes = pair_classes()
     classes["call_printed"]["min_length"] = 1
-    result = check({}, class_data=classes, classes=["define_call", "literal"])
+    result = check_pairs({}, class_data=classes, classes=["define_call", "literal"])
     assert ("coexist", "must") in kinds(over(result, "define_call.define", "literal.num", 1))
 
 
@@ -226,7 +225,7 @@ def test_an_inline_card_meets_a_dedent_below_only_three_columns_left_or_more():
     # card at least 2U right of it:
     #     [set(x)to][num(1)]
     #   [dedent]
-    result = check({})
+    result = check_pairs({})
     assert kinds(over(result, "literal.num", "dedent.dedent", -2)) == [("forbid", "low")]
     assert kinds(over(result, "literal.num", "dedent.dedent", -3)) == [("coexist", "must")]
 
@@ -236,7 +235,7 @@ def test_a_block_head_meets_an_inline_card_below_only_three_columns_right_or_mor
     # least 2U right of that:
     #   [if][bool:true]
     #     [set(x)to][num(1)]
-    result = check({})
+    result = check_pairs({})
     assert kinds(over(result, "block_head.head", "literal.num", 2)) == [("forbid", "low")]
     assert kinds(over(result, "block_head.head", "literal.num", 3)) == [("coexist", "must")]
 
@@ -247,7 +246,7 @@ def grades(contact):
 
 def test_two_inline_cards_that_repel_fail_coexist():
     # [num(1)] over [num(2)] @0: N/- on N/- repels.
-    result = check(
+    result = check_pairs(
         arrangement(literal={"top": [("left", 0.25, "N/-")], "bottom": [("left", 0.25, "N/-")]})
     )
     contact = over(result, "literal.num", "literal.num", 0)
@@ -261,7 +260,7 @@ def test_two_inline_cards_that_repel_fail_coexist():
 def test_a_from_right_pocket_only_aligns_at_some_length_pairs():
     # set's bottom and [call:…]'s top pockets both sit 0.25U from the right
     # end, so @0 they line up only on cards of equal length.
-    result = check(
+    result = check_pairs(
         arrangement(
             set_get={"bottom": [("right", 0.25, "N/-")]},
             call_printed={"top": [("right", 0.25, "S/-")]},
@@ -289,7 +288,7 @@ def test_a_from_right_pocket_only_aligns_at_some_length_pairs():
 def test_a_block_heads_indent_pocket_meets_the_body_line_head():
     # [if]'s pocket 1.25U from its left end meets set's at 0.25 when set
     # sits 1U right, as a body line head.
-    result = check(
+    result = check_pairs(
         arrangement(
             block_head={"bottom": [("left", 1.25, "N/-")]},
             set_get={"top": [("left", 0.25, "S/-")]},
@@ -307,7 +306,7 @@ def test_a_block_heads_indent_pocket_meets_the_body_line_head():
 def test_a_dedent_meets_the_last_body_line_one_column_left():
     # set's bottom pocket at 0.25 meets [dedent]'s top pocket at 1.25 when
     # the [dedent] sits 1U left.
-    result = check(
+    result = check_pairs(
         arrangement(
             set_get={"bottom": [("left", 0.25, "N/-")]},
             dedent={"top": [("left", 1.25, "S/-")]},

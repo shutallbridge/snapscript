@@ -12,8 +12,7 @@ A forbid whose partner contact is a connect is unavoidable.
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from helpers import arrangement, left_right_pockets, top_bottom_pockets
-from magnets import check
+from helpers import arrangement, check_pairs, left_right_pockets, top_bottom_pockets
 
 # Every flip pair is 2U at its shortest.
 FLIP_PAIRS = ("set_get", "define_call", "prop", "param", "literal", "bool")
@@ -80,7 +79,7 @@ def partner(flip, contact, other):
 
 
 def check_relations(flip, raw):
-    result = check(raw, max_length=MAX_LENGTH)
+    result = check_pairs(raw, max_length=MAX_LENGTH)
     other = other_sides(result)
     index = {}
     for c in result.groups:
@@ -123,7 +122,7 @@ def test_left_right_ties_every_flip_pair_contact_to_its_partner(raw):
 def test_a_flip_pair_contact_and_its_partner_in_numbers():
     # set's right edge N/S at 1/2 and left edge N/S at 1/2. Under top_bottom
     # get's edges are S/N at 1/2: [get][set] snaps exactly like [set][get].
-    result = check(arrangement(set_get={"left": [(0.5, "N/S")], "right": [(0.5, "N/S")]}))
+    result = check_pairs(arrangement(set_get={"left": [(0.5, "N/S")], "right": [(0.5, "N/S")]}))
     pairs = {
         (c.a, c.b): (c.attract, c.repel, c.result)
         for c in result.groups

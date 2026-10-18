@@ -80,7 +80,8 @@ def test_check_uses_the_given_classes_and_rules():
 
 def test_bundled_members_resolve_to_one_side_each():
     result = check({})
-    assert result.sides["operator.operator"].side.notation == "[+]"
+    assert result.sides["operator.front"].side.notation == "[+]"
+    assert result.sides["operator.back"].side.members[1] == "[/]"
     assert "[root]" in result.sides["receiver_printed.receiver"].side.members
     members = [m for s in result.sides.values() for m in s.side.members]
     assert len(members) == len(set(members))
@@ -96,6 +97,10 @@ def test_bundled_members_resolve_to_one_side_each():
         (
             classes_with(set_get__sides={"set": {"[set(x)to]": SET}}),
             "set_get: a flip pair defines two sides (front and back), not 1",
+        ),
+        (
+            classes_with(set_get__sides__set={"[set(x)to]": SET, "[let(x)to]": SET}),
+            "set_get: a flip pair's sides pair their members in order, but set has 2 and get has 1",
         ),
         (
             classes_with(set_get__flip_pair=None),

@@ -1,11 +1,12 @@
 """Builders for hand-made arrangements and lookups into check results."""
 
+import copy
 from importlib import resources
 
 import yaml
 from hypothesis import strategies as st
 
-from magnets import CheckResult, ContactGroup
+from magnets import CheckResult, ContactGroup, check
 
 SET_GET = {"set_get.set", "set_get.get"}
 
@@ -13,6 +14,41 @@ SET_GET = {"set_get.set", "set_get.get"}
 def bundled_classes():
     """The bundled card class data, as a mapping to change and pass as `class_data`."""
     return yaml.safe_load((resources.files("magnets") / "data" / "classes.yaml").read_text(encoding="utf-8"))
+
+
+def _old_pairs():
+    """The bundled classes with set and get, define and call, set_prop and
+    get_prop, and required and optional joined into flip pairs whose sides
+    take different roles: set_get, define_call, prop and param."""
+    classes = bundled_classes()
+    pairs = {
+        "set_get": ("set", "get"),
+        "define_call": ("define", "call"),
+        "prop": ("set_prop", "get_prop"),
+        "param": ("required", "optional"),
+    }
+    joined = {}
+    for name, (front, back) in pairs.items():
+        front, back = classes.pop(front), classes.pop(back)
+        joined[name] = {**front, "flip_pair": True, "sides": {**front["sides"], **back["sides"]}}
+    return {**joined, **classes}
+
+
+# Toy class data that keeps flip pairs with different roles on each side, so
+# the flip's physics and unavoidable leaks stay tested: the real grammar has
+# none (ADR 0003).
+TOY_PAIRS = _old_pairs()
+
+
+def pair_classes():
+    """A copy of TOY_PAIRS, to change and pass as `class_data`."""
+    return copy.deepcopy(TOY_PAIRS)
+
+
+def check_pairs(arrangement=None, **options):
+    """`check` against the toy TOY_PAIRS class data, unless given other `class_data`."""
+    options.setdefault("class_data", TOY_PAIRS)
+    return check({} if arrangement is None else arrangement, **options)
 
 
 def arrangement(flip="top_bottom", **classes):

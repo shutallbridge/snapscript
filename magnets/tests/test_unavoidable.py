@@ -1,13 +1,24 @@
 """A forbid whose partner contact is a connect can never be blocked: it is unavoidable.
 
 The flag depends only on the grammar and the flip, so these tests check
-empty arrangements.
+empty arrangements. The bundled flip pairs take the same roles on both
+sides, so a partner contact always has its contact's verdict and nothing is
+unavoidable (ADR 0003). The other tests use the toy TOY_PAIRS class data, whose
+flip pairs (set_get, define_call, prop, param) take different roles.
 """
 
 import pytest
 
-from helpers import beside, over
+from helpers import beside, check_pairs, over
 from magnets import check
+
+
+@pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
+def test_the_bundled_card_set_has_no_unavoidable_forbid(flip):
+    result = check({"flip": flip})
+    flip_pairs = [c for c in result.groups if result.sides[c.a].other and result.sides[c.b].other]
+    assert flip_pairs
+    assert [c for c in result.groups if any(label.unavoidable for label in c.labels)] == []
 
 
 def forbid(contact):
@@ -28,21 +39,21 @@ def forbid(contact):
     ],
 )
 def test_top_bottom_line_neighbours_tied_to_a_connect_are_unavoidable(left, right, partner):
-    label = forbid(beside(check({}), left, right))
+    label = forbid(beside(check_pairs({}), left, right))
     assert (label.priority, label.unavoidable) == ("should", True)
 
 
 @pytest.mark.parametrize("upper", ["set_get.set", "set_get.get"])
 def test_top_bottom_a_define_under_a_set_or_get_line_is_unavoidable(upper):
     # [set(x)to] over [define(f)] @0 snaps exactly like [call(f)] over [get(x)] @0.
-    label = forbid(over(check({}), upper, "define_call.define", 0))
+    label = forbid(over(check_pairs({}), upper, "define_call.define", 0))
     assert (label.priority, label.unavoidable) == ("nice", True)
 
 
 def test_a_forbid_tied_to_another_forbid_is_avoidable():
     # [set(x)to][set(x)to]'s top_bottom partner contact [get(x)][get(x)] is a connect,
     # but [define(f)][get(x)]'s partner contact [call(f)][set(x)to] is not.
-    result = check({})
+    result = check_pairs({})
     assert forbid(beside(result, "set_get.set", "set_get.set")).unavoidable
     assert not forbid(beside(result, "define_call.define", "set_get.get")).unavoidable
     # Off the line, no partner contact is a connect.
@@ -51,7 +62,7 @@ def test_a_forbid_tied_to_another_forbid_is_avoidable():
 
 @pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
 def test_a_forbid_between_single_sided_cards_is_never_unavoidable(flip):
-    result = check({"flip": flip})
+    result = check_pairs({"flip": flip})
     classes = [name.split(".")[0] for name in result.sides]
     single = {name for name in result.sides if classes.count(name.split(".")[0]) == 1}
     checked = 0
@@ -65,7 +76,7 @@ def test_a_forbid_between_single_sided_cards_is_never_unavoidable(flip):
 
 def test_only_forbid_labels_are_unavoidable():
     for flip in ("top_bottom", "left_right"):
-        for c in check({"flip": flip}).groups:
+        for c in check_pairs({"flip": flip}).groups:
             for label in c.labels:
                 if label.unavoidable:
                     assert label.kind == "forbid", c
@@ -74,7 +85,7 @@ def test_only_forbid_labels_are_unavoidable():
 def test_left_right_ties_line_neighbours_the_other_way_round():
     # Under left_right [A][B] behaves like [B'][A']: [set(x)to][set(x)to]
     # like [get(x)][get(x)], a connect; [get(x)][set(x)to] like itself.
-    result = check({"flip": "left_right"})
+    result = check_pairs({"flip": "left_right"})
     assert forbid(beside(result, "set_get.set", "set_get.set")).unavoidable
     assert not forbid(beside(result, "set_get.get", "set_get.set")).unavoidable
     # [define(f)][num(…)] behaves like [str(…)][call(f)], a connect.
@@ -94,7 +105,7 @@ def test_left_right_ties_a_stack_to_its_mirror_image_which_depends_on_lengths():
     # Under left_right A above B at d behaves like A' above B' at
     # L_A - L_B - d: [set(x)to] over [define(f)] @0 is tied to
     # [get(x)] over [call(f)], a connect, only on cards of equal length.
-    result = check({"flip": "left_right"})
+    result = check_pairs({"flip": "left_right"})
     assert stacks(result, "set_get.set", "define_call.define", 0) == [
         ((2, 2), 5, True),
         ((2, 3), 20, False),
@@ -111,7 +122,7 @@ def test_left_right_unavoidable_stacks_with_pockets():
     # end: @0 they line up at every length pair, but only equal lengths are
     # unavoidable. Under left_right get's bottom and call's top sit 0.25U
     # from the right end, so [get(x)] over [call(f)] snaps at equal lengths.
-    result = check(
+    result = check_pairs(
         {
             "flip": "left_right",
             "classes": {

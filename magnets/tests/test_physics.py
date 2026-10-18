@@ -2,8 +2,7 @@
 
 import pytest
 
-from helpers import set_get, stack
-from magnets import check
+from helpers import check_pairs, set_get, stack
 
 LAYER_TABLE = [
     ("-", "-", "nothing"),
@@ -36,7 +35,7 @@ def test_layer_table(upper, lower, expected):
         bottom=[("left", 0.25, _alone_up(upper))],
         top=[("left", 0.25, _alone_up(lower))],
     )
-    contact = stack(check(arrangement), "set", "set")
+    contact = stack(check_pairs(arrangement), "set", "set")
     [pair] = contact.pairs
     assert (pair.up, pair.down) == (expected, "nothing")
     assert (contact.attract, contact.repel) == (
@@ -75,13 +74,13 @@ def test_layer_table(upper, lower, expected):
     ],
 )
 def test_aggregation(bottom, top, attract, repel, result):
-    contact = stack(check(set_get(bottom=bottom, top=top)), "set", "set")
+    contact = stack(check_pairs(set_get(bottom=bottom, top=top)), "set", "set")
     assert (contact.attract, contact.repel, contact.result) == (attract, repel, result)
 
 
 def test_connect_grades():
     def grade(bottom, top):
-        contact = stack(check(set_get(bottom=bottom, top=top)), "set", "set")
+        contact = stack(check_pairs(set_get(bottom=bottom, top=top)), "set", "set")
         [label] = contact.labels
         return label.kind, contact.result, label.grade
 
@@ -107,9 +106,23 @@ def test_connect_grades():
     ],
 )
 def test_pocket_shapes(layers, shape):
-    result = check(set_get(top=[("left", 0.25, layers)], left=[(0.5, layers)]))
+    result = check_pairs(set_get(top=[("left", 0.25, layers)], left=[(0.5, layers)]))
     # A flip changes every split pocket's layers but never its shape.
     for side in ("set", "get"):
         edges = result.sides[f"set_get.{side}"].edges
         pockets = [*edges["top"], *edges["bottom"], *edges["left"]]
         assert [p.shape for p in pockets] == [shape, shape]
+
+
+SELF_FACING = [(p, q, expected) for p, q, expected in LAYER_TABLE if (p, q) != ("-", "-")]
+
+
+@pytest.mark.parametrize("p, q, expected", SELF_FACING)
+def test_a_pocket_facing_its_own_flipped_copy_snaps_only_if_its_layers_attract(p, q, expected):
+    # Under top_bottom get's top is set's bottom flipped, so set over get puts
+    # P/Q against Q/P: P faces Q in both layers.
+    contact = stack(check_pairs(set_get(bottom=[("left", 0.25, f"{p}/{q}")])), "set", "get")
+    [pair] = contact.pairs
+    assert (pair.a.layers, pair.b.layers) == (f"{p}/{q}", f"{q}/{p}")
+    assert (pair.up, pair.down) == (expected, expected)
+    assert contact.result == {"attract": "snap", "repel": "repel", "nothing": "nothing"}[expected]

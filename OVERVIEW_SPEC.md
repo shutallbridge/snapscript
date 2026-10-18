@@ -84,16 +84,20 @@ Doc comments precede a declaration and are projected as help when a card is pick
 | Printed variant | `[color:purple]`, `[bool:true]`, `[call:p5.circle]`, `[get:p5.frameCount]`, `[on:load]`                                                               |
 | Handwritten     | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[setProp(p)to]`, `[getProp(p)]`, `[num(500)]`, `[str(hello)]`, `[for(x)in]`, `[global(x)]` |
 
-Some cards are two sides of one card, changed by flipping:
+Some cards are two sides of one card, changed by flipping. The two sides take the same places in a program:
 
-|                  |                 |
-| ---------------- | --------------- |
-| `[set(x)to]`     | `[get(x)]`      |
-| `[setProp(p)to]` | `[getProp(p)]`  |
-| `[define(f)]`    | `[call(f)]`     |
-| `[required(p)]`  | `[optional(p)]` |
-| `[bool:true]`    | `[bool:false]`  |
-| `[num(…)]`       | `[str(…)]`      |
+|               |                |
+| ------------- | -------------- |
+| `[num(…)]`    | `[str(…)]`     |
+| `[bool:true]` | `[bool:false]` |
+| `[+]`         | `[-]`          |
+| `[*]`         | `[/]`          |
+| `[<]`         | `[>]`          |
+| `[<=]`        | `[>=]`         |
+| `[==]`        | `[!=]`         |
+| `[and]`       | `[or]`         |
+
+Every other card has one side, `[%]`, `[set(x)to]` and `[get(x)]` among them.
 
 A **leaf** card holds a value and takes nothing:
 
@@ -539,7 +543,7 @@ Each function is a free-standing strip that can be moved around the table.
 
 A statement card's top magnet mates into a chain descending from a `[define]` or an `[on:]`, so an unconnected statement is inert.
 
-Magnet arrangement: **TBD**.
+A card with two sides turns over top-to-bottom: its top and bottom edges change places. Where the magnets sit on each card: **TBD**.
 
 A camera above the table reads the card arrangement. A projector opposite displays the running sketch and draws on the cards.
 

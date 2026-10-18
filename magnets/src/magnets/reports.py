@@ -109,7 +109,7 @@ def summary_text(result: CheckResult, search: SolveResult | None = None) -> str:
             [(c, label) for c, label in unavoidable if label.priority != "low"],
             with_priority=True,
         ),
-        # Low forbids cost nothing, and under left_right many are unavoidable.
+        # Low forbids cost nothing, so unavoidable ones are only counted.
         f"Unavoidable low-leaks (not listed): {len(unavoidable_low)}",
         "",
         "VALID" if result.valid else "INVALID",

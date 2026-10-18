@@ -6,8 +6,8 @@ Checker and CP-SAT solver for the Snapscript magnet arrangement (see issue
 ```sh
 uv run magnets check                 # the bundled `example` arrangement
 uv run magnets check my.yaml --out out/mine
-uv run magnets search --flip top_bottom --classes set_get,literal --time-limit 30
-uv run magnets search --flip top_bottom --pin example   # keep the example's set_get design
+uv run magnets search --flip top_bottom --classes set,get,literal --time-limit 30
+uv run magnets search --flip top_bottom --pin example   # keep the example's set, get and literal design
 uv run magnets search --flip left_right --goal no_snap  # illegal neighbours need only not snap
 uv run magnets print example         # every bundled program's cards, to cut and fold
 uv run magnets print example --program nested_blocks --seed 3   # at the lengths of programs.txt's draw 3
@@ -35,8 +35,11 @@ An arrangement's `flip` is `top_bottom` (the default) or `left_right`. A
 flip pair's back is derived from its front, so a forbid contact whose
 partner contact is a connect can never be blocked; it is flagged
 `unavoidable` and listed apart from the avoidable leaks. Unavoidable low
-leaks, many under `left_right`, are only counted; `contacts.csv` lists
-them.
+leaks are only counted; `contacts.csv` lists them. The bundled flip pairs
+take the same roles on both sides, so under either flip a partner contact
+has its contact's verdict and nothing is unavoidable (ADR 0003); class
+data with flip pairs whose sides differ, as in the tests, has unavoidable
+leaks.
 Card classes (`classes.yaml`), grammar rules (`rules.yaml`) and bundled
 arrangements live in `src/magnets/data/`. A class has a `min_length`, its
 shortest card (2U for every class for now; a class can be set to 1U), and a
@@ -108,18 +111,20 @@ A piece is the class's front over its back, sharing a dashed fold line;
 cut it out and fold it, and every pocket's two faces line up. Under
 `top_bottom` the back is upright and the fold is marked `↕`; under
 `left_right` it is rotated 180° and marked `↔`. The front is always on
-top, so a `[get(x)]` prints as `[set(x)to]` over `[get(x)]`, the
-handwriting carried over; a card that is not a flip pair gets an
-unlabelled back. Each pocket is a tick in from its edge with the layer
-nearest that face: `N` red, `S` blue, `F` grey, `–` empty. Ticks and
-letters stay inside their own panel, so neighbours sharing a cut line keep
-their pockets apart. `--unit` is the size of a U in mm (30 by default), a
-print option, not a spec value. The API is `magnets.card_sheet` (`draw=N` for
-`--seed N`), which returns the pages, pieces, panels, marks and ruler in
-mm. It exits 2 for an invalid arrangement, a missing program file, an
-unknown program name, a card that matches no class side, or a card too
-long for the page at `--unit`; that error names the card and the largest
-unit that fits.
+top, so a `[str(hi)]` prints as `[num(hi)]` over `[str(hi)]`, the
+handwriting carried over, and a `[/]` as `[*]` over `[/]`: a flip pair's
+sides list their members in the same order, and each card holds the
+members at the same place. A card that is not a flip pair, such as
+`[get(x)]`, gets an unlabelled back. Each pocket is a tick in from its
+edge with the layer nearest that face: `N` red, `S` blue, `F` grey, `–`
+empty. Ticks and letters stay inside their own panel, so neighbours
+sharing a cut line keep their pockets apart. `--unit` is the size of a U
+in mm (30 by default), a print option, not a spec value. The API is
+`magnets.card_sheet` (`draw=N` for `--seed N`), which returns the pages,
+pieces, panels, marks and ruler in mm. It exits 2 for an invalid
+arrangement, a missing program file, an unknown program name, a card that
+matches no class side, or a card too long for the page at `--unit`; that
+error names the card and the largest unit that fits.
 
 `magnets search` exits 0 only when it writes a valid arrangement (optimal
 or feasible). It exits 1 when the search is infeasible, even though it

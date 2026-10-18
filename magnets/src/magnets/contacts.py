@@ -34,7 +34,7 @@ class SideEdges:
     side: Side
     min_length: int
     edges: Edges
-    other: str | None = None  # a flip pair's other side, e.g. "set_get.get"
+    other: str | None = None  # a flip pair's other side, e.g. "literal.str"
 
 
 @dataclass(frozen=True)
