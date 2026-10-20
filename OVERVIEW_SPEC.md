@@ -48,7 +48,7 @@ A card family with printed variants and the same family handwritten mean the sam
 [call(p5.circle)]    handwritten with a marker
 ```
 
-Indentation reproduces the indentation on the table.
+Indentation reproduces the indentation on the table. One indent is two spaces.
 
 Comments are `//` and `/* */`, and exist only in text.
 
@@ -57,7 +57,17 @@ Comments are `//` and `/* */`, and exist only in text.
 /* a block comment */
 ```
 
-Doc comments precede a declaration and are projected as help when a card is picked up. Syntax: **TBD**.
+A doc comment is a `/** */` comment just before a declaration. It is projected as help when a card is picked up.
+
+```
+/**
+ * Draws a circle.
+ * @param {num} x  how far from the left
+ * @param {num} y  how far from the top
+ * @param {num} d  how wide
+ */
+[extern(circle)][required(x)][required(y)][required(d)]
+```
 
 # The Language
 
@@ -80,7 +90,7 @@ Doc comments precede a declaration and are projected as help when a card is pick
 
 | Form            | Examples                                                                                                                                              |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Keyword card    | `[+]`, `[(]`, `[)]`, `[not]`, `[repeat]`, `[dedent]`, `[none]`, `[root]`                                                                              |
+| Keyword card    | `[+]`, `[(]`, `[)]`, `[not]`, `[repeat]`, `[dedent]`, `[return]`, `[none]`, `[root]`                                                                  |
 | Printed variant | `[color:purple]`, `[bool:true]`, `[call:p5.circle]`, `[get:p5.frameCount]`, `[on:load]`                                                               |
 | Handwritten     | `[define(foo)]`, `[call(foo)]`, `[set(x)to]`, `[get(x)]`, `[setProp(p)to]`, `[getProp(p)]`, `[num(500)]`, `[str(hello)]`, `[for(x)in]`, `[global(x)]` |
 
@@ -109,7 +119,7 @@ Every other card has one or more **value slots**.
 
 ### Handwriting
 
-Gaps in handwriting are ignored. `_` is a space.
+Gaps in handwriting are ignored. `_` is a space, and a `[str(…)]` cannot hold a literal `_`.
 
 ```
 [str(hello_world)]      "hello world"
@@ -120,13 +130,11 @@ Gaps in handwriting are ignored. `_` is a space.
 [set(frame Count)to]    frameCount
 ```
 
-A literal `_` in a `[str(…)]`: **TBD**.
-
 A `[num(…)]` holds digits, with an optional `-` first and an optional `.` that has digits on both sides.
 
 ```
 [num(-1)]  [num(0.5)]
-[num(.5)]  [num(5.)]  [num(1e5)]  [num()]      error
+[num(.5)]  [num(5.)]  [num(1e5)]  [num()]      SyntaxError
 ```
 
 A name holds letters, digits and `_`. Case is significant.
@@ -134,7 +142,7 @@ A name holds letters, digits and `_`. Case is significant.
 ```
 [set(frameCount)to]     frameCount
 [set(framecount)to]     a different name
-[set()to]               error
+[set()to]               SyntaxError
 ```
 
 ## Data model
@@ -182,7 +190,11 @@ Behaviour comes from the type, never from a store.
 
 `none` is the value of an optional parameter that was not supplied.
 
-The card decides the type.
+The card decides the type. `[color:…]` takes a CSS colour name.
+
+```
+[color:notacolour]                            SyntaxError
+```
 
 ### Lists
 
@@ -196,8 +208,16 @@ The card decides the type.
 [get(scores)][call:getAt][num(-1)]            30
 [get(scores)][call:setAt][num(0)][num(5)]
 [get(scores)][call:append][num(40)]
-[get(scores)][call:pop]
+[get(scores)][call:pop]                       40
 [call:len][get(scores)]                       3
+```
+
+A list's methods are `getAt`, `setAt`, `append` and `pop`. `pop` gives the item it removes; `setAt` and `append` give `none`. A negative position counts from the end.
+
+```
+[get(scores)][call:getAt][num(3)]             IndexError
+[get(empty)][call:pop]                        IndexError
+[get(scores)][call:getAt][num(0.5)]           ValueError
 ```
 
 ```
@@ -209,7 +229,7 @@ The card decides the type.
 A list has no attributes.
 
 ```
-[get(scores)][setProp(label)to][str(round_one)]     error
+[get(scores)][setProp(label)to][str(round_one)]     AttributeError
 ```
 
 ### Dicts
@@ -225,7 +245,7 @@ A list has no attributes.
 Attribute names are handwritten, and cannot be computed at run time. Reading an attribute that is not set is an error.
 
 ```
-[get(user)][getProp(missing)]                 error
+[get(user)][getProp(missing)]                 AttributeError
 ```
 
 Attributes chain.
@@ -236,8 +256,6 @@ Attributes chain.
 ```
 
 Dicts are not iterable.
-
-Keys computed at run time: **TBD**.
 
 ## Execution model
 
@@ -258,16 +276,26 @@ All five are hoisted, so their position on the table carries no meaning. Any oth
 
 `[define(…)]`, `[import(…)as(…)]`, `[extern(…)]` and `[global(…)]` each set an attribute on the module object.
 
+Two top-level declarations with the same name in one file are an error, except `[extern(…)]`s that accept different numbers of values.
+
+```
+[define(f)]
+[define(f)]                 SyntaxError, both strips
+
+[import(./p5.snap)as(p5)]
+[define(p5)]                SyntaxError, both
+```
+
 ### Naming and binding
 
-A bare name resolves where the cards are written: in the local scope, then among the top-level declarations of the file.
+A bare name resolves where the cards are written: in the local scope, then among the top-level declarations of the file, then among the builtins.
 
 ```
 [define(setup)]
 [set(count)to][num(0)]      a local, gone when setup returns
 
 [define(draw)]
-[call:print][get(count)]    error: count is not defined
+[call:print][get(count)]    NameError: count is not defined
 ```
 
 ```
@@ -281,6 +309,12 @@ A bare name resolves where the cards are written: in the local scope, then among
 [set(f)to][get(helper)]     the function as a value
 ```
 
+A top-level declaration may take a builtin's name, and hides the builtin in its file.
+
+```
+[define(print)][required(message)]      [call:print] in this file calls this
+```
+
 Variables are function-scoped.
 
 ```
@@ -288,7 +322,15 @@ Variables are function-scoped.
 [set(n)to][num(0)]
 
 [define(b)]
-[call:print][get(n)]        error: n is not defined here
+[call:print][get(n)]        NameError: n is not defined here
+```
+
+A name that a function sets anywhere is a local throughout that function.
+
+```
+[define(draw)]
+[call(helper)]              NameError: helper is a local of draw, not set yet
+[set(helper)to][num(1)]
 ```
 
 A loop variable is function-scoped and outlives its loop.
@@ -310,11 +352,70 @@ A loop variable is function-scoped and outlives its loop.
 [set(n)to][num(5)]                        a local
 ```
 
-Module constants: **TBD**.
+A global starts with one literal card, or an empty list or dict. Anything worked out is set in a function.
+
+```
+[global(speed)][num(5)]
+[global(title)][str(hi)]
+[global(scores)][call:list]
+[global(user)][call:dict]
+[global(mid)][num(500)][/][num(2)]        SyntaxError
+[global(r)][call:p5.random]               SyntaxError
+```
 
 ### Errors
 
-Error types and error handling: **TBD**.
+Every error has a **kind**, named as in Python, and a **stage**: when it is found. An error is an object whose type is its kind. Nothing in a program creates or catches one.
+
+| Stage     | Found                                    | Kinds                                                                                   |
+| --------- | ---------------------------------------- | --------------------------------------------------------------------------------------- |
+| structure | when cards cannot form a program         | `SyntaxError`, `IndentationError`                                                       |
+| check     | before running, from names and types     | `NameError`, `TypeError`, `AttributeError`, `ImportError`                               |
+| runtime   | while running                            | the check kinds, and `IndexError`, `ValueError`, `ZeroDivisionError`, `RecursionError`  |
+
+```
+[(][)]                                        SyntaxError
+[repeat][num(0)][num(3)]                      SyntaxError
+[call:print][get(count)]                      NameError, when count is set nowhere
+[call:p5.circle][num(20)]                     TypeError: circle takes 3 values
+[str(score)][+][num(5)]                       TypeError
+[call:p5.circel]                              AttributeError
+[get(scores)][call:getAt][num(9)]             IndexError, when scores has 3 items
+```
+
+The checker looks at names and types, never at values, and reports only what would certainly fail. A value it knows nothing about, such as a parameter with no type or an attribute of a dict, can be any type, and its errors are found at run time.
+
+```
+[define(show)][required(ready)]
+[if][get(ready)]
+  [set(n)to][num(1)]
+[dedent]
+[call:print][get(n)]                          NameError at run time, when ready is false
+```
+
+A line with a structure or check error is **skipped**: it does not run, and the rest of its function does. Skipping a block head skips its body. Skipping a `[define(…)]` or `[on:…]` line skips its strip.
+
+```
+[define(draw)]
+[call:p5.circle][num(5)][num(5)][num(2)]      runs
+[set(x)to]                                    SyntaxError: skipped
+[call:p5.circle][num(5)]                      TypeError: skipped
+[if][get(a)][>]                               SyntaxError: skipped with its body
+  [call:print][get(a)]
+[dedent]
+```
+
+The checker treats a skipped line as absent. An error that comes from a skipped line names it.
+
+```
+[define(draw)]
+[set(x)to]                                    SyntaxError: skipped
+[call:p5.circle][get(x)][num(20)][num(20)]    NameError, from the line above: skipped
+```
+
+A runtime error stops the program. The canvas keeps what was drawn, and every `[on:stop]` runs.
+
+Every file follows these rules, a module's text file as much as the table.
 
 ## Modules
 
@@ -325,6 +426,14 @@ A module is an object. `[import(…)as(…)]` loads a module and binds its objec
 [import(./shapes.snap)as(shapes)]
 [import(./shapes.snap)]                 binds to "shapes"
 ```
+
+Modules load before the program runs. A module is loaded once, however many files import it, and every file that imports it gets the same object.
+
+```
+[import(./missing.snap)as(m)]           ImportError
+```
+
+A module that imports itself, directly or through other modules, is an `ImportError`.
 
 A namespace on a card and a receiver to the left are the same thing.
 
@@ -337,7 +446,7 @@ A module's attributes are read from any file, and written only in its own file.
 
 ```
 [get:p5.frameCount]
-[get(p5)][setProp(frameCount)to][num(0)]      error
+[get(p5)][setProp(frameCount)to][num(0)]      AttributeError
 ```
 
 `[extern(…)]` declares a function backed by a native implementation. A name may be declared more than once; calls dispatch on the number of arguments supplied, and a name's declarations must not accept the same count. `[define(…)]` is declared once.
@@ -360,16 +469,23 @@ A module's attributes are read from any file, and written only in its own file.
 
 `[on:…]` declares a handler for a program event. Like `[define]`, it does not indent its body and appears only at the top level. `[root]` is the module object of the file the program runs.
 
+| Event       | Runs                                                                               |
+| ----------- | ---------------------------------------------------------------------------------- |
+| `[on:load]` | once, when the program starts                                                      |
+| `[on:stop]` | once, when the program stops: after a runtime error, when a new run replaces it, or when it is stopped |
+
+A file has at most one handler for each event; a second is a `SyntaxError`. Every file's handlers run, an imported module's before those of the file that imports it.
+
+Repeating is a module's work: an `[extern(…)]` takes `[root]` and calls its functions.
+
 ```
 // mods/p5.snap
 
+[extern(run)][required(program)]        calls program's setup once, then its draw every frame, if it has them
+
 [on:load]
-[root][call:setup]
+[call(run)][root]
 ```
-
-Two handlers for the same event is an error, so a file cannot add a handler its imported module already declares.
-
-Repeated execution, and the events each module declares: **TBD**. Native resolution: **TBD**. Namespace collisions: **TBD**.
 
 ## Expressions
 
@@ -397,7 +513,7 @@ A group ends every grab inside it:
 [call:f][(][call:g][call:h][num(1)][)][num(2)]           f(g(h(1)), 2)
 ```
 
-Grabbing more values than a card accepts is an error. A **variadic** slot accepts any number of values; `[call:list]` is the only card with one.
+Grabbing more values than a card accepts is an error. A **variadic** slot accepts any number of values; `[call:list]` and `[call:print]` have one.
 
 ### Attributes and calls
 
@@ -414,7 +530,7 @@ After a module, `[call:…]` calls the module's function. After any other value,
 ```
 [get(shapes)][call:star][num(10)][num(10)]    the function star in shapes
 [get(scores)][call:append][num(40)]           the method append of list
-[get(user)][call:greet]                       error: dict has no method greet
+[get(user)][call:greet]                       AttributeError: dict has no method greet
 ```
 
 A function held in a dict is called from a name.
@@ -440,7 +556,34 @@ Operators at the same level evaluate left to right.
 ```
 [num(2)][+][num(3)][*][num(4)]        14
 [num(10)][-][num(3)][-][num(2)]       5
-[str(score)][+][num(5)]               error
+```
+
+| Operator                  | Takes                                       |
+| ------------------------- | ------------------------------------------- |
+| `[+]`                     | two `num`s, or two `str`s, which it joins   |
+| `[-]` `[*]` `[/]` `[%]`   | two `num`s                                  |
+| `[<]` `[>]` `[<=]` `[>=]` | two `num`s, or two `str`s in alphabet order |
+| `[==]` `[!=]`             | any two values                              |
+| `[not]` `[and]` `[or]`    | any values                                  |
+
+```
+[str(score)][+][num(5)]               TypeError
+[str(ab)][+][str(cd)]                 "abcd"
+[num(-1)][%][num(500)]                499
+[num(1)][/][num(0)]                   ZeroDivisionError
+```
+
+`[==]` compares numbers, strings, bools and colours by value, lists by their items, dicts by their attributes, and functions and modules by identity. Values of different types are not equal.
+
+```
+[num(1)][==][str(1)]                  false
+```
+
+`[if]`, `[not]`, `[and]` and `[or]` take any value. `0`, `""`, an empty list, `none` and `false` count as false; everything else counts as true. `[and]` and `[or]` stop as soon as the result is known, and give the value that decided it. `[not]` gives a `bool`.
+
+```
+[if][get(scores)]                     if scores is not empty
+[get(name)][or][str(anon)]            name, or "anon" when name is ""
 ```
 
 `[not]` negates the value to its right. It takes the place of a value and needs a value next, like `[(]`.
@@ -450,8 +593,6 @@ Operators at the same level evaluate left to right.
 [not][get(a)][>][num(1)]              not (a > 1)
 [not][get(a)][and][get(b)]            (not a) and b
 ```
-
-Converting a value to `str`: **TBD**.
 
 ### Grouping
 
@@ -466,8 +607,8 @@ Converting a value to `str`: **TBD**.
 A group holds exactly one value.
 
 ```
-[(][num(0)][num(500)][)]        error
-[(][)]                          error
+[(][num(0)][num(500)][)]        SyntaxError
+[(][)]                          SyntaxError
 ```
 
 ## Simple statements
@@ -480,7 +621,7 @@ A group holds exactly one value.
 
 ## Compound statements
 
-A block's body is indented. The bottom magnet of `[repeat]`, `[for(x)in]` and `[if]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block.
+A block's body is indented. The bottom magnet of `[repeat]`, `[for(x)in]` and `[if]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block, in the column of the block's head.
 
 ```
 [for(i)in][call:range][num(100)]
@@ -492,21 +633,41 @@ A block's body is indented. The bottom magnet of `[repeat]`, `[for(x)in]` and `[
 [dedent]
 ```
 
-`[dedent]`'s column in text: **TBD**.
+A block's body may be empty. A block with no `[dedent]` closes at the end of its strip.
+
+```
+[if][get(ready)]
+[dedent]                                does nothing
+```
+
+```
+[define(f)]
+[dedent]                                IndentationError: no block to close; skipped
+
+[define(g)]
+[set(x)to][num(1)]
+  [call:print][get(x)]                  IndentationError: skipped, with the lines indented under it
+
+[define(h)]
+[if][get(a)]
+  [call:print][get(a)]
+[call:print][str(done)]                 IndentationError: no [dedent]; the block closes here anyway
+```
 
 ### Loops
 
-`[repeat]` runs its body a number of times. It takes one value.
+`[repeat]` runs its body a number of times. It takes one value, a whole number.
 
 ```
 [repeat][num(3)]                        for _ in range(3)
   [call:print][str(hi)]                 hi hi hi
 [dedent]
 
-[repeat][num(0)][num(3)]                error
+[repeat][num(0)][num(3)]                SyntaxError
+[repeat][num(2.5)]                      ValueError
 ```
 
-`[for(…)in]` iterates a value, and takes a `list` or a `range`. The handwritten name holds each item in turn.
+`[for(…)in]` iterates a `list`. The handwritten name holds each item in turn.
 
 ```
 [for(i)in][call:range][num(3)]          for i in range(3)
@@ -525,24 +686,68 @@ A block's body is indented. The bottom magnet of `[repeat]`, `[for(x)in]` and `[
 [call(greet)][str(Ada)]              title is "Mx", suffix is none
 ```
 
-Required parameters come before optional ones. An optional parameter with no default is `none`.
+Required parameters come before optional ones. An optional parameter's default is one leaf card, read on each call. An optional parameter with no default is `none`.
 
-Declared signatures are checked. Checking semantics: **TBD**. Returning a value from `[define(…)]`: **TBD**.
+```
+[define(dot)][optional(size)][get(width)]
+
+[define(blob)][optional(size)][num(1)][+][num(2)]    SyntaxError
+```
+
+`[return]` ends the function and gives the value to its right, or `none` with no value. A function that ends without `[return]` gives `none`.
+
+```
+[define(double)][required(n)]
+[return][get(n)][*][num(2)]
+
+[define(setup)]
+[call:print][call(double)][num(4)]          8
+```
+
+A call is checked against the declared parameters. Too few or too many values is a `TypeError`.
+
+```
+[call(greet)]                        TypeError: greet takes 1 to 3 values
+```
+
+In a text file, a doc comment can give the types of a function's parameters and result. The types are those of the Types table, and `|` means either.
+
+```
+/**
+ * A random number between min and max.
+ * @param {num} min
+ * @param {num} max
+ * @returns {num}
+ */
+[extern(random)][optional(min)][num(0)][optional(max)][num(1)]
+
+/**
+ * Sets the colour that shapes are filled with.
+ * @param {color | str} c
+ */
+[extern(fill)][required(c)]
+```
+
+A parameter or result with no type can be any type. The result of a `[define(…)]` with no type comes from its `[return]`s.
 
 ## Builtins
 
-Builtins are called without a namespace.
+Builtins are called without a namespace. These are all of them:
 
 ```
-[call:print][str(hello)]
-[call:range][num(10)]                   0 1 2 … 9
+[call:print][get(a)][get(b)]            any number of values
+[call:range][num(10)]                   a list: 0 1 2 … 9
 [call:range][num(0)][num(500)][num(25)] 0 25 50 … 475
-[call:len][get(scores)]
-[call:dict]                             an empty dict
+[call:len][get(scores)]                 3, for a list or a str
 [call:list][num(1)][num(2)]             a list
+[call:dict]                             an empty dict
 ```
 
-Full list: **TBD**.
+`[call:range]` takes whole numbers and a step that is not 0.
+
+```
+[call:range][num(0)][num(10)][num(0)]   ValueError
+```
 
 # The Physical System
 
@@ -556,14 +761,18 @@ A card with two sides turns over top-to-bottom: its top and bottom edges change 
 
 A camera above the table reads the card arrangement. A projector opposite displays the running sketch and draws on the cards.
 
+When the camera is not sure what a card's handwriting says, the card has a **read error**. Its line is skipped, like a line with a structure or check error. A read error belongs to the physical system, not the language: it has no kind and no stage.
+
 Lengths on the table are measured in U. Every card is 1U tall and a whole number of U long. Most cards are at least 2U long, because their written text needs it: a handwritten name such as `[define(drawCircle)]`, or a reserved word such as `[repeat]`. Each side of a card also holds a marker, a printed pattern that the camera reads to learn which side it is, where it lies and how it is turned. Which one-symbol cards, such as `[(]`, `[)]` and `[+]`, can be 1U long depends on the marker's size and placement: **TBD**.
 
 # Feedback
 
 Initial direction:
 
-- Errors light up the cards responsible.
+- Errors light up the cards responsible, with a message in plain words and the kind beside it: "circle needs 3 numbers but got 1 · TypeError".
+- Errors other than runtime errors show as soon as the cards are placed, whether or not the program is running.
+- Skipped lines look skipped. An error that comes from a skipped line points to it.
 - Cards that are not part of the program are dimmed.
 - The grouping the system inferred is outlined in light, including operator precedence and how far each card grabbed.
-- Virtual blocks show where cards can be placed.
+- Virtual blocks show where cards can be placed, and where a missing value or `[dedent]` goes.
 - Picking up a card projects its doc comment.
