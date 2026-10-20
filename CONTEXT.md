@@ -47,6 +47,27 @@ A block head (`[if]`, `[repeat]`, `[for(x)in]`) with its body, indented one U to
 **Strip**:
 A free-standing group of lines that snap together, such as one function, and can be moved around the table as a whole.
 
+## Errors
+
+**Error kind**:
+What went wrong, named as in Python: `SyntaxError`, `NameError`, `TypeError` and so on. A kind is a built-in type, like `list`.
+_Avoid_: error type (say "kind"), error class
+
+**Stage**:
+When an error is found: **structure** (cards that cannot form a program), **check** (found before running, by looking at names and types) or **runtime** (found while running). The same kind can be found at the check stage or at runtime.
+_Avoid_: layer (a layer is a level of a magnet pocket), phase
+
+**Read error**:
+The camera is not sure what a card's handwriting says. It is a mark the physical system puts on a card, not an error of the language: it has no kind and no stage, and a text file never has one.
+_Avoid_: OCR error
+
+**Skipped line**:
+A line left out of a run because it has a structure or check error, or holds a card with a read error. It is lit up and the rest of its function runs. Skipping a block head skips its body; skipping a `[define(…)]` header skips its strip.
+_Avoid_: ignored line, disabled line
+
+**Follow-on error**:
+A check error that happens only because another line was skipped, such as a `NameError` on `[get(x)]` when the `[set(x)to]` line is skipped. It names the skipped line.
+
 ## Magnets
 
 **U**:
