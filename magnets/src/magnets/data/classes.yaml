@@ -25,14 +25,15 @@
 # bottom pocket near its end: it sits less than the reach from its end of the
 # card. Block heads and `[dedent]` reach 2U, for the indent pocket.
 
-# `[return]` takes the roles of `[set(x)to]`, so it shares its card design,
-# as `[if]` shares `[for(x)in]`'s. Having nothing to its right is a language
-# matter, not a contact.
-set:
+# `[set(x)to]` and `[return]` head a line without opening a block, unlike
+# the block heads. `[return]` takes the roles of `[set(x)to]`, so it shares
+# its card design, as `[if]` shares `[for(x)in]`'s. Having nothing to its
+# right is a language matter, not a contact.
+simple_head:
   min_length: 2
   pocket_reach: 1
   sides:
-    set:
+    head:
       "[set(x)to]": {left: head, right: open, top: line, bottom: line}
       "[return]": {left: head, right: open, top: line, bottom: line}
 

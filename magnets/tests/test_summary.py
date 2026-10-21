@@ -85,7 +85,7 @@ def test_contact_counts_sum_group_counts(flips, flip):
 
 
 def test_the_pocket_line_counts_front_pockets_by_shape():
-    # The example designs set's and get's top (F/F) and bottom (N/S), and
+    # The example designs simple_head's and get's top (F/F) and bottom (N/S), and
     # literal's left (F/F) and right (N/S); str, literal's back, shares them.
     lines = summary_text(check("example")).splitlines()
     # Right after the contact group line.
@@ -130,7 +130,7 @@ def test_an_infeasible_search_names_its_goal():
     # Nothing on the right of a [num] can snap if its right edge is empty.
     pinned = {"flip": "left_right", "classes": {"literal": {"right": []}}}
     result = solve(
-        "left_right", goal="no_snap", classes=["set", "literal"], pinned=pinned, time_limit=5, workers=1
+        "left_right", goal="no_snap", classes=["simple_head", "literal"], pinned=pinned, time_limit=5, workers=1
     )
     assert result.status == "infeasible"
     assert "\nSearch (goal no_snap): infeasible in " in summary_text(result.check, result)

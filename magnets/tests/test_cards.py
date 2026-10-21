@@ -9,7 +9,7 @@ from magnets import ProgramError, check, check_program
 
 # Every card text in OVERVIEW_SPEC.md, by the class side it belongs to.
 SPEC_CARDS = {
-    "set.set": [
+    "simple_head.head": [
         "[set()to]", "[set(a)to]", "[set(b)to]", "[set(count)to]", "[set(empty)to]", "[set(f)to]",
         "[set(frame Count)to]", "[set(framecount)to]", "[set(frameCount)to]", "[set(n)to]", "[set(scores)to]",
         "[set(user)to]", "[set(width)to]", "[set(x)to]", "[set(y)to]", "[set(helper)to]", "[return]",

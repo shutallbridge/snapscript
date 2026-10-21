@@ -71,15 +71,15 @@ def test_the_reported_objective_is_the_checkers():
 
 
 def test_a_check_can_be_restricted_to_some_classes():
-    result = check("example", classes=["set", "get", "literal"])
+    result = check("example", classes=["simple_head", "get", "literal"])
     assert {name for c in result.groups for name in (c.a, c.b)} == {
-        "set.set",
+        "simple_head.head",
         "get.get",
         "literal.num",
         "literal.str",
     }
     with pytest.raises(ValueError, match="unknown card class.*teapot"):
-        check("example", classes=["set", "get", "literal", "teapot"])
+        check("example", classes=["simple_head", "get", "literal", "teapot"])
 
 
 def test_a_reduced_problem_solves_under_the_left_right_flip():
@@ -110,17 +110,17 @@ def design(arrangement):
 
 
 def test_pinning_the_example_keeps_its_design():
-    classes = ["set", "get", "literal", "call_printed", "operator"]
+    classes = ["simple_head", "get", "literal", "call_printed", "operator"]
     example = design(check("example", classes=classes).arrangement)
     result = solve("top_bottom", classes=classes, pinned="example", time_limit=3, workers=1)
     assert result.status in ("optimal", "feasible")
     found = design(result.arrangement)
-    for name in ("set", "get"):
+    for name in ("simple_head", "get"):
         assert (found[name]["top"], found[name]["bottom"]) == (example[name]["top"], example[name]["bottom"])
     assert (found["literal"]["left"], found["literal"]["right"]) == (example["literal"]["left"], example["literal"]["right"])
-    # The example doesn't mention set's left and right edges, nor the other
+    # The example doesn't mention simple_head's left and right edges, nor the other
     # classes, so the search designs them.
-    assert found["set"]["left"] and found["set"]["right"]
+    assert found["simple_head"]["left"] and found["simple_head"]["right"]
     assert result.check.valid
 
 
@@ -137,8 +137,8 @@ def test_pinned_empty_edges_stay_empty():
 
 def test_a_pin_may_not_mention_a_class_outside_the_search():
     # As for `check(..., classes=...)`: the pin names a class the search leaves out.
-    pinned = {"flip": "top_bottom", "classes": {"set": {"top": []}}}
-    with pytest.raises(ValueError, match="unknown card class 'set'"):
+    pinned = {"flip": "top_bottom", "classes": {"simple_head": {"top": []}}}
+    with pytest.raises(ValueError, match="unknown card class 'simple_head'"):
         solve("top_bottom", classes=["literal", "operator"], pinned=pinned, time_limit=1, workers=1)
 
 

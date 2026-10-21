@@ -6,8 +6,8 @@ Checker and CP-SAT solver for the Snapscript magnet arrangement (see issue
 ```sh
 uv run magnets check                 # the bundled `example` arrangement
 uv run magnets check my.yaml --out out/mine
-uv run magnets search --flip top_bottom --classes set,get,literal --time-limit 30
-uv run magnets search --flip top_bottom --pin example   # keep the example's set, get and literal design
+uv run magnets search --flip top_bottom --classes simple_head,get,literal --time-limit 30
+uv run magnets search --flip top_bottom --pin example   # keep the example's simple_head, get and literal design
 uv run magnets search --flip left_right --goal no_snap  # illegal neighbours need only not snap
 uv run magnets print example         # every bundled program's cards, to cut and fold
 uv run magnets print example --program nested_blocks --seed 3   # at the lengths of programs.txt's draw 3

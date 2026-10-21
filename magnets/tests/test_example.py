@@ -53,8 +53,8 @@ def test_nn_on_set_get_top_fails_get_over_set():
     assert not result.valid
 
 
-@pytest.mark.parametrize("upper", ["set.set", "get.get"])
-@pytest.mark.parametrize("lower", ["set.set", "get.get"])
+@pytest.mark.parametrize("upper", ["simple_head.head", "get.get"])
+@pytest.mark.parametrize("lower", ["simple_head.head", "get.get"])
 def test_set_and_get_lines_stack_in_every_order(upper, lower):
     contact = over(check("example"), upper, lower, 0)
     [pair] = contact.pairs
@@ -76,12 +76,12 @@ def test_literals_snap_inline_in_every_order(left, right):
 
 
 def test_example_fails_only_where_it_has_no_pockets():
-    # The example designs only set's, get's and literal's edges, so every
+    # The example designs only simple_head's, get's and literal's edges, so every
     # other connect contact fails for want of pockets, never because of a bad one.
     result = check("example")
     assert not result.valid
     assert result.must_failures
-    designed = {"set.set", "get.get"}
+    designed = {"simple_head.head", "get.get"}
     for contact, label in result.must_failures:
         assert contact.pairs == () and contact.result == "nothing", contact
         assert not (contact.axis == "vertical" and {contact.a, contact.b} <= designed)
@@ -89,7 +89,7 @@ def test_example_fails_only_where_it_has_no_pockets():
 
 def test_lengths_with_identical_geometry_collapse():
     # Both pockets are anchored on the left, so every length pair lines them up.
-    contact = over(check("example", max_length=6), "set.set", "get.get", 0)
+    contact = over(check("example", max_length=6), "simple_head.head", "get.get", 0)
     assert contact.lengths == (2, 2)
     assert contact.count == 5 * 5
 

@@ -56,7 +56,7 @@ def test_lines_strips_and_comments():
         (5, ["[define(f)]"]),
         (7, ["[set(x)to]", "[num(1)]"]),
     ]
-    assert [(c.index, c.side) for c in second[1].cards] == [(0, "set.set"), (1, "literal.num")]
+    assert [(c.index, c.side) for c in second[1].cards] == [(0, "simple_head.head"), (1, "literal.num")]
 
 
 def test_contacts_only_happen_within_a_strip():
@@ -190,12 +190,12 @@ def test_draws_stay_within_max_length():
 
 # --- legal programs ----------------------------------------------------------
 
-# set over set, get over set, set over get and get over get all snap (the
-# toy set_get example's top and bottom, with get's edges as its flipped
-# back), define's bottom snaps to set's top, and set's right edge snaps to a
-# num's left edge.
+# simple_head over simple_head, get over simple_head, simple_head over get
+# and get over get all snap (the toy set_get example's top and bottom, with
+# get's edges as its flipped back), define's bottom snaps to simple_head's
+# top, and simple_head's right edge snaps to a num's left edge.
 TOY = arrangement(
-    set={
+    simple_head={
         "top": [("left", 0.25, "F/N")],
         "bottom": [("left", 0.25, "F/S")],
         "left": [(0.5, "S/-")],
@@ -219,7 +219,7 @@ def test_a_legal_program_passes_when_every_contact_holds():
 
 
 def test_a_neighbour_pair_that_does_not_snap_fails_naming_the_contact():
-    # set's right edge N/- meets get's left edge -/S: nothing faces.
+    # simple_head's right edge N/- meets get's left edge -/S: nothing faces.
     result = check_program(TOY, "[define(f)]\n[set(x)to][get(y)]")
     assert not result.passed
     assert {(where(f.contact), f.reason) for f in result.failures} == {
@@ -252,7 +252,7 @@ def test_cards_that_push_apart_between_lines_fail():
 
 def test_ungraded_contacts_are_info_only():
     # [global] has free top and bottom edges: what it does is not graded.
-    toy = arrangement(**{"global": {"bottom": [("left", 0.25, "N/-")]}, "set": {"top": [("left", 0.25, "N/-")]}})
+    toy = arrangement(**{"global": {"bottom": [("left", 0.25, "N/-")]}, "simple_head": {"top": [("left", 0.25, "N/-")]}})
     result = check_program(toy, "[global(n)][num(0)]\n[set(x)to][num(1)]", draws=0)
     assert not any(f.contact.contact.axis == "vertical" for f in result.failures)
     assert [(where(i.contact), i.contact.contact.result) for i in result.info] == [

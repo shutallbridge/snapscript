@@ -1,9 +1,9 @@
-# A worked example: set and get lines stack on each other in every order,
+# A worked example: simple_head and get lines stack on each other in every order,
 # and the literal flip pair's two sides line up in every order, under a
 # top-to-bottom flip.
 flip: top_bottom
 classes:
-  set:
+  simple_head:
     top:
       - {from: left, at: 0.25, layers: F/F}
     bottom:
