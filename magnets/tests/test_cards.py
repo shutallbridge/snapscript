@@ -12,7 +12,7 @@ SPEC_CARDS = {
     "set.set": [
         "[set()to]", "[set(a)to]", "[set(b)to]", "[set(count)to]", "[set(empty)to]", "[set(f)to]",
         "[set(frame Count)to]", "[set(framecount)to]", "[set(frameCount)to]", "[set(n)to]", "[set(scores)to]",
-        "[set(user)to]", "[set(width)to]", "[set(x)to]", "[set(y)to]", "[set(helper)to]",
+        "[set(user)to]", "[set(width)to]", "[set(x)to]", "[set(y)to]", "[set(helper)to]", "[return]",
     ],
     "get.get": [
         "[get(a)]", "[get(app)]", "[get(b)]", "[get(count)]", "[get(done)]", "[get(helper)]", "[get(i)]",

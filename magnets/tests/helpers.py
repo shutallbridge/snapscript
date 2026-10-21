@@ -19,8 +19,10 @@ def bundled_classes():
 def _old_pairs():
     """The bundled classes with set and get, define and call, set_prop and
     get_prop, and required and optional joined into flip pairs whose sides
-    take different roles: set_get, define_call, prop and param."""
+    take different roles: set_get, define_call, prop and param. `[return]`
+    is left out, so set pairs with get member for member."""
     classes = bundled_classes()
+    del classes["set"]["sides"]["set"]["[return]"]
     pairs = {
         "set_get": ("set", "get"),
         "define_call": ("define", "call"),

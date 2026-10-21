@@ -40,8 +40,13 @@ parameters:
   legal: true
   text: |
     // Required, then optional parameters with defaults; a call can be a default.
+    // A [return] gives the value to its right, or none with nothing there.
     [define(greet)][required(message)][optional(title)][str(Mx)][optional(a)][call:random][optional(b)]
     [call:print][get(title)][+][str(_)][+][get(message)]
+    [return]
+
+    [define(double)][required(n)]
+    [return][get(n)][*][num(2)]
 
     [extern(random)][optional(min)][num(0)][optional(max)][num(1)]
 
