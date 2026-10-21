@@ -64,6 +64,9 @@ def test_every_card_once_at_min_length_front_above_back():
         ("[/]", "[*]", "[/]"),
         ("[>=]", "[<=]", "[>=]"),
         ("[or]", "[and]", "[or]"),
+        # A colour card's back is another colour, which the kit picks, so it
+        # reads as an unnamed colour.
+        ("[color:yellow]", "[color:yellow]", "[color:…]"),
     ],
 )
 def test_back_labels_carry_the_handwriting_over(card, front, back):

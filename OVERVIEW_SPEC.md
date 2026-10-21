@@ -100,12 +100,15 @@ Some cards are two sides of one card, changed by flipping. The two sides take th
 | ------------- | -------------- |
 | `[num(…)]`    | `[str(…)]`     |
 | `[bool:true]` | `[bool:false]` |
+| `[color:…]`   | `[color:…]`    |
 | `[+]`         | `[-]`          |
 | `[*]`         | `[/]`          |
 | `[<]`         | `[>]`          |
 | `[<=]`        | `[>=]`         |
 | `[==]`        | `[!=]`         |
 | `[and]`       | `[or]`         |
+
+A colour card has a different colour on each side. Which colours a kit has, and which two share a card, is the kit's choice.
 
 Every other card has one side, `[%]`, `[set(x)to]` and `[get(x)]` among them.
 

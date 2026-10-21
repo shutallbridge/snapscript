@@ -159,7 +159,7 @@ def _resolve(text: str, number: int, classes: Mapping[str, CardClass]) -> str:
         raise ProgramError(f"line {number}: unknown card {text}: it matches no card class")
     if len(sides) > 1:
         names = ", ".join(side.name for side in sides)
-        raise ProgramError(f"line {number}: card {text} matches more than one class side: {names}")
+        raise ProgramError(f"line {number}: card {text} matches more than one class: {names}")
     return sides[0].name
 
 

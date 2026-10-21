@@ -78,13 +78,15 @@ def test_check_uses_the_given_classes_and_rules():
     assert on_line[("set_get.get", "block_head.head")] == ("forbid", "should")
 
 
-def test_bundled_members_resolve_to_one_side_each():
+def test_bundled_members_belong_to_one_class_each():
     result = check({})
     assert result.sides["operator.front"].side.notation == "[+]"
     assert result.sides["operator.back"].side.members[1] == "[/]"
     assert "[root]" in result.sides["receiver_printed.receiver"].side.members
-    members = [m for s in result.sides.values() for m in s.side.members]
-    assert len(members) == len(set(members))
+    # Only a flip pair's back may share its front's member, as `[color:…]` does.
+    assert result.sides["color.front"].side.members == result.sides["color.back"].side.members == ("[color:…]",)
+    members = {(name.split(".")[0], m) for name, s in result.sides.items() for m in s.side.members}
+    assert len({m for _, m in members}) == len(members)
 
 
 @pytest.mark.parametrize(

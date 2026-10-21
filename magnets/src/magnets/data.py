@@ -64,27 +64,30 @@ def _member_pattern(member: str) -> re.Pattern:
 
 def carry_over(card: str, side: Side, other: Side) -> str:
     """The card as written on `other`, the other side of the same card: the
-    member at the same place on `other`, its placeholders filled with the
-    card's handwriting and printed text, in order, by kind. `[str(500)]` on
-    literal's front is `[num(500)]`, and `[/]` on operator's is `[*]`."""
+    member at the same place on `other`, its handwriting filled with the
+    card's, in order. `[str(500)]` on literal's front is `[num(500)]`, and
+    `[/]` on operator's is `[*]`. Printed text is the kit's, not carried over:
+    `[color:yellow]`'s back is `[color:…]`, a colour the kit picks."""
     place, member, match = next(
         (i, m, found) for i, m in enumerate(side.members) if (found := _member_pattern(m).fullmatch(card))
     )
-    fills = {printed: [] for printed in (True, False)}
-    for placeholder, text in zip(_PLACEHOLDER.finditer(member), match.groups()):
-        fills[placeholder.group() == "…"].append(text)
+    handwriting = [
+        text for placeholder, text in zip(_PLACEHOLDER.finditer(member), match.groups()) if placeholder.group() != "…"
+    ]
     filled, last = [], 0
     target = other.members[place]
     for found in _PLACEHOLDER.finditer(target):
-        queue = fills[found.group() == "…"]
-        filled += [target[last : found.start()], queue.pop(0) if queue else found.group()]
+        takes_handwriting = found.group() != "…" and handwriting
+        filled += [target[last : found.start()], handwriting.pop(0) if takes_handwriting else found.group()]
         last = found.end()
     return "".join(filled) + target[last:]
 
 
 def matching_sides(card: str, classes: Mapping[str, "CardClass"]) -> list[Side]:
-    """Every class side the card's notation text belongs to."""
-    return [side for cls in classes.values() for side in cls.sides if side.matches(card)]
+    """The side of each class the card's notation text belongs to: a text
+    that matches both sides of a flip pair, such as `[color:yellow]`, takes
+    the front."""
+    return [side for cls in classes.values() if (side := next((s for s in cls.sides if s.matches(card)), None))]
 
 
 @dataclass(frozen=True)
@@ -437,13 +440,15 @@ def _parse_classes(raw: Any, grammar: Rules) -> dict[str, CardClass]:
     if not isinstance(raw, Mapping) or not raw:
         raise DataError("card classes must be a mapping of class names to classes")
     classes = {str(name): _parse_class(str(name), spec, grammar) for name, spec in raw.items()}
-    owners: dict[str, str] = {}
+    # A member may be on both sides of one flip pair, as `[color:…]` is, but
+    # not in two classes.
+    owners: dict[str, tuple[str, str]] = {}  # member -> (class, side) it is first on
     for cls in classes.values():
         for side in cls.sides:
             for member in side.members:
-                if member in owners:
-                    raise DataError(f"{member} is a member of both {owners[member]} and {side.name}")
-                owners[member] = side.name
+                owner, first = owners.setdefault(member, (cls.name, side.name))
+                if owner != cls.name:
+                    raise DataError(f"{member} is a member of both {first} and {side.name}")
     return classes
 
 

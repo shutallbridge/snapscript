@@ -15,7 +15,9 @@
 # A member's notation is also the pattern a card text in a program must
 # match: anything in `(…)` stands for handwriting and a `…` for printed text,
 # so `[get(x)]` matches `[get(score)]` and `[call:…]` matches `[call:print]`.
-# Every card text must match exactly one class side.
+# Every card text must match exactly one class; a text that matches both sides
+# of a flip pair resolves to the front. Both sides take the same roles, so the
+# side can't change whether a program is legal.
 #
 # `min_length` is the shortest card of the class, in whole U: most cards hold
 # written text, which needs 2U. Which one-symbol cards (`[(]`, `[+]`, …) may be
@@ -118,12 +120,24 @@ receiver_printed:
       "[get:…]": {left: value, right: value, top: line, bottom: line}
       "[root]": {left: value, right: value, top: line, bottom: line}
 
-value_printed:
+# A colour card has a different colour on each side; which two is the kit's
+# choice, so both sides are written `[color:…]` and a colour resolves to the
+# front.
+color:
+  min_length: 2
+  pocket_reach: 1
+  flip_pair: true
+  sides:
+    front:
+      "[color:…]": {left: value, right: value, top: none, bottom: none}
+    back:
+      "[color:…]": {left: value, right: value, top: none, bottom: none}
+
+none:
   min_length: 2
   pocket_reach: 1
   sides:
-    value:
-      "[color:…]": {left: value, right: value, top: none, bottom: none}
+    none:
       "[none]": {left: value, right: value, top: none, bottom: none}
 
 block_head:

@@ -64,7 +64,8 @@ SPEC_CARDS = {
         "[call:setAt]", "[call:shapes.star]", "[call:star]", "[call:p5.circel]",
     ],
     "receiver_printed.receiver": ["[get:p5.frameCount]", "[root]"],
-    "value_printed.value": ["[color:midnightblue]", "[color:purple]", "[none]", "[color:notacolour]", "[color:…]"],
+    "color.front": ["[color:midnightblue]", "[color:purple]", "[color:notacolour]", "[color:…]"],
+    "none.none": ["[none]"],
     "block_head.head": ["[for(…)in]", "[for(i)in]", "[for(s)in]", "[for(x)in]", "[if]", "[repeat]"],
     "dedent.dedent": ["[dedent]"],
     "on.on": ["[on:…]", "[on:load]", "[on:stop]"],
@@ -114,8 +115,18 @@ def test_every_spec_card_resolves_to_its_side(side):
 
 
 def test_every_class_member_resolves_to_its_own_side():
-    members = {m: name for name, s in check({}).sides.items() for m in s.side.members}
+    # A flip pair's back may share its front's pattern, as `[color:…]` does;
+    # such a member resolves to the front.
+    members = {}
+    for name, s in check({}).sides.items():
+        for m in s.side.members:
+            members.setdefault(m, name)
     assert sides_of(list(members)) == list(members.values())
+
+
+@pytest.mark.parametrize("card", ["[color:yellow]", "[color:midnightblue]", "[color:purple]", "[color:…]"])
+def test_a_colour_resolves_to_the_front_of_its_flip_pair(card):
+    assert sides_of([card]) == ["color.front"]
 
 
 @pytest.mark.parametrize(
@@ -148,4 +159,4 @@ def test_a_card_matching_two_sides_is_a_clear_error():
     }
     with pytest.raises(ProgramError) as err:
         check_program({}, "[call:print]", class_data=classes)
-    assert str(err.value) == "line 1: card [call:print] matches more than one class side: printed.call, print.print"
+    assert str(err.value) == "line 1: card [call:print] matches more than one class: printed.call, print.print"

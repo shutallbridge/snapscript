@@ -119,9 +119,9 @@ def test_a_line_head_over_an_inline_card_coexists_two_columns_right_or_more():
 
 
 def test_a_line_head_over_an_inline_card_in_the_same_column_is_forbid_only():
-    # [set(x)to] over [color:red] @0: [set(x)to] can't sit inline and
-    # [color:red] can't head a line, so no legal program puts them so.
-    assert kinds(over(check_pairs({}), "set_get.set", "value_printed.value", 0)) == [("forbid", "should")]
+    # [set(x)to] over [none] @0: [set(x)to] can't sit inline and
+    # [none] can't head a line, so no legal program puts them so.
+    assert kinds(over(check_pairs({}), "set_get.set", "none.none", 0)) == [("forbid", "should")]
 
 
 def test_two_inline_cards_coexist_at_any_whole_offset():
@@ -130,8 +130,8 @@ def test_two_inline_cards_coexist_at_any_whole_offset():
     # Off the meaningful offsets, coexist replaces forbid / low.
     assert kinds(over(result, "literal.num", "literal.num", 2)) == [("coexist", "must")]
     assert kinds(over(result, "literal.num", "literal.num", 0.5)) == [("forbid", "low")]
-    # [call:…] can head a line and sit inline, so it coexists with [color:…] @0.
-    assert kinds(over(result, "call_printed.call", "value_printed.value", 0)) == [
+    # [call:…] can head a line and sit inline, so it coexists with [none] @0.
+    assert kinds(over(result, "call_printed.call", "none.none", 0)) == [
         ("coexist", "must"),
         ("forbid", "should"),
     ]
