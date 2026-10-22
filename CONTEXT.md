@@ -11,21 +11,21 @@ One physical piece that lies flat on the table and stands for one block of the p
 One printed face of a card. Most cards have one side; a flip pair has two.
 
 **Flip pair**:
-A card with a different card on each side, changed by flipping it over. Both sides take the same roles: `[num(…)]` / `[str(…)]`, `[bool:true]` / `[bool:false]`, `[color:…]` / `[color:…]` (two different colours, such as `[color:yellow]` / `[color:purple]`), `[+]` / `[-]`, `[*]` / `[/]`, `[<]` / `[>]`, `[<=]` / `[>=]`, `[==]` / `[!=]`, `[and]` / `[or]`. Every other card has one side, `[%]`, `[set(x)to]`, `[get(x)]`, `[define(f)]` and `[call(f)]` among them.
+A card with a different card on each side, changed by flipping it over. Both sides take the same roles: `[num{…}]` / `[str{…}]`, `[bool(true)]` / `[bool(false)]`, `[color(…)]` / `[color(…)]` (two different colours, such as `[color(yellow)]` / `[color(purple)]`), `[+]` / `[-]`, `[*]` / `[/]`, `[<]` / `[>]`, `[<=]` / `[>=]`, `[==]` / `[!=]`, `[and]` / `[or]`. Every other card has one side, `[%]`, `[set{x}to]`, `[get{x}]`, `[define{f}]` and `[call{f}]` among them.
 
 **Marker**:
-The printed pattern on a card's side that the camera reads to learn which side it is, where it lies and how it is turned. A marker names a keyword (`[repeat]`), a handwritten kind and its length (`[get(…)]` at 3U), or a printed card registered by a library (`[call:p5.fill]`); it does not name the physical card. Two `[get(x)]` cards of the same length carry the same marker and are told apart by where they lie.
+The printed pattern on a card's side that the camera reads to learn which side it is, where it lies and how it is turned. A marker names a keyword (`[repeat]`), a handwritten kind and its length (`[get{…}]` at 3U), or a library card (`[call(p5.fill)]`); it does not name the physical card. Two `[get{x}]` cards of the same length carry the same marker and are told apart by where they lie.
 _Avoid_: fiducial, tag, code
 
 **Printed / handwritten**:
-A card's label is either printed on it (`[call:print]`) or written by hand on its whiteboard (`[call(print)]`); both mean the same thing.
+A card's label is either printed on it (`[call(print)]`) or written by hand on its whiteboard (`[call{print}]`); both mean the same thing. In text, `{}` holds handwriting and `()` holds everything else, including text that is only ever typed in a file, such as `[import(snapscript-p5)as(p5)]`.
 
 **Value slot**:
 A place on a card that takes a value from the cards to its right.
 _Avoid_: slot (on its own), argument position
 
 **Leaf**:
-A card that holds a value and has no value slots: `[num(500)]`, `[get(x)]`, `[none]`.
+A card that holds a value and has no value slots: `[num{500}]`, `[get{x}]`, `[none]`.
 
 **Line**:
 Cards that sit side by side, left to right; one line of program text.
@@ -42,10 +42,27 @@ Any card in a line after its line head.
 The vertical run of line heads, one under the other.
 
 **Block**:
-A block head (`[if]`, `[repeat]`, `[for(x)in]`) with its body, indented one U to the right, closed by `[dedent]`.
+A block head (`[if]`, `[repeat]`, `[for{x}in]`) with its body, indented one U to the right, closed by `[dedent]`.
 
 **Strip**:
 A free-standing group of lines that snap together, such as one function, and can be moved around the table as a whole.
+
+## Libraries
+
+**Library**:
+A package of Snapscript modules that a program imports by its package name: `[import(snapscript-p5)as(p5)]`. The importing program chooses the name; a library does not namespace itself.
+
+**Library card**:
+A printed card that a library offers with a `@card` tag in a doc comment: `[call(p5.circle)]`, `[get(p5.frameCount)]`, or `[define(setup)]` for a function that the program defines. A handwritten card with the same text means the same thing, but shows none of the library card's help.
+
+**Prelude**:
+Text that the system puts at the start of every table program, such as `[import(snapscript-p5)as(p5)]`. Nobody lays it on the table.
+
+**Official registry**:
+An endorsed list that gives popular libraries their marker IDs, so that library cards printed for one project read the same in another. A project may assign IDs differently.
+
+**Lockfile**:
+A project's list of which marker ID stands for which library card, such as `1293 = call snapscript-p5.circle`. The camera reads library cards through it.
 
 ## Errors
 
@@ -62,11 +79,11 @@ The camera is not sure what a card's handwriting says. It is a mark the physical
 _Avoid_: OCR error
 
 **Skipped line**:
-A line left out of a run because it has a structure or check error, or holds a card with a read error. It is lit up and the rest of its function runs. Skipping a block head skips its body; skipping a `[define(…)]` header skips its strip.
+A line left out of a run because it has a structure or check error, or holds a card with a read error. It is lit up and the rest of its function runs. Skipping a block head skips its body; skipping a `[define{…}]` header skips its strip.
 _Avoid_: ignored line, disabled line
 
 **Follow-on error**:
-A check error that happens only because another line was skipped, such as a `NameError` on `[get(x)]` when the `[set(x)to]` line is skipped. It names the skipped line.
+A check error that happens only because another line was skipped, such as a `NameError` on `[get{x}]` when the `[set{x}to]` line is skipped. It names the skipped line.
 
 ## Magnets
 
@@ -101,7 +118,7 @@ Two edges of two cards, each of a given length, facing each other at some offset
 _Avoid_: joint
 
 **Contact group**:
-Contacts with the same geometry: the same two sides and edges, the same offset, the same pockets facing, and the same labels (unavoidable included). A report shows one contact group on one line, named by its smallest length pair, with the number of contacts it holds. Example: `[set(x)to] [num(…)] @0` is one contact group of 25 contacts, one for each pair of lengths from 2U×2U to 6U×6U.
+Contacts with the same geometry: the same two sides and edges, the same offset, the same pockets facing, and the same labels (unavoidable included). A report shows one contact group on one line, named by its smallest length pair, with the number of contacts it holds. Example: `[set{x}to] [num{…}] @0` is one contact group of 25 contacts, one for each pair of lengths from 2U×2U to 6U×6U.
 _Avoid_: row, summary row, collapsed contact
 
 **Offset**:
@@ -119,7 +136,7 @@ What a contact does: its magnets only pull the cards together, only push them ap
 What one edge of a side needs from the edge that faces it. For example, `head` on a left edge means that nothing may be on its left.
 
 **Card class**:
-A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, the operator cards but `[%]`, or `[get:…]` and `[root]`. A class also has a shortest length, 2U for every class for now, and a pocket reach.
+A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, the operator cards but `[%]`, or `[get(…)]` and `[root]`. A class also has a shortest length, 2U for every class for now, and a pocket reach.
 
 **Connect**:
 A contact between two cards that the grammar lets be neighbours there. It must snap.
@@ -131,7 +148,7 @@ A contact between two cards that the grammar does not let be neighbours there. I
 A contact between two cards that touch in a legal program without being neighbours. It must not repel. A contact can be coexist and forbid at the same time.
 
 **Ungraded**:
-The kind of a contact where a facing edge has the role `free`, which only standalone declarations have (`[import(…)]`, `[extern(…)]`, `[global(…)]`). The grammar demands nothing of it, and reports show it as info.
+The kind of a contact where a facing edge has the role `free`, which only standalone declarations have (`[import(…)]`, `[extern(…)]`, `[global{…}]`). The grammar demands nothing of it, and reports show it as info.
 
 **Priority**:
 How much a contact's demand counts: **must** for connect and coexist; **should**, **nice** or **low** for forbid. A low forbid is reported but costs nothing.
@@ -152,7 +169,7 @@ A connect contact that does not snap, or a coexist contact that repels or is mix
 Said of a magnet arrangement with no must failures.
 
 **Requirement**:
-One must label (connect or coexist) on two sides and their facing edges at one offset, at every pair of card lengths. Example: `[set(x)to] [get(x)] @0: connect` is one requirement. It holds when all 25 of its contacts snap. The search names conflicts in requirements and counts must failures for each one.
+One must label (connect or coexist) on two sides and their facing edges at one offset, at every pair of card lengths. Example: `[set{x}to] [get{x}] @0: connect` is one requirement. It holds when all 25 of its contacts snap. The search names conflicts in requirements and counts must failures for each one.
 _Avoid_: must contact (it is not one contact), must rule (grammar rules are the role-level rules in `rules.yaml`)
 
 **Conflict**:
