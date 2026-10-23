@@ -126,7 +126,7 @@ def main() -> None:
     if not pages:
         print("No sheet markers read. Is the sheet in view and in focus? Try --frames 1 and look at the .jpg.")
     for p in pages:
-        print(f"\n== {PAGES[p]} sheet ==  pass = all {COPIES} copies read in >= {n - max(1, n // 30)}/{n} frames, no misreads")
+        print(f"\n== {PAGES[p]} sheet ==  pass = all {COPIES} copies read in >= {n - n // 30}/{n} frames, no misreads")
         print(f"{'size':>5} {'reads':>9} {'worst copy':>10} {'min margin':>10} {'px across':>9} {'px/cell':>7}  ")
         px_per_mm = []
         for s, size in enumerate(SIZES):
@@ -138,7 +138,7 @@ def main() -> None:
             across = statistics.median(ss) * CORNER_TO_PRINTED if ss else 0
             if ss:
                 px_per_mm.append(across / size)
-            ok = worst >= n - max(1, n // 30) and not misreads
+            ok = worst >= n - n // 30 and not misreads
             print(f"{size:>3}mm {total:>4}/{n * COPIES:<4} {worst:>5}/{n:<4} {min(ms) if ms else 0:>10.0f} "
                   f"{across:>9.1f} {across / 9:>7.2f}  {'PASS' if ok else '-'}")
         if px_per_mm:
