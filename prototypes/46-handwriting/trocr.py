@@ -51,3 +51,4 @@ class TrOCR:
             "encode_s": t1 - t0,
             "decode_s": t2 - t1,
         }
+

@@ -23,11 +23,15 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from pupil_apriltags import Detector
 
+from prep import prepare
 from trocr import TrOCR
 
 HERE = Path(__file__).parent
 MODES = {"16": (4624, 3472), "64": (9248, 6944)}
 CORNERS = np.array([[-1, 1], [1, 1], [1, -1], [-1, -1]]) * 5 / 9 / 2  # detector corners, × tag size, y down
+# What was actually written, where it differs from the sheet (U = 25 mm sheet, 2026-10-25).
+WRITTEN = {1026: "frameCount"}  # sheet said framecount
+NOTES = {1023: "writing runs past the card's right end"}
 CROP_PX_PER_MM = 6  # resample crops to this; TrOCR squashes them to 384×384 anyway
 
 
@@ -113,9 +117,12 @@ def main() -> None:
     ap.add_argument("--models", default="trocr-small-handwritten/int8,trocr-small-handwritten/fp32",
                     help="comma-separated folders under models/")
     ap.add_argument("--threads", type=int, default=4)
+    ap.add_argument("--prep", default="tight", help="raw, contrast, tight or wide (see prep.py)")
     args = ap.parse_args()
 
     cards = {c["id"]: c for c in json.loads((HERE / "cards.json").read_text())}
+    for i, text in WRITTEN.items():
+        cards[i]["text"] = text
     runs = HERE / "runs"
     runs.mkdir(exist_ok=True)
     stem = runs / f"{args.label}-{time.strftime('%Y%m%d-%H%M%S')}"
@@ -149,8 +156,8 @@ def main() -> None:
 
     results = []
     for c in sorted(in_view, key=lambda c: c["id"]):
-        im = crop(img, H[c["page"]], c["write"])
-        r = {"id": c["id"], "u_mm": c["u_mm"], "length_u": c["length_u"], "want": c["text"], "page": c["page"] + 1,
+        im = prepare(crop(img, H[c["page"]], c["write"]), args.prep)
+        r = {"id": c["id"], "u_mm": c["u_mm"], "length_u": c["length_u"], "want": c["text"], "page": c["page"] + 1, "note": NOTES.get(c["id"], ""),
              "px_per_mm": round(px_per_mm(H[c["page"]], *c["tag_center"]), 2), "reads": {}}
         for name, model in models.items():
             out = model.read(im)
