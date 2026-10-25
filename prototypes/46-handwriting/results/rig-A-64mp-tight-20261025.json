@@ -1,0 +1,2800 @@
+{
+ "args": {
+  "label": "A-64",
+  "image": null,
+  "mode": "64",
+  "af": false,
+  "lens": 3.65,
+  "exposure": null,
+  "gain": null,
+  "models": "trocr-small-handwritten/int8,trocr-small-handwritten/fp32",
+  "threads": 4,
+  "prep": "tight"
+ },
+ "results": [
+  {
+   "id": 1000,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "x",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.29,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "x",
+     "min_p": 0.8622365593910217,
+     "encode_s": 0.2528546510002343,
+     "decode_s": 0.03744301799997629,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "x",
+     "min_p": 0.9002617001533508,
+     "encode_s": 0.43680915799996,
+     "decode_s": 0.07623072900059924,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1001,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "X",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.3,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "x",
+     "min_p": 0.7497331500053406,
+     "encode_s": 0.26615300299999944,
+     "decode_s": 0.03053713200006314,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "x",
+     "min_p": 0.8906823992729187,
+     "encode_s": 0.4371371019997241,
+     "decode_s": 0.07517927500066435,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1002,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "i",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.32,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "i",
+     "min_p": 0.621310293674469,
+     "encode_s": 0.26178691099994467,
+     "decode_s": 0.03543677600009687,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "j",
+     "min_p": 0.9076125621795654,
+     "encode_s": 0.4361990200004584,
+     "decode_s": 0.07538194100015971,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1003,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "y",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.34,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "y",
+     "min_p": 0.993990421295166,
+     "encode_s": 0.26545534399974713,
+     "decode_s": 0.04138052200050879,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "y",
+     "min_p": 0.9913678765296936,
+     "encode_s": 0.4340412249994188,
+     "decode_s": 0.08520208099980664,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1004,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "500",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.36,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "500",
+     "min_p": 0.9984684586524963,
+     "encode_s": 0.2694394600002852,
+     "decode_s": 0.048773423999591614,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "500",
+     "min_p": 0.9972308278083801,
+     "encode_s": 0.4619666960006725,
+     "decode_s": 0.08618692499931058,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1005,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "0",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.37,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "o",
+     "min_p": 0.7109535336494446,
+     "encode_s": 0.2619864680000319,
+     "decode_s": 0.04142683699956251,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "0",
+     "min_p": 0.5304079055786133,
+     "encode_s": 0.43497516499974154,
+     "decode_s": 0.08198842300043907,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1006,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "-1",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.4,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "\" I",
+     "min_p": 0.3191680610179901,
+     "encode_s": 0.2680341959994621,
+     "decode_s": 0.05390610399990692,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "\" I",
+     "min_p": 0.2767879366874695,
+     "encode_s": 0.42501749100028974,
+     "decode_s": 0.10730284100009158,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1007,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "0.5",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.41,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "05",
+     "min_p": 0.40669992566108704,
+     "encode_s": 0.26828926899997896,
+     "decode_s": 0.03795320099925448,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "os",
+     "min_p": 0.7784199118614197,
+     "encode_s": 0.42862466599945037,
+     "decode_s": 0.10745480300010968,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    }
+   }
+  },
+  {
+   "id": 1008,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "1 000",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.43,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "looo",
+     "min_p": 0.37857043743133545,
+     "encode_s": 0.2626806879998185,
+     "decode_s": 0.054575525000473135,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "1000",
+     "min_p": 0.5286704301834106,
+     "encode_s": 0.42442387100072665,
+     "decode_s": 0.08033456799967098,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1009,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "oO0",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.46,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "000",
+     "min_p": 0.9325188994407654,
+     "encode_s": 0.26486689200010005,
+     "decode_s": 0.026506815000175266,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "000",
+     "min_p": 0.962235152721405,
+     "encode_s": 0.44138400800056843,
+     "decode_s": 0.08472140199955902,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1010,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "lI1",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.47,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "11.1",
+     "min_p": 0.37777596712112427,
+     "encode_s": 0.26589108900043357,
+     "decode_s": 0.05528224099998624,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "111",
+     "min_p": 0.6202273964881897,
+     "encode_s": 0.42447472599997127,
+     "decode_s": 0.07593458700011979,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1011,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "sS5",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.49,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "ss5",
+     "min_p": 0.3444156050682068,
+     "encode_s": 0.2620533819999764,
+     "decode_s": 0.062386293000599835,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "ss5",
+     "min_p": 0.47385433316230774,
+     "encode_s": 0.42989784899964434,
+     "decode_s": 0.13082686899997498,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1012,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "zZ2",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.52,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "272",
+     "min_p": 0.3423672020435333,
+     "encode_s": 0.2588181880000775,
+     "decode_s": 0.05377901300016674,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "22.2",
+     "min_p": 0.5541590452194214,
+     "encode_s": 0.4281755500005602,
+     "decode_s": 0.1117331399991599,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    }
+   }
+  },
+  {
+   "id": 1013,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "cC",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.53,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "ec",
+     "min_p": 0.463742733001709,
+     "encode_s": 0.265600392000124,
+     "decode_s": 0.056442344000060984,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "e c",
+     "min_p": 0.5465804934501648,
+     "encode_s": 0.4314244510005665,
+     "decode_s": 0.10770447100003366,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1014,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "vV",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.55,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "r v.",
+     "min_p": 0.5893217325210571,
+     "encode_s": 0.27662056099961774,
+     "decode_s": 0.07014033999985259,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "vV",
+     "min_p": 0.6330121159553528,
+     "encode_s": 0.4341961520003679,
+     "decode_s": 0.11332849799964606,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1015,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "wW",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.58,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "ww",
+     "min_p": 0.9656192660331726,
+     "encode_s": 0.27071538800009876,
+     "decode_s": 0.05185910399995919,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "ww",
+     "min_p": 0.9884827733039856,
+     "encode_s": 0.42642727399925207,
+     "decode_s": 0.1153576670003531,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1016,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "kK",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.59,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "k.K.",
+     "min_p": 0.44137847423553467,
+     "encode_s": 0.26566720899973006,
+     "decode_s": 0.08099808400038455,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "k K.K.",
+     "min_p": 0.5511254072189331,
+     "encode_s": 0.42697827199936,
+     "decode_s": 0.1933042030004799,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    }
+   }
+  },
+  {
+   "id": 1017,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "pP",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.61,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "pp",
+     "min_p": 0.6618251800537109,
+     "encode_s": 0.2638601329999801,
+     "decode_s": 0.033655163999355864,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "pp",
+     "min_p": 0.5838778614997864,
+     "encode_s": 0.4313781079999899,
+     "decode_s": 0.0825262569996994,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1018,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "B8",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.64,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "b &",
+     "min_p": 0.4739336669445038,
+     "encode_s": 0.2655783979998887,
+     "decode_s": 0.0503923020005459,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "b8",
+     "min_p": 0.5055167078971863,
+     "encode_s": 0.43153731300026266,
+     "decode_s": 0.10934582999925624,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1019,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "b6",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.65,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "be",
+     "min_p": 0.46146532893180847,
+     "encode_s": 0.2692103879999195,
+     "decode_s": 0.03938874600044073,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "be",
+     "min_p": 0.4443081319332123,
+     "encode_s": 0.4347465270002431,
+     "decode_s": 0.0803180169996267,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1020,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "g9q",
+   "page": 1,
+   "note": "",
+   "px_per_mm": 5.67,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "g9g",
+     "min_p": 0.3684558570384979,
+     "encode_s": 0.2669169820001116,
+     "decode_s": 0.05781364799986477,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "g9g",
+     "min_p": 0.3039015531539917,
+     "encode_s": 0.42690165000021807,
+     "decode_s": 0.13478819299962197,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1021,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "hi",
+   "page": 2,
+   "note": "",
+   "px_per_mm": 5.33,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "hi",
+     "min_p": 0.9393385648727417,
+     "encode_s": 0.26568195699928765,
+     "decode_s": 0.028399245000400697,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "hi",
+     "min_p": 0.9381528496742249,
+     "encode_s": 0.43690295800024614,
+     "decode_s": 0.08209035399977438,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1022,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "score2",
+   "page": 2,
+   "note": "",
+   "px_per_mm": 5.32,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "scotch",
+     "min_p": 0.32983317971229553,
+     "encode_s": 0.26213881999956357,
+     "decode_s": 0.03738241100018058,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "scotez",
+     "min_p": 0.5320298671722412,
+     "encode_s": 0.43556817500029865,
+     "decode_s": 0.1342240320000201,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1023,
+   "u_mm": 25,
+   "length_u": 2,
+   "want": "drawCircle",
+   "page": 2,
+   "note": "writing runs past the card's right end",
+   "px_per_mm": 5.3,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "drawer",
+     "min_p": 0.6157289147377014,
+     "encode_s": 0.2655907179996575,
+     "decode_s": 0.05056887600039772,
+     "exact": false,
+     "nocase": false,
+     "edits": 5
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "drawer",
+     "min_p": 0.7215633392333984,
+     "encode_s": 0.43500986700018984,
+     "decode_s": 0.1193342489996212,
+     "exact": false,
+     "nocase": false,
+     "edits": 5
+    }
+   }
+  },
+  {
+   "id": 1024,
+   "u_mm": 25,
+   "length_u": 3,
+   "want": "drawCircle",
+   "page": 2,
+   "note": "",
+   "px_per_mm": 5.37,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "drawCircle",
+     "min_p": 0.23595738410949707,
+     "encode_s": 0.2738669469999877,
+     "decode_s": 0.06730910700025561,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "drawcircle",
+     "min_p": 0.3388197720050812,
+     "encode_s": 0.4320118019995789,
+     "decode_s": 0.10801771400019788,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1025,
+   "u_mm": 25,
+   "length_u": 3,
+   "want": "frameCount",
+   "page": 2,
+   "note": "",
+   "px_per_mm": 5.34,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "framework",
+     "min_p": 0.5018451809883118,
+     "encode_s": 0.2589908119998654,
+     "decode_s": 0.04134674899978563,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "framework",
+     "min_p": 0.5881978869438171,
+     "encode_s": 0.43323555200004193,
+     "decode_s": 0.08030142699954013,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    }
+   }
+  },
+  {
+   "id": 1026,
+   "u_mm": 25,
+   "length_u": 3,
+   "want": "frameCount",
+   "page": 2,
+   "note": "",
+   "px_per_mm": 5.4,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "framecourt",
+     "min_p": 0.1287301778793335,
+     "encode_s": 0.2568618499999502,
+     "decode_s": 0.05486508100057108,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "framework",
+     "min_p": 0.7648113965988159,
+     "encode_s": 0.42922947599981853,
+     "decode_s": 0.07492415599972446,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    }
+   }
+  },
+  {
+   "id": 1027,
+   "u_mm": 25,
+   "length_u": 3,
+   "want": "hello_world",
+   "page": 2,
+   "note": "",
+   "px_per_mm": 5.37,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "hellaurold",
+     "min_p": 0.40910112857818604,
+     "encode_s": 0.26057220900020184,
+     "decode_s": 0.07104237399926205,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "hell-world",
+     "min_p": 0.5003601312637329,
+     "encode_s": 0.42381980000027397,
+     "decode_s": 0.13498684400019556,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1028,
+   "u_mm": 25,
+   "length_u": 3,
+   "want": "p5.circle",
+   "page": 2,
+   "note": "",
+   "px_per_mm": 5.43,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "pb.cirk",
+     "min_p": 0.3486926555633545,
+     "encode_s": 0.25585532400054944,
+     "decode_s": 0.08601654599988251,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "p.cirek",
+     "min_p": 0.3083714544773102,
+     "encode_s": 0.4285743740001635,
+     "decode_s": 0.1942655940001714,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    }
+   }
+  },
+  {
+   "id": 1029,
+   "u_mm": 25,
+   "length_u": 3,
+   "want": "speedX",
+   "page": 2,
+   "note": "",
+   "px_per_mm": 5.4,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "speed X",
+     "min_p": 0.5930935740470886,
+     "encode_s": 0.2589661330002855,
+     "decode_s": 0.04977129100007005,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "speed X",
+     "min_p": 0.7483258247375488,
+     "encode_s": 0.4277571420007007,
+     "decode_s": 0.11310417400000006,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1030,
+   "u_mm": 25,
+   "length_u": 4,
+   "want": "Welcome_user!",
+   "page": 2,
+   "note": "",
+   "px_per_mm": 5.46,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "Welcome-used",
+     "min_p": 0.5014891624450684,
+     "encode_s": 0.255895584999962,
+     "decode_s": 0.06092832900048961,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "Welcome-user !",
+     "min_p": 0.44493794441223145,
+     "encode_s": 0.42446607900001254,
+     "decode_s": 0.1662702529993112,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1031,
+   "u_mm": 25,
+   "length_u": 4,
+   "want": "isVisible",
+   "page": 2,
+   "note": "",
+   "px_per_mm": 5.49,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "isvisible",
+     "min_p": 0.6893640756607056,
+     "encode_s": 0.2548637250001775,
+     "decode_s": 0.061127326999667275,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "isvisible",
+     "min_p": 0.7068711519241333,
+     "encode_s": 0.43049777200030803,
+     "decode_s": 0.13566865600023448,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1100,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "x",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.24,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "x",
+     "min_p": 0.840818464756012,
+     "encode_s": 0.25776058999963425,
+     "decode_s": 0.04579077000016696,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "x",
+     "min_p": 0.9198833107948303,
+     "encode_s": 0.431790968000314,
+     "decode_s": 0.07358111400026246,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1101,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "X",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.23,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "y",
+     "min_p": 0.9155678153038025,
+     "encode_s": 0.2610801379996701,
+     "decode_s": 0.05056380400037597,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "y",
+     "min_p": 0.79483962059021,
+     "encode_s": 0.44062124799984304,
+     "decode_s": 0.08229815399954532,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1102,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "i",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.28,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "i",
+     "min_p": 0.9789488911628723,
+     "encode_s": 0.26375537700005225,
+     "decode_s": 0.049004336000507465,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "i",
+     "min_p": 0.9593214392662048,
+     "encode_s": 0.4321235790002902,
+     "decode_s": 0.08522125899980892,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1103,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "y",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.27,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "y",
+     "min_p": 0.9765482544898987,
+     "encode_s": 0.2686616339997272,
+     "decode_s": 0.03907143600008567,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "y",
+     "min_p": 0.9808955788612366,
+     "encode_s": 0.4429531579999093,
+     "decode_s": 0.0811536260007415,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1104,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "500",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.31,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "500",
+     "min_p": 0.9956374764442444,
+     "encode_s": 0.2635727510005381,
+     "decode_s": 0.03129881599943474,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "500",
+     "min_p": 0.996435284614563,
+     "encode_s": 0.43675989599978493,
+     "decode_s": 0.08009283899991715,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1105,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "0",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.31,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "0",
+     "min_p": 0.9378044009208679,
+     "encode_s": 0.2631679220003207,
+     "decode_s": 0.030197713999768894,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "0",
+     "min_p": 0.8014531135559082,
+     "encode_s": 0.4623356869997224,
+     "decode_s": 0.07584661500004586,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1106,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "-1",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.35,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "- I",
+     "min_p": 0.7610305547714233,
+     "encode_s": 0.2619982469996103,
+     "decode_s": 0.0588299780001762,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "- I",
+     "min_p": 0.4772047698497772,
+     "encode_s": 0.42953849700006685,
+     "decode_s": 0.11120932399990124,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1107,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "0.5",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.35,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "0's",
+     "min_p": 0.4159764349460602,
+     "encode_s": 0.26611315900026966,
+     "decode_s": 0.06690848499965796,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "o.s",
+     "min_p": 0.7761254906654358,
+     "encode_s": 0.4297937740002453,
+     "decode_s": 0.1434960400001728,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1108,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "1 000",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.39,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "( 000",
+     "min_p": 0.2751886248588562,
+     "encode_s": 0.26288290899992717,
+     "decode_s": 0.048707914000260644,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "1000",
+     "min_p": 0.9218127727508545,
+     "encode_s": 0.43925953100006154,
+     "decode_s": 0.08125786799973866,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1109,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "oO0",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.39,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "00 0",
+     "min_p": 0.4290215075016022,
+     "encode_s": 0.2598636200000328,
+     "decode_s": 0.05044413999985409,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "00",
+     "min_p": 0.6052924394607544,
+     "encode_s": 0.43282288199952745,
+     "decode_s": 0.08428171400009887,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1110,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "lI1",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.43,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "11 1",
+     "min_p": 0.4968835711479187,
+     "encode_s": 0.2584667070004798,
+     "decode_s": 0.05836059400007798,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "11 1",
+     "min_p": 0.35769176483154297,
+     "encode_s": 0.4282519219996175,
+     "decode_s": 0.10397745899990696,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1111,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "sS5",
+   "page": 3,
+   "note": "",
+   "px_per_mm": 5.43,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "sc5",
+     "min_p": 0.28032660484313965,
+     "encode_s": 0.25995317800061457,
+     "decode_s": 0.057554840999728185,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "s35",
+     "min_p": 0.326768696308136,
+     "encode_s": 0.4279486479999832,
+     "decode_s": 0.10730022900042968,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1112,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "zZ2",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.24,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "22.2",
+     "min_p": 0.6744076013565063,
+     "encode_s": 0.259829087000071,
+     "decode_s": 0.05416327700004331,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "22.2",
+     "min_p": 0.9748480916023254,
+     "encode_s": 0.43257005699979345,
+     "decode_s": 0.10315750400059187,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    }
+   }
+  },
+  {
+   "id": 1113,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "cC",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.28,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "e C",
+     "min_p": 0.6853155493736267,
+     "encode_s": 0.258721782000066,
+     "decode_s": 0.057007643000360986,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "e C",
+     "min_p": 0.8907204270362854,
+     "encode_s": 0.43072625899912964,
+     "decode_s": 0.11397512000075949,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1114,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "vV",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.27,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "vV",
+     "min_p": 0.6396096348762512,
+     "encode_s": 0.2686674229998971,
+     "decode_s": 0.05716710500018962,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "v V",
+     "min_p": 0.7945948243141174,
+     "encode_s": 0.42915453399928083,
+     "decode_s": 0.1032777630007331,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1115,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "wW",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.31,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "nw",
+     "min_p": 0.8494290709495544,
+     "encode_s": 0.25999021799998445,
+     "decode_s": 0.05331308099994203,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "nw",
+     "min_p": 0.9204229712486267,
+     "encode_s": 0.4322033990001728,
+     "decode_s": 0.10799337300068146,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1116,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "kK",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.3,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "k K.K.",
+     "min_p": 0.6420838832855225,
+     "encode_s": 0.2603213090005738,
+     "decode_s": 0.08836334999978135,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "k K.K.",
+     "min_p": 0.6302209496498108,
+     "encode_s": 0.42361071100003755,
+     "decode_s": 0.19501029000002745,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    }
+   }
+  },
+  {
+   "id": 1117,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "pP",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.34,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "p P",
+     "min_p": 0.4701595902442932,
+     "encode_s": 0.26386679999995977,
+     "decode_s": 0.05609050300063245,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "p P",
+     "min_p": 0.6846796274185181,
+     "encode_s": 0.42842528500023036,
+     "decode_s": 0.10520110099969315,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1118,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "B8",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.34,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "b &",
+     "min_p": 0.5021286010742188,
+     "encode_s": 0.2695384769995144,
+     "decode_s": 0.056279168000401114,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "b &",
+     "min_p": 0.34493157267570496,
+     "encode_s": 0.4303745289998915,
+     "decode_s": 0.11035552300018026,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1119,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "b6",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.37,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "b 6",
+     "min_p": 0.4500393271446228,
+     "encode_s": 0.26207450199945015,
+     "decode_s": 0.043666180000400345,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "b 6",
+     "min_p": 0.5575529932975769,
+     "encode_s": 0.44006097099918406,
+     "decode_s": 0.11271220700018603,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1120,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "g9q",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.37,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "gp.g.",
+     "min_p": 0.38841697573661804,
+     "encode_s": 0.26148617600028956,
+     "decode_s": 0.08194901399929222,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "g9g",
+     "min_p": 0.6286098957061768,
+     "encode_s": 0.42929759900016506,
+     "decode_s": 0.13010043499980384,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1121,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "hi",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.4,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "li",
+     "min_p": 0.6715580821037292,
+     "encode_s": 0.26168121099999553,
+     "decode_s": 0.03670140400026867,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "li",
+     "min_p": 0.9594109654426575,
+     "encode_s": 0.4331907530004173,
+     "decode_s": 0.07623184000021865,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1122,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "score2",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.4,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "score 2",
+     "min_p": 0.6433179378509521,
+     "encode_s": 0.26288875800037204,
+     "decode_s": 0.05338952599959157,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "score 2",
+     "min_p": 0.4645474851131439,
+     "encode_s": 0.4246693810000579,
+     "decode_s": 0.11045191199991677,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1123,
+   "u_mm": 30,
+   "length_u": 2,
+   "want": "drawCircle",
+   "page": 4,
+   "note": "",
+   "px_per_mm": 5.44,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "drawkick",
+     "min_p": 0.32392793893814087,
+     "encode_s": 0.26060751899967727,
+     "decode_s": 0.051223118000052636,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "dromkinde",
+     "min_p": 0.13510067760944366,
+     "encode_s": 0.4417351880001661,
+     "decode_s": 0.17884072400011064,
+     "exact": false,
+     "nocase": false,
+     "edits": 6
+    }
+   }
+  },
+  {
+   "id": 1124,
+   "u_mm": 30,
+   "length_u": 3,
+   "want": "drawCircle",
+   "page": 5,
+   "note": "",
+   "px_per_mm": 5.31,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "drowcircle",
+     "min_p": 0.2979896664619446,
+     "encode_s": 0.26420556399989437,
+     "decode_s": 0.06815531299980648,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "drowcircle",
+     "min_p": 0.4490269422531128,
+     "encode_s": 0.43078229799994006,
+     "decode_s": 0.13196712599983584,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1125,
+   "u_mm": 30,
+   "length_u": 3,
+   "want": "frameCount",
+   "page": 5,
+   "note": "",
+   "px_per_mm": 5.3,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "frame Count",
+     "min_p": 0.7357339859008789,
+     "encode_s": 0.25278238099963346,
+     "decode_s": 0.057931211999857624,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "frame Count",
+     "min_p": 0.4633541405200958,
+     "encode_s": 0.4278058050003892,
+     "decode_s": 0.1001347760002318,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1126,
+   "u_mm": 30,
+   "length_u": 3,
+   "want": "framecount",
+   "page": 5,
+   "note": "",
+   "px_per_mm": 5.36,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "framework",
+     "min_p": 0.9160246253013611,
+     "encode_s": 0.25232470099945203,
+     "decode_s": 0.03731295499983389,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "framework",
+     "min_p": 0.9119436740875244,
+     "encode_s": 0.4337613510006122,
+     "decode_s": 0.08338896799978102,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    }
+   }
+  },
+  {
+   "id": 1127,
+   "u_mm": 30,
+   "length_u": 3,
+   "want": "hello_world",
+   "page": 5,
+   "note": "",
+   "px_per_mm": 5.35,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "hella world",
+     "min_p": 0.23941411077976227,
+     "encode_s": 0.25612459700005274,
+     "decode_s": 0.06408138499955385,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "hella world",
+     "min_p": 0.6463131308555603,
+     "encode_s": 0.4267046869999831,
+     "decode_s": 0.13455325500035542,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1128,
+   "u_mm": 30,
+   "length_u": 3,
+   "want": "p5.circle",
+   "page": 5,
+   "note": "",
+   "px_per_mm": 5.41,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "psicrick",
+     "min_p": 0.28686419129371643,
+     "encode_s": 0.2546732759992665,
+     "decode_s": 0.07087616300032096,
+     "exact": false,
+     "nocase": false,
+     "edits": 6
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "ps. circle",
+     "min_p": 0.532240092754364,
+     "encode_s": 0.425276276000659,
+     "decode_s": 0.16642269899966777,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1129,
+   "u_mm": 30,
+   "length_u": 3,
+   "want": "speedX",
+   "page": 5,
+   "note": "",
+   "px_per_mm": 5.4,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "speed X",
+     "min_p": 0.6885335445404053,
+     "encode_s": 0.2620561430003363,
+     "decode_s": 0.06324272599977121,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "speed X",
+     "min_p": 0.7007186412811279,
+     "encode_s": 0.4318001869996806,
+     "decode_s": 0.12509990700073104,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1130,
+   "u_mm": 30,
+   "length_u": 4,
+   "want": "Welcome_user!",
+   "page": 5,
+   "note": "",
+   "px_per_mm": 5.46,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "Welcome . user !",
+     "min_p": 0.7981856465339661,
+     "encode_s": 0.2528328299995337,
+     "decode_s": 0.07312692400046217,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "Welcome . user !",
+     "min_p": 0.7214455604553223,
+     "encode_s": 0.43899387100009335,
+     "decode_s": 0.15788191899991944,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1131,
+   "u_mm": 30,
+   "length_u": 4,
+   "want": "isVisible",
+   "page": 5,
+   "note": "",
+   "px_per_mm": 5.51,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "is visible",
+     "min_p": 0.8160459399223328,
+     "encode_s": 0.25071825600025477,
+     "decode_s": 0.05039342299915006,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "is visible .",
+     "min_p": 0.6543870568275452,
+     "encode_s": 0.4298088559999087,
+     "decode_s": 0.13116754400016362,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1200,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "x",
+   "page": 6,
+   "note": "",
+   "px_per_mm": 6.04,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "x",
+     "min_p": 0.859290599822998,
+     "encode_s": 0.2552480350004771,
+     "decode_s": 0.03211542299959547,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "x",
+     "min_p": 0.873562753200531,
+     "encode_s": 0.43265985200014256,
+     "decode_s": 0.07663393299935706,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1201,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "X",
+   "page": 6,
+   "note": "",
+   "px_per_mm": 5.99,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "x",
+     "min_p": 0.6660028696060181,
+     "encode_s": 0.2638745399999607,
+     "decode_s": 0.02940135399967403,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "x",
+     "min_p": 0.8462726473808289,
+     "encode_s": 0.44322513899987825,
+     "decode_s": 0.07396000999960961,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1202,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "i",
+   "page": 6,
+   "note": "",
+   "px_per_mm": 6.12,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "i",
+     "min_p": 0.8554842472076416,
+     "encode_s": 0.25825762400017993,
+     "decode_s": 0.03586931999961962,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "i",
+     "min_p": 0.7115561366081238,
+     "encode_s": 0.4365848420002294,
+     "decode_s": 0.07879236100052367,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1203,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "y",
+   "page": 6,
+   "note": "",
+   "px_per_mm": 6.07,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "y",
+     "min_p": 0.994417667388916,
+     "encode_s": 0.26132493400018575,
+     "decode_s": 0.039609862999895995,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "y",
+     "min_p": 0.9697275757789612,
+     "encode_s": 0.43572416599999997,
+     "decode_s": 0.082201387999703,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1204,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "500",
+   "page": 6,
+   "note": "",
+   "px_per_mm": 6.2,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "500",
+     "min_p": 0.9895477294921875,
+     "encode_s": 0.2601438520005104,
+     "decode_s": 0.03569117299957725,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "500",
+     "min_p": 0.997489333152771,
+     "encode_s": 0.43287961700025335,
+     "decode_s": 0.07632863900016673,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1205,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "0",
+   "page": 6,
+   "note": "",
+   "px_per_mm": 6.15,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "0",
+     "min_p": 0.7739948034286499,
+     "encode_s": 0.25890862100004597,
+     "decode_s": 0.046655176999593095,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "0",
+     "min_p": 0.568562388420105,
+     "encode_s": 0.4248420730000362,
+     "decode_s": 0.08095563999995647,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1206,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "-1",
+   "page": 6,
+   "note": "",
+   "px_per_mm": 6.28,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "- 1",
+     "min_p": 0.37065455317497253,
+     "encode_s": 0.2593387299993992,
+     "decode_s": 0.05602693500077294,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "0 1",
+     "min_p": 0.43049687147140503,
+     "encode_s": 0.4286394319997271,
+     "decode_s": 0.10715728000013769,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1207,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "0.5",
+   "page": 6,
+   "note": "",
+   "px_per_mm": 6.23,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "0 .",
+     "min_p": 0.19382981956005096,
+     "encode_s": 0.2569366030002129,
+     "decode_s": 0.05619913699956669,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "o.s",
+     "min_p": 0.6540478467941284,
+     "encode_s": 0.42589680799937923,
+     "decode_s": 0.1342668560000675,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1208,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "1 000",
+   "page": 6,
+   "note": "",
+   "px_per_mm": 6.37,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "1000",
+     "min_p": 0.5892807841300964,
+     "encode_s": 0.2571499910000057,
+     "decode_s": 0.03389713300020958,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "1000",
+     "min_p": 0.9087797999382019,
+     "encode_s": 0.43174703899967426,
+     "decode_s": 0.07969448499989085,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1209,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "oO0",
+   "page": 6,
+   "note": "",
+   "px_per_mm": 6.32,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "000",
+     "min_p": 0.9767177700996399,
+     "encode_s": 0.2584442039997157,
+     "decode_s": 0.032854586000212294,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "000",
+     "min_p": 0.7451158761978149,
+     "encode_s": 0.4373804589995416,
+     "decode_s": 0.07944522700017842,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1210,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "lI1",
+   "page": 7,
+   "note": "",
+   "px_per_mm": 5.89,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "11 1",
+     "min_p": 0.7402728199958801,
+     "encode_s": 0.25861403700037044,
+     "decode_s": 0.054719908999686595,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "11 1",
+     "min_p": 0.6906341910362244,
+     "encode_s": 0.4267441760002839,
+     "decode_s": 0.10918139499972312,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1211,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "sS5",
+   "page": 7,
+   "note": "",
+   "px_per_mm": 5.91,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "s.s.",
+     "min_p": 0.26955869793891907,
+     "encode_s": 0.25934488300026715,
+     "decode_s": 0.07574320300045656,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "sss .",
+     "min_p": 0.6872905492782593,
+     "encode_s": 0.42874436599959154,
+     "decode_s": 0.16073259000040707,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    }
+   }
+  },
+  {
+   "id": 1212,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "zZ2",
+   "page": 7,
+   "note": "",
+   "px_per_mm": 5.95,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "27.2",
+     "min_p": 0.6891548037528992,
+     "encode_s": 0.2562465760001942,
+     "decode_s": 0.05864834099975269,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "22.2",
+     "min_p": 0.9236899018287659,
+     "encode_s": 0.427301102000456,
+     "decode_s": 0.11125921199982258,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    }
+   }
+  },
+  {
+   "id": 1213,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "cC",
+   "page": 7,
+   "note": "",
+   "px_per_mm": 5.97,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "cc",
+     "min_p": 0.664361834526062,
+     "encode_s": 0.25530915899980755,
+     "decode_s": 0.056541524999374815,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "cc",
+     "min_p": 0.4624212980270386,
+     "encode_s": 0.42995482299920695,
+     "decode_s": 0.11042179400010355,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1214,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "vV",
+   "page": 7,
+   "note": "",
+   "px_per_mm": 6.01,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "vV",
+     "min_p": 0.714873194694519,
+     "encode_s": 0.2588448540000172,
+     "decode_s": 0.05413595099980739,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "vV",
+     "min_p": 0.806066632270813,
+     "encode_s": 0.42470031100037886,
+     "decode_s": 0.11021344399978261,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1215,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "wW",
+   "page": 7,
+   "note": "",
+   "px_per_mm": 6.03,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "ww",
+     "min_p": 0.9692981839179993,
+     "encode_s": 0.25587110099968413,
+     "decode_s": 0.05619395400026406,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "ww",
+     "min_p": 0.9475801587104797,
+     "encode_s": 0.42693890600003215,
+     "decode_s": 0.10873456699937378,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1216,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "kK",
+   "page": 7,
+   "note": "",
+   "px_per_mm": 6.08,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "k K.K.",
+     "min_p": 0.4135805368423462,
+     "encode_s": 0.25647617199956585,
+     "decode_s": 0.09016840200001752,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "k K.K.",
+     "min_p": 0.5234733819961548,
+     "encode_s": 0.42638487499971234,
+     "decode_s": 0.19080522100011876,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    }
+   }
+  },
+  {
+   "id": 1217,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "pP",
+   "page": 7,
+   "note": "",
+   "px_per_mm": 6.09,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "pp",
+     "min_p": 0.5908765196800232,
+     "encode_s": 0.2570021130004534,
+     "decode_s": 0.03978843799995957,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "pp",
+     "min_p": 0.678112804889679,
+     "encode_s": 0.43669677500020043,
+     "decode_s": 0.07976598699951865,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1218,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "B8",
+   "page": 7,
+   "note": "",
+   "px_per_mm": 6.14,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "bs",
+     "min_p": 0.8445336818695068,
+     "encode_s": 0.2570841509996171,
+     "decode_s": 0.05442278400005307,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "bs",
+     "min_p": 0.9056147336959839,
+     "encode_s": 0.42629171299995505,
+     "decode_s": 0.10051130200008629,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1219,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "b6",
+   "page": 7,
+   "note": "",
+   "px_per_mm": 6.15,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "bb",
+     "min_p": 0.5176600217819214,
+     "encode_s": 0.25931278100051713,
+     "decode_s": 0.05747811199944408,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "bb",
+     "min_p": 0.414050817489624,
+     "encode_s": 0.4254668510002375,
+     "decode_s": 0.11015807599960681,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1220,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "g9q",
+   "page": 8,
+   "note": "",
+   "px_per_mm": 5.87,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "99 q",
+     "min_p": 0.4576950967311859,
+     "encode_s": 0.26025497800037556,
+     "decode_s": 0.04909923400009575,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "99 9",
+     "min_p": 0.565110981464386,
+     "encode_s": 0.42867301200021757,
+     "decode_s": 0.10455471400018723,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1221,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "hi",
+   "page": 8,
+   "note": "",
+   "px_per_mm": 5.85,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "hi",
+     "min_p": 0.9475377798080444,
+     "encode_s": 0.2578436089997922,
+     "decode_s": 0.043285003999699256,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "hi",
+     "min_p": 0.9596066474914551,
+     "encode_s": 0.4292228799995428,
+     "decode_s": 0.07608916600020166,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1222,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "score2",
+   "page": 8,
+   "note": "",
+   "px_per_mm": 5.94,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "score 2",
+     "min_p": 0.9437530040740967,
+     "encode_s": 0.2580769979995239,
+     "decode_s": 0.05641056500007835,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "score 2",
+     "min_p": 0.987692654132843,
+     "encode_s": 0.4276455610006451,
+     "decode_s": 0.11151112199968338,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1223,
+   "u_mm": 35,
+   "length_u": 2,
+   "want": "drawCircle",
+   "page": 8,
+   "note": "",
+   "px_per_mm": 5.93,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "chronicle",
+     "min_p": 0.34391218423843384,
+     "encode_s": 0.25825386799988337,
+     "decode_s": 0.03441109300001699,
+     "exact": false,
+     "nocase": false,
+     "edits": 6
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "chronicle",
+     "min_p": 0.27605071663856506,
+     "encode_s": 0.4334037200005696,
+     "decode_s": 0.07547741199960001,
+     "exact": false,
+     "nocase": false,
+     "edits": 6
+    }
+   }
+  },
+  {
+   "id": 1224,
+   "u_mm": 35,
+   "length_u": 3,
+   "want": "drawCircle",
+   "page": 8,
+   "note": "",
+   "px_per_mm": 6.02,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "dramatic",
+     "min_p": 0.2501373589038849,
+     "encode_s": 0.25236999100070534,
+     "decode_s": 0.043223725999268936,
+     "exact": false,
+     "nocase": false,
+     "edits": 6
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "drawcircle",
+     "min_p": 0.5703214406967163,
+     "encode_s": 0.43037154200010264,
+     "decode_s": 0.11300298100013606,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1225,
+   "u_mm": 35,
+   "length_u": 3,
+   "want": "frameCount",
+   "page": 8,
+   "note": "",
+   "px_per_mm": 6.09,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "frame court",
+     "min_p": 0.2918977737426758,
+     "encode_s": 0.2514626100000896,
+     "decode_s": 0.0552109449999989,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "framecourt",
+     "min_p": 0.6630226373672485,
+     "encode_s": 0.428163542999755,
+     "decode_s": 0.10921434500050964,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1226,
+   "u_mm": 35,
+   "length_u": 3,
+   "want": "framecount",
+   "page": 8,
+   "note": "",
+   "px_per_mm": 6.17,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "framework",
+     "min_p": 0.4363689720630646,
+     "encode_s": 0.25063861699982226,
+     "decode_s": 0.033802896000452165,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "framecourt",
+     "min_p": 0.4752569794654846,
+     "encode_s": 0.43100154100011423,
+     "decode_s": 0.10360514999956649,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1227,
+   "u_mm": 35,
+   "length_u": 3,
+   "want": "hello_world",
+   "page": 9,
+   "note": "",
+   "px_per_mm": 5.86,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "hello-world",
+     "min_p": 0.615913987159729,
+     "encode_s": 0.2501336400000582,
+     "decode_s": 0.06582939799955057,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "hello-world",
+     "min_p": 0.6469263434410095,
+     "encode_s": 0.4288178010001502,
+     "decode_s": 0.13115492900033132,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    }
+   }
+  },
+  {
+   "id": 1228,
+   "u_mm": 35,
+   "length_u": 3,
+   "want": "p5.circle",
+   "page": 9,
+   "note": "",
+   "px_per_mm": 5.93,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "psicirde",
+     "min_p": 0.3626478910446167,
+     "encode_s": 0.25089220900008513,
+     "decode_s": 0.07753328600028908,
+     "exact": false,
+     "nocase": false,
+     "edits": 4
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "psicicle",
+     "min_p": 0.4039514660835266,
+     "encode_s": 0.4269094849996691,
+     "decode_s": 0.13596279900048103,
+     "exact": false,
+     "nocase": false,
+     "edits": 3
+    }
+   }
+  },
+  {
+   "id": 1229,
+   "u_mm": 35,
+   "length_u": 3,
+   "want": "speedX",
+   "page": 9,
+   "note": "",
+   "px_per_mm": 5.99,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "speed X",
+     "min_p": 0.7056574821472168,
+     "encode_s": 0.2501211239996337,
+     "decode_s": 0.05040081800052576,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "speed X",
+     "min_p": 0.5678316950798035,
+     "encode_s": 0.42481389100066735,
+     "decode_s": 0.1044048859994291,
+     "exact": true,
+     "nocase": true,
+     "edits": 0
+    }
+   }
+  },
+  {
+   "id": 1230,
+   "u_mm": 35,
+   "length_u": 4,
+   "want": "Welcome_user!",
+   "page": 9,
+   "note": "",
+   "px_per_mm": 6.06,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "Welcome-user !",
+     "min_p": 0.5261534452438354,
+     "encode_s": 0.25063602899990656,
+     "decode_s": 0.07723050999993575,
+     "exact": false,
+     "nocase": false,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "welcome - user !",
+     "min_p": 0.47465789318084717,
+     "encode_s": 0.4274595380002211,
+     "decode_s": 0.17011213800014957,
+     "exact": false,
+     "nocase": false,
+     "edits": 2
+    }
+   }
+  },
+  {
+   "id": 1231,
+   "u_mm": 35,
+   "length_u": 4,
+   "want": "isVisible",
+   "page": 9,
+   "note": "",
+   "px_per_mm": 6.13,
+   "reads": {
+    "trocr-small-handwritten/int8": {
+     "text": "is visible",
+     "min_p": 0.9941500425338745,
+     "encode_s": 0.2504903649996777,
+     "decode_s": 0.053283110000847955,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    },
+    "trocr-small-handwritten/fp32": {
+     "text": "is visible",
+     "min_p": 0.9920830726623535,
+     "encode_s": 0.42627823499969963,
+     "decode_s": 0.1112708870005008,
+     "exact": false,
+     "nocase": true,
+     "edits": 1
+    }
+   }
+  }
+ ]
+}
