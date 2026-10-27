@@ -14,8 +14,8 @@ TOP_BOTTOM_EDGES = ("top", "bottom")
 LEFT_RIGHT_EDGES = ("left", "right")
 EDGES = TOP_BOTTOM_EDGES + LEFT_RIGHT_EDGES
 # Where a pocket can sit within one 1U cell, in U from the cell's start.
-# Every cell has the same positions; a left/right edge is one cell, measured
-# from the top edge.
+# Every cell has the same positions. A left/right edge is one cell, and a
+# pocket's position there is its height from the top edge.
 POSITIONS = (Fraction(1, 4), Fraction(1, 2), Fraction(3, 4))
 
 Interaction = Literal["attract", "repel", "nothing"]
@@ -178,7 +178,7 @@ def positions(reach: int) -> tuple[Fraction, ...]:
 
 
 def on_grid(at: Fraction) -> bool:
-    """Whether `at` is a position in its cell."""
+    """Whether `at` is a position in its cell (never on a cell boundary)."""
     return at % 1 in POSITIONS
 
 
