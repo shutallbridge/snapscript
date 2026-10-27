@@ -1,0 +1,526 @@
+{
+ "args": {
+  "crops": "runs/A-16-20261025-233100-crops",
+  "models": "flash38",
+  "preps": "raw",
+  "prompts": "kind",
+  "label": "flash38-latency1",
+  "limit": 24,
+  "parallel": 1,
+  "report": null
+ },
+ "models": {
+  "gemma": [
+   "google/gemma-4-31b-it",
+   "deepinfra/fp8",
+   {
+    "enabled": false
+   }
+  ],
+  "glm": [
+   "z-ai/glm-5.3-flash",
+   "fireworks",
+   {
+    "effort": "minimal"
+   }
+  ],
+  "qwen": [
+   "qwen/qwen3.7-flash",
+   "alibaba",
+   {
+    "enabled": false
+   }
+  ],
+  "flash-lite": [
+   "google/gemini-3.5-flash-lite",
+   "google-ai-studio",
+   {
+    "effort": "minimal"
+   }
+  ],
+  "flash": [
+   "google/gemini-3.6-flash",
+   "google-ai-studio",
+   {
+    "effort": "minimal"
+   }
+  ],
+  "flash38": [
+   "google/gemini-3.8-flash",
+   "google-ai-studio",
+   {
+    "effort": "minimal"
+   }
+  ],
+  "haiku": [
+   "anthropic/claude-haiku-5.5",
+   "anthropic",
+   {
+    "enabled": false
+   }
+  ]
+ },
+ "cards": [
+  {
+   "id": 1000,
+   "want": "x",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1001,
+   "want": "X",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1002,
+   "want": "i",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1003,
+   "want": "y",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1004,
+   "want": "500",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1005,
+   "want": "0",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1006,
+   "want": "-1",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1007,
+   "want": "0.5",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1008,
+   "want": "1 000",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1009,
+   "want": "oO0",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1010,
+   "want": "lI1",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1011,
+   "want": "sS5",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1012,
+   "want": "zZ2",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1013,
+   "want": "cC",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1014,
+   "want": "vV",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1015,
+   "want": "wW",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1016,
+   "want": "kK",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1017,
+   "want": "pP",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1018,
+   "want": "B8",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1019,
+   "want": "b6",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1020,
+   "want": "g9q",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1021,
+   "want": "hi",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1022,
+   "want": "score2",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1023,
+   "want": "drawCircle",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": -250,
+   "want": "",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  }
+ ],
+ "results": {
+  "flash38|raw|kind": {
+   "1000": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 4.365,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 112,
+    "cost": 0.0013665,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1001": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 4.994,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 186,
+    "cost": 0.001644,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1002": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 3.983,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 34,
+    "cost": 0.001074,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1003": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 5.136,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 263,
+    "cost": 0.00192525,
+    "text": "",
+    "unreadable": true,
+    "verdict": "read error",
+    "case_ok": false
+   },
+   "1004": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 3.914,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 64,
+    "cost": 0.00117675,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1005": {
+    "raw": "{\"text\":\"0\",\"unreadable\":false}",
+    "secs": 3.483,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 63,
+    "cost": 0.001158,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1006": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 3.392,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 39,
+    "cost": 0.0010755,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1007": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 3.786,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 50,
+    "cost": 0.00112425,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1008": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 3.254,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 38,
+    "cost": 0.001083,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1009": {
+    "raw": "{\"text\": \".00\", \"unreadable\": false}",
+    "secs": 6.853,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 449,
+    "cost": 0.002634,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1010": {
+    "raw": "{\"text\": \"ll1\", \"unreadable\": false}",
+    "secs": 9.771,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 626,
+    "cost": 0.00329775,
+    "text": "ll1",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1011": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 3.976,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 190,
+    "cost": 0.0016665,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1012": {
+    "raw": "{\"text\": \"zZ2\", \"unreadable\": false}",
+    "secs": 5.424,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 300,
+    "cost": 0.002079,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1013": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.607,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 37,
+    "cost": 0.00108525,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1014": {
+    "raw": "{\"text\": \"vV\", \"unreadable\": false}",
+    "secs": 4.073,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 69,
+    "cost": 0.001209,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1015": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 4.664,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 79,
+    "cost": 0.0012465,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1016": {
+    "raw": "{\"text\": \"kk\", \"unreadable\": false}",
+    "secs": 9.593,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.00381525,
+    "text": "kk",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1017": {
+    "raw": "{\"text\": \"pP\", \"unreadable\": false}",
+    "secs": 4.711,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 225,
+    "cost": 0.001794,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1018": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 3.424,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 94,
+    "cost": 0.00130275,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1019": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 3.665,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 69,
+    "cost": 0.001209,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1020": {
+    "raw": "{\"text\": \"g9q\", \"unreadable\": false}",
+    "secs": 11.622,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.003819,
+    "text": "g9q",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1021": {
+    "raw": "{\"text\":\"hi\",\"unreadable\":false}",
+    "secs": 4.123,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 66,
+    "cost": 0.0011685,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1022": {
+    "raw": "{\"text\": \"Scale 2\", \"unreadable\": false}",
+    "secs": 10.471,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 767,
+    "cost": 0.00383025,
+    "text": "Scale 2",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "1023": {
+    "raw": "{\"text\": \"drawCir\", \"unreadable\": false}",
+    "secs": 9.969,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 744,
+    "cost": 0.00374025,
+    "text": "drawCir",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "-250": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.568,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 58,
+    "cost": 0.0011565,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   }
+  }
+ }
+}

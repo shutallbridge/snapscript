@@ -45,6 +45,7 @@ MODELS = {
     "qwen": ("qwen/qwen3.7-flash", "alibaba", {"enabled": False}),
     "flash-lite": ("google/gemini-3.5-flash-lite", "google-ai-studio", {"effort": "minimal"}),
     "flash": ("google/gemini-3.6-flash", "google-ai-studio", {"effort": "minimal"}),  # thinking can't be fully turned off
+    "flash38": ("google/gemini-3.8-flash", "google-ai-studio", {"effort": "minimal"}),
     "haiku": ("anthropic/claude-haiku-5.5", "anthropic", {"enabled": False}),
 }
 NO_SCHEMA = {"qwen"}  # host has no structured outputs: ask for JSON in the prompt and parse it

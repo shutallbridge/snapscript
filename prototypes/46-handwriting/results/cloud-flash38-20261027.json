@@ -1,0 +1,5059 @@
+{
+ "args": {
+  "crops": "runs/A-16-20261025-233100-crops",
+  "models": "flash38",
+  "preps": "raw,clean",
+  "prompts": "plain,kind",
+  "label": "flash38",
+  "limit": null,
+  "parallel": 32,
+  "report": null
+ },
+ "models": {
+  "gemma": [
+   "google/gemma-4-31b-it",
+   "deepinfra/fp8",
+   {
+    "enabled": false
+   }
+  ],
+  "glm": [
+   "z-ai/glm-5.3-flash",
+   "fireworks",
+   {
+    "effort": "minimal"
+   }
+  ],
+  "qwen": [
+   "qwen/qwen3.7-flash",
+   "alibaba",
+   {
+    "enabled": false
+   }
+  ],
+  "flash-lite": [
+   "google/gemini-3.5-flash-lite",
+   "google-ai-studio",
+   {
+    "effort": "minimal"
+   }
+  ],
+  "flash": [
+   "google/gemini-3.6-flash",
+   "google-ai-studio",
+   {
+    "effort": "minimal"
+   }
+  ],
+  "flash38": [
+   "google/gemini-3.8-flash",
+   "google-ai-studio",
+   {
+    "effort": "minimal"
+   }
+  ],
+  "haiku": [
+   "anthropic/claude-haiku-5.5",
+   "anthropic",
+   {
+    "enabled": false
+   }
+  ]
+ },
+ "cards": [
+  {
+   "id": 1000,
+   "want": "x",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1001,
+   "want": "X",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1002,
+   "want": "i",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1003,
+   "want": "y",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1004,
+   "want": "500",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1005,
+   "want": "0",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1006,
+   "want": "-1",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1007,
+   "want": "0.5",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1008,
+   "want": "1 000",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1009,
+   "want": "oO0",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1010,
+   "want": "lI1",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1011,
+   "want": "sS5",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1012,
+   "want": "zZ2",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1013,
+   "want": "cC",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1014,
+   "want": "vV",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1015,
+   "want": "wW",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1016,
+   "want": "kK",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1017,
+   "want": "pP",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1018,
+   "want": "B8",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1019,
+   "want": "b6",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1020,
+   "want": "g9q",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1021,
+   "want": "hi",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1022,
+   "want": "score2",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1023,
+   "want": "drawCircle",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1024,
+   "want": "drawCircle",
+   "u_mm": 25,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1025,
+   "want": "frameCount",
+   "u_mm": 25,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1026,
+   "want": "frameCount",
+   "u_mm": 25,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1027,
+   "want": "hello_world",
+   "u_mm": 25,
+   "length_u": 3,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1028,
+   "want": "p5.circle",
+   "u_mm": 25,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1029,
+   "want": "speedX",
+   "u_mm": 25,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1030,
+   "want": "Welcome_user!",
+   "u_mm": 25,
+   "length_u": 4,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1031,
+   "want": "isVisible",
+   "u_mm": 25,
+   "length_u": 4,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1100,
+   "want": "x",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1101,
+   "want": "X",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1102,
+   "want": "i",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1103,
+   "want": "y",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1104,
+   "want": "500",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1105,
+   "want": "0",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1106,
+   "want": "-1",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1107,
+   "want": "0.5",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1108,
+   "want": "1 000",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1109,
+   "want": "oO0",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1110,
+   "want": "lI1",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1111,
+   "want": "sS5",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1112,
+   "want": "zZ2",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1113,
+   "want": "cC",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1114,
+   "want": "vV",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1115,
+   "want": "wW",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1116,
+   "want": "kK",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1117,
+   "want": "pP",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1118,
+   "want": "B8",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1119,
+   "want": "b6",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1120,
+   "want": "g9q",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1121,
+   "want": "hi",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1122,
+   "want": "score2",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1123,
+   "want": "drawCircle",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1124,
+   "want": "drawCircle",
+   "u_mm": 30,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1125,
+   "want": "frameCount",
+   "u_mm": 30,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1126,
+   "want": "framecount",
+   "u_mm": 30,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1127,
+   "want": "hello_world",
+   "u_mm": 30,
+   "length_u": 3,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1128,
+   "want": "p5.circle",
+   "u_mm": 30,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1129,
+   "want": "speedX",
+   "u_mm": 30,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1130,
+   "want": "Welcome_user!",
+   "u_mm": 30,
+   "length_u": 4,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1131,
+   "want": "isVisible",
+   "u_mm": 30,
+   "length_u": 4,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1200,
+   "want": "x",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1201,
+   "want": "X",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1202,
+   "want": "i",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1203,
+   "want": "y",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1204,
+   "want": "500",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1205,
+   "want": "0",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1206,
+   "want": "-1",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1207,
+   "want": "0.5",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1208,
+   "want": "1 000",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1209,
+   "want": "oO0",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1210,
+   "want": "lI1",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1211,
+   "want": "sS5",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1212,
+   "want": "zZ2",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1213,
+   "want": "cC",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1214,
+   "want": "vV",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1215,
+   "want": "wW",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1216,
+   "want": "kK",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1217,
+   "want": "pP",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1218,
+   "want": "B8",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1219,
+   "want": "b6",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1220,
+   "want": "g9q",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1221,
+   "want": "hi",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1222,
+   "want": "score2",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1223,
+   "want": "drawCircle",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1224,
+   "want": "drawCircle",
+   "u_mm": 35,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1225,
+   "want": "frameCount",
+   "u_mm": 35,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1226,
+   "want": "framecount",
+   "u_mm": 35,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1227,
+   "want": "hello_world",
+   "u_mm": 35,
+   "length_u": 3,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1228,
+   "want": "p5.circle",
+   "u_mm": 35,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1229,
+   "want": "speedX",
+   "u_mm": 35,
+   "length_u": 3,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1230,
+   "want": "Welcome_user!",
+   "u_mm": 35,
+   "length_u": 4,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1231,
+   "want": "isVisible",
+   "u_mm": 35,
+   "length_u": 4,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": -250,
+   "want": "",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": -251,
+   "want": "",
+   "u_mm": 25,
+   "length_u": 4,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": -300,
+   "want": "",
+   "u_mm": 30,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": -301,
+   "want": "",
+   "u_mm": 30,
+   "length_u": 4,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": -350,
+   "want": "",
+   "u_mm": 35,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": -351,
+   "want": "",
+   "u_mm": 35,
+   "length_u": 4,
+   "kind": "name",
+   "real": false
+  }
+ ],
+ "results": {
+  "flash38|raw|plain": {
+   "1000": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 7.566,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 90,
+    "cost": 0.00125175,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1001": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 7.457,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 187,
+    "cost": 0.0016155,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1002": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 5.709,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 70,
+    "cost": 0.00117675,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1003": {
+    "raw": "{\"text\": \"y\", \"unreadable\": false}",
+    "secs": 11.541,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.00378675,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1004": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 5.709,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 60,
+    "cost": 0.00114675,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1005": {
+    "raw": "{\"text\": \"O\", \"unreadable\": false}",
+    "secs": 5.244,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 89,
+    "cost": 0.001248,
+    "text": "O",
+    "unreadable": false,
+    "verdict": "read error",
+    "case_ok": false
+   },
+   "1006": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 8.322,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 291,
+    "cost": 0.0020055,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1007": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 5.753,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 51,
+    "cost": 0.001113,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1008": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 6.336,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 68,
+    "cost": 0.0011805,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1009": {
+    "raw": "{\"text\": \".00\", \"unreadable\": false}",
+    "secs": 8.305,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 425,
+    "cost": 0.00251175,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1010": {
+    "raw": "{\"text\": \"111\", \"unreadable\": false}",
+    "secs": 7.513,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 168,
+    "cost": 0.00155175,
+    "text": "111",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1011": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 7.095,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 155,
+    "cost": 0.001503,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1012": {
+    "raw": "{\"text\": \"zZ2\", \"unreadable\": false}",
+    "secs": 9.977,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 461,
+    "cost": 0.0026505,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1013": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 5.678,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 37,
+    "cost": 0.001053,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1014": {
+    "raw": "{\"text\": \"v V\", \"unreadable\": false}",
+    "secs": 6.136,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 137,
+    "cost": 0.00143175,
+    "text": "v V",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1015": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 6.134,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 107,
+    "cost": 0.00131925,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1016": {
+    "raw": "{\"text\": \"kk\", \"unreadable\": false}",
+    "secs": 14.037,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00377925,
+    "text": "kk",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1017": {
+    "raw": "{\"text\":\"pP\",\"unreadable\":false}",
+    "secs": 8.339,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 266,
+    "cost": 0.001908,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1018": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 5.709,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 67,
+    "cost": 0.00116925,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1019": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 5.865,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 133,
+    "cost": 0.00141675,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1020": {
+    "raw": "{\"text\": \"gqq\", \"unreadable\": false}",
+    "secs": 12.298,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.00378675,
+    "text": "gqq",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1021": {
+    "raw": "{\"text\": \"hi\", \"unreadable\": false}",
+    "secs": 5.889,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 41,
+    "cost": 0.001068,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1022": {
+    "raw": "{\"text\": \"Scale 2\", \"unreadable\": false}",
+    "secs": 9.95,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 481,
+    "cost": 0.0027255,
+    "text": "Scale 2",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "1023": {
+    "raw": "{\"text\": \"draw Cir\", \"unreadable\": false}",
+    "secs": 11.456,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.0037905,
+    "text": "draw Cir",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "1024": {
+    "raw": "{\"text\": \"drawCircle\", \"unreadable\": false}",
+    "secs": 8.336,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 441,
+    "cost": 0.00254775,
+    "text": "drawCircle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1025": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 8.319,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 306,
+    "cost": 0.00203775,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1026": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 6.625,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 118,
+    "cost": 0.00133275,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1027": {
+    "raw": "{\"text\": \"hello_world\", \"unreadable\": false}",
+    "secs": 9.846,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 453,
+    "cost": 0.0025965,
+    "text": "hello_world",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1028": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 11.754,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 638,
+    "cost": 0.003294,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1029": {
+    "raw": "{\"text\": \"speed X\", \"unreadable\": false}",
+    "secs": 5.682,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 118,
+    "cost": 0.0013365,
+    "text": "speed X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1030": {
+    "raw": "{\"text\": \"Welcome_user!\", \"unreadable\": false}",
+    "secs": 7.2,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 195,
+    "cost": 0.00165,
+    "text": "Welcome_user!",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1031": {
+    "raw": "{\"text\": \"isVisible\", \"unreadable\": false}",
+    "secs": 12.987,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00377625,
+    "text": "isVisible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1100": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 4.28,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 104,
+    "cost": 0.0013155,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1101": {
+    "raw": "{\"text\": \"X\", \"unreadable\": false}",
+    "secs": 3.867,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 71,
+    "cost": 0.00119175,
+    "text": "X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1102": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 3.324,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 39,
+    "cost": 0.00107175,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1103": {
+    "raw": "{\"text\": \"y\", \"unreadable\": false}",
+    "secs": 3.085,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 37,
+    "cost": 0.00106425,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1104": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 3.406,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 21,
+    "cost": 0.00101175,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1105": {
+    "raw": "{\"text\": \"D\", \"unreadable\": false}",
+    "secs": 9.851,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.003798,
+    "text": "D",
+    "unreadable": false,
+    "verdict": "read error",
+    "case_ok": false
+   },
+   "1106": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 11.52,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 767,
+    "cost": 0.00380175,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1107": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 3.575,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 48,
+    "cost": 0.001113,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1108": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 3.399,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 60,
+    "cost": 0.00116175,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1109": {
+    "raw": "{\"text\": \"000\", \"unreadable\": false}",
+    "secs": 7.914,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 495,
+    "cost": 0.00278925,
+    "text": "000",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1110": {
+    "raw": "{\"text\": \"111\", \"unreadable\": false}",
+    "secs": 4.344,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 154,
+    "cost": 0.0015105,
+    "text": "111",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1111": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 9.358,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 627,
+    "cost": 0.00328425,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1112": {
+    "raw": "{\"text\": \"zZZ\", \"unreadable\": false}",
+    "secs": 9.669,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.003798,
+    "text": "zZZ",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1113": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.125,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 56,
+    "cost": 0.0011355,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1114": {
+    "raw": "{\"text\": \"vV\", \"unreadable\": false}",
+    "secs": 3.261,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 117,
+    "cost": 0.001368,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1115": {
+    "raw": "{\"text\": \"w W\", \"unreadable\": false}",
+    "secs": 7.635,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 349,
+    "cost": 0.002238,
+    "text": "w W",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1116": {
+    "raw": "{\"text\": \"kK\", \"unreadable\": false}",
+    "secs": 9.021,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 587,
+    "cost": 0.0031305,
+    "text": "kK",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1117": {
+    "raw": "{\"text\": \"p P\", \"unreadable\": false}",
+    "secs": 3.656,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 79,
+    "cost": 0.0012255,
+    "text": "p P",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1118": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 3.227,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 63,
+    "cost": 0.0011655,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1119": {
+    "raw": "{\"text\":\"b6\",\"unreadable\":false}",
+    "secs": 4.134,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 80,
+    "cost": 0.00122175,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1120": {
+    "raw": "{\"text\": \"999\", \"unreadable\": false}",
+    "secs": 8.538,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 584,
+    "cost": 0.00311925,
+    "text": "999",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1121": {
+    "raw": "{\"text\": \"hi\", \"unreadable\": false}",
+    "secs": 3.651,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 82,
+    "cost": 0.001233,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1122": {
+    "raw": "{\"text\": \"Score 2\", \"unreadable\": false}",
+    "secs": 3.936,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 168,
+    "cost": 0.001563,
+    "text": "Score 2",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1123": {
+    "raw": "{\"text\": \"drow Cinde\", \"unreadable\": false}",
+    "secs": 9.762,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00380175,
+    "text": "drow Cinde",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 4
+   },
+   "1124": {
+    "raw": "{\"text\": \"drow Circle\", \"unreadable\": false}",
+    "secs": 8.934,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.00378525,
+    "text": "drow Circle",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1125": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 6.065,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 377,
+    "cost": 0.002319,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1126": {
+    "raw": "{\"text\": \"framecount\", \"unreadable\": false}",
+    "secs": 4.771,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 181,
+    "cost": 0.00158775,
+    "text": "framecount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1127": {
+    "raw": "{\"text\": \"hello- world\", \"unreadable\": false}",
+    "secs": 6.75,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 417,
+    "cost": 0.0024765,
+    "text": "hello- world",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1128": {
+    "raw": "{\"text\": \"p5. circle\", \"unreadable\": false}",
+    "secs": 6.143,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 343,
+    "cost": 0.00220275,
+    "text": "p5. circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1129": {
+    "raw": "{\"text\": \"Speed X\", \"unreadable\": false}",
+    "secs": 4.872,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 223,
+    "cost": 0.00174525,
+    "text": "Speed X",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1130": {
+    "raw": "{\"text\": \"Welcome_user!\", \"unreadable\": false}",
+    "secs": 10.438,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.0037875,
+    "text": "Welcome_user!",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1131": {
+    "raw": "{\"text\": \"is Visible\", \"unreadable\": false}",
+    "secs": 4.646,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 172,
+    "cost": 0.00156,
+    "text": "is Visible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1200": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 3.054,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 39,
+    "cost": 0.0010605,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1201": {
+    "raw": "{\"text\": \"X\", \"unreadable\": false}",
+    "secs": 3.588,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 61,
+    "cost": 0.001143,
+    "text": "X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1202": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 2.886,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 68,
+    "cost": 0.00116925,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1203": {
+    "raw": "{\"text\": \"y\", \"unreadable\": false}",
+    "secs": 4.781,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 155,
+    "cost": 0.0014955,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1204": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 3.258,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 46,
+    "cost": 0.00109425,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1205": {
+    "raw": "{\"text\": \"O\", \"unreadable\": false}",
+    "secs": 3.568,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 80,
+    "cost": 0.00121425,
+    "text": "O",
+    "unreadable": false,
+    "verdict": "read error",
+    "case_ok": false
+   },
+   "1206": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 6.689,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 390,
+    "cost": 0.00237675,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1207": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 4.346,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 40,
+    "cost": 0.00107175,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1208": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 4.195,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 93,
+    "cost": 0.00127425,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1209": {
+    "raw": "{\"text\": \".00\", \"unreadable\": false}",
+    "secs": 9.445,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.0037905,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1210": {
+    "raw": "{\"text\": \"111\", \"unreadable\": false}",
+    "secs": 3.97,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 125,
+    "cost": 0.0013905,
+    "text": "111",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1211": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 10.076,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00378675,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1212": {
+    "raw": "{\"text\": \"zZ2\", \"unreadable\": false}",
+    "secs": 10.543,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00378675,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1213": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.087,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 16,
+    "cost": 0.00097425,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1214": {
+    "raw": "{\"text\": \"vV\", \"unreadable\": false}",
+    "secs": 3.032,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 58,
+    "cost": 0.0011355,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1215": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 3.777,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 102,
+    "cost": 0.0013005,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1216": {
+    "raw": "{\"text\": \"k k\", \"unreadable\": false}",
+    "secs": 5.975,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 302,
+    "cost": 0.0020505,
+    "text": "k k",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1217": {
+    "raw": "{\"text\": \"p P\", \"unreadable\": false}",
+    "secs": 4.298,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 120,
+    "cost": 0.001368,
+    "text": "p P",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1218": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 3.622,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 77,
+    "cost": 0.00120675,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1219": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 3.605,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 82,
+    "cost": 0.0012255,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1220": {
+    "raw": "{\"text\": \"g9q\", \"unreadable\": false}",
+    "secs": 10.094,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 767,
+    "cost": 0.003798,
+    "text": "g9q",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1221": {
+    "raw": "{\"text\": \"hi\", \"unreadable\": false}",
+    "secs": 4.869,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 204,
+    "cost": 0.00167925,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1222": {
+    "raw": "{\"text\": \"Score 2\", \"unreadable\": false}",
+    "secs": 3.677,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 87,
+    "cost": 0.001248,
+    "text": "Score 2",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1223": {
+    "raw": "{\"text\": \"draw Circle\", \"unreadable\": false}",
+    "secs": 4.719,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 162,
+    "cost": 0.0015255,
+    "text": "draw Circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1224": {
+    "raw": "{\"text\": \"draw Circle\", \"unreadable\": false}",
+    "secs": 4.198,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 161,
+    "cost": 0.00151275,
+    "text": "draw Circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1225": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 9.335,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 767,
+    "cost": 0.0037815,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1226": {
+    "raw": "{\"text\":\"frame count\",\"unreadable\":false}",
+    "secs": 4.072,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 140,
+    "cost": 0.0014265,
+    "text": "frame count",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1227": {
+    "raw": "{\"text\": \"hello_world\", \"unreadable\": false}",
+    "secs": 5.944,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 397,
+    "cost": 0.0024015,
+    "text": "hello_world",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1228": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 5.968,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 287,
+    "cost": 0.00199275,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1229": {
+    "raw": "{\"text\": \"speed X\", \"unreadable\": false}",
+    "secs": 6.897,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 334,
+    "cost": 0.0021615,
+    "text": "speed X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1230": {
+    "raw": "{\"text\":\"Welcome-user!\",\"unreadable\":false}",
+    "secs": 10.023,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00379275,
+    "text": "Welcome-user!",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1231": {
+    "raw": "{\"text\": \"is Visible\", \"unreadable\": false}",
+    "secs": 11.013,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00379275,
+    "text": "is Visible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "-250": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.696,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 69,
+    "cost": 0.0011655,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-251": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 4.76,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 103,
+    "cost": 0.00129,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-300": {
+    "raw": "{\"text\":\"\",\"unreadable\":true}",
+    "secs": 3.652,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 63,
+    "cost": 0.00114675,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-301": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 4.717,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 143,
+    "cost": 0.00144,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-350": {
+    "raw": "{\"text\":\"\",\"unreadable\":true}",
+    "secs": 3.478,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 53,
+    "cost": 0.001098,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-351": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 7.56,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 465,
+    "cost": 0.00266025,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   }
+  },
+  "flash38|raw|kind": {
+   "1000": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 3.567,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 51,
+    "cost": 0.00113775,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1001": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 4.917,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 209,
+    "cost": 0.00173025,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1002": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 3.166,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 48,
+    "cost": 0.0011265,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1003": {
+    "raw": "{\"text\": \"y\", \"unreadable\": false}",
+    "secs": 3.765,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 111,
+    "cost": 0.00136275,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1004": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 2.976,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 42,
+    "cost": 0.00109425,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1005": {
+    "raw": "{\"text\":\"0\",\"unreadable\":false}",
+    "secs": 3.139,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 34,
+    "cost": 0.00104925,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1006": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 3.168,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 20,
+    "cost": 0.00100425,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1007": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 2.764,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 37,
+    "cost": 0.0010755,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1008": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 3.294,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 115,
+    "cost": 0.00137175,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1009": {
+    "raw": "{\"text\": \".00\", \"unreadable\": false}",
+    "secs": 9.421,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 664,
+    "cost": 0.00344025,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1010": {
+    "raw": "{\"text\": \"ll1\", \"unreadable\": false}",
+    "secs": 7.339,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 524,
+    "cost": 0.00291525,
+    "text": "ll1",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1011": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 4.027,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 140,
+    "cost": 0.001479,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1012": {
+    "raw": "{\"text\": \"zZ2\", \"unreadable\": false}",
+    "secs": 4.747,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 178,
+    "cost": 0.0016215,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1013": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.243,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 23,
+    "cost": 0.00103275,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1014": {
+    "raw": "{\"text\": \"vV\", \"unreadable\": false}",
+    "secs": 3.564,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 81,
+    "cost": 0.001254,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1015": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 3.448,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 84,
+    "cost": 0.00126525,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1016": {
+    "raw": "{\"text\": \"kK\", \"unreadable\": false}",
+    "secs": 10.558,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00381525,
+    "text": "kK",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1017": {
+    "raw": "{\"text\": \"pP\", \"unreadable\": false}",
+    "secs": 3.588,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 73,
+    "cost": 0.001224,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1018": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 3.403,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 54,
+    "cost": 0.00115275,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1019": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 3.837,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 78,
+    "cost": 0.00124275,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1020": {
+    "raw": "{\"text\": \"g9q\", \"unreadable\": false}",
+    "secs": 10.856,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 768,
+    "cost": 0.003834,
+    "text": "g9q",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1021": {
+    "raw": "{\"text\":\"hi\",\"unreadable\":false}",
+    "secs": 3.857,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 68,
+    "cost": 0.001176,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1022": {
+    "raw": "{\"text\": \"Scale 2\", \"unreadable\": false}",
+    "secs": 10.83,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.00382275,
+    "text": "Scale 2",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "1023": {
+    "raw": "{\"text\": \"drawCir\", \"unreadable\": false}",
+    "secs": 6.117,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 383,
+    "cost": 0.0023865,
+    "text": "drawCir",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "1024": {
+    "raw": "{\"text\": \"drawCircle\", \"unreadable\": false}",
+    "secs": 3.978,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 145,
+    "cost": 0.00147,
+    "text": "drawCircle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1025": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 6.095,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 384,
+    "cost": 0.0023625,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1026": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 4.453,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 176,
+    "cost": 0.0015825,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1027": {
+    "raw": "{\"text\": \"hello_world\", \"unreadable\": false}",
+    "secs": 4.349,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 200,
+    "cost": 0.001662,
+    "text": "hello_world",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1028": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 4.973,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 96,
+    "cost": 0.00129,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1029": {
+    "raw": "{\"text\":\"speedX\",\"unreadable\":false}",
+    "secs": 4.339,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 188,
+    "cost": 0.00162375,
+    "text": "speedX",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1030": {
+    "raw": "{\"text\": \"Welcome_user!\", \"unreadable\": false}",
+    "secs": 4.462,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 87,
+    "cost": 0.00125925,
+    "text": "Welcome_user!",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1031": {
+    "raw": "{\"text\": \"isVisible\", \"unreadable\": false}",
+    "secs": 3.072,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 58,
+    "cost": 0.001161,
+    "text": "isVisible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1100": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 3.581,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 68,
+    "cost": 0.00121275,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1101": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 4.719,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 114,
+    "cost": 0.00138525,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1102": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 3.494,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 49,
+    "cost": 0.0011415,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1103": {
+    "raw": "{\"text\": \"y\", \"unreadable\": false}",
+    "secs": 3.471,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 90,
+    "cost": 0.00129525,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1104": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 3.402,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 53,
+    "cost": 0.00114675,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1105": {
+    "raw": "{\"text\":\"0\",\"unreadable\":false}",
+    "secs": 3.348,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 43,
+    "cost": 0.00109425,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1106": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 3.52,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 56,
+    "cost": 0.0011505,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1107": {
+    "raw": "{\"text\":\"0.5\",\"unreadable\":false}",
+    "secs": 3.574,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 56,
+    "cost": 0.0011505,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1108": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 3.933,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 71,
+    "cost": 0.001218,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1109": {
+    "raw": "{\"text\": \"oOO\", \"unreadable\": false}",
+    "secs": 8.09,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 641,
+    "cost": 0.00336525,
+    "text": "oOO",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1110": {
+    "raw": "{\"text\": \"lI1\", \"unreadable\": false}",
+    "secs": 9.454,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00383025,
+    "text": "lI1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1111": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 5.598,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 293,
+    "cost": 0.002064,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1112": {
+    "raw": "{\"text\": \"zZZ\", \"unreadable\": false}",
+    "secs": 9.135,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.00383025,
+    "text": "zZZ",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1113": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.349,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 56,
+    "cost": 0.00116775,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1114": {
+    "raw": "{\"text\": \"vV\", \"unreadable\": false}",
+    "secs": 3.794,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 79,
+    "cost": 0.00125775,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1115": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 4.758,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 168,
+    "cost": 0.0015915,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1116": {
+    "raw": "{\"text\": \"kK\", \"unreadable\": false}",
+    "secs": 4.329,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 133,
+    "cost": 0.00146025,
+    "text": "kK",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1117": {
+    "raw": "{\"text\":\"pP\",\"unreadable\":false}",
+    "secs": 3.681,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 70,
+    "cost": 0.0012165,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1118": {
+    "raw": "{\"text\":\"B8\",\"unreadable\":false}",
+    "secs": 3.4,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 40,
+    "cost": 0.001104,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1119": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 4.601,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 94,
+    "cost": 0.001314,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1120": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 9.824,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00381525,
+    "text": "",
+    "unreadable": true,
+    "verdict": "read error",
+    "case_ok": false
+   },
+   "1121": {
+    "raw": "{\"text\": \"hi\", \"unreadable\": false}",
+    "secs": 10.241,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00380475,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1122": {
+    "raw": "{\"text\": \"Score2\", \"unreadable\": false}",
+    "secs": 4.547,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 224,
+    "cost": 0.0018015,
+    "text": "Score2",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1123": {
+    "raw": "{\"text\": \"drawCircle\", \"unreadable\": false}",
+    "secs": 2.795,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0009615,
+    "text": "drawCircle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1124": {
+    "raw": "{\"text\": \"drawCircle\", \"unreadable\": false}",
+    "secs": 10.905,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00380625,
+    "text": "drawCircle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1125": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 10.41,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.00381,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1126": {
+    "raw": "{\"text\": \"framecount\", \"unreadable\": false}",
+    "secs": 5.033,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 224,
+    "cost": 0.00178125,
+    "text": "framecount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1127": {
+    "raw": "{\"text\": \"hello_world\", \"unreadable\": false}",
+    "secs": 10.858,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.003792,
+    "text": "hello_world",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1128": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 3.876,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 130,
+    "cost": 0.00143625,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1129": {
+    "raw": "{\"text\": \"speedX\", \"unreadable\": false}",
+    "secs": 3.741,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 46,
+    "cost": 0.00111375,
+    "text": "speedX",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1130": {
+    "raw": "{\"text\": \"Welcome_user!\", \"unreadable\": false}",
+    "secs": 5.508,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 242,
+    "cost": 0.0018405,
+    "text": "Welcome_user!",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1131": {
+    "raw": "{\"text\": \"isVisible\", \"unreadable\": false}",
+    "secs": 3.866,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 52,
+    "cost": 0.0011385,
+    "text": "isVisible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1200": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 3.884,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 59,
+    "cost": 0.00116775,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1201": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 4.605,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 160,
+    "cost": 0.0015465,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1202": {
+    "raw": "{\"text\":\"i\",\"unreadable\":false}",
+    "secs": 3.548,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 42,
+    "cost": 0.0010965,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1203": {
+    "raw": "{\"text\": \"y\", \"unreadable\": false}",
+    "secs": 3.797,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 83,
+    "cost": 0.00125775,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1204": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 3.219,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 33,
+    "cost": 0.0010605,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1205": {
+    "raw": "{\"text\":\"0\",\"unreadable\":false}",
+    "secs": 2.71,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 54,
+    "cost": 0.00112425,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1206": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 3.249,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 86,
+    "cost": 0.00125175,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1207": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 3.664,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 52,
+    "cost": 0.00113175,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1208": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 3.69,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 68,
+    "cost": 0.0011955,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1209": {
+    "raw": "{\"text\": \"oOO\", \"unreadable\": false}",
+    "secs": 10.159,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00381525,
+    "text": "oOO",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1210": {
+    "raw": "{\"text\": \"ll1\", \"unreadable\": false}",
+    "secs": 5.79,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 320,
+    "cost": 0.00215025,
+    "text": "ll1",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1211": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 5.209,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 247,
+    "cost": 0.00188025,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1212": {
+    "raw": "{\"text\": \"zZ2\", \"unreadable\": false}",
+    "secs": 7.128,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 409,
+    "cost": 0.00248775,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1213": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.374,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 26,
+    "cost": 0.001044,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1214": {
+    "raw": "{\"text\": \"vV\", \"unreadable\": false}",
+    "secs": 3.161,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 68,
+    "cost": 0.00120525,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1215": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 3.636,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 84,
+    "cost": 0.00126525,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1216": {
+    "raw": "{\"text\": \"kk\", \"unreadable\": false}",
+    "secs": 7.732,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 397,
+    "cost": 0.00243525,
+    "text": "kk",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1217": {
+    "raw": "{\"text\": \"pP\", \"unreadable\": false}",
+    "secs": 3.592,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 90,
+    "cost": 0.00128775,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1218": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 5.066,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 149,
+    "cost": 0.001509,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1219": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 4.265,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 84,
+    "cost": 0.00126525,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1220": {
+    "raw": "{\"text\": \"g9q\", \"unreadable\": false}",
+    "secs": 5.79,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 376,
+    "cost": 0.002364,
+    "text": "g9q",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1221": {
+    "raw": "{\"text\":\"hi\",\"unreadable\":false}",
+    "secs": 5.62,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 278,
+    "cost": 0.0019635,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1222": {
+    "raw": "{\"text\": \"Score 2\", \"unreadable\": false}",
+    "secs": 6.17,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 464,
+    "cost": 0.002694,
+    "text": "Score 2",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1223": {
+    "raw": "{\"text\": \"drawCircle\", \"unreadable\": false}",
+    "secs": 9.836,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.00382275,
+    "text": "drawCircle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1224": {
+    "raw": "{\"text\": \"drawCircle\", \"unreadable\": false}",
+    "secs": 4.533,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 189,
+    "cost": 0.00165,
+    "text": "drawCircle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1225": {
+    "raw": "{\"text\":\"frameCount\",\"unreadable\":false}",
+    "secs": 4.581,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 169,
+    "cost": 0.00156375,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1226": {
+    "raw": "{\"text\": \"frame count\", \"unreadable\": false}",
+    "secs": 10.199,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.00381375,
+    "text": "frame count",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1227": {
+    "raw": "{\"text\": \"hello_world\", \"unreadable\": false}",
+    "secs": 3.748,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 108,
+    "cost": 0.001332,
+    "text": "hello_world",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1228": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 6.075,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 264,
+    "cost": 0.00193875,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1229": {
+    "raw": "{\"text\":\"speedX\",\"unreadable\":false}",
+    "secs": 3.429,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 74,
+    "cost": 0.00121125,
+    "text": "speedX",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1230": {
+    "raw": "{\"text\": \"Welcome_user!\", \"unreadable\": false}",
+    "secs": 5.069,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 184,
+    "cost": 0.00163575,
+    "text": "Welcome_user!",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1231": {
+    "raw": "{\"text\": \"isVisible\", \"unreadable\": false}",
+    "secs": 3.747,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 80,
+    "cost": 0.00125625,
+    "text": "isVisible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "-250": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 4.352,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 104,
+    "cost": 0.001329,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-251": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 4.473,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 108,
+    "cost": 0.001341,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-300": {
+    "raw": "{\"text\":\"\",\"unreadable\":true}",
+    "secs": 3.614,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 53,
+    "cost": 0.0011415,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-301": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 5.097,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 182,
+    "cost": 0.0016185,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-350": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.231,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 37,
+    "cost": 0.00107775,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-351": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 7.597,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 419,
+    "cost": 0.00252,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   }
+  },
+  "flash38|clean|plain": {
+   "1000": {
+    "raw": "{\"text\": \"X\", \"unreadable\": false}",
+    "secs": 4.408,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 171,
+    "cost": 0.00155325,
+    "text": "X",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1001": {
+    "raw": "{\"text\": \"X\", \"unreadable\": false}",
+    "secs": 3.575,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 76,
+    "cost": 0.001194,
+    "text": "X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1002": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 2.817,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 45,
+    "cost": 0.00106725,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1003": {
+    "raw": "{\"text\": \"y\", \"unreadable\": false}",
+    "secs": 3.819,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 120,
+    "cost": 0.00135525,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1004": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 3.15,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 65,
+    "cost": 0.0011565,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1005": {
+    "raw": "{\"text\": \"0\", \"unreadable\": false}",
+    "secs": 4.023,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 184,
+    "cost": 0.00160125,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1006": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 3.619,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 111,
+    "cost": 0.0013275,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1007": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 3.019,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 45,
+    "cost": 0.0010905,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1008": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 3.142,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 69,
+    "cost": 0.0011865,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1009": {
+    "raw": "{\"text\": \".00\", \"unreadable\": false}",
+    "secs": 9.109,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 769,
+    "cost": 0.00378225,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1010": {
+    "raw": "{\"text\": \"111\", \"unreadable\": false}",
+    "secs": 4.252,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 136,
+    "cost": 0.0014295,
+    "text": "111",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1011": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 5.884,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 366,
+    "cost": 0.00228525,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1012": {
+    "raw": "{\"text\": \"zZZ\", \"unreadable\": false}",
+    "secs": 10.926,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 767,
+    "cost": 0.0038055,
+    "text": "zZZ",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1013": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.523,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 100,
+    "cost": 0.001275,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1014": {
+    "raw": "{\"text\": \"v V\", \"unreadable\": false}",
+    "secs": 3.83,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 109,
+    "cost": 0.00130575,
+    "text": "v V",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1015": {
+    "raw": "{\"text\":\"wW\",\"unreadable\":false}",
+    "secs": 3.833,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 96,
+    "cost": 0.0012705,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1016": {
+    "raw": "{\"text\": \"k K\", \"unreadable\": false}",
+    "secs": 9.963,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 639,
+    "cost": 0.00330525,
+    "text": "k K",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1017": {
+    "raw": "{\"text\": \"pp\", \"unreadable\": false}",
+    "secs": 10.379,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.00378,
+    "text": "pp",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1018": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 2.805,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 44,
+    "cost": 0.0010905,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1019": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 6.534,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 219,
+    "cost": 0.00173625,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1020": {
+    "raw": "{\"text\": \"gqq\", \"unreadable\": false}",
+    "secs": 7.902,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 621,
+    "cost": 0.003258,
+    "text": "gqq",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1021": {
+    "raw": "{\"text\": \"hi\", \"unreadable\": false}",
+    "secs": 8.56,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 434,
+    "cost": 0.00253875,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1022": {
+    "raw": "{\"text\": \"Score 2\", \"unreadable\": false}",
+    "secs": 11.129,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.003786,
+    "text": "Score 2",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1023": {
+    "raw": "{\"text\": \"draw Cin\", \"unreadable\": false}",
+    "secs": 10.384,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.003756,
+    "text": "draw Cin",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 4
+   },
+   "1024": {
+    "raw": "{\"text\": \"draw Circle\", \"unreadable\": false}",
+    "secs": 5.007,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 203,
+    "cost": 0.0016725,
+    "text": "draw Circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1025": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 5.744,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 427,
+    "cost": 0.0025215,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1026": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 3.895,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 117,
+    "cost": 0.001329,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1027": {
+    "raw": "{\"text\": \"hello_world\", \"unreadable\": false}",
+    "secs": 10.108,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00378,
+    "text": "hello_world",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1028": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 11.675,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.00381,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1029": {
+    "raw": "{\"text\": \"speed X\", \"unreadable\": false}",
+    "secs": 3.873,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 87,
+    "cost": 0.001236,
+    "text": "speed X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1030": {
+    "raw": "{\"text\":\"Welcome_user!\",\"unreadable\":false}",
+    "secs": 4.439,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 158,
+    "cost": 0.0014835,
+    "text": "Welcome_user!",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1031": {
+    "raw": "{\"text\": \"isVisible\", \"unreadable\": false}",
+    "secs": 4.387,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 137,
+    "cost": 0.001428,
+    "text": "isVisible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1100": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 3.697,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 68,
+    "cost": 0.001164,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1101": {
+    "raw": "{\"text\": \"X\", \"unreadable\": false}",
+    "secs": 2.881,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 53,
+    "cost": 0.00109875,
+    "text": "X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1102": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 2.588,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 33,
+    "cost": 0.001014,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1103": {
+    "raw": "{\"text\": \"Y\", \"unreadable\": false}",
+    "secs": 3.292,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 63,
+    "cost": 0.0011415,
+    "text": "Y",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1104": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 3.37,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 70,
+    "cost": 0.00117375,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1105": {
+    "raw": "{\"text\":\"0\",\"unreadable\":false}",
+    "secs": 4.352,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 151,
+    "cost": 0.0014805,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1106": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 3.073,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 58,
+    "cost": 0.00112875,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1107": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 2.902,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 51,
+    "cost": 0.001113,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1108": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 4.073,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 84,
+    "cost": 0.0012495,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1109": {
+    "raw": "{\"text\": \"000\", \"unreadable\": false}",
+    "secs": 6.892,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 429,
+    "cost": 0.00251775,
+    "text": "000",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1110": {
+    "raw": "{\"text\": \"111\", \"unreadable\": false}",
+    "secs": 4.846,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 212,
+    "cost": 0.00170775,
+    "text": "111",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1111": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 10.145,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 767,
+    "cost": 0.00380925,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1112": {
+    "raw": "{\"text\": \"zZZ\", \"unreadable\": false}",
+    "secs": 10.622,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.0037965,
+    "text": "zZZ",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1113": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 4.747,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 63,
+    "cost": 0.0011415,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1114": {
+    "raw": "{\"text\": \"v V\", \"unreadable\": false}",
+    "secs": 3.746,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 90,
+    "cost": 0.00124125,
+    "text": "v V",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1115": {
+    "raw": "{\"text\": \"uW\", \"unreadable\": false}",
+    "secs": 9.739,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.003792,
+    "text": "uW",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1116": {
+    "raw": "{\"text\": \"k K\", \"unreadable\": false}",
+    "secs": 4.31,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 202,
+    "cost": 0.0016665,
+    "text": "k K",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1117": {
+    "raw": "{\"text\": \"pP\", \"unreadable\": false}",
+    "secs": 4.954,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 206,
+    "cost": 0.0016875,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1118": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 4.815,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 106,
+    "cost": 0.0012975,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1119": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 3.988,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 152,
+    "cost": 0.001485,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1120": {
+    "raw": "{\"text\": \"qqq\", \"unreadable\": false}",
+    "secs": 12.168,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 768,
+    "cost": 0.0038175,
+    "text": "qqq",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1121": {
+    "raw": "{\"text\": \"ki\", \"unreadable\": false}",
+    "secs": 11.114,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 768,
+    "cost": 0.00378525,
+    "text": "ki",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1122": {
+    "raw": "{\"text\": \"Score 2\", \"unreadable\": false}",
+    "secs": 4.954,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 168,
+    "cost": 0.00154125,
+    "text": "Score 2",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1123": {
+    "raw": "{\"text\": \"draw Circle\", \"unreadable\": false}",
+    "secs": 10.467,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.003789,
+    "text": "draw Circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1124": {
+    "raw": "{\"text\": \"drow Circle\", \"unreadable\": false}",
+    "secs": 11.287,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00375825,
+    "text": "drow Circle",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1125": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 5.745,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 402,
+    "cost": 0.00240075,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1126": {
+    "raw": "{\"text\": \"framecount\", \"unreadable\": false}",
+    "secs": 10.439,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.003774,
+    "text": "framecount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1127": {
+    "raw": "{\"text\": \"hello- world\", \"unreadable\": false}",
+    "secs": 6.924,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 433,
+    "cost": 0.002553,
+    "text": "hello- world",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1128": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 4.732,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 219,
+    "cost": 0.00175275,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1129": {
+    "raw": "{\"text\": \"speed X\", \"unreadable\": false}",
+    "secs": 3.373,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 74,
+    "cost": 0.001185,
+    "text": "speed X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1130": {
+    "raw": "{\"text\": \"Welcome- user!\", \"unreadable\": false}",
+    "secs": 10.913,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 768,
+    "cost": 0.00377025,
+    "text": "Welcome- user!",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1131": {
+    "raw": "{\"text\": \"is Visible\", \"unreadable\": false}",
+    "secs": 3.091,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 90,
+    "cost": 0.00127125,
+    "text": "is Visible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1200": {
+    "raw": "{\"text\": \"X\", \"unreadable\": false}",
+    "secs": 5.922,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 118,
+    "cost": 0.00135375,
+    "text": "X",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1201": {
+    "raw": "{\"text\":\"X\",\"unreadable\":false}",
+    "secs": 3.389,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 93,
+    "cost": 0.0012345,
+    "text": "X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1202": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 3.05,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 64,
+    "cost": 0.00114525,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1203": {
+    "raw": "{\"text\": \"Y\", \"unreadable\": false}",
+    "secs": 8.99,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 693,
+    "cost": 0.00349875,
+    "text": "Y",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1204": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 4.157,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 60,
+    "cost": 0.00115275,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1205": {
+    "raw": "{\"text\": \"O\", \"unreadable\": false}",
+    "secs": 6.267,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 340,
+    "cost": 0.00218025,
+    "text": "O",
+    "unreadable": false,
+    "verdict": "read error",
+    "case_ok": false
+   },
+   "1206": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 4.122,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 147,
+    "cost": 0.0014625,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1207": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 3.042,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 45,
+    "cost": 0.00110175,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1208": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 3.921,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 81,
+    "cost": 0.00121875,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1209": {
+    "raw": "{\"text\": \".00\", \"unreadable\": false}",
+    "secs": 9.671,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 541,
+    "cost": 0.00296625,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1210": {
+    "raw": "{\"text\": \"111\", \"unreadable\": false}",
+    "secs": 4.744,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 220,
+    "cost": 0.00176025,
+    "text": "111",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1211": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 8.163,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 527,
+    "cost": 0.002889,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1212": {
+    "raw": "{\"text\": \"zZZ\", \"unreadable\": false}",
+    "secs": 10.621,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.003771,
+    "text": "zZZ",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1213": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.223,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 29,
+    "cost": 0.001014,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1214": {
+    "raw": "{\"text\": \"vV\", \"unreadable\": false}",
+    "secs": 4.14,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 163,
+    "cost": 0.00153675,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1215": {
+    "raw": "{\"text\": \"w W\", \"unreadable\": false}",
+    "secs": 4.396,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 80,
+    "cost": 0.001218,
+    "text": "w W",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1216": {
+    "raw": "{\"text\":\"kk\",\"unreadable\":false}",
+    "secs": 5.488,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 294,
+    "cost": 0.00198825,
+    "text": "kk",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1217": {
+    "raw": "{\"text\": \"p P\", \"unreadable\": false}",
+    "secs": 3.903,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 137,
+    "cost": 0.00142875,
+    "text": "p P",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1218": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 4.495,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 148,
+    "cost": 0.0014805,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1219": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 4.84,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 219,
+    "cost": 0.00173625,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1220": {
+    "raw": "{\"text\": \"g9q\", \"unreadable\": false}",
+    "secs": 9.228,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.0037815,
+    "text": "g9q",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1221": {
+    "raw": "{\"text\": \"hi\", \"unreadable\": false}",
+    "secs": 11.162,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.00377775,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1222": {
+    "raw": "{\"text\": \"Score 2\", \"unreadable\": false}",
+    "secs": 3.572,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 111,
+    "cost": 0.001338,
+    "text": "Score 2",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1223": {
+    "raw": "{\"text\": \"draw Circle\", \"unreadable\": false}",
+    "secs": 7.486,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 465,
+    "cost": 0.00265125,
+    "text": "draw Circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1224": {
+    "raw": "{\"text\": \"draw Circle\", \"unreadable\": false}",
+    "secs": 4.382,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 242,
+    "cost": 0.001803,
+    "text": "draw Circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1225": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 3.632,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 112,
+    "cost": 0.00132525,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1226": {
+    "raw": "{\"text\": \"frame count\", \"unreadable\": false}",
+    "secs": 3.751,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 96,
+    "cost": 0.001257,
+    "text": "frame count",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1227": {
+    "raw": "{\"text\": \"hello_world\", \"unreadable\": false}",
+    "secs": 5.235,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 266,
+    "cost": 0.00192375,
+    "text": "hello_world",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1228": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 4.248,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 202,
+    "cost": 0.001674,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1229": {
+    "raw": "{\"text\": \"speed X\", \"unreadable\": false}",
+    "secs": 3.801,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 77,
+    "cost": 0.00119625,
+    "text": "speed X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1230": {
+    "raw": "{\"text\": \"Welcome - user!\", \"unreadable\": false}",
+    "secs": 6.423,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 436,
+    "cost": 0.00252525,
+    "text": "Welcome - user!",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1231": {
+    "raw": "{\"text\": \"is Visible\", \"unreadable\": false}",
+    "secs": 4.586,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 181,
+    "cost": 0.00158775,
+    "text": "is Visible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "-250": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.644,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 70,
+    "cost": 0.00116925,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-251": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.749,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 102,
+    "cost": 0.00128625,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-300": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 4.071,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 85,
+    "cost": 0.00123675,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-301": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 4.188,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 107,
+    "cost": 0.001305,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-350": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 2.862,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 36,
+    "cost": 0.00104175,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-351": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.628,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 81,
+    "cost": 0.00122025,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   }
+  },
+  "flash38|clean|kind": {
+   "1000": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 4.616,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 81,
+    "cost": 0.001248,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1001": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 4.369,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 157,
+    "cost": 0.00153,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1002": {
+    "raw": "{\"text\":\"i\",\"unreadable\":false}",
+    "secs": 2.889,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 53,
+    "cost": 0.001122,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1003": {
+    "raw": "{\"text\": \"y\", \"unreadable\": false}",
+    "secs": 3.587,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 67,
+    "cost": 0.00118875,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1004": {
+    "raw": "{\"text\":\"500\",\"unreadable\":false}",
+    "secs": 3.291,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 35,
+    "cost": 0.0010515,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1005": {
+    "raw": "{\"text\": \"0\", \"unreadable\": false}",
+    "secs": 3.264,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 66,
+    "cost": 0.00117375,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1006": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 3.26,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 64,
+    "cost": 0.00116625,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1007": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 3.14,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 47,
+    "cost": 0.001113,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1008": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 4.588,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 63,
+    "cost": 0.00118275,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1009": {
+    "raw": "{\"text\":\".00\",\"unreadable\":false}",
+    "secs": 9.697,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.0037995,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1010": {
+    "raw": "{\"text\": \"ll1\", \"unreadable\": false}",
+    "secs": 4.097,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 168,
+    "cost": 0.001578,
+    "text": "ll1",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1011": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 5.303,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 285,
+    "cost": 0.00201375,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1012": {
+    "raw": "{\"text\": \"zZZ\", \"unreadable\": false}",
+    "secs": 6.049,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 323,
+    "cost": 0.00217275,
+    "text": "zZZ",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1013": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.13,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 28,
+    "cost": 0.00103725,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1014": {
+    "raw": "{\"text\": \"vV\", \"unreadable\": false}",
+    "secs": 3.64,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 64,
+    "cost": 0.00116925,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1015": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 3.617,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 79,
+    "cost": 0.0012465,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1016": {
+    "raw": "{\"text\": \"kK\", \"unreadable\": false}",
+    "secs": 10.769,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00380625,
+    "text": "kK",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1017": {
+    "raw": "{\"text\":\"pP\",\"unreadable\":false}",
+    "secs": 4.608,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 157,
+    "cost": 0.0015285,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1018": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 4.468,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 55,
+    "cost": 0.001164,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1019": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 5.025,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 282,
+    "cost": 0.00200475,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1020": {
+    "raw": "{\"text\": \"g9q\", \"unreadable\": false}",
+    "secs": 9.101,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 769,
+    "cost": 0.003849,
+    "text": "g9q",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1021": {
+    "raw": "{\"text\": \"hi\", \"unreadable\": false}",
+    "secs": 7.339,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 493,
+    "cost": 0.00277425,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1022": {
+    "raw": "{\"text\": \"ScaleZ\", \"unreadable\": false}",
+    "secs": 9.861,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.003807,
+    "text": "ScaleZ",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 4
+   },
+   "1023": {
+    "raw": "{\"text\": \"drawCir\", \"unreadable\": false}",
+    "secs": 10.441,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.00379575,
+    "text": "drawCir",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "1024": {
+    "raw": "{\"text\": \"drawCircle\", \"unreadable\": false}",
+    "secs": 3.821,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 112,
+    "cost": 0.0013635,
+    "text": "drawCircle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1025": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 5.884,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 319,
+    "cost": 0.00214875,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1026": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 3.704,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 110,
+    "cost": 0.001335,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1027": {
+    "raw": "{\"text\": \"hello_world\", \"unreadable\": false}",
+    "secs": 4.302,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 188,
+    "cost": 0.00163425,
+    "text": "hello_world",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1028": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 7.018,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 489,
+    "cost": 0.0028035,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1029": {
+    "raw": "{\"text\":\"speedX\",\"unreadable\":false}",
+    "secs": 3.745,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 97,
+    "cost": 0.00129825,
+    "text": "speedX",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1030": {
+    "raw": "{\"text\": \"Welcome_user!\", \"unreadable\": false}",
+    "secs": 3.415,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 104,
+    "cost": 0.001299,
+    "text": "Welcome_user!",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1031": {
+    "raw": "{\"text\": \"isVisible\", \"unreadable\": false}",
+    "secs": 3.982,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 118,
+    "cost": 0.001389,
+    "text": "isVisible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1100": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 3.306,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 51,
+    "cost": 0.0011325,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1101": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 5.285,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 261,
+    "cost": 0.001911,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1102": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 3.149,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 58,
+    "cost": 0.00114,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1103": {
+    "raw": "{\"text\": \"Y\", \"unreadable\": false}",
+    "secs": 3.944,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 121,
+    "cost": 0.00139125,
+    "text": "Y",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1104": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 4.049,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 78,
+    "cost": 0.00121875,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1105": {
+    "raw": "{\"text\":\"0\",\"unreadable\":false}",
+    "secs": 3.02,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 39,
+    "cost": 0.0010755,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1106": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 4.045,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 87,
+    "cost": 0.0012525,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1107": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 3.057,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 54,
+    "cost": 0.00113925,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1108": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 3.102,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 40,
+    "cost": 0.0010995,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1109": {
+    "raw": "{\"text\": \"oOO\", \"unreadable\": false}",
+    "secs": 10.601,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.00381,
+    "text": "oOO",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1110": {
+    "raw": "{\"text\": \"ll1\", \"unreadable\": false}",
+    "secs": 7.295,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 489,
+    "cost": 0.002775,
+    "text": "ll1",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1111": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 9.931,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 684,
+    "cost": 0.00353025,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1112": {
+    "raw": "{\"text\": \"zZ2\", \"unreadable\": false}",
+    "secs": 11.901,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.00382875,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1113": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.27,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 54,
+    "cost": 0.00114,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1114": {
+    "raw": "{\"text\":\"vV\",\"unreadable\":false}",
+    "secs": 3.18,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 62,
+    "cost": 0.001161,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1115": {
+    "raw": "{\"text\": \"uW\", \"unreadable\": false}",
+    "secs": 4.308,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 135,
+    "cost": 0.0014655,
+    "text": "uW",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1116": {
+    "raw": "{\"text\": \"kK\", \"unreadable\": false}",
+    "secs": 5.088,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 197,
+    "cost": 0.00168,
+    "text": "kK",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1117": {
+    "raw": "{\"text\": \"pP\", \"unreadable\": false}",
+    "secs": 3.278,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 63,
+    "cost": 0.0011835,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1118": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 3.704,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 53,
+    "cost": 0.00113475,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1119": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 4.104,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 113,
+    "cost": 0.001371,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1120": {
+    "raw": "{\"text\": \"qqq\", \"unreadable\": false}",
+    "secs": 10.16,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.0038385,
+    "text": "qqq",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1121": {
+    "raw": "{\"text\": \"ki\", \"unreadable\": false}",
+    "secs": 10.138,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.0037845,
+    "text": "ki",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1122": {
+    "raw": "{\"text\": \"Score2\", \"unreadable\": false}",
+    "secs": 10.924,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.00381225,
+    "text": "Score2",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1123": {
+    "raw": "{\"text\": \"drawCircle\", \"unreadable\": false}",
+    "secs": 8.189,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 619,
+    "cost": 0.0032775,
+    "text": "drawCircle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1124": {
+    "raw": "{\"text\": \"drowCircle\", \"unreadable\": false}",
+    "secs": 6.747,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 412,
+    "cost": 0.0024705,
+    "text": "drowCircle",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1125": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 4.401,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 136,
+    "cost": 0.0014355,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1126": {
+    "raw": "{\"text\": \"framecount\", \"unreadable\": false}",
+    "secs": 6.428,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 372,
+    "cost": 0.00233625,
+    "text": "framecount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1127": {
+    "raw": "{\"text\": \"hello_world\", \"unreadable\": false}",
+    "secs": 11.49,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 768,
+    "cost": 0.0038235,
+    "text": "hello_world",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1128": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 2.909,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.00096375,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1129": {
+    "raw": "{\"text\":\"speedX\",\"unreadable\":false}",
+    "secs": 4.194,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 69,
+    "cost": 0.001191,
+    "text": "speedX",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1130": {
+    "raw": "{\"text\":\"Welcome_user!\",\"unreadable\":false}",
+    "secs": 4.86,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 211,
+    "cost": 0.001692,
+    "text": "Welcome_user!",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1131": {
+    "raw": "{\"text\": \"isVisible\", \"unreadable\": false}",
+    "secs": 5.47,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 314,
+    "cost": 0.00213975,
+    "text": "isVisible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1200": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 5.037,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 195,
+    "cost": 0.00167475,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1201": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 4.785,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 167,
+    "cost": 0.00155175,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1202": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 2.533,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 37,
+    "cost": 0.00107625,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1203": {
+    "raw": "{\"text\": \"Y\", \"unreadable\": false}",
+    "secs": 6.18,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 346,
+    "cost": 0.00222975,
+    "text": "Y",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1204": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 3.191,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 62,
+    "cost": 0.00117525,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1205": {
+    "raw": "{\"text\": \"0\", \"unreadable\": false}",
+    "secs": 2.981,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 72,
+    "cost": 0.00119025,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1206": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 3.362,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 70,
+    "cost": 0.00118875,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1207": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 3.127,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 49,
+    "cost": 0.00113175,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1208": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 4.145,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 108,
+    "cost": 0.001335,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1209": {
+    "raw": "{\"text\": \"o00\", \"unreadable\": false}",
+    "secs": 9.671,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 769,
+    "cost": 0.00385725,
+    "text": "o00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1210": {
+    "raw": "{\"text\": \"ll1\", \"unreadable\": false}",
+    "secs": 9.578,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 725,
+    "cost": 0.0036825,
+    "text": "ll1",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1211": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 5.671,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 320,
+    "cost": 0.002145,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1212": {
+    "raw": "{\"text\": \"zZ2\", \"unreadable\": false}",
+    "secs": 11.565,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.0037995,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1213": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 3.47,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 46,
+    "cost": 0.00111,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1214": {
+    "raw": "{\"text\": \"vV\", \"unreadable\": false}",
+    "secs": 3.348,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 64,
+    "cost": 0.00119775,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1215": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 3.546,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 60,
+    "cost": 0.00117525,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1216": {
+    "raw": "{\"text\": \"kK\", \"unreadable\": false}",
+    "secs": 7.962,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 551,
+    "cost": 0.0029955,
+    "text": "kK",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1217": {
+    "raw": "{\"text\": \"pP\", \"unreadable\": false}",
+    "secs": 3.385,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 96,
+    "cost": 0.00130725,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1218": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 4.408,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 203,
+    "cost": 0.001719,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1219": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 4.78,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 168,
+    "cost": 0.00157725,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1220": {
+    "raw": "{\"text\": \"g9q\", \"unreadable\": false}",
+    "secs": 7.691,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 511,
+    "cost": 0.00286125,
+    "text": "g9q",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1221": {
+    "raw": "{\"text\": \"hi\", \"unreadable\": false}",
+    "secs": 10.819,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.0037845,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1222": {
+    "raw": "{\"text\": \"Score 2\", \"unreadable\": false}",
+    "secs": 10.528,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 766,
+    "cost": 0.0038265,
+    "text": "Score 2",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1223": {
+    "raw": "{\"text\": \"drawCircle\", \"unreadable\": false}",
+    "secs": 3.376,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 96,
+    "cost": 0.00129975,
+    "text": "drawCircle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1224": {
+    "raw": "{\"text\": \"drawCircle\", \"unreadable\": false}",
+    "secs": 3.485,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 91,
+    "cost": 0.001269,
+    "text": "drawCircle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1225": {
+    "raw": "{\"text\": \"frameCount\", \"unreadable\": false}",
+    "secs": 3.989,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 158,
+    "cost": 0.00153,
+    "text": "frameCount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1226": {
+    "raw": "{\"text\": \"framecount\", \"unreadable\": false}",
+    "secs": 8.888,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 764,
+    "cost": 0.00379425,
+    "text": "framecount",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1227": {
+    "raw": "{\"text\": \"hello_world\", \"unreadable\": false}",
+    "secs": 5.583,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 279,
+    "cost": 0.00198675,
+    "text": "hello_world",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1228": {
+    "raw": "{\"text\": \"p5.circle\", \"unreadable\": false}",
+    "secs": 3.306,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 59,
+    "cost": 0.00117,
+    "text": "p5.circle",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1229": {
+    "raw": "{\"text\": \"speedX\", \"unreadable\": false}",
+    "secs": 6.156,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 253,
+    "cost": 0.0018885,
+    "text": "speedX",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1230": {
+    "raw": "{\"text\": \"Welcome-user!\", \"unreadable\": false}",
+    "secs": 10.15,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 765,
+    "cost": 0.00377325,
+    "text": "Welcome-user!",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1231": {
+    "raw": "{\"text\": \"isVisible\", \"unreadable\": false}",
+    "secs": 4.306,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 114,
+    "cost": 0.001365,
+    "text": "isVisible",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "-250": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.235,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 63,
+    "cost": 0.00117525,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-251": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.493,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 52,
+    "cost": 0.001131,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-300": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.388,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 32,
+    "cost": 0.00107025,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-301": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 5.243,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 224,
+    "cost": 0.001776,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-350": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.087,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 30,
+    "cost": 0.0010515,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   },
+   "-351": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 3.409,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 48,
+    "cost": 0.00112875,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   }
+  }
+ }
+}
