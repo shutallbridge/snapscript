@@ -11,7 +11,7 @@ One physical piece that lies flat on the table and stands for one block of the p
 One printed face of a card. Most cards have one side; a flip pair has two.
 
 **Flip pair**:
-A card with a different card on each side, changed by flipping it over. Both sides take the same roles: `[num{…}]` / `[str{…}]`, `[bool(true)]` / `[bool(false)]`, `[color(…)]` / `[color(…)]` (two different colours, such as `[color(yellow)]` / `[color(purple)]`), `[+]` / `[-]`, `[*]` / `[/]`, `[<]` / `[>]`, `[<=]` / `[>=]`, `[==]` / `[!=]`, `[and]` / `[or]`. Every other card has one side, `[%]`, `[set{x}to]`, `[get{x}]`, `[define{f}]` and `[call{f}]` among them.
+A card with a different card on each side, changed by flipping it over. Both sides take the same roles: `[num{…}]` / `[str{…}]`, `[bool(true)]` / `[bool(false)]`, `[color(…)]` / `[color(…)]` (two different colors, such as `[color(yellow)]` / `[color(purple)]`), `[+]` / `[-]`, `[*]` / `[/]`, `[<]` / `[>]`, `[<=]` / `[>=]`, `[==]` / `[!=]`, `[and]` / `[or]`. Every other card has one side, `[%]`, `[set{x}to]`, `[get{x}]`, `[define{f}]` and `[call{f}]` among them.
 
 **Marker**:
 The printed pattern on a card's side that the camera reads to learn which side it is, where it lies and how it is turned. A marker names a keyword (`[repeat]`), a handwritten kind and its length (`[get{…}]` at 3U), or a library card (`[call(p5.fill)]`); it does not name the physical card. Two `[get{x}]` cards of the same length carry the same marker and are told apart by where they lie.
@@ -136,7 +136,7 @@ What a contact does: its magnets only pull the cards together, only push them ap
 What one edge of a side needs from the edge that faces it. For example, `head` on a left edge means that nothing may be on its left.
 
 **Card class**:
-A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, the operator cards but `[%]`, or `[get(…)]` and `[root]`. A class also has a shortest length, 2U for every class for now, and a pocket reach.
+A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, the operator cards but `[%]`, or `[get{…}]` and `[root]`. A printed card and the same card handwritten are in the same class: `[call(p5.circle)]` and `[call{f}]`. A class also has a shortest length, 2U for every class for now, and a pocket reach.
 
 **Connect**:
 A contact between two cards that the grammar lets be neighbours there. It must snap.
