@@ -64,7 +64,7 @@ vertical:
   coexist:
     never: [top_level, free]
     # A card can head a line if its top role is one of these. A [define] or
-    # [on:] heads a line too: its body goes below it, in the same column.
+    # [on(…)] heads a line too: its body goes below it, in the same column.
     line_heads: [line, dedent, top_level]
     # A card can sit inline unless its left role is one of these.
     not_inline: [head]

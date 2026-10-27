@@ -15,7 +15,7 @@ TOY_CLASSES = {
         "min_length": 2,
         "pocket_reach": 1,
         "flip_pair": True,
-        "sides": {"set": {"[set(x)to]": SET}, "get": {"[get(x)]": GET}},
+        "sides": {"set": {"[set{x}to]": SET}, "get": {"[get{x}]": GET}},
     },
     "block_head": {
         "min_length": 2,
@@ -83,10 +83,10 @@ def test_bundled_members_belong_to_one_class_each():
     assert result.sides["operator.front"].side.notation == "[+]"
     assert result.sides["operator.back"].side.members[1] == "[/]"
     assert "[root]" in result.sides["get.get"].side.members
-    assert "[call:…]" in result.sides["call.call"].side.members
+    assert result.sides["call.call"].side.members == ("[call{f}]",)
     assert not {"call_printed", "receiver_printed"} & {name.split(".")[0] for name in result.sides}
-    # Only a flip pair's back may share its front's member, as `[color:…]` does.
-    assert result.sides["color.front"].side.members == result.sides["color.back"].side.members == ("[color:…]",)
+    # Only a flip pair's back may share its front's member, as `[color(…)]` does.
+    assert result.sides["color.front"].side.members == result.sides["color.back"].side.members == ("[color(…)]",)
     members = {(name.split(".")[0], m) for name, s in result.sides.items() for m in s.side.members}
     assert len({m for _, m in members}) == len(members)
 
@@ -99,11 +99,11 @@ def test_bundled_members_belong_to_one_class_each():
             "block_head.head: members disagree on roles: [if] has bottom block, [repeat] has bottom line",
         ),
         (
-            classes_with(set_get__sides={"set": {"[set(x)to]": SET}}),
+            classes_with(set_get__sides={"set": {"[set{x}to]": SET}}),
             "set_get: a flip pair defines two sides (front and back), not 1",
         ),
         (
-            classes_with(set_get__sides__set={"[set(x)to]": SET, "[let(x)to]": SET}),
+            classes_with(set_get__sides__set={"[set{x}to]": SET, "[let{x}to]": SET}),
             "set_get: a flip pair's sides pair their members in order, but set has 2 and get has 1",
         ),
         (
@@ -111,16 +111,16 @@ def test_bundled_members_belong_to_one_class_each():
             "set_get: a class that is not a flip pair defines one side, not 2",
         ),
         (
-            classes_with(set_get__sides__get={"[get(x)]": {**GET, "left": "cont"}}),
-            "set_get.get [get(x)]: left role 'cont' is not one of value, head",
+            classes_with(set_get__sides__get={"[get{x}]": {**GET, "left": "cont"}}),
+            "set_get.get [get{x}]: left role 'cont' is not one of value, head",
         ),
         (
-            classes_with(set_get__sides__get={"[get(x)]": {**GET, "bottom": None}}),
-            "set_get.get [get(x)]: bottom role None",
+            classes_with(set_get__sides__get={"[get{x}]": {**GET, "bottom": None}}),
+            "set_get.get [get{x}]: bottom role None",
         ),
         (
-            classes_with(block_head__sides={"head": {"[set(x)to]": IF}}),
-            "[set(x)to] is a member of both set_get.set and block_head.head",
+            classes_with(block_head__sides={"head": {"[set{x}to]": IF}}),
+            "[set{x}to] is a member of both set_get.set and block_head.head",
         ),
         (classes_with(block_head__min_length=0), "block_head: `min_length` must be"),
         (classes_with(block_head__pocket_reach=None), "block_head: `pocket_reach` must be"),
@@ -128,6 +128,10 @@ def test_bundled_members_belong_to_one_class_each():
         (classes_with(block_head__pocket_reach=3), "from 1 to `min_length` 2"),
         (classes_with(block_head__color="red"), "block_head: unknown key(s) color"),
         (classes_with(block_head__sides={"head": {}}), "block_head.head: expected a mapping of member cards"),
+        (
+            classes_with(block_head__sides={"head": {"if": IF}}),
+            "block_head.head: member 'if' is not a card in notation, like [get{x}]",
+        ),
     ],
 )
 def test_rejects_malformed_classes(classes, message):

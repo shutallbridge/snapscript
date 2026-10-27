@@ -196,8 +196,8 @@ def test_a_contradictory_grammar_is_infeasible_and_names_the_conflict():
 
 
 def test_an_unavoidable_leak_costs_nothing():
-    # On the TOY_PAIRS data [set(x)to][set(x)to] is forbid / should, but it snaps exactly when
-    # [get(x)][get(x)], a connect, does: it is unavoidable. These two
+    # On the TOY_PAIRS data [set{x}to][set{x}to] is forbid / should, but it snaps exactly when
+    # [get{x}][get{x}], a connect, does: it is unavoidable. These two
     # arrangements differ only in the left pocket of set, facing set's N.
     # Every edge is pinned, so each search can only return its pinned
     # arrangement.

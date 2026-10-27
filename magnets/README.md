@@ -51,9 +51,11 @@ the reach. The public API is `magnets.check`,
 `magnets.solve`; pass `class_data=` or `rule_data=` to check against other
 class or rule data.
 A card text resolves to a class side through the side's member notation:
-`(…)` stands for handwriting and `…` for printed text. It must match
-exactly one class; a text that matches both sides of a flip pair, as
-every color matches both `[color:…]` sides, resolves to the front.
+`{…}` stands for handwriting and `(…)` for printed or typed text, and a
+card matches whichever bracket it uses, so `[get{x}]` matches both
+`[get{score}]` and `[get(p5.frameCount)]`. It must match exactly one
+class; a text that matches both sides of a flip pair, as every color
+matches both `[color(…)]` sides, resolves to the front.
 
 `search` looks for the arrangement with no must failures and the least
 weighted forbid grades (a should-leak costs 10 per contact, a nice-leak 1),
@@ -113,12 +115,13 @@ A piece is the class's front over its back, sharing a dashed fold line;
 cut it out and fold it, and every pocket's two faces line up. Under
 `top_bottom` the back is upright and the fold is marked `↕`; under
 `left_right` it is rotated 180° and marked `↔`. The front is always on
-top, so a `[str(hi)]` prints as `[num(hi)]` over `[str(hi)]`, the
+top, so a `[str{hi}]` prints as `[num{hi}]` over `[str{hi}]`, the
 handwriting carried over, and a `[/]` as `[*]` over `[/]`: a flip pair's
 sides list their members in the same order, and each card holds the
 members at the same place. Printed text isn't carried over: a
-`[color:yellow]`'s back reads `[color:…]`, a color the kit picks. A
-card that is not a flip pair, such as `[get(x)]`, gets an unlabelled
+`[color(yellow)]`'s back reads `[color(…)]`, a color the kit picks, and
+a `[num(0)]`'s `[str(…)]`. A
+card that is not a flip pair, such as `[get{x}]`, gets an unlabelled
 back. Each pocket is a tick in from its
 edge with the layer nearest that face: `N` red, `S` blue, `F` grey, `–`
 empty. Ticks and letters stay inside their own panel, so neighbours

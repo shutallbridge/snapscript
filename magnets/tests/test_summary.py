@@ -95,9 +95,9 @@ def test_the_pocket_line_counts_front_pockets_by_shape():
 
 
 def test_unavoidable_low_leaks_are_counted_not_listed():
-    # On the TOY_PAIRS data, under left_right a 4U [set(x)to] over a 2U [set(x)to] @+2 (forbid low)
-    # snaps exactly like [get(x)] over [get(x)] @0 (connect), and
-    # [set(x)to][set(x)to] (forbid should) like [get(x)][get(x)].
+    # On the TOY_PAIRS data, under left_right a 4U [set{x}to] over a 2U [set{x}to] @+2 (forbid low)
+    # snaps exactly like [get{x}] over [get{x}] @0 (connect), and
+    # [set{x}to][set{x}to] (forbid should) like [get{x}][get{x}].
     toy = set_get(
         "left_right",
         top=[("right", 0.25, "S/-")],
@@ -108,8 +108,8 @@ def test_unavoidable_low_leaks_are_counted_not_listed():
     summary = summary_text(check_pairs(toy))
     count, listed = section(summary, "Unavoidable should- and nice-leaks")
     assert count == len(listed) == 3
-    assert "  [set(x)to] [set(x)to] @0: forbid should snap (attract 1, repel 0)" in listed
-    assert "  [set(x)to] over [set(x)to] @+1: forbid should snap (attract 1, repel 0, lengths 3x2)" in listed
+    assert "  [set{x}to] [set{x}to] @0: forbid should snap (attract 1, repel 0)" in listed
+    assert "  [set{x}to] over [set{x}to] @+1: forbid should snap (attract 1, repel 0, lengths 3x2)" in listed
     assert not any(" low " in line for line in summary.splitlines() if line.startswith("  "))
     low, listed = section(summary, "Unavoidable low-leaks (not listed)")
     assert (low, listed) == (6, [])

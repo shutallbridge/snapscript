@@ -26,7 +26,7 @@ class ProgramError(ValueError):
 class Card:
     """A card as written in the program."""
 
-    text: str  # its notation, e.g. "[get(x)]"
+    text: str  # its notation, e.g. "[get{x}]"
     side: str  # the class side it resolves to, e.g. "get.get"
     line: int  # the source line it is on, from 1
     index: int  # its place in its line; 0 is the line head

@@ -102,12 +102,12 @@ def test_check_reports_horizontal_contacts(tmp_path):
     assert (row["edge_a"], row["edge_b"], row["lengths"], row["count"]) == ("right", "left", "2x2", "25")
     assert row["unavoidable"] == "False"
 
-    assert "[get(x)] [get(x)] @0" not in run.stdout
-    assert "  [set(x)to] [get(x)] @0: connect nothing" in run.stdout
-    # [set(x)to] and [get(x)] are separate cards, so [set(x)to][set(x)to] is not tied to
-    # [get(x)][get(x)]: its leak is avoidable.
+    assert "[get{x}] [get{x}] @0" not in run.stdout
+    assert "  [set{x}to] [get{x}] @0: connect nothing" in run.stdout
+    # [set{x}to] and [get{x}] are separate cards, so [set{x}to][set{x}to] is not tied to
+    # [get{x}][get{x}]: its leak is avoidable.
     leaks = run.stdout.split("Avoidable should-leaks: 1\n")[1]
-    assert leaks.startswith("  [set(x)to] [set(x)to] @0: forbid snap (attract 1, repel 0)\n")
+    assert leaks.startswith("  [set{x}to] [set{x}to] @0: forbid snap (attract 1, repel 0)\n")
     assert "Unavoidable should- and nice-leaks: 0\n" in run.stdout
 
 
@@ -134,7 +134,7 @@ def test_check_lists_must_failures_in_notation(tmp_path):
         text=True,
         check=True,
     )
-    assert "[set(x)to] over [set(x)to] @0: connect repel" in run.stdout
+    assert "[set{x}to] over [set{x}to] @0: connect repel" in run.stdout
     assert "\nINVALID\n" in run.stdout
 
 
@@ -183,12 +183,12 @@ def test_check_reports_vertical_contacts(tmp_path):
     # The bundled flip pairs take the same roles on both sides: nothing is
     # unavoidable, and a row of zeros is left out.
     assert [row.split()[0] for row in table[1:]] == ["connect", "forbid", "coexist", "ungraded"]
-    assert "  [num(…)] over [num(…)] @0: coexist repel (attract 0, repel 1, lengths 2x2)\n" in summary
+    assert "  [num{…}] over [num{…}] @0: coexist repel (attract 0, repel 1, lengths 2x2)\n" in summary
     # num's and simple_head's bottom N/- snap to define's top S/-.
     nice_leaks = summary.split("Avoidable nice-leaks: 2\n")[1].split("\n\n")[0]
     assert sorted(nice_leaks.splitlines()) == [
-        "  [num(…)] over [define(f)] @0: forbid snap (attract 1, repel 0, lengths 2x2)",
-        "  [set(x)to] over [define(f)] @0: forbid snap (attract 1, repel 0, lengths 2x2)",
+        "  [num{…}] over [define{f}] @0: forbid snap (attract 1, repel 0, lengths 2x2)",
+        "  [set{x}to] over [define{f}] @0: forbid snap (attract 1, repel 0, lengths 2x2)",
     ]
     assert "Unavoidable should- and nice-leaks: 0\n" in summary
     assert summary.endswith("\nINVALID\n")
@@ -219,11 +219,11 @@ def test_check_writes_the_program_report(tmp_path):
     assert titles[4].startswith("illegal (illegal): ") and titles[4].endswith(" forbid contacts in 21 layouts")
     # The example only designs simple_head's, get's and literal's edges.
     first_sketch = sections[0].splitlines()
-    assert "  line 5 [call:p5.createCanvas] [num(500)] @0: connect nothing, should snap (21 of 21 layouts)" in first_sketch
-    assert not any("[set(x)to] over [set(y)to]" in line for line in first_sketch)
+    assert "  line 5 [call(p5.createCanvas)] [num{500}] @0: connect nothing, should snap (21 of 21 layouts)" in first_sketch
+    assert not any("[set{x}to] over [set{y}to]" in line for line in first_sketch)
     illegal = sections[4].splitlines()
     assert "  line 6 [if] over line 7 [dedent] @0: forbid nice weak (21 of 21 layouts)" in illegal
-    assert "  line 10 [set(y)to] over line 11 [define(inner)] @0: forbid nice weak (21 of 21 layouts)" in illegal
+    assert "  line 10 [set{y}to] over line 11 [define{inner}] @0: forbid nice weak (21 of 21 layouts)" in illegal
     assert "  line 3 [(] [)] @0: forbid should weak (21 of 21 layouts)" in illegal
     # stdout has each program's status after the summary.
     assert "\nINVALID\n\nPrograms:\n  first_sketch (legal): FAIL in 21 of 21 layouts\n" in run.stdout
@@ -290,7 +290,7 @@ def test_an_infeasible_search_names_the_conflict_and_writes_the_fewest_failures(
     listed = summary.split("  Conflicting requirements: ")[1].splitlines()
     conflicts = listed[1 : 1 + int(listed[0])]
     assert conflicts and all(line.startswith("    ") and line.endswith(" @0: connect") for line in conflicts)
-    assert all(line.startswith("    [num(…)] ") or " [str(…)] @0" in line for line in conflicts)
+    assert all(line.startswith("    [num{…}] ") or " [str{…}] @0" in line for line in conflicts)
     assert summary.endswith("\nINVALID\n")
     # The fewest-failures arrangement keeps the pinned empty edge.
     assert "right" not in yaml.safe_load(found.read_text())["classes"]["literal"]
@@ -320,7 +320,7 @@ def test_search_rejects_an_unknown_goal():
 
 def test_print_writes_the_cards_as_html(tmp_path):
     program = tmp_path / "prog.txt"
-    program.write_text("// two cards\n[set(score)to][num(500)]\n")
+    program.write_text("// two cards\n[set{score}to][num{500}]\n")
     run = subprocess.run(
         [*MAGNETS, "print", "example", "--program", str(program)],
         capture_output=True,
@@ -332,7 +332,7 @@ def test_print_writes_the_cards_as_html(tmp_path):
     assert "Wrote out/example/cards.html" in run.stdout
     assert 'width="210mm" height="297mm"' in html
     assert "// two cards" in html
-    assert "[set(score)to]" in html and "[num(500)]" in html and "[str(500)]" in html
+    assert "[set{score}to]" in html and "[num{500}]" in html and "[str{500}]" in html
 
     other = tmp_path / "elsewhere.html"
     subprocess.run(
@@ -345,7 +345,7 @@ def test_print_writes_the_cards_as_html(tmp_path):
 
 def test_print_rejects_bad_input(tmp_path):
     program = tmp_path / "prog.txt"
-    program.write_text("[set(x)to]\n")
+    program.write_text("[set{x}to]\n")
     bad = tmp_path / "bad.yaml"
     bad.write_text("flip: sideways\n")
     unknown = tmp_path / "unknown.txt"
@@ -364,7 +364,7 @@ def test_print_rejects_bad_input(tmp_path):
 
 def test_print_on_letter_paper_with_a_ruler_on_every_page(tmp_path):
     program = tmp_path / "prog.txt"
-    program.write_text("".join(f"[if][num({i})]\n" for i in range(20)))
+    program.write_text("".join(f"[if][num{{{i}}}]\n" for i in range(20)))
     out = tmp_path / "cards.html"
     run = subprocess.run(
         [*MAGNETS, "print", "example", "--program", str(program), "--paper", "letter", "--out", str(out)],

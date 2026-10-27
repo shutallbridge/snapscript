@@ -40,52 +40,74 @@ class Side:
 
     def matches(self, card: str) -> bool:
         """Whether a card's notation text is one of this side's members."""
-        return any(_member_pattern(m).fullmatch(card) for m in self.members)
+        return any(_match(card, m) for m in self.members)
 
 
-# In a member's notation, anything in `(…)` stands for handwriting and a `…`
-# for printed text: `[get(x)]` matches `[get(score)]`, `[call:…]` matches
-# `[call:p5.circle]`. Handwriting holds no parens and printed text no parens
-# or brackets, so `[get(x)]` never matches `[get:…]`, nor `[import(…)]`
-# `[import(…)as(…)]`.
-_PLACEHOLDER = re.compile(r"\([^()]*\)|…")
-_HANDWRITTEN = r"\([^()]*\)"
-_PRINTED = r"[^()\[\]]+"
+# In a member's notation, anything in `{…}` stands for handwriting and a
+# `(…)` for printed or typed text; other text in `()`, such as `[bool(true)]`'s,
+# is the card's own. A card matches whichever bracket it uses, as long as
+# every bracket on it is the same: `[get{x}]` matches `[get{score}]` and
+# `[get(p5.frameCount)]`, but not `[get(score}]`, and `[bool(true)]` matches
+# `[bool{true}]`. Bracketed text holds no brackets, so `[import(…)]` never
+# matches `[import(…)as(…)]`.
+_BRACKETED = re.compile(r"\{([^{}]*)\}|\(([^()]*)\)")
+_TEXT = r"[^(){}\[\]]*"
+_BRACKETS = {"handwritten": ("{", "}"), "printed": ("(", ")")}
+
+
+def _written(found: re.Match) -> str | None:
+    """The member's own text in a bracket, or None where the card's text goes."""
+    own = found.group(2)
+    return None if own is None or own == "…" else own
 
 
 @cache
-def _member_pattern(member: str) -> re.Pattern:
-    parts, last = [], 0
-    for found in _PLACEHOLDER.finditer(member):
-        parts += [re.escape(member[last : found.start()]), f"({_PRINTED if found.group() == '…' else _HANDWRITTEN})"]
-        last = found.end()
-    return re.compile("".join(parts) + re.escape(member[last:]))
+def _member_patterns(member: str) -> dict[str, re.Pattern]:
+    """The member's pattern for a handwritten card and for a printed one."""
+    patterns = {}
+    for form, (opening, closing) in _BRACKETS.items():
+        parts, last = [], 0
+        for found in _BRACKETED.finditer(member):
+            own = _written(found)
+            inner = f"({_TEXT})" if own is None else re.escape(own)
+            parts += [re.escape(member[last : found.start()] + opening), inner, re.escape(closing)]
+            last = found.end()
+        patterns[form] = re.compile("".join(parts) + re.escape(member[last:]))
+    return patterns
+
+
+def _match(card: str, member: str) -> tuple[str, re.Match] | None:
+    """The card's form, handwritten or printed, and the text it holds where
+    the member takes one, if the card is this member."""
+    return next(
+        ((form, found) for form, pattern in _member_patterns(member).items() if (found := pattern.fullmatch(card))),
+        None,
+    )
 
 
 def carry_over(card: str, side: Side, other: Side) -> str:
-    """The card as written on `other`, the other side of the same card: the
-    member at the same place on `other`, its handwriting filled with the
-    card's, in order. `[str(500)]` on literal's front is `[num(500)]`, and
-    `[/]` on operator's is `[*]`. Printed text is the kit's, not carried over:
-    `[color:yellow]`'s back is `[color:…]`, a color the kit picks."""
-    place, member, match = next(
-        (i, m, found) for i, m in enumerate(side.members) if (found := _member_pattern(m).fullmatch(card))
-    )
-    handwriting = [
-        text for placeholder, text in zip(_PLACEHOLDER.finditer(member), match.groups()) if placeholder.group() != "…"
-    ]
+    """The card as written on `other`, the other side of the same card, in
+    the card's bracket: the member at the same place on `other`, filled with
+    the card's handwriting, in order. `[str{500}]` on literal's front is
+    `[num{500}]`, and `[/]` on operator's is `[*]`. Printed text is the kit's,
+    not carried over: `[color(yellow)]`'s back is `[color(…)]`, a color the
+    kit picks."""
+    place, (form, match) = next((i, matched) for i, m in enumerate(side.members) if (matched := _match(card, m)))
+    opening, closing = _BRACKETS[form]
+    handwriting = list(match.groups()) if form == "handwritten" else []
     filled, last = [], 0
     target = other.members[place]
-    for found in _PLACEHOLDER.finditer(target):
-        takes_handwriting = found.group() != "…" and handwriting
-        filled += [target[last : found.start()], handwriting.pop(0) if takes_handwriting else found.group()]
+    for found in _BRACKETED.finditer(target):
+        own = _written(found)
+        text = own if own is not None else handwriting.pop(0) if handwriting else "…"
+        filled += [target[last : found.start()], opening, text, closing]
         last = found.end()
     return "".join(filled) + target[last:]
 
 
 def matching_sides(card: str, classes: Mapping[str, "CardClass"]) -> list[Side]:
     """The side of each class the card's notation text belongs to: a text
-    that matches both sides of a flip pair, such as `[color:yellow]`, takes
+    that matches both sides of a flip pair, such as `[color(yellow)]`, takes
     the front."""
     return [side for cls in classes.values() if (side := next((s for s in cls.sides if s.matches(card)), None))]
 
@@ -440,7 +462,7 @@ def _parse_classes(raw: Any, grammar: Rules) -> dict[str, CardClass]:
     if not isinstance(raw, Mapping) or not raw:
         raise DataError("card classes must be a mapping of class names to classes")
     classes = {str(name): _parse_class(str(name), spec, grammar) for name, spec in raw.items()}
-    # A member may be on both sides of one flip pair, as `[color:…]` is, but
+    # A member may be on both sides of one flip pair, as `[color(…)]` is, but
     # not in two classes.
     owners: dict[str, tuple[str, str]] = {}  # member -> (class, side) it is first on
     for cls in classes.values():
@@ -494,7 +516,7 @@ def _parse_side(name: str, raw: Any, grammar: Rules) -> Side:
         raise DataError(f"{name}: expected a mapping of member cards (in notation) to their roles")
     for card in raw:
         if not re.fullmatch(r"\[[^\[\]]+\]", str(card)):
-            raise DataError(f"{name}: member {card!r} is not a card in notation, like [get(x)]")
+            raise DataError(f"{name}: member {card!r} is not a card in notation, like [get{{x}}]")
     members = {str(card): _parse_member_roles(f"{name} {card}", roles, grammar) for card, roles in raw.items()}
     (first, roles), *others = members.items()
     for card, other in others:

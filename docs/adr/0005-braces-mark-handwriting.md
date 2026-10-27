@@ -28,4 +28,3 @@ Handwriting gets the different bracket because it is the special case: only a wh
 - Every slot of a card uses the same bracket, because a card is printed or handwritten as a whole.
 - A text file can name a printed card that no library offers, such as `[define(draw2)]`. The program is still valid; only the projector cannot draw that card.
 - A library's own modules are never on the table, so they can be written entirely in `()`.
-- The magnets tool still uses the old notation in its data, tests and reports until it is moved over.

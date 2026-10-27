@@ -20,9 +20,8 @@ def _old_pairs():
     """The bundled classes with simple_head and get, define and call, set_prop
     and get_prop, and required and optional joined into flip pairs whose sides
     take different roles: set_get, define_call, prop and param. `[return]`
-    is left out, so `[set(x)to]` pairs with `[get(x)]` on a front side named
-    set, and so are the printed `[get:…]`, `[root]` and `[call:…]`, so each
-    back has its front's one member."""
+    is left out, so `[set{x}to]` pairs with `[get{x}]` on a front side named
+    set, and so is `[root]`, so each back has its front's one member."""
     classes = bundled_classes()
     head = classes["simple_head"]
     del head["sides"]["head"]["[return]"]

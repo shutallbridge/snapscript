@@ -21,9 +21,9 @@ def marks(panel):
 
 @pytest.mark.parametrize("unit", [30, 20])
 def test_example_num_marks(unit):
-    (piece,) = pieces(card_sheet("example", "[str(hi)]\n", unit=unit))
+    (piece,) = pieces(card_sheet("example", "[str{hi}]\n", unit=unit))
     front, back = piece.front, piece.back
-    assert (front.notation, back.notation) == ("[num(hi)]", "[str(hi)]")
+    assert (front.notation, back.notation) == ("[num{hi}]", "[str{hi}]")
     assert marks(front) == [("left", 0.5 * unit, "F"), ("right", 0.5 * unit, "N")]
     # The str panel's right edge holds num's N/S pocket flipped: S/N.
     right = [m for m in back.marks if m.edge == "right"]
@@ -33,16 +33,16 @@ def test_example_num_marks(unit):
 
 
 def test_every_card_once_at_min_length_front_above_back():
-    text = "[define(f)]\n[if][get(score)]\n  [call:print][get(score)][num(500)]\n[dedent]\n"
+    text = "[define{f}]\n[if][get{score}]\n  [call(print)][get{score}][num{500}]\n[dedent]\n"
     sheet = card_sheet("example", text, unit=30)
     found = pieces(sheet)
     assert [p.card.text for p in found] == [
-        "[define(f)]", "[if]", "[get(score)]", "[call:print]", "[get(score)]", "[num(500)]", "[dedent]",
+        "[define{f}]", "[if]", "[get{score}]", "[call(print)]", "[get{score}]", "[num{500}]", "[dedent]",
     ]
     assert [p.length for p in found] == [2] * 7
     # A card that is not a flip pair has an unlabelled back.
     get = found[2]
-    assert (get.front.notation, get.back.notation) == ("[get(score)]", None)
+    assert (get.front.notation, get.back.notation) == ("[get{score}]", None)
     for p in found:
         assert p.front.width == p.back.width == p.length * 30
         assert p.front.y + p.front.height == p.fold_y == p.back.y
@@ -56,9 +56,12 @@ def test_every_card_once_at_min_length_front_above_back():
 @pytest.mark.parametrize(
     "card, front, back",
     [
-        ("[str(500)]", "[num(500)]", "[str(500)]"),
-        ("[num(7)]", "[num(7)]", "[str(7)]"),
-        ("[bool:false]", "[bool:true]", "[bool:false]"),
+        ("[str{500}]", "[num{500}]", "[str{500}]"),
+        ("[num{7}]", "[num{7}]", "[str{7}]"),
+        # Only handwriting carries over: printed text is the kit's.
+        ("[num(0)]", "[num(0)]", "[str(…)]"),
+        ("[bool(false)]", "[bool(true)]", "[bool(false)]"),
+        ("[bool{false}]", "[bool{true}]", "[bool{false}]"),
         # Each operator card pairs the members at the same place on each side.
         ("[+]", "[+]", "[-]"),
         ("[/]", "[*]", "[/]"),
@@ -66,7 +69,7 @@ def test_every_card_once_at_min_length_front_above_back():
         ("[or]", "[and]", "[or]"),
         # A color card's back is another color, which the kit picks, so it
         # reads as an unnamed color.
-        ("[color:yellow]", "[color:yellow]", "[color:…]"),
+        ("[color(yellow)]", "[color(yellow)]", "[color(…)]"),
     ],
 )
 def test_back_labels_carry_the_handwriting_over(card, front, back):
@@ -75,7 +78,7 @@ def test_back_labels_carry_the_handwriting_over(card, front, back):
 
 
 @pytest.mark.parametrize(
-    "card", ["[set(x)to]", "[get(x)]", "[define(f)]", "[call(f)]", "[getProp(p)]", "[optional(p)]", "[%]"]
+    "card", ["[set{x}to]", "[get{x}]", "[define{f}]", "[call{f}]", "[getProp{p}]", "[optional{p}]", "[%]"]
 )
 def test_a_card_that_is_not_a_flip_pair_has_an_unlabelled_back(card):
     (piece,) = pieces(card_sheet("example", card))
@@ -112,7 +115,7 @@ def test_letters_are_the_layer_nearest_each_face():
 def test_back_letters_are_the_checkers_derived_up_layers(flip):
     arr = arrangement(flip, **EVERY_EDGE)
     sides = check(arr).sides
-    for card, side in [("[num(1)]", "literal.num"), ("[str(1)]", "literal.str")]:
+    for card, side in [("[num{1}]", "literal.num"), ("[str{1}]", "literal.str")]:
         (piece,) = pieces(card_sheet(arr, card))
         panel = piece.front if side == "literal.num" else piece.back
         expected = sorted(
@@ -123,7 +126,7 @@ def test_back_letters_are_the_checkers_derived_up_layers(flip):
 
 @pytest.mark.parametrize("flip, rotated, fold", [("top_bottom", False, "↕"), ("left_right", True, "↔")])
 def test_back_folds_onto_front(flip, rotated, fold):
-    sheet = card_sheet(arrangement(flip, **EVERY_EDGE), "[if][num(1)]", unit=25)
+    sheet = card_sheet(arrangement(flip, **EVERY_EDGE), "[if][num{1}]", unit=25)
     for piece in pieces(sheet):
         assert piece.fold == fold
         assert piece.back.rotated is rotated and piece.front.rotated is False
@@ -136,7 +139,7 @@ def test_back_folds_onto_front(flip, rotated, fold):
 
 def test_program_text_above_its_cards_on_as_many_a4_pages_as_needed():
     # 30 cards, 2U at 30 mm, three to a row: more rows than a page holds.
-    text = "// thirty cards\n" + "".join(f"[if][num({i})]\n" for i in range(15))
+    text = "// thirty cards\n" + "".join(f"[if][num{{{i}}}]\n" for i in range(15))
     sheet = card_sheet("example", text)
     first = sheet.pages[0]
     assert [line.text for line in first.text] == ["min lengths", *text.splitlines()]
@@ -145,7 +148,7 @@ def test_program_text_above_its_cards_on_as_many_a4_pages_as_needed():
     assert len(sheet.pages) > 1 and all(page.pieces for page in sheet.pages)
     # In program order, across pages, each piece whole on one page.
     found = [p.card.text for p in pieces(sheet)]
-    assert found == [card for i in range(15) for card in ("[if]", f"[num({i})]")]
+    assert found == [card for i in range(15) for card in ("[if]", f"[num{{{i}}}]")]
     for page in sheet.pages:
         assert all(10 <= p.front.y and p.back.y + p.back.height <= 297 - 10 for p in page.pieces)
 
@@ -159,11 +162,11 @@ def test_unknown_card():
     "text, unit, paper, card, largest",
     [
         # 2U at 100 mm is 200 mm, over A4's 190 mm printable width; the first card names it.
-        ("[num(1)]\n[if]", 100, "a4", "[num(1)]", "95"),
+        ("[num{1}]\n[if]", 100, "a4", "[num{1}]", "95"),
         # Letter is 195.9 mm wide inside its margins.
         ("[if]", 100, "letter", "[if]", "97.9"),
         # The longest card names the unit that fits the whole program.
-        ("[if][num(1)]\n[dedent]\n[define(f)]", 96, "a4", "[if]", "95"),
+        ("[if][num{1}]\n[dedent]\n[define{f}]", 96, "a4", "[if]", "95"),
     ],
 )
 def test_a_card_too_long_for_the_page_names_the_largest_unit(text, unit, paper, card, largest):
@@ -184,7 +187,7 @@ def rows(page):
 
 def test_pieces_in_a_row_and_rows_touch_inside_the_printable_area():
     # 2U cards at 30 mm: a 190 mm wide printable area holds six U per row.
-    text = "[if][get(score)]\n" * 4
+    text = "[if][get{score}]\n" * 4
     (page,) = card_sheet("example", text, unit=30).pages
     lengths = [[p.length for p in row] for row in rows(page)]
     assert lengths == [[2, 2, 2], [2, 2, 2], [2, 2]]
@@ -201,7 +204,7 @@ def test_pieces_in_a_row_and_rows_touch_inside_the_printable_area():
 
 @pytest.mark.parametrize("paper", ["a4", "letter"])
 def test_every_page_has_a_50_mm_ruler_clear_of_the_pieces(paper):
-    text = "".join(f"[if][num({i})]\n" for i in range(20))
+    text = "".join(f"[if][num{{{i}}}]\n" for i in range(20))
     sheet = card_sheet("example", text, paper=paper)
     assert len(sheet.pages) > 1
     for page in sheet.pages:
@@ -213,7 +216,7 @@ def test_every_page_has_a_50_mm_ruler_clear_of_the_pieces(paper):
 
 
 def test_letter_paper_and_a4_by_default():
-    text = "".join(f"[if][num({i})]\n" for i in range(20))
+    text = "".join(f"[if][num{{{i}}}]\n" for i in range(20))
     assert card_sheet("example", text).paper == "a4"
     sheet = card_sheet("example", text, paper="letter")
     assert sheet.paper == "letter"
@@ -229,7 +232,7 @@ def test_letter_paper_and_a4_by_default():
 @pytest.mark.parametrize("per_row", [3, 11])
 def test_a_row_that_fits_exactly_is_full(per_row):
     # 2U cards at a unit that divides the 190 mm printable width exactly.
-    text = "".join(f"[num({i})]" for i in range(per_row))
+    text = "".join(f"[num{{{i}}}]" for i in range(per_row))
     (page,) = card_sheet("example", text, unit=190 / (2 * per_row)).pages
     assert [len(row) for row in rows(page)] == [per_row]
 

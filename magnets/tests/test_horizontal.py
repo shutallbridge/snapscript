@@ -62,7 +62,7 @@ def test_off_line_contacts_are_forbid_low():
 
 
 def test_parameters_with_a_call_default_are_connect():
-    # [optional(a)][call(random)][optional(b)]
+    # [optional{a}][call{random}][optional{b}]
     result = check_pairs({})
     for a, b in [("param.optional", "define_call.call"), ("define_call.call", "param.optional")]:
         [label] = beside(result, a, b).labels
@@ -75,7 +75,7 @@ def test_optional_before_required_is_forbid_should():
 
 
 def test_set_then_num_snaps_as_connect():
-    # [set(x)to][num(1)]: open -> value.
+    # [set{x}to][num{1}]: open -> value.
     result = check_pairs(
         arrangement(
             set_get={"right": [(0.5, "N/-")]},
@@ -101,7 +101,7 @@ def test_set_then_num_snaps_as_connect():
     ],
 )
 def test_num_then_set_is_graded_forbid(num_right, set_left, result, grade):
-    # [num(1)][set(x)to]: value -> head.
+    # [num{1}][set{x}to]: value -> head.
     contact = beside(
         check_pairs(
             arrangement(

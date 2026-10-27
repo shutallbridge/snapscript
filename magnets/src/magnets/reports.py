@@ -150,7 +150,7 @@ def _search_status(search: SolveResult) -> str:
 
 def conflict_lines(search: SolveResult) -> list[str]:
     """The requirements that conflict, if the search proved there is no
-    valid arrangement: `[num(…)] [get(x)] @0: connect`."""
+    valid arrangement: `[num{…}] [get{x}] @0: connect`."""
     if search.status != "infeasible":
         return []
     if not search.conflicts:
@@ -304,7 +304,7 @@ def _grouped(found: list[tuple[str, ProgramContact, str]], count: int) -> list[s
 
 
 def _where(pc: ProgramContact) -> str:
-    """`line 3 [set(x)to] [num(1)] @0` or `line 2 [if] over line 3 [dedent] @0`."""
+    """`line 3 [set{x}to] [num{1}] @0` or `line 2 [if] over line 3 [dedent] @0`."""
     a, b, offset = pc.a.card, pc.b.card, _offset(pc.contact.offset)
     if pc.contact.axis == "horizontal":
         return f"line {a.line} {a.text} {b.text} @{offset}"

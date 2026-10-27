@@ -13,11 +13,12 @@
 # neighbours to legal ones, so they always snap.
 #
 # A member's notation is also the pattern a card text in a program must
-# match: anything in `(…)` stands for handwriting and a `…` for printed text,
-# so `[get(x)]` matches `[get(score)]` and `[call:…]` matches `[call:print]`.
-# Every card text must match exactly one class; a text that matches both sides
-# of a flip pair resolves to the front. Both sides take the same roles, so the
-# side can't change whether a program is legal.
+# match: anything in `{…}` stands for handwriting and a `(…)` for printed or
+# typed text. A card matches whichever bracket it uses, so `[get{x}]` matches
+# `[get{score}]` and `[get(p5.frameCount)]`, and `[call{f}]` matches
+# `[call(print)]`. Every card text must match exactly one class; a text that
+# matches both sides of a flip pair resolves to the front. Both sides take the
+# same roles, so the side can't change whether a program is legal.
 #
 # `min_length` is the shortest card of the class, in whole U: most cards hold
 # written text, which needs 2U. Which one-symbol cards (`[(]`, `[+]`, …) may be
@@ -25,28 +26,28 @@
 # bottom pocket near its end: it sits less than the reach from its end of the
 # card. Block heads and `[dedent]` reach 2U, for the indent pocket.
 
-# `[set(x)to]` and `[return]` head a line without opening a block, unlike
-# the block heads. `[return]` takes the roles of `[set(x)to]`, so it shares
-# its card design, as `[if]` shares `[for(x)in]`'s. Having nothing to its
+# `[set{x}to]` and `[return]` head a line without opening a block, unlike
+# the block heads. `[return]` takes the roles of `[set{x}to]`, so it shares
+# its card design, as `[if]` shares `[for{x}in]`'s. Having nothing to its
 # right is a language matter, not a contact.
 simple_head:
   min_length: 2
   pocket_reach: 1
   sides:
     head:
-      "[set(x)to]": {left: head, right: open, top: line, bottom: line}
+      "[set{x}to]": {left: head, right: open, top: line, bottom: line}
       "[return]": {left: head, right: open, top: line, bottom: line}
 
 # A printed card and the same card handwritten mean the same thing, so they
-# share a class: `[get:…]` is a printed `[get(x)]`, as `[call:…]` is a printed
-# `[call(f)]`. `[root]` takes the roles of `[get(x)]`.
+# share a class, and one member stands for both: `[get{x}]` matches the
+# printed `[get(p5.frameCount)]`, as `[call{f}]` matches `[call(p5.circle)]`.
+# `[root]` takes the roles of `[get{x}]`.
 get:
   min_length: 2
   pocket_reach: 1
   sides:
     get:
-      "[get(x)]": {left: value, right: value, top: line, bottom: line}
-      "[get:…]": {left: value, right: value, top: line, bottom: line}
+      "[get{x}]": {left: value, right: value, top: line, bottom: line}
       "[root]": {left: value, right: value, top: line, bottom: line}
 
 define:
@@ -54,43 +55,42 @@ define:
   pocket_reach: 1
   sides:
     define:
-      "[define(f)]": {left: head, right: params, top: top_level, bottom: line}
+      "[define{f}]": {left: head, right: params, top: top_level, bottom: line}
 
 call:
   min_length: 2
   pocket_reach: 1
   sides:
     call:
-      "[call(f)]": {left: call, right: call, top: line, bottom: line}
-      "[call:…]": {left: call, right: call, top: line, bottom: line}
+      "[call{f}]": {left: call, right: call, top: line, bottom: line}
 
 set_prop:
   min_length: 2
   pocket_reach: 1
   sides:
     set_prop:
-      "[setProp(p)to]": {left: cont, right: open, top: none, bottom: none}
+      "[setProp{p}to]": {left: cont, right: open, top: none, bottom: none}
 
 get_prop:
   min_length: 2
   pocket_reach: 1
   sides:
     get_prop:
-      "[getProp(p)]": {left: cont, right: value, top: none, bottom: none}
+      "[getProp{p}]": {left: cont, right: value, top: none, bottom: none}
 
 required:
   min_length: 2
   pocket_reach: 1
   sides:
     required:
-      "[required(p)]": {left: required, right: params, top: none, bottom: none}
+      "[required{p}]": {left: required, right: params, top: none, bottom: none}
 
 optional:
   min_length: 2
   pocket_reach: 1
   sides:
     optional:
-      "[optional(p)]": {left: optional, right: default, top: none, bottom: none}
+      "[optional{p}]": {left: optional, right: default, top: none, bottom: none}
 
 literal:
   min_length: 2
@@ -98,9 +98,9 @@ literal:
   flip_pair: true
   sides:
     num:
-      "[num(…)]": {left: value, right: value, top: none, bottom: none}
+      "[num{…}]": {left: value, right: value, top: none, bottom: none}
     str:
-      "[str(…)]": {left: value, right: value, top: none, bottom: none}
+      "[str{…}]": {left: value, right: value, top: none, bottom: none}
 
 bool:
   min_length: 2
@@ -108,12 +108,12 @@ bool:
   flip_pair: true
   sides:
     "true":
-      "[bool:true]": {left: value, right: value, top: none, bottom: none}
+      "[bool(true)]": {left: value, right: value, top: none, bottom: none}
     "false":
-      "[bool:false]": {left: value, right: value, top: none, bottom: none}
+      "[bool(false)]": {left: value, right: value, top: none, bottom: none}
 
 # A color card has a different color on each side; which two is the kit's
-# choice, so both sides are written `[color:…]` and a color resolves to the
+# choice, so both sides are written `[color(…)]` and a color resolves to the
 # front.
 color:
   min_length: 2
@@ -121,9 +121,9 @@ color:
   flip_pair: true
   sides:
     front:
-      "[color:…]": {left: value, right: value, top: none, bottom: none}
+      "[color(…)]": {left: value, right: value, top: none, bottom: none}
     back:
-      "[color:…]": {left: value, right: value, top: none, bottom: none}
+      "[color(…)]": {left: value, right: value, top: none, bottom: none}
 
 none:
   min_length: 2
@@ -139,7 +139,7 @@ block_head:
     head:
       "[if]": {left: head, right: open, top: line, bottom: block}
       "[repeat]": {left: head, right: open, top: line, bottom: block}
-      "[for(x)in]": {left: head, right: open, top: line, bottom: block}
+      "[for{x}in]": {left: head, right: open, top: line, bottom: block}
 
 dedent:
   min_length: 2
@@ -153,7 +153,7 @@ dedent:
   pocket_reach: 1
   sides:
     "on":
-      "[on:…]": {left: head, right: end, top: top_level, bottom: line}
+      "[on(…)]": {left: head, right: end, top: top_level, bottom: line}
 
 operator:
   min_length: 2
@@ -225,4 +225,4 @@ global:
   pocket_reach: 1
   sides:
     global:
-      "[global(…)]": {left: head, right: open, top: free, bottom: free}
+      "[global{x}]": {left: head, right: open, top: free, bottom: free}

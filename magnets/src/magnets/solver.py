@@ -69,7 +69,7 @@ class Requirement:
     b: str
     offset: Fraction
     kind: str  # connect / coexist
-    cards: tuple[str, str]  # a's and b's notation, e.g. ("[set(x)to]", "[get(x)]")
+    cards: tuple[str, str]  # a's and b's notation, e.g. ("[set{x}to]", "[get{x}]")
 
 
 @dataclass(frozen=True)
