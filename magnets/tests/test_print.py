@@ -64,8 +64,8 @@ def test_every_card_once_at_min_length_front_above_back():
         ("[/]", "[*]", "[/]"),
         ("[>=]", "[<=]", "[>=]"),
         ("[or]", "[and]", "[or]"),
-        # A colour card's back is another colour, which the kit picks, so it
-        # reads as an unnamed colour.
+        # A color card's back is another color, which the kit picks, so it
+        # reads as an unnamed color.
         ("[color:yellow]", "[color:yellow]", "[color:…]"),
     ],
 )

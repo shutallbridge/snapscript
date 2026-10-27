@@ -9,9 +9,9 @@ from hypothesis import strategies as st
 from helpers import TOY_PAIRS, arrangement, beside, check_pairs, left_right_pockets, set_get, top_bottom_pockets
 from magnets import check, solve
 
-# A reduced problem on the TOY_PAIRS data: two flip pairs, one with different
-# roles on each side, a call and an operator.
-CLASSES = ["set_get", "literal", "call_printed", "operator"]
+# A reduced problem on the TOY_PAIRS data: four flip pairs, two with different
+# roles on each side (set_get and define_call, which holds the call).
+CLASSES = ["set_get", "literal", "define_call", "operator"]
 TOY = dict(class_data=TOY_PAIRS)
 
 
@@ -110,7 +110,7 @@ def design(arrangement):
 
 
 def test_pinning_the_example_keeps_its_design():
-    classes = ["simple_head", "get", "literal", "call_printed", "operator"]
+    classes = ["simple_head", "get", "literal", "call", "operator"]
     example = design(check("example", classes=classes).arrangement)
     result = solve("top_bottom", classes=classes, pinned="example", time_limit=3, workers=1)
     assert result.status in ("optimal", "feasible")

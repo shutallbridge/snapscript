@@ -318,7 +318,7 @@ def _labels(pc: ProgramContact) -> str:
 
 # --- card sheet ------------------------------------------------------------
 
-_LETTER_COLOURS = {"N": "#d62728", "S": "#1f5fbf", "F": "#888888"}
+_LETTER_COLORS = {"N": "#d62728", "S": "#1f5fbf", "F": "#888888"}
 _OPPOSITE_EDGE = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}
 _INWARD = {"top": (0, 1), "bottom": (0, -1), "left": (1, 0), "right": (-1, 0)}
 _TICK = 3.0  # mm in from the edge, never over a neighbour's shared cut line
@@ -393,10 +393,10 @@ def _panel_svg(panel: Panel) -> list[str]:
             f'<line x1="{mark.x:g}" y1="{mark.y:g}" x2="{mark.x + dx * _TICK:g}" y2="{mark.y + dy * _TICK:g}" '
             'stroke="black" stroke-width="0.3"/>'
         )
-        colour = _LETTER_COLOURS.get(mark.letter, "black")
+        color = _LETTER_COLORS.get(mark.letter, "black")
         parts.append(
             f'<text x="{mark.x + dx * _LETTER_INSET:g}" y="{mark.y + dy * _LETTER_INSET:g}" font-family="sans-serif" '
-            f'font-size="{_SMALL:g}" font-weight="bold" fill="{colour}" text-anchor="middle" '
+            f'font-size="{_SMALL:g}" font-weight="bold" fill="{color}" text-anchor="middle" '
             f'dominant-baseline="central">{mark.letter}</text>'
         )
     return parts

@@ -82,7 +82,9 @@ def test_bundled_members_belong_to_one_class_each():
     result = check({})
     assert result.sides["operator.front"].side.notation == "[+]"
     assert result.sides["operator.back"].side.members[1] == "[/]"
-    assert "[root]" in result.sides["receiver_printed.receiver"].side.members
+    assert "[root]" in result.sides["get.get"].side.members
+    assert "[call:…]" in result.sides["call.call"].side.members
+    assert not {"call_printed", "receiver_printed"} & {name.split(".")[0] for name in result.sides}
     # Only a flip pair's back may share its front's member, as `[color:…]` does.
     assert result.sides["color.front"].side.members == result.sides["color.back"].side.members == ("[color:…]",)
     members = {(name.split(".")[0], m) for name, s in result.sides.items() for m in s.side.members}
@@ -124,7 +126,7 @@ def test_bundled_members_belong_to_one_class_each():
         (classes_with(block_head__pocket_reach=None), "block_head: `pocket_reach` must be"),
         (classes_with(block_head__pocket_reach=0), "block_head: `pocket_reach` must be"),
         (classes_with(block_head__pocket_reach=3), "from 1 to `min_length` 2"),
-        (classes_with(block_head__colour="red"), "block_head: unknown key(s) colour"),
+        (classes_with(block_head__color="red"), "block_head: unknown key(s) color"),
         (classes_with(block_head__sides={"head": {}}), "block_head.head: expected a mapping of member cards"),
     ],
 )

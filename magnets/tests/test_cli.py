@@ -232,7 +232,7 @@ def test_check_writes_the_program_report(tmp_path):
 
 def test_search_writes_an_arrangement_that_check_accepts(tmp_path):
     found = tmp_path / "found.yaml"
-    classes = "simple_head,get,literal,call_printed,operator"
+    classes = "simple_head,get,call,literal,operator"
     run = subprocess.run(
         [*MAGNETS, "search", "--flip", "top_bottom", "--classes", classes, "--time-limit", "2", "--workers", "1",
          "--out", str(found)],
@@ -248,7 +248,7 @@ def test_search_writes_an_arrangement_that_check_accepts(tmp_path):
     assert summary.startswith("Arrangement: found (flip top_bottom, lengths up to 6U)\n")
     status = summary.split("Search (goal repel): ")[1].splitlines()[0]
     assert status.startswith(("optimal", "feasible")) and "objective" in status and "bound" in status
-    assert "classes simple_head, get, literal, call_printed, operator; seed 0, 1 worker, time limit 2s" in summary
+    assert "classes simple_head, get, call, literal, operator; seed 0, 1 worker, time limit 2s" in summary
     assert summary.endswith("\nVALID\n")
     # The arrangement's header copies the search lines, goal and all.
     assert found.read_text().startswith(

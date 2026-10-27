@@ -67,7 +67,7 @@ def carry_over(card: str, side: Side, other: Side) -> str:
     member at the same place on `other`, its handwriting filled with the
     card's, in order. `[str(500)]` on literal's front is `[num(500)]`, and
     `[/]` on operator's is `[*]`. Printed text is the kit's, not carried over:
-    `[color:yellow]`'s back is `[color:…]`, a colour the kit picks."""
+    `[color:yellow]`'s back is `[color:…]`, a color the kit picks."""
     place, member, match = next(
         (i, m, found) for i, m in enumerate(side.members) if (found := _member_pattern(m).fullmatch(card))
     )

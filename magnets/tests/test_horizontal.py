@@ -62,9 +62,9 @@ def test_off_line_contacts_are_forbid_low():
 
 
 def test_parameters_with_a_call_default_are_connect():
-    # [optional(a)][call:random][optional(b)]
+    # [optional(a)][call(random)][optional(b)]
     result = check_pairs({})
-    for a, b in [("param.optional", "call_printed.call"), ("call_printed.call", "param.optional")]:
+    for a, b in [("param.optional", "define_call.call"), ("define_call.call", "param.optional")]:
         [label] = beside(result, a, b).labels
         assert verdict(label) == ("connect", "must")
 

@@ -20,8 +20,9 @@ def _old_pairs():
     """The bundled classes with simple_head and get, define and call, set_prop
     and get_prop, and required and optional joined into flip pairs whose sides
     take different roles: set_get, define_call, prop and param. `[return]`
-    is left out, so `[set(x)to]` pairs with get member for member, on a front
-    side named set."""
+    is left out, so `[set(x)to]` pairs with `[get(x)]` on a front side named
+    set, and so are the printed `[get:…]`, `[root]` and `[call:…]`, so each
+    back has its front's one member."""
     classes = bundled_classes()
     head = classes["simple_head"]
     del head["sides"]["head"]["[return]"]
@@ -35,6 +36,7 @@ def _old_pairs():
     joined = {}
     for name, (front, back) in pairs.items():
         front, back = classes.pop(front), classes.pop(back)
+        back["sides"] = {side: dict(list(members.items())[:1]) for side, members in back["sides"].items()}
         joined[name] = {**front, "flip_pair": True, "sides": {**front["sides"], **back["sides"]}}
     return {**joined, **classes}
 

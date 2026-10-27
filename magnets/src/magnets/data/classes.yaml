@@ -37,12 +37,17 @@ simple_head:
       "[set(x)to]": {left: head, right: open, top: line, bottom: line}
       "[return]": {left: head, right: open, top: line, bottom: line}
 
+# A printed card and the same card handwritten mean the same thing, so they
+# share a class: `[get:…]` is a printed `[get(x)]`, as `[call:…]` is a printed
+# `[call(f)]`. `[root]` takes the roles of `[get(x)]`.
 get:
   min_length: 2
   pocket_reach: 1
   sides:
     get:
       "[get(x)]": {left: value, right: value, top: line, bottom: line}
+      "[get:…]": {left: value, right: value, top: line, bottom: line}
+      "[root]": {left: value, right: value, top: line, bottom: line}
 
 define:
   min_length: 2
@@ -57,6 +62,7 @@ call:
   sides:
     call:
       "[call(f)]": {left: call, right: call, top: line, bottom: line}
+      "[call:…]": {left: call, right: call, top: line, bottom: line}
 
 set_prop:
   min_length: 2
@@ -106,23 +112,8 @@ bool:
     "false":
       "[bool:false]": {left: value, right: value, top: none, bottom: none}
 
-call_printed:
-  min_length: 2
-  pocket_reach: 1
-  sides:
-    call:
-      "[call:…]": {left: call, right: call, top: line, bottom: line}
-
-receiver_printed:
-  min_length: 2
-  pocket_reach: 1
-  sides:
-    receiver:
-      "[get:…]": {left: value, right: value, top: line, bottom: line}
-      "[root]": {left: value, right: value, top: line, bottom: line}
-
-# A colour card has a different colour on each side; which two is the kit's
-# choice, so both sides are written `[color:…]` and a colour resolves to the
+# A color card has a different color on each side; which two is the kit's
+# choice, so both sides are written `[color:…]` and a color resolves to the
 # front.
 color:
   min_length: 2

@@ -18,7 +18,7 @@ SPEC_CARDS = {
         "[get(a)]", "[get(app)]", "[get(b)]", "[get(count)]", "[get(done)]", "[get(helper)]", "[get(i)]",
         "[get(message)]", "[get(n)]", "[get(p5)]", "[get(s)]", "[get(score)]", "[get(scores)]",
         "[get(shapes.unit)]", "[get(shapes)]", "[get(title)]", "[get(user)]", "[get(width)]", "[get(x)]",
-        "[get(y)]", "[get(empty)]", "[get(name)]", "[get(ready)]",
+        "[get(y)]", "[get(empty)]", "[get(name)]", "[get(ready)]", "[get:p5.frameCount]", "[root]",
     ],
     "define.define": [
         "[define(…)]", "[define(a)]", "[define(b)]", "[define(draw)]", "[define(drawCircle)]", "[define(foo)]",
@@ -29,6 +29,10 @@ SPEC_CARDS = {
     "call.call": [
         "[call(circle)]", "[call(f)]", "[call(foo)]", "[call(greet)]", "[call(helper)]", "[call(p5.circle)]",
         "[call(double)]", "[call(run)]",
+        "[call:…]", "[call:append]", "[call:b]", "[call:dict]", "[call:f]", "[call:g]", "[call:getAt]",
+        "[call:greet]", "[call:h]", "[call:len]", "[call:list]", "[call:p5.background]", "[call:p5.circle]",
+        "[call:p5.createCanvas]", "[call:p5.random]", "[call:pop]", "[call:print]", "[call:random]", "[call:range]",
+        "[call:setAt]", "[call:shapes.star]", "[call:star]", "[call:p5.circel]",
     ],
     "set_prop.set_prop": [
         "[setProp(…)to]", "[setProp(frameCount)to]", "[setProp(label)to]", "[setProp(message)to]", "[setProp(p)to]",
@@ -57,14 +61,7 @@ SPEC_CARDS = {
     ],
     "bool.true": ["[bool:true]"],
     "bool.false": ["[bool:false]"],
-    "call_printed.call": [
-        "[call:…]", "[call:append]", "[call:b]", "[call:dict]", "[call:f]", "[call:g]", "[call:getAt]",
-        "[call:greet]", "[call:h]", "[call:len]", "[call:list]", "[call:p5.background]", "[call:p5.circle]",
-        "[call:p5.createCanvas]", "[call:p5.random]", "[call:pop]", "[call:print]", "[call:random]", "[call:range]",
-        "[call:setAt]", "[call:shapes.star]", "[call:star]", "[call:p5.circel]",
-    ],
-    "receiver_printed.receiver": ["[get:p5.frameCount]", "[root]"],
-    "color.front": ["[color:midnightblue]", "[color:purple]", "[color:notacolour]", "[color:…]"],
+    "color.front": ["[color:midnightblue]", "[color:purple]", "[color:notacolor]", "[color:…]"],
     "none.none": ["[none]"],
     "block_head.head": ["[for(…)in]", "[for(i)in]", "[for(s)in]", "[for(x)in]", "[if]", "[repeat]"],
     "dedent.dedent": ["[dedent]"],
@@ -125,7 +122,7 @@ def test_every_class_member_resolves_to_its_own_side():
 
 
 @pytest.mark.parametrize("card", ["[color:yellow]", "[color:midnightblue]", "[color:purple]", "[color:…]"])
-def test_a_colour_resolves_to_the_front_of_its_flip_pair(card):
+def test_a_color_resolves_to_the_front_of_its_flip_pair(card):
     assert sides_of([card]) == ["color.front"]
 
 
@@ -133,15 +130,22 @@ def test_a_colour_resolves_to_the_front_of_its_flip_pair(card):
     "card, side",
     [
         ("[get(x)]", "get.get"),
-        ("[get:x]", "receiver_printed.receiver"),
+        ("[get:x]", "get.get"),
         ("[call(f)]", "call.call"),
-        ("[call:f]", "call_printed.call"),
+        ("[call:f]", "call.call"),
         ("[import(https://a.b/c.snap)as(c)]", "import.import"),
         ("[import(https://a.b/c.snap)]", "import.import"),
     ],
 )
 def test_overlapping_patterns_resolve_apart(card, side):
     assert sides_of([card]) == [side]
+
+
+def test_a_printed_and_a_handwritten_card_of_one_kind_share_a_class_side():
+    # A printed card and the same card handwritten mean the same thing, so
+    # they share one card design: one class, one set of magnets.
+    assert sides_of(["[call:p5.circle]", "[call(p5.circle)]"]) == ["call.call", "call.call"]
+    assert sides_of(["[get:p5.frameCount]", "[get(frameCount)]", "[root]"]) == ["get.get"] * 3
 
 
 @pytest.mark.parametrize("card", ["[foo]", "[get]", "[call:]", "[num(1)(2)]", "[setx)to]", "[if ]"])

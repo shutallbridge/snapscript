@@ -53,7 +53,7 @@ class or rule data.
 A card text resolves to a class side through the side's member notation:
 `(…)` stands for handwriting and `…` for printed text. It must match
 exactly one class; a text that matches both sides of a flip pair, as
-every colour matches both `[color:…]` sides, resolves to the front.
+every color matches both `[color:…]` sides, resolves to the front.
 
 `search` looks for the arrangement with no must failures and the least
 weighted forbid grades (a should-leak costs 10 per contact, a nice-leak 1),
@@ -117,7 +117,7 @@ top, so a `[str(hi)]` prints as `[num(hi)]` over `[str(hi)]`, the
 handwriting carried over, and a `[/]` as `[*]` over `[/]`: a flip pair's
 sides list their members in the same order, and each card holds the
 members at the same place. Printed text isn't carried over: a
-`[color:yellow]`'s back reads `[color:…]`, a colour the kit picks. A
+`[color:yellow]`'s back reads `[color:…]`, a color the kit picks. A
 card that is not a flip pair, such as `[get(x)]`, gets an unlabelled
 back. Each pocket is a tick in from its
 edge with the layer nearest that face: `N` red, `S` blue, `F` grey, `–`
