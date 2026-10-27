@@ -30,3 +30,14 @@ Result: every model reads far better than TrOCR (31/96). The kind prompt helps e
 Added later the same day: `gemini-3.6-flash`, thinking at minimal (`results/cloud-flash-20261027.*`). Its best setup, raw crops with the kind prompt, reads 78/96 exact and 54/60 real text, the same as the best small models. But it invents text on blank cards 5 times in 24 (`Underwood`, `Thread.count`, `Resized`), and changes 2 of 25 reads between runs. Typical time is 2.1–2.4 s, with one 16 s request.
 
 Also added: `gemini-3.8-flash` (`results/cloud-flash38-20261027.*`). Thinking can't be turned off on any host, so it runs at minimal, about 225 thinking tokens per card. Its best setup, raw crops with the kind prompt, reads 81/96 exact and 87/96 ignoring case, the best of any model, mostly because it reads the look-alike strings (`sS5`, `zZ2`, `B8`, `g9q`). On real text it reads 53/60, the same as the others: its misses are the lone `X` (read as `x` three times), `score2` → `Scale 2`/`Score2`, and the clipped `drawCircle`. It invents nothing on blank cards, and changes 2 of 25 reads between runs. But it's about twice as slow: 4.1 s typical, with requests up to 11–14 s.
+
+## On the Pi, Layout B (2026-10-27)
+
+- `aim.py`: on the Pi, `venv/bin/python aim.py --lens 3.65` takes a 16 MP test photo and saves a ¼-size preview with each page outlined, its markers read / printed and px/mm. For aiming the camera. `--af` autofocuses first, but autofocus sometimes fails and leaves the lens at 0.
+- `read_hw.py --models ""` only cuts out the crops (no TrOCR), and now prints the time for capture, marker search and cutting.
+- `cloud_read.py --format jpeg` sends crops as JPEG (quality 90) instead of PNG.
+- Layout B: pages 1–5 (U = 25, 30) on the near edge, 6–9 (U = 35) on the far edge. 3.0–3.1 px/mm near, 2.65–2.8 far. Focus locked at 3.65, auto exposure locked at 43 ms, gain 2, about 205 lux, projector off.
+- Run on the Pi: `read_hw.py --lens 3.65 --prep raw --models "" --label B-16`, then `cloud_read.py runs/B-16-…-crops --models gemma --preps raw --prompts kind --parallel 200 [--format jpeg]`. `--parallel 1` is one request at a time.
+- Results: `results/pi-B-20261027/` (the run and every cloud read; the HTML page is one Gemma JPEG burst), `results/rig-frame-layout-B.jpg`, `results/pi-B-gemma-reads-real-cards.png`.
+
+Result: on the Pi, sending all 102 crops at once as PNG takes 18–19 s, because PNG encoding takes 2.9 s on the Pi and the upload is 7.3 MB (about 10.7 Mbit/s up on this wifi). As JPEG it's 1 MB, encodes in 0.05 s, and the burst takes about 5 s (once 10 s, from one slow request), with the same accuracy. Gemma reads 79–80/96 exact and 50–52/60 real text, about the same as Layout A: the near or far edge makes no difference. GLM failed 9 of 102 requests in a burst and took 148 s; Qwen's JPEG burst took 5.7 s at 75/96.

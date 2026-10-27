@@ -115,9 +115,12 @@ def enlarge(img: Image.Image) -> Image.Image:
     return img.resize((round(img.width * s), TARGET_H), Image.LANCZOS)
 
 
+FORMAT = "png"  # set by --format; jpeg is ~7× smaller and much faster to encode on the Pi
+
+
 def png_b64(img: Image.Image) -> str:
     buf = io.BytesIO()
-    img.save(buf, "PNG")
+    img.save(buf, "JPEG", quality=90) if FORMAT == "jpeg" else img.save(buf, "PNG")
     return base64.b64encode(buf.getvalue()).decode()
 
 
@@ -162,7 +165,7 @@ async def read_one(client: httpx.AsyncClient, sem: asyncio.Semaphore, model: str
         "model": slug,
         "messages": [{"role": "user", "content": [
             {"type": "text", "text": text},
-            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{png_b64(img)}"}}]}],
+            {"type": "image_url", "image_url": {"url": f"data:image/{FORMAT};base64,{png_b64(img)}"}}]}],
         "temperature": 0,
         "max_tokens": 800,  # room for the models that must reason a little
         "reasoning": reasoning,
@@ -312,7 +315,10 @@ def main() -> None:
     ap.add_argument("--limit", type=int, help="only the first N cards (plus one blank), for a smoke test")
     ap.add_argument("--parallel", type=int, default=32, help="requests in flight at once")
     ap.add_argument("--report", help="rebuild the HTML page from a saved JSON")
+    ap.add_argument("--format", choices=["png", "jpeg"], default="png", help="how crops are sent")
     args = ap.parse_args()
+    global FORMAT
+    FORMAT = args.format
     if args.report:
         report(Path(args.report))
         return

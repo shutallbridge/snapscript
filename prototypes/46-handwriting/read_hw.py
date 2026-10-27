@@ -115,7 +115,7 @@ def main() -> None:
     ap.add_argument("--exposure", type=int, help="µs; default: what auto exposure picked")
     ap.add_argument("--gain", type=float)
     ap.add_argument("--models", default="trocr-small-handwritten/int8,trocr-small-handwritten/fp32",
-                    help="comma-separated folders under models/")
+                    help="comma-separated folders under models/; empty: only cut out the crops")
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--prep", default="tight", help="raw, contrast, tight or wide (see prep.py)")
     args = ap.parse_args()
@@ -130,7 +130,9 @@ def main() -> None:
     if args.image:
         img = Image.open(args.image).convert("RGB")
     else:
+        t0 = time.perf_counter()
         img = capture(args)
+        print(f"capture (camera start to frame): {time.perf_counter() - t0:.2f} s")
         img.save(f"{stem}.jpg", quality=95)
     gray = np.asarray(img.convert("L"))
     print(f"frame {img.width}×{img.height}")
@@ -152,11 +154,13 @@ def main() -> None:
     in_view = [c for c in cards.values() if c["page"] in H]
     print(f"pages in view: {sorted(p + 1 for p in H)}; cards: {len(in_view)}")
     crops_dir = Path(f"{stem}-crops")
-    models = {m: TrOCR(HERE / "models" / m, args.threads) for m in args.models.split(",")}
+    models = {m: TrOCR(HERE / "models" / m, args.threads) for m in args.models.split(",") if m}
 
-    results = []
+    results, t_cut = [], 0.0
     for c in sorted(in_view, key=lambda c: c["id"]):
+        t0 = time.perf_counter()
         im = prepare(crop(img, H[c["page"]], c["write"]), args.prep)
+        t_cut += time.perf_counter() - t0
         r = {"id": c["id"], "u_mm": c["u_mm"], "length_u": c["length_u"], "want": c["text"], "page": c["page"] + 1, "note": NOTES.get(c["id"], ""),
              "px_per_mm": round(px_per_mm(H[c["page"]], *c["tag_center"]), 2), "reads": {}}
         for name, model in models.items():
@@ -168,6 +172,7 @@ def main() -> None:
         crops_dir.mkdir(exist_ok=True)
         im.save(crops_dir / f"{c['id']}.png")
 
+    print(f"cutting out {len(results)} crops: {t_cut:.2f} s")
     # Tables: one row per card, grouped by U.
     for u in sorted({r["u_mm"] for r, _ in results}):
         rows = [r for r, _ in results if r["u_mm"] == u]
