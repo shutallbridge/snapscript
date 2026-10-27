@@ -12,7 +12,7 @@ import re
 
 import yaml
 
-from .physics import EDGES, FLIPS, HEIGHTS, LAYERS, LEFT_RIGHT_EDGES, Edges, Pocket
+from .physics import EDGES, FLIPS, LAYERS, LEFT_RIGHT_EDGES, POSITIONS, Edges, Pocket, on_grid
 
 MAX_POCKETS = {"top": 2, "bottom": 2, "left": 3, "right": 3}
 
@@ -643,18 +643,15 @@ def _pocket(cls: CardClass, edge: str, index: int, raw: Any) -> Pocket:
     at = _fraction(where, raw.get("at"))
     if edge in LEFT_RIGHT_EDGES:
         _no_extra_keys(raw, {"at", "layers"}, where)
-        if at not in HEIGHTS:
-            raise ArrangementError(f"{where}: at {_u(at)} must be 0.25, 0.5 or 0.75 (U from the top edge)")
+        if at not in POSITIONS:
+            raise ArrangementError(f"{where}: at {_u(at)} must be {_positions()} (U from the top edge)")
         return Pocket(edge=edge, anchor=None, at=at, layers=layers, index=index)
     _no_extra_keys(raw, {"from", "at", "layers"}, where)
     anchor = raw.get("from")
     if anchor not in ("left", "right"):
         raise ArrangementError(f"{where}: `from` must be left or right, not {anchor!r}")
-    if (at * 4).denominator != 1 or at.denominator == 1:
-        raise ArrangementError(
-            f"{where}: at {_u(at)} is off the grid; positions sit at 1/4, 1/2 and 3/4 of a U, "
-            "never on a cell boundary"
-        )
+    if not on_grid(at):
+        raise ArrangementError(f"{where}: at {_u(at)} is off the grid; positions sit at {_positions()} of each U")
     if not 0 < at < cls.pocket_reach:
         raise ArrangementError(
             f"{where}: at {_u(at)} is beyond its pocket reach {cls.pocket_reach}U from the {anchor} end"
@@ -708,6 +705,12 @@ def _anchored(p: Pocket) -> str:
 
 def _u(x: Fraction) -> str:
     return str(int(x)) if x.denominator == 1 else str(float(x))
+
+
+def _positions() -> str:
+    """The positions within a U, as `0.25, 0.5 or 0.75`."""
+    *rest, last = (_u(at) for at in POSITIONS)
+    return f"{', '.join(rest)} or {last}" if rest else last
 
 
 @dataclass(frozen=True)

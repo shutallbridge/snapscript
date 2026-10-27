@@ -13,8 +13,10 @@ FLIPS = ("top_bottom", "left_right")
 TOP_BOTTOM_EDGES = ("top", "bottom")
 LEFT_RIGHT_EDGES = ("left", "right")
 EDGES = TOP_BOTTOM_EDGES + LEFT_RIGHT_EDGES
-# Left/right pocket heights, in U from the top edge.
-HEIGHTS = (Fraction(1, 4), Fraction(1, 2), Fraction(3, 4))
+# Where a pocket can sit within one 1U cell, in U from the cell's start.
+# Every cell has the same positions; a left/right edge is one cell, measured
+# from the top edge.
+POSITIONS = (Fraction(1, 4), Fraction(1, 2), Fraction(3, 4))
 
 Interaction = Literal["attract", "repel", "nothing"]
 Result = Literal["snap", "repel", "mixed", "nothing"]
@@ -170,9 +172,19 @@ def horizontal_pairs(
     return tuple(PocketPair(a, b) for a in right for b in left if a.at == offset + b.at)
 
 
+def positions(reach: int) -> tuple[Fraction, ...]:
+    """Every position less than `reach` U from an edge's start, in order."""
+    return tuple(cell + at for cell in range(reach) for at in POSITIONS)
+
+
+def on_grid(at: Fraction) -> bool:
+    """Whether `at` is a position in its cell."""
+    return at % 1 in POSITIONS
+
+
 def horizontal_offsets() -> tuple[Fraction, ...]:
     """Every offset at which some left/right pocket heights line up."""
-    return tuple(sorted({a - b for a in HEIGHTS for b in HEIGHTS}))
+    return tuple(sorted({a - b for a in POSITIONS for b in POSITIONS}))
 
 
 def tally(pairs: tuple[PocketPair, ...]) -> tuple[int, int]:

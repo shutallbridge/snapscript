@@ -100,3 +100,9 @@ def test_reads_an_existing_file_whatever_its_extension(tmp_path):
 def test_rejects_max_length_below_a_minimum_card_length():
     with pytest.raises(ValueError, match="max_length 0"):
         check_pairs("example", max_length=0)
+
+
+def test_an_off_grid_top_or_bottom_pocket_is_told_the_positions_in_each_u():
+    with pytest.raises(ArrangementError) as err:
+        check_pairs(set_get(top=[("left", 0.3, "N/-")]))
+    assert "0.25, 0.5 or 0.75 of each U" in str(err.value)

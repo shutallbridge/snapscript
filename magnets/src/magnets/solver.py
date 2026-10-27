@@ -20,7 +20,7 @@ from ortools.sat.python import cp_model
 from . import contacts as _contacts
 from .contacts import GRADES, ContactGroup, Label
 from .data import MAX_POCKETS, Arrangement, CardClass, Rules, collision_length
-from .physics import EDGES, HEIGHTS, LAYERS, LEFT_RIGHT_EDGES, TOP_BOTTOM_EDGES, Pocket, flipped_edge, interact
+from .physics import EDGES, LAYERS, LEFT_RIGHT_EDGES, POSITIONS, TOP_BOTTOM_EDGES, Pocket, flipped_edge, interact, positions
 
 # What the search tries to make a forbid do: repel, or only not snap.
 Goal = Literal["repel", "no_snap"]
@@ -233,17 +233,14 @@ def _combine(flip: str, halves: list[Solution]) -> Solution:
 def candidates(cls: CardClass, edge: str) -> tuple[Pocket, ...]:
     """A pocket at every position an arrangement may use on this edge.
 
-    Top/bottom pockets sit on the 1/4 U grid, off the cell boundaries,
-    less than the class's pocket reach from either end.
-    Left/right pockets sit at the three heights.
+    Top/bottom pockets sit at the positions of every cell within the
+    class's pocket reach of either end. Left/right pockets sit at the
+    positions of the one cell.
     """
     if edge in LEFT_RIGHT_EDGES:
-        return tuple(Pocket(edge, None, h, "-/-", i) for i, h in enumerate(HEIGHTS))
+        return tuple(Pocket(edge, None, h, "-/-", i) for i, h in enumerate(POSITIONS))
     places: list[tuple[Literal["left", "right"], Fraction]] = [
-        (anchor, Fraction(quarter, 4))
-        for anchor in ("left", "right")
-        for quarter in range(1, 4 * cls.pocket_reach)
-        if quarter % 4
+        (anchor, at) for anchor in ("left", "right") for at in positions(cls.pocket_reach)
     ]
     return tuple(Pocket(edge, anchor, at, "-/-", i) for i, (anchor, at) in enumerate(places))
 
