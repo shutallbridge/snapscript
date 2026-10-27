@@ -1,0 +1,1546 @@
+{
+ "args": {
+  "crops": "runs/A-16-20261025-233100-crops",
+  "models": "gemma,glm,qwen,flash-lite,haiku",
+  "preps": "raw",
+  "prompts": "kind",
+  "label": "latency1",
+  "limit": 24,
+  "parallel": 1,
+  "report": null
+ },
+ "models": {
+  "gemma": [
+   "google/gemma-4-31b-it",
+   "deepinfra/fp8",
+   {
+    "enabled": false
+   }
+  ],
+  "glm": [
+   "z-ai/glm-5.3-flash",
+   "fireworks",
+   {
+    "effort": "minimal"
+   }
+  ],
+  "qwen": [
+   "qwen/qwen3.7-flash",
+   "alibaba",
+   {
+    "enabled": false
+   }
+  ],
+  "flash-lite": [
+   "google/gemini-3.5-flash-lite",
+   "google-ai-studio",
+   {
+    "effort": "minimal"
+   }
+  ],
+  "haiku": [
+   "anthropic/claude-haiku-5.5",
+   "anthropic",
+   {
+    "enabled": false
+   }
+  ]
+ },
+ "cards": [
+  {
+   "id": 1000,
+   "want": "x",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1001,
+   "want": "X",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1002,
+   "want": "i",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1003,
+   "want": "y",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1004,
+   "want": "500",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1005,
+   "want": "0",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1006,
+   "want": "-1",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1007,
+   "want": "0.5",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1008,
+   "want": "1 000",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "num",
+   "real": true
+  },
+  {
+   "id": 1009,
+   "want": "oO0",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1010,
+   "want": "lI1",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1011,
+   "want": "sS5",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1012,
+   "want": "zZ2",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1013,
+   "want": "cC",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1014,
+   "want": "vV",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1015,
+   "want": "wW",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1016,
+   "want": "kK",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1017,
+   "want": "pP",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1018,
+   "want": "B8",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1019,
+   "want": "b6",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1020,
+   "want": "g9q",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  },
+  {
+   "id": 1021,
+   "want": "hi",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "str",
+   "real": true
+  },
+  {
+   "id": 1022,
+   "want": "score2",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": 1023,
+   "want": "drawCircle",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": true
+  },
+  {
+   "id": -250,
+   "want": "",
+   "u_mm": 25,
+   "length_u": 2,
+   "kind": "name",
+   "real": false
+  }
+ ],
+ "results": {
+  "gemma|raw|kind": {
+   "1000": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 2.001,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001248,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1001": {
+    "raw": "{\"text\": \"X\", \"unreadable\": false}",
+    "secs": 1.793,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001248,
+    "text": "X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1002": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 2.46,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001248,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1003": {
+    "raw": "{\"text\": \"y\", \"unreadable\": false}",
+    "secs": 1.377,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001248,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1004": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 1.431,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001191,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1005": {
+    "raw": "{\"text\": \"0\", \"unreadable\": false}",
+    "secs": 1.805,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001179,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1006": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 2.787,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001179,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1007": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 1.317,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001191,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1008": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 1.357,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001197,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1009": {
+    "raw": "{\"text\": \".00\", \"unreadable\": false}",
+    "secs": 1.563,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001254,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1010": {
+    "raw": "{\"text\": \"ll1\", \"unreadable\": false}",
+    "secs": 1.421,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001254,
+    "text": "ll1",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1011": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 1.316,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.000126,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1012": {
+    "raw": "{\"text\": \"zZ2\", \"unreadable\": false}",
+    "secs": 6.401,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.000126,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1013": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 1.171,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001248,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1014": {
+    "raw": "{\"text\": \"v V\", \"unreadable\": false}",
+    "secs": 2.338,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001254,
+    "text": "v V",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1015": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 1.238,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001254,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1016": {
+    "raw": "{\"text\": \"k K\", \"unreadable\": false}",
+    "secs": 1.243,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001254,
+    "text": "k K",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1017": {
+    "raw": "{\"text\": \"pP\", \"unreadable\": false}",
+    "secs": 1.198,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001254,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1018": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 1.346,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001254,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1019": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 1.955,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001254,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1020": {
+    "raw": "{\"text\": \"gq q\", \"unreadable\": false}",
+    "secs": 4.09,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.000126,
+    "text": "gq q",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1021": {
+    "raw": "{\"text\": \"hi\", \"unreadable\": false}",
+    "secs": 1.451,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001176,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1022": {
+    "raw": "{\"text\": \"score2\", \"unreadable\": false}",
+    "secs": 5.1,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001254,
+    "text": "score2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1023": {
+    "raw": "{\"text\": \"drawCir\", \"unreadable\": false}",
+    "secs": 1.848,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001254,
+    "text": "drawCir",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "-250": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 2.195,
+    "host": "DeepInfra",
+    "reasoning_tokens": 0,
+    "cost": 0.0001236,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   }
+  },
+  "glm|raw|kind": {
+   "1000": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 1.295,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.82e-05,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1001": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 1.431,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.82e-05,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1002": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 1.309,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.82e-05,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1003": {
+    "raw": "{\"text\": \"y\", \"unreadable\": false}",
+    "secs": 1.195,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.82e-05,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1004": {
+    "raw": "{\"unreadable\": false, \"text\": \"500\"}",
+    "secs": 1.05,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 2.722e-05,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1005": {
+    "raw": "{\"text\": \"0\", \"unreadable\": false}",
+    "secs": 1.981,
+    "host": "Fireworks",
+    "reasoning_tokens": 19,
+    "cost": 4.44e-05,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1006": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 2.082,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.49e-05,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1007": {
+    "raw": "{\"text\": \"0.5\", \"unreadable\": false}",
+    "secs": 1.179,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.59e-05,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1008": {
+    "raw": "{\"text\": \"1000\", \"unreadable\": false}",
+    "secs": 1.049,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.54e-05,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1009": {
+    "raw": "{\"text\": \".00\", \"unreadable\": false}",
+    "secs": 1.155,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.82e-05,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1010": {
+    "raw": "{\"text\": \"II1\", \"unreadable\": false}",
+    "secs": 1.283,
+    "host": "Fireworks",
+    "reasoning_tokens": 14,
+    "cost": 4.57e-05,
+    "text": "II1",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1011": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 2.355,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.152e-05,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1012": {
+    "raw": "{\"text\": \"zZ2\", \"unreadable\": false}",
+    "secs": 1.063,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.92e-05,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1013": {
+    "raw": "{\"text\": \"cC\", \"unreadable\": false}",
+    "secs": 1.487,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.87e-05,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1014": {
+    "raw": "{\"text\": \"vV\", \"unreadable\": false}",
+    "secs": 2.092,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.87e-05,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1015": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 1.662,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.87e-05,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1016": {
+    "raw": "{\"text\": \"k K\", \"unreadable\": false}",
+    "secs": 1.168,
+    "host": "Fireworks",
+    "reasoning_tokens": 3,
+    "cost": 4.02e-05,
+    "text": "k K",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1017": {
+    "raw": "{\"text\": \"pP\", \"unreadable\": false}",
+    "secs": 2.636,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.87e-05,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1018": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 1.366,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.87e-05,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1019": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 1.711,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.87e-05,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1020": {
+    "raw": "{\"text\": \"z97\", \"unreadable\": false}",
+    "secs": 2.692,
+    "host": "Fireworks",
+    "reasoning_tokens": 22,
+    "cost": 4.97e-05,
+    "text": "z97",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1021": {
+    "raw": "{\"text\": \"ki\", \"unreadable\": false}",
+    "secs": 2.763,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.475e-05,
+    "text": "ki",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1022": {
+    "raw": "{\"unreadable\": false, \"text\": \"Scale2\"}",
+    "secs": 5.942,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.87e-05,
+    "text": "Scale2",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "1023": {
+    "raw": "{\"text\": \"drawCir\", \"unreadable\": false}",
+    "secs": 3.784,
+    "host": "Fireworks",
+    "reasoning_tokens": 14,
+    "cost": 4.62e-05,
+    "text": "drawCir",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "-250": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 1.862,
+    "host": "Fireworks",
+    "reasoning_tokens": 0,
+    "cost": 3.72e-05,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   }
+  },
+  "qwen|raw|kind": {
+   "1000": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 3.045,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 7.87e-06,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1001": {
+    "raw": "{\"text\": \"X\", \"unreadable\": false}",
+    "secs": 2.147,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 7.87e-06,
+    "text": "X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1002": {
+    "raw": "{\"text\": \"i\", \"unreadable\": false}",
+    "secs": 2.067,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 7.87e-06,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1003": {
+    "raw": "{\n  \"text\": \"Y\",\n  \"unreadable\": false\n}",
+    "secs": 1.409,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.65e-06,
+    "text": "Y",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1004": {
+    "raw": "{\"text\": \"500\", \"unreadable\": false}",
+    "secs": 2.547,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 7.47e-06,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1005": {
+    "raw": "{\"text\": \"0\", \"unreadable\": false}",
+    "secs": 1.472,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 7.21e-06,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1006": {
+    "raw": "{\"text\": \"-1\", \"unreadable\": false}",
+    "secs": 1.753,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 7.21e-06,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1007": {
+    "raw": "{\n  \"text\": \"0.5\",\n  \"unreadable\": false\n}",
+    "secs": 2.127,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.25e-06,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1008": {
+    "raw": "{\n  \"text\": \"1000\",\n  \"unreadable\": false\n}",
+    "secs": 2.154,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.38e-06,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1009": {
+    "raw": "{\"text\": \".00\", \"unreadable\": false}",
+    "secs": 1.88,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8e-06,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1010": {
+    "raw": "{\n  \"text\": \"ll1\",\n  \"unreadable\": false\n}",
+    "secs": 2.627,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.78e-06,
+    "text": "ll1",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1011": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 2.042,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.13e-06,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1012": {
+    "raw": "{\n  \"text\": \"zZ2\",\n  \"unreadable\": false\n}",
+    "secs": 2.206,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.91e-06,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1013": {
+    "raw": "{\n  \"text\": \"cC\",\n  \"unreadable\": false\n}",
+    "secs": 1.465,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.78e-06,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1014": {
+    "raw": "{\n  \"text\": \"vV\",\n  \"unreadable\": false\n}",
+    "secs": 1.871,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.78e-06,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1015": {
+    "raw": "{\n  \"text\": \"wW\",\n  \"unreadable\": false\n}",
+    "secs": 5.628,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.78e-06,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1016": {
+    "raw": "{\"text\": \"kK\", \"unreadable\": false}",
+    "secs": 1.938,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8e-06,
+    "text": "kK",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1017": {
+    "raw": "{\n  \"text\": \"pP\",\n  \"unreadable\": false\n}",
+    "secs": 1.713,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.78e-06,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1018": {
+    "raw": "{\n  \"text\": \"B8\",\n  \"unreadable\": false\n}",
+    "secs": 2.247,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.78e-06,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1019": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 1.982,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8e-06,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1020": {
+    "raw": "{\"text\": \"g9f\", \"unreadable\": false}",
+    "secs": 1.919,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.13e-06,
+    "text": "g9f",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1021": {
+    "raw": "{\"text\": \"hi\", \"unreadable\": false}",
+    "secs": 1.404,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 7.18e-06,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1022": {
+    "raw": "{\"text\": \"Scale2\", \"unreadable\": false}",
+    "secs": 1.812,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8e-06,
+    "text": "Scale2",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "1023": {
+    "raw": "{\n  \"text\": \"drawCirc\",\n  \"unreadable\": false\n}",
+    "secs": 2.143,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.91e-06,
+    "text": "drawCirc",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "-250": {
+    "raw": "{\n  \"text\": \"\",\n  \"unreadable\": true\n}",
+    "secs": 1.86,
+    "host": "Alibaba",
+    "reasoning_tokens": 0,
+    "cost": 8.39e-06,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   }
+  },
+  "flash-lite|raw|kind": {
+   "1000": {
+    "raw": "{\"text\": \"x\", \"unreadable\": false}",
+    "secs": 1.696,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003906,
+    "text": "x",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1001": {
+    "raw": "{\"text\": \"X\", \"unreadable\": false}",
+    "secs": 1.77,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003906,
+    "text": "X",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1002": {
+    "raw": "{\n  \"text\": \"i\",\n  \"unreadable\": false\n}",
+    "secs": 1.617,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0004056,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1003": {
+    "raw": "{\n  \"text\": \"y\",\n  \"unreadable\": false\n}",
+    "secs": 1.566,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0004056,
+    "text": "y",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1004": {
+    "raw": "{\n  \"text\": \"500\",\n  \"unreadable\": false\n}",
+    "secs": 1.38,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0004037,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1005": {
+    "raw": "{\n  \"text\": \"0\",\n  \"unreadable\": false\n}",
+    "secs": 1.431,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003987,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1006": {
+    "raw": "{\n  \"text\": \"-1\",\n  \"unreadable\": false\n}",
+    "secs": 2.356,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003987,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1007": {
+    "raw": "{\n  \"text\": \"0.5\",\n  \"unreadable\": false\n}",
+    "secs": 1.654,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0004037,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1008": {
+    "raw": "{\n  \"text\": \"1000\",\n  \"unreadable\": false\n}",
+    "secs": 2.241,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0004062,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1009": {
+    "raw": "{\n  \"text\": \".oo\",\n  \"unreadable\": false\n}",
+    "secs": 1.714,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0004056,
+    "text": ".oo",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "1010": {
+    "raw": "{\"text\": \"111\", \"unreadable\": false}",
+    "secs": 1.717,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003956,
+    "text": "111",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1011": {
+    "raw": "{\"text\": \"sS5\", \"unreadable\": false}",
+    "secs": 1.428,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003956,
+    "text": "sS5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1012": {
+    "raw": "{\"text\": \"zZ2\", \"unreadable\": false}",
+    "secs": 1.723,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003956,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1013": {
+    "raw": "{\n  \"text\": \"cC\",\n  \"unreadable\": false\n}",
+    "secs": 1.443,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0004056,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1014": {
+    "raw": "{\n  \"text\": \"vV\",\n  \"unreadable\": false\n}",
+    "secs": 1.685,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0004081,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1015": {
+    "raw": "{\"text\": \"wW\", \"unreadable\": false}",
+    "secs": 1.553,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003931,
+    "text": "wW",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1016": {
+    "raw": "{\"text\": \"kK\", \"unreadable\": false}",
+    "secs": 1.77,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003931,
+    "text": "kK",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1017": {
+    "raw": "{\"text\": \"pP\", \"unreadable\": false}",
+    "secs": 1.982,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003931,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1018": {
+    "raw": "{\"text\": \"B8\", \"unreadable\": false}",
+    "secs": 1.272,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003931,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1019": {
+    "raw": "{\"text\": \"b6\", \"unreadable\": false}",
+    "secs": 1.339,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003931,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1020": {
+    "raw": "{\n  \"text\": \"gg9\",\n  \"unreadable\": false\n}",
+    "secs": 1.686,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0004081,
+    "text": "gg9",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1021": {
+    "raw": "{\n  \"text\": \"hi\",\n  \"unreadable\": false\n}",
+    "secs": 1.639,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003984,
+    "text": "hi",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1022": {
+    "raw": "{\"text\": \"scate2\", \"unreadable\": false}",
+    "secs": 1.641,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003956,
+    "text": "scate2",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1023": {
+    "raw": "{\n  \"text\": \"drawCi\",\n  \"unreadable\": false\n}",
+    "secs": 1.712,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0004081,
+    "text": "drawCi",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 4
+   },
+   "-250": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 1.525,
+    "host": "Google AI Studio",
+    "reasoning_tokens": 0,
+    "cost": 0.0003856,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   }
+  },
+  "haiku|raw|kind": {
+   "1000": {
+    "raw": "{\"text\":\"\",\"unreadable\":true}",
+    "secs": 1.865,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.26e-05,
+    "text": "",
+    "unreadable": true,
+    "verdict": "read error",
+    "case_ok": false
+   },
+   "1001": {
+    "raw": "{\"text\":\"\",\"unreadable\":true}",
+    "secs": 2.369,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.26e-05,
+    "text": "",
+    "unreadable": true,
+    "verdict": "read error",
+    "case_ok": false
+   },
+   "1002": {
+    "raw": "{\"text\":\"i\",\"unreadable\":false}",
+    "secs": 2.153,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.31e-05,
+    "text": "i",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1003": {
+    "raw": "{\"text\":\"\",\"unreadable\":true}",
+    "secs": 3.597,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.26e-05,
+    "text": "",
+    "unreadable": true,
+    "verdict": "read error",
+    "case_ok": false
+   },
+   "1004": {
+    "raw": "{\"text\":\"500\",\"unreadable\":false}",
+    "secs": 1.616,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.02e-05,
+    "text": "500",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1005": {
+    "raw": "{\"text\":\"0\",\"unreadable\":false}",
+    "secs": 2.296,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.02e-05,
+    "text": "0",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1006": {
+    "raw": "{\"text\":\"-1\",\"unreadable\":false}",
+    "secs": 2.02,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.07e-05,
+    "text": "-1",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1007": {
+    "raw": "{\"text\":\"0.5\",\"unreadable\":false}",
+    "secs": 1.703,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.12e-05,
+    "text": "0.5",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1008": {
+    "raw": "{\"text\":\"1000\",\"unreadable\":false}",
+    "secs": 1.791,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.07e-05,
+    "text": "1000",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1009": {
+    "raw": "{\"text\":\".00\",\"unreadable\":false}",
+    "secs": 2.925,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.31e-05,
+    "text": ".00",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1010": {
+    "raw": "{\"text\":\"111\",\"unreadable\":false}",
+    "secs": 2.306,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.31e-05,
+    "text": "111",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1011": {
+    "raw": "{\"text\":\"sss\",\"unreadable\":false}",
+    "secs": 1.666,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.36e-05,
+    "text": "sss",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 2
+   },
+   "1012": {
+    "raw": "{\"text\":\"zZ2\",\"unreadable\":false}",
+    "secs": 2.771,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.46e-05,
+    "text": "zZ2",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1013": {
+    "raw": "{\"text\":\"cC\",\"unreadable\":false}",
+    "secs": 2.98,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.36e-05,
+    "text": "cC",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1014": {
+    "raw": "{\"text\":\"vV\",\"unreadable\":false}",
+    "secs": 1.726,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.36e-05,
+    "text": "vV",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1015": {
+    "raw": "{\"text\":\"ww\",\"unreadable\":false}",
+    "secs": 1.606,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.36e-05,
+    "text": "ww",
+    "unreadable": false,
+    "verdict": "case",
+    "edits": 1
+   },
+   "1016": {
+    "raw": "{\"text\":\"kK\",\"unreadable\":false}",
+    "secs": 2.43,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.36e-05,
+    "text": "kK",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1017": {
+    "raw": "{\"text\":\"pP\",\"unreadable\":false}",
+    "secs": 1.859,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.36e-05,
+    "text": "pP",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1018": {
+    "raw": "{\"text\":\"B8\",\"unreadable\":false}",
+    "secs": 1.74,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.36e-05,
+    "text": "B8",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1019": {
+    "raw": "{\"text\":\"b6\",\"unreadable\":false}",
+    "secs": 3.565,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.36e-05,
+    "text": "b6",
+    "unreadable": false,
+    "verdict": "right"
+   },
+   "1020": {
+    "raw": "{\"text\":\"gqq\",\"unreadable\":false}",
+    "secs": 2.902,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.41e-05,
+    "text": "gqq",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1021": {
+    "raw": "{\"text\":\"ki\",\"unreadable\":false}",
+    "secs": 1.692,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.05e-05,
+    "text": "ki",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 1
+   },
+   "1022": {
+    "raw": "{\"text\":\"Scale2\",\"unreadable\":false}",
+    "secs": 2.165,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.46e-05,
+    "text": "Scale2",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "1023": {
+    "raw": "{\"text\":\"drawCir\",\"unreadable\":false}",
+    "secs": 2.998,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.46e-05,
+    "text": "drawCir",
+    "unreadable": false,
+    "verdict": "wrong",
+    "edits": 3
+   },
+   "-250": {
+    "raw": "{\"text\": \"\", \"unreadable\": true}",
+    "secs": 1.999,
+    "host": "Anthropic",
+    "reasoning_tokens": 0,
+    "cost": 5.31e-05,
+    "text": "",
+    "unreadable": true,
+    "verdict": "right"
+   }
+  }
+ }
+}
