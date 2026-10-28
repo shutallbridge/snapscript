@@ -791,7 +791,7 @@ A library offers printed cards with `@card` tags in its doc comments. A `@card` 
 
 When the camera is not sure what a card's handwriting says, the card has a **read error**. Its line is skipped, like a line with a structure or check error. A read error belongs to the physical system, not the language: it has no kind and no stage.
 
-Lengths on the table are measured in U. Every card is 1U tall and a whole number of U long. Most cards are at least 2U long, because their written text needs it: a handwritten name such as `[define{drawCircle}]`, or a reserved word such as `[repeat]`. Each side of a card also holds a marker, a printed pattern that the camera reads to learn which side it is, where it lies and how it is turned. Which one-symbol cards, such as `[(]`, `[)]` and `[+]`, can be 1U long depends on the marker's size and placement: **TBD**.
+Lengths on the table are measured in U. Every card is 1U tall and a whole number of U long. Every card is at least 2U long. Most cards need it for their written text: a handwritten name such as `[define{drawCircle}]`, or a reserved word such as `[repeat]`. Each side of a card also holds a marker, a printed pattern that the camera reads to learn which side it is, where it lies and how it is turned. Cards with one symbol, such as `[(]`, `[)]` and `[+]`, are 2U long too: a sketch at real size showed that a 1U card is too small even for them.
 
 # Feedback
 

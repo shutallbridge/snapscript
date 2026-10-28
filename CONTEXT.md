@@ -139,7 +139,7 @@ What a contact does: its magnets only pull the cards together, only push them ap
 What one edge of a side needs from the edge that faces it. For example, `head` on a left edge means that nothing may be on its left.
 
 **Card class**:
-A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, the operator cards but `[%]`, or `[get{…}]` and `[root]`. A printed card and the same card handwritten are in the same class: `[call(p5.circle)]` and `[call{f}]`. A class also has a shortest length, 2U for every class for now, and a pocket reach.
+A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, the operator cards but `[%]`, or `[get{…}]` and `[root]`. A printed card and the same card handwritten are in the same class: `[call(p5.circle)]` and `[call{f}]`. A class also has a shortest length, 2U for every class, and a pocket reach.
 
 **Connect**:
 A contact between two cards that the grammar lets be neighbours there. It must snap.
@@ -176,7 +176,7 @@ One must label (connect or coexist) on two sides and their facing edges at one o
 _Avoid_: must contact (it is not one contact), must rule (grammar rules are the role-level rules in `rules.yaml`)
 
 **Conflict**:
-A set of requirements that cannot all hold at the same time. It proves that no valid magnet arrangement exists. The search names one such set; it is not always the smallest. Example: a line head that could be 1U long and must connect to the next line at −1, 0 and +1. On a 1U card, the three pockets would collide.
+A set of requirements that cannot all hold at the same time. It proves that no valid magnet arrangement exists. The search names one such set; it is not always the smallest. Example: if a line head could be 1U long, it would need to connect to the next line at −1, 0 and +1, and on a 1U card the three pockets would collide. (No card is 1U; the example is made up.)
 
 **Partner contact**:
 For a contact between two flip pairs, the contact between their other sides where the same pockets face each other, so it always does the same thing. Which contact it is depends on the flip direction.
