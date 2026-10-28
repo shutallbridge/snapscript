@@ -1,20 +1,21 @@
 # A worked example: simple_head and get lines stack on each other in every order,
 # and the literal flip pair's two sides line up in every order, under a
-# top-to-bottom flip.
+# top-to-bottom flip. A flip swaps a pocket's layers, so literal's pockets are
+# uniform: the same both ways up.
 flip: top_bottom
 classes:
   simple_head:
     top:
-      - {from: left, at: 1/6, layers: F/F}
+      - {from: left, at: 1/6, layers: S/N}
     bottom:
       - {from: left, at: 1/6, layers: N/S}
   get:
     top:
-      - {from: left, at: 1/6, layers: F/F}
+      - {from: left, at: 1/6, layers: S/N}
     bottom:
       - {from: left, at: 1/6, layers: N/S}
   literal:
     left:
-      - {at: 1/2, layers: F/F}
+      - {at: 1/2, layers: S/S}
     right:
-      - {at: 1/2, layers: N/S}
+      - {at: 1/2, layers: N/N}

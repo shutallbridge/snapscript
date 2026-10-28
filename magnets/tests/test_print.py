@@ -24,11 +24,11 @@ def test_example_num_marks(unit):
     (piece,) = pieces(card_sheet("example", "[str{hi}]\n", unit=unit))
     front, back = piece.front, piece.back
     assert (front.notation, back.notation) == ("[num{hi}]", "[str{hi}]")
-    assert marks(front) == [("left", 0.5 * unit, "F"), ("right", 0.5 * unit, "N")]
-    # The str panel's right edge holds num's N/S pocket flipped: S/N.
+    assert marks(front) == [("left", 0.5 * unit, "S"), ("right", 0.5 * unit, "N")]
+    # The str panel's right edge holds num's N/N pocket flipped: still N/N.
     right = [m for m in back.marks if m.edge == "right"]
-    assert [(m.x - back.x, m.y - back.y, m.letter) for m in right] == [(2 * unit, 0.5 * unit, "S")]
-    assert [m.letter for m in back.marks if m.edge == "left"] == ["F"]
+    assert [(m.x - back.x, m.y - back.y, m.letter) for m in right] == [(2 * unit, 0.5 * unit, "N")]
+    assert [m.letter for m in back.marks if m.edge == "left"] == ["S"]
     assert (front.width, front.height) == (2 * unit, unit)
 
 
@@ -89,15 +89,15 @@ def test_a_card_that_is_not_a_flip_pair_has_an_unlabelled_back(card):
 # pockets too; and a block head, which is not a flip pair.
 EVERY_EDGE = dict(
     literal={
-        "top": [("left", "1/6", "N/-"), ("right", "1/2", "F/S")],
+        "top": [("left", "1/6", "N/-"), ("right", "1/2", "S/S")],
         "bottom": [("left", "5/6", "-/S")],
         "left": [("1/6", "S/N")],
-        "right": [("1/2", "N/F"), ("5/6", "-/N")],
+        "right": [("1/2", "N/S"), ("5/6", "-/N")],
     },
     block_head={
-        "top": [("left", "1/2", "S/F")],
+        "top": [("left", "1/2", "S/N")],
         "bottom": [("right", "1/6", "N/-")],
-        "left": [("5/6", "F/-")],
+        "left": [("5/6", "S/-")],
     },
 )
 
@@ -106,10 +106,10 @@ def test_letters_are_the_layer_nearest_each_face():
     (head,) = pieces(card_sheet(arrangement(**EVERY_EDGE), "[repeat]"))
     assert head.front.notation == "[repeat]"
     # At 30 mm per U the positions sit 5, 15 and 25 mm into each U.
-    assert marks(head.front) == [("bottom", 60 - 5, "N"), ("left", 25, "F"), ("top", 15, "S")]
+    assert marks(head.front) == [("bottom", 60 - 5, "N"), ("left", 25, "S"), ("top", 15, "S")]
     # Its back is unlabelled and shows the front's down layers.
     assert head.back.notation is None
-    assert marks(head.back) == [("bottom", 15, "F"), ("left", 5, "–"), ("top", 60 - 5, "–")]
+    assert marks(head.back) == [("bottom", 15, "N"), ("left", 5, "–"), ("top", 60 - 5, "–")]
 
 
 @pytest.mark.parametrize("flip", ["top_bottom", "left_right"])

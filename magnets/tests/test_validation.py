@@ -40,7 +40,10 @@ from magnets import ArrangementError
         # Layers.
         (set_get(top=[("left", "1/6", "X/-")]), "layers 'X/-'"),
         (set_get(top=[("left", "1/6", "N")]), "layers 'N'"),
-        (set_get(top=[("left", "1/6", "N/S/F")]), "layers 'N/S/F'"),
+        (set_get(top=[("left", "1/6", "N/S/N")]), "layers 'N/S/N'"),
+        # Pockets hold magnets only: there is no `F` layer.
+        (set_get(top=[("left", "1/6", "F/-")]), "each layer one of N S -"),
+        (set_get(top=[("left", "1/6", "N/F")]), "each layer one of N S -"),
         (set_get(top=[("left", "1/6", "-/-")]), "-/- is no pocket"),
         # Unknown names.
         ({"flip": "sideways", "classes": {}}, "unknown flip"),

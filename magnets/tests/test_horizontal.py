@@ -148,7 +148,7 @@ def test_contacts_are_independent_of_length():
 
 @pytest.mark.parametrize("height", [Fraction(1, 6), Fraction(1, 2), Fraction(5, 6)])
 def test_heights_mirror_under_top_bottom_and_stay_in_their_series(height):
-    result = check_pairs(arrangement(set_get={"left": [(height, "N/-")], "right": [(height, "S/F")]}))
+    result = check_pairs(arrangement(set_get={"left": [(height, "N/-")], "right": [(height, "S/N")]}))
     for edge in ("left", "right"):
         [front] = result.sides["set_get.set"].edges[edge]
         [back] = result.sides["set_get.get"].edges[edge]

@@ -7,6 +7,7 @@ import yaml
 from hypothesis import strategies as st
 
 from magnets import CheckResult, ContactGroup, check
+from magnets.physics import LAYERS
 
 SET_GET = {"set_get.set", "set_get.get"}
 
@@ -109,7 +110,7 @@ def beside(result: CheckResult, left: str, right: str, offset: float = 0) -> Con
     return found[0]
 
 
-LAYER_PAIRS = [f"{p}/{q}" for p in "NSF-" for q in "NSF-" if (p, q) != ("-", "-")]
+LAYER_PAIRS = [f"{p}/{q}" for p in LAYERS for q in LAYERS if (p, q) != ("-", "-")]
 ANCHORED = [(f, at) for f in ("left", "right") for at in ("1/6", "1/2", "5/6")]
 
 

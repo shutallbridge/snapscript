@@ -95,7 +95,7 @@ One of a side's four edges: top, bottom, left, right.
 _Avoid_: side edge (say "left/right edges")
 
 **Pocket**:
-A place on an edge that holds magnets or steel pieces.
+A place on an edge that holds one or two magnets.
 _Avoid_: slot, magnet slot
 
 **Position**:
@@ -107,8 +107,11 @@ How far a top or bottom pocket may sit from its end of the card: less than the r
 **Layer**:
 One of a pocket's two levels through the card's thickness: up (towards the ceiling) or down (towards the table).
 
+**Magnet**:
+What fills one layer of a pocket: half the card's thickness, its `N` or `S` pole facing out of the edge. A uniform pocket is two magnets stacked. Pockets hold magnets only, no steel.
+
 **Pocket shape**:
-How a pocket's two layers are filled: **uniform** (both layers the same and not empty: `N/N`, `F/F`), **half** (one layer empty: `-/N`) or **split** (two different pieces: `F/N`). A flip leaves a uniform pocket the same and changes the others.
+How a pocket's two layers are filled: **uniform** (two magnets stacked with the same pole: `N/N`, `S/S`), **half** (one magnet, one layer empty: `-/N`) or **split** (two magnets with different poles: `S/N`). A flip leaves a uniform pocket the same and changes the others.
 
 **Magnet arrangement**:
 The choice of pockets and their contents on every card.

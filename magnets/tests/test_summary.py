@@ -88,11 +88,11 @@ def test_contact_counts_sum_group_counts(flips, flip):
 
 
 def test_the_pocket_line_counts_front_pockets_by_shape():
-    # The example designs simple_head's and get's top (F/F) and bottom (N/S), and
-    # literal's left (F/F) and right (N/S); str, literal's back, shares them.
+    # The example designs simple_head's and get's top (S/N) and bottom (N/S), and
+    # literal's left (S/S) and right (N/N); str, literal's back, shares them.
     lines = summary_text(check("example")).splitlines()
     # Right after the contact group line.
-    assert lines[1].endswith(" contacts") and lines[2] == "Pockets: 6 (uniform 3, half 0, split 3)"
+    assert lines[1].endswith(" contacts") and lines[2] == "Pockets: 6 (uniform 2, half 0, split 4)"
     toy = set_get(top=[("left", "1/6", "N/N")], bottom=[("left", "1/6", "N/-")], left=[("1/2", "-/S")], right=[])
     assert "\nPockets: 3 (uniform 1, half 2, split 0)\n" in summary_text(check_pairs(toy))
 

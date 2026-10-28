@@ -4,18 +4,12 @@ import pytest
 
 from helpers import check_pairs, set_get, stack
 
+# No pocket is empty in both layers, so `-` against `-` has no row of its
+# own: it is the down layer of every row with a magnet on each side.
 LAYER_TABLE = [
-    ("-", "-", "nothing"),
     ("-", "N", "nothing"),
     ("-", "S", "nothing"),
-    ("-", "F", "nothing"),
     ("N", "-", "nothing"),
-    ("F", "-", "nothing"),
-    ("F", "F", "nothing"),
-    ("N", "F", "attract"),
-    ("S", "F", "attract"),
-    ("F", "N", "attract"),
-    ("F", "S", "attract"),
     ("N", "S", "attract"),
     ("S", "N", "attract"),
     ("N", "N", "repel"),
@@ -25,7 +19,7 @@ LAYER_TABLE = [
 
 def _alone_up(layer):
     """A pocket with `layer` up and a down layer that interacts with nothing."""
-    return f"{layer}/-" if layer != "-" else "-/F"
+    return f"{layer}/-" if layer != "-" else "-/N"
 
 
 @pytest.mark.parametrize("upper, lower, expected", LAYER_TABLE)
@@ -51,7 +45,7 @@ def test_layer_table(upper, lower, expected):
         ([("left", "1/6", "N/S")], [("left", "1/6", "S/N")], 2, 0, "snap"),
         ([("left", "1/6", "N/S")], [("left", "1/6", "N/S")], 0, 2, "repel"),
         ([("left", "1/6", "N/N")], [("left", "1/6", "N/S")], 1, 1, "mixed"),
-        ([("left", "1/6", "F/F")], [("left", "1/6", "F/-")], 0, 0, "nothing"),
+        ([("left", "1/6", "N/-")], [("left", "1/6", "-/S")], 0, 0, "nothing"),
         # Counts sum across pocket pairs.
         (
             [("left", "1/6", "N/-"), ("left", "5/6", "N/-")],
@@ -62,7 +56,7 @@ def test_layer_table(upper, lower, expected):
         ),
         (
             [("left", "1/6", "N/N"), ("left", "5/6", "S/-")],
-            [("left", "1/6", "F/F"), ("left", "5/6", "N/-")],
+            [("left", "1/6", "S/S"), ("left", "5/6", "N/-")],
             3,
             0,
             "snap",
@@ -95,14 +89,10 @@ def test_connect_grades():
     [
         ("N/N", "uniform"),
         ("S/S", "uniform"),
-        ("F/F", "uniform"),
         ("N/-", "half"),
         ("-/S", "half"),
-        ("F/-", "half"),
         ("N/S", "split"),
         ("S/N", "split"),
-        ("N/F", "split"),
-        ("F/S", "split"),
     ],
 )
 def test_pocket_shapes(layers, shape):

@@ -7,6 +7,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from helpers import check_pairs, left_right_pockets, set_get, top_bottom_pockets
+from magnets.physics import flipped_edge
 
 
 
@@ -20,9 +21,9 @@ def edges(result, side):
 def test_top_bottom_swaps_edges_mirrors_heights_and_swaps_layers():
     result = check_pairs(
         set_get(
-            top=[("left", "1/6", "N/S"), ("right", "1/2", "F/-")],
+            top=[("left", "1/6", "N/S"), ("right", "1/2", "S/-")],
             bottom=[("right", "1/6", "S/S")],
-            left=[("1/6", "N/F")],
+            left=[("1/6", "N/-")],
             right=[("1/2", "-/N"), ("5/6", "S/N")],
         )
     )
@@ -30,9 +31,9 @@ def test_top_bottom_swaps_edges_mirrors_heights_and_swaps_layers():
         "top": [{"from": "right", "at": "1/6", "layers": "S/S"}],
         "bottom": [
             {"from": "left", "at": "1/6", "layers": "S/N"},
-            {"from": "right", "at": "1/2", "layers": "-/F"},
+            {"from": "right", "at": "1/2", "layers": "-/S"},
         ],
-        "left": [{"at": "5/6", "layers": "F/N"}],
+        "left": [{"at": "5/6", "layers": "-/N"}],
         "right": [{"at": "1/2", "layers": "N/-"}, {"at": "1/6", "layers": "N/S"}],
     }
 
@@ -41,9 +42,9 @@ def test_left_right_swaps_edges_mirrors_anchors_and_swaps_layers():
     result = check_pairs(
         set_get(
             "left_right",
-            top=[("left", "1/6", "N/S"), ("right", "1/2", "F/-")],
+            top=[("left", "1/6", "N/S"), ("right", "1/2", "S/-")],
             bottom=[("right", "1/6", "S/S")],
-            left=[("1/6", "N/F")],
+            left=[("1/6", "N/-")],
             right=[("1/2", "-/N"), ("5/6", "S/N")],
         )
     )
@@ -51,12 +52,12 @@ def test_left_right_swaps_edges_mirrors_anchors_and_swaps_layers():
         # Top and bottom stay; anchors mirror, keeping `at`.
         "top": [
             {"from": "right", "at": "1/6", "layers": "S/N"},
-            {"from": "left", "at": "1/2", "layers": "-/F"},
+            {"from": "left", "at": "1/2", "layers": "-/S"},
         ],
         "bottom": [{"from": "left", "at": "1/6", "layers": "S/S"}],
         # Left and right swap; heights stay.
         "left": [{"at": "1/2", "layers": "N/-"}, {"at": "5/6", "layers": "N/S"}],
-        "right": [{"at": "1/6", "layers": "F/N"}],
+        "right": [{"at": "1/6", "layers": "-/N"}],
     }
 
 
@@ -70,9 +71,9 @@ def test_positions_stay_in_their_series(flip):
     result = check_pairs(
         set_get(
             flip,
-            top=[("left", "1/6", "N/S"), ("right", "1/2", "F/-")],
+            top=[("left", "1/6", "N/S"), ("right", "1/2", "S/-")],
             bottom=[("right", "5/6", "S/S")],
-            left=[("1/6", "N/F"), ("1/2", "S/-")],
+            left=[("1/6", "N/-"), ("1/2", "S/-")],
             right=[("5/6", "S/N")],
         ),
         max_length=3,
@@ -94,9 +95,10 @@ def test_positions_stay_in_their_series(flip):
 
 @pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
 def test_uniform_pockets_are_unchanged_by_a_flip(flip):
-    result = check_pairs(set_get(flip, top=[("left", "1/2", "N/N")], left=[("1/2", "F/F")], right=[("1/2", "S/S")]))
-    layers = {edge: [p.layers for p in pockets] for edge, pockets in result.sides["set_get.get"].edges.items()}
-    assert sorted(ly for found in layers.values() for ly in found) == ["F/F", "N/N", "S/S"]
+    result = check_pairs(set_get(flip, top=[("left", "1/2", "N/N")], left=[("1/2", "N/N")], right=[("1/2", "S/S")]))
+    front, back = (result.sides[f"set_get.{side}"].edges for side in ("set", "get"))
+    for edge, pockets in front.items():
+        assert [p.layers for p in back[flipped_edge(edge, flip)]] == [p.layers for p in pockets]
     shapes = [p.shape for pockets in result.sides["set_get.get"].edges.values() for p in pockets]
     assert shapes == ["uniform"] * 3
 
