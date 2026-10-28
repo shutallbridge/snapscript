@@ -123,7 +123,7 @@ members at the same place. Printed text isn't carried over: a
 a `[num(0)]`'s `[str(…)]`. A
 card that is not a flip pair, such as `[get{x}]`, gets an unlabelled
 back. Each pocket is a tick in from its
-edge with the layer nearest that face: `N` red, `S` blue, `F` grey, `–`
+edge with the layer nearest that face: `N` red, `S` blue, `–`
 empty. Ticks and letters stay inside their own panel, so neighbours
 sharing a cut line keep their pockets apart. `--unit` is the size of a U
 in mm (30 by default), a print option, not a spec value. The API is

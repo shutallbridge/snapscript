@@ -196,18 +196,18 @@ def test_draws_stay_within_max_length():
 # top, and simple_head's right edge snaps to a num's left edge.
 TOY = arrangement(
     simple_head={
-        "top": [("left", "1/6", "F/N")],
-        "bottom": [("left", "1/6", "F/S")],
+        "top": [("left", "1/6", "S/N")],
+        "bottom": [("left", "1/6", "N/S")],
         "left": [("1/2", "S/-")],
         "right": [("1/2", "N/-")],
     },
     get={
-        "top": [("left", "1/6", "S/F")],
-        "bottom": [("left", "1/6", "N/F")],
+        "top": [("left", "1/6", "S/N")],
+        "bottom": [("left", "1/6", "N/S")],
         "left": [("1/2", "-/S")],
         "right": [("1/2", "-/N")],
     },
-    define={"bottom": [("left", "1/6", "F/S")]},
+    define={"bottom": [("left", "1/6", "N/S")]},
     literal={"left": [("1/2", "S/-")]},
 )
 

@@ -317,7 +317,7 @@ def _labels(pc: ProgramContact) -> str:
 
 # --- card sheet ------------------------------------------------------------
 
-_LETTER_COLORS = {"N": "#d62728", "S": "#1f5fbf", "F": "#888888"}
+_LETTER_COLORS = {"N": "#d62728", "S": "#1f5fbf"}
 _OPPOSITE_EDGE = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}
 _INWARD = {"top": (0, 1), "bottom": (0, -1), "left": (1, 0), "right": (-1, 0)}
 _TICK = 3.0  # mm in from the edge, never over a neighbour's shared cut line

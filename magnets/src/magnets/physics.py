@@ -1,7 +1,7 @@
 """Magnet physics: layers, pocket shapes, flips, and what two edges do.
 
-A pocket's layers are written `P/Q` (P = up, Q = down); each is `N`, `S`,
-`F` (steel) or `-` (empty). Facing pockets interact layer by layer.
+A pocket's layers are written `P/Q` (P = up, Q = down); each is a magnet,
+`N` or `S`, or `-` (empty). Facing pockets interact layer by layer.
 """
 
 import math
@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from fractions import Fraction
 from typing import Literal
 
-LAYERS = ("N", "S", "F", "-")
+LAYERS = ("N", "S", "-")
 FLIPS = ("top_bottom", "left_right")
 TOP_BOTTOM_EDGES = ("top", "bottom")
 LEFT_RIGHT_EDGES = ("left", "right")
@@ -35,11 +35,9 @@ Shape = Literal["uniform", "half", "split"]
 
 def interact(p: str, q: str) -> Interaction:
     """What one layer does to the layer facing it."""
-    if p == "-" or q == "-" or (p == "F" and q == "F"):
+    if p == "-" or q == "-":
         return "nothing"
-    if p == "F" or q == "F" or p != q:
-        return "attract"
-    return "repel"
+    return "attract" if p != q else "repel"
 
 
 def aggregate(attract: int, repel: int) -> Result:

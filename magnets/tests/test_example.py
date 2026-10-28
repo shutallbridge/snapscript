@@ -7,8 +7,10 @@ from magnets import check
 
 # The worked set_get example on the TOY_PAIRS data, whose set_get flip pair
 # takes different roles on each side: get over set, set over get and both
-# self-stacks all snap under a top-to-bottom flip.
-SET_GET_EXAMPLE = set_get(top=[("left", "1/6", "F/N")], bottom=[("left", "1/6", "F/S")])
+# self-stacks all snap under a top-to-bottom flip. A flip swaps a split
+# pocket's layers, so opposite split pockets on top and bottom come out the
+# same on get, and every stack faces N/S to S/N.
+SET_GET_EXAMPLE = set_get(top=[("left", "1/6", "S/N")], bottom=[("left", "1/6", "N/S")])
 
 
 def pockets(result, side, edge):
@@ -17,26 +19,20 @@ def pockets(result, side, edge):
 
 def test_derived_get_has_flipped_pockets():
     result = check_pairs(SET_GET_EXAMPLE)
-    assert pockets(result, "set", "top") == ["F/N"]
-    assert pockets(result, "set", "bottom") == ["F/S"]
-    assert pockets(result, "get", "top") == ["S/F"]
-    assert pockets(result, "get", "bottom") == ["N/F"]
+    assert pockets(result, "set", "top") == ["S/N"]
+    assert pockets(result, "set", "bottom") == ["N/S"]
+    # get's top is set's bottom flipped, and its bottom set's top flipped.
+    assert pockets(result, "get", "top") == ["S/N"]
+    assert pockets(result, "get", "bottom") == ["N/S"]
 
 
-@pytest.mark.parametrize(
-    "upper, lower, upper_bottom, lower_top, up, down",
-    [
-        ("set", "set", "F/S", "F/N", "nothing", "attract"),
-        ("get", "set", "N/F", "F/N", "attract", "attract"),
-        ("set", "get", "F/S", "S/F", "attract", "attract"),
-        ("get", "get", "N/F", "S/F", "attract", "nothing"),
-    ],
-)
-def test_four_set_get_stacks_snap(upper, lower, upper_bottom, lower_top, up, down):
+@pytest.mark.parametrize("upper", ["set", "get"])
+@pytest.mark.parametrize("lower", ["set", "get"])
+def test_four_set_get_stacks_snap(upper, lower):
     contact = stack(check_pairs(SET_GET_EXAMPLE), upper, lower)
     [pair] = contact.pairs
-    assert (pair.a.layers, pair.b.layers) == (upper_bottom, lower_top)
-    assert (pair.up, pair.down) == (up, down)
+    assert (pair.a.layers, pair.b.layers) == ("N/S", "S/N")
+    assert (pair.up, pair.down) == ("attract", "attract")
     assert contact.result == "snap"
     [label] = contact.labels
     assert (label.kind, label.priority, label.grade) == ("connect", "must", "pass")
@@ -44,7 +40,7 @@ def test_four_set_get_stacks_snap(upper, lower, upper_bottom, lower_top, up, dow
 
 def test_nn_on_set_get_top_fails_get_over_set():
     # The derived get's bottom is N/N too, and N/N on N/N repels.
-    result = check_pairs(set_get(top=[("left", "1/6", "N/N")], bottom=[("left", "1/6", "F/S")]))
+    result = check_pairs(set_get(top=[("left", "1/6", "N/N")], bottom=[("left", "1/6", "N/S")]))
     contact = stack(result, "get", "set")
     assert contact.result == "repel"
     [label] = contact.labels
@@ -58,7 +54,7 @@ def test_nn_on_set_get_top_fails_get_over_set():
 def test_set_and_get_lines_stack_in_every_order(upper, lower):
     contact = over(check("example"), upper, lower, 0)
     [pair] = contact.pairs
-    assert (pair.a.layers, pair.b.layers, contact.result) == ("N/S", "F/F", "snap")
+    assert (pair.a.layers, pair.b.layers, contact.result) == ("N/S", "S/N", "snap")
     [label] = contact.labels
     assert (label.kind, label.grade) == ("connect", "pass")
 
@@ -66,11 +62,10 @@ def test_set_and_get_lines_stack_in_every_order(upper, lower):
 @pytest.mark.parametrize("left", ["literal.num", "literal.str"])
 @pytest.mark.parametrize("right", ["literal.num", "literal.str"])
 def test_literals_snap_inline_in_every_order(left, right):
-    # str's right edge is num's flipped: S/N, which F/F still attracts.
+    # str's edges are num's flipped, and uniform pockets are the same both ways up.
     contact = beside(check("example"), left, right)
     [pair] = contact.pairs
-    expected = "N/S" if left == "literal.num" else "S/N"
-    assert (pair.a.layers, pair.b.layers, contact.result) == (expected, "F/F", "snap")
+    assert (pair.a.layers, pair.b.layers, contact.result) == ("N/N", "S/S", "snap")
     [label] = contact.labels
     assert (label.kind, label.grade) == ("connect", "pass")
 
