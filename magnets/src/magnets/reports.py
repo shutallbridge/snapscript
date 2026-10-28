@@ -118,10 +118,11 @@ def summary_text(result: CheckResult, search: SolveResult | None = None) -> str:
 
 
 def _pocket_line(arrangement: Arrangement) -> str:
-    """`Pockets: 41 (uniform 20, half 12, split 9)`, over every front: a
-    back shares its front's pockets."""
+    """`Pockets: 41 (uniform 20, half 12, split 9), 70 magnets`, over every
+    front: a back shares its front's pockets and magnets."""
     shapes = Counter(p.shape for edges in arrangement.fronts.values() for pockets in edges.values() for p in pockets)
-    return f"Pockets: {shapes.total()} ({', '.join(f'{shape} {shapes[shape]}' for shape in SHAPES)})"
+    magnets = sum(arrangement.magnets(name) for name in arrangement.fronts)
+    return f"Pockets: {shapes.total()} ({', '.join(f'{shape} {shapes[shape]}' for shape in SHAPES)}), {magnets} magnets"
 
 
 def _search_lines(search: SolveResult) -> list[str]:
@@ -270,15 +271,15 @@ def program_report_text(checked: Sequence[tuple[BundledProgram, ProgramResult]])
 
 
 def program_status(program: BundledProgram, result: ProgramResult) -> str:
-    """One line: a legal program's PASS or FAIL, or an illegal program's
-    forbid contact count."""
+    """One line: a legal program's PASS or FAIL and its cards' magnets, or
+    an illegal program's forbid contact count."""
     count = len(result.layouts)
     if not program.legal:
         return f"{program.name} (illegal): {len(_grouped(_forbid_lines(result), count))} forbid contacts in {count} layouts"
     if result.passed:
-        return f"{program.name} (legal): PASS"
+        return f"{program.name} (legal): PASS, {result.magnets} magnets"
     failed = len({f.layout for f in result.failures})
-    return f"{program.name} (legal): FAIL in {failed} of {count} layouts"
+    return f"{program.name} (legal): FAIL in {failed} of {count} layouts, {result.magnets} magnets"
 
 
 def _forbid_lines(result: ProgramResult) -> list[tuple[str, ProgramContact, str]]:

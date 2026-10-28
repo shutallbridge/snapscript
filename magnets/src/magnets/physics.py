@@ -81,6 +81,11 @@ class Pocket:
             return "half"
         return "uniform" if self.up == self.down else "split"
 
+    @property
+    def magnets(self) -> int:
+        """One per layer that holds a magnet."""
+        return (self.up != "-") + (self.down != "-")
+
     def position(self, length: int) -> Fraction:
         """Distance from the card's left end (top/bottom) or top (left/right)."""
         return length - self.at if self.anchor == "right" else self.at

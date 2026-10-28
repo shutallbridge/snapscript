@@ -36,17 +36,17 @@ def test_the_same_seed_with_one_worker_repeats_its_arrangement():
 
 
 # The objective, from issue #10: a forbid's priority weight times its grade's
-# penalty, for every contact; plus a cost per pocket by its shape.
+# penalty, for every contact; plus 0.01 per magnet.
 WEIGHTS = {"should": 10, "nice": 1, "low": 0}
 # The penalties depend on the search goal: under no_snap, nothing is enough.
 PENALTIES = {
     "repel": {"leak": 1, "partial": Fraction(1, 2), "weak": Fraction(1, 5), "strong": 0},
     "no_snap": {"leak": 1, "partial": Fraction(1, 2), "weak": 0, "strong": 0},
 }
-SHAPE_COSTS = {"uniform": Fraction(1, 100), "half": Fraction(15, 1000), "split": Fraction(2, 100)}
+MAGNET_COST = Fraction(1, 100)
 
 
-def objective(checked, goal="repel"):
+def objective(checked, goal="no_snap"):
     """The objective of a checked arrangement under a search goal, from its
     grades and pockets."""
     forbids = sum(
@@ -55,13 +55,13 @@ def objective(checked, goal="repel"):
         for label in group.labels
         if label.kind == "forbid" and not label.unavoidable
     )
-    pockets = sum(
-        SHAPE_COSTS[pocket.shape]
+    magnets = sum(
+        MAGNET_COST * sum(layer != "-" for layer in (pocket.up, pocket.down))
         for edges in checked.arrangement.fronts.values()
         for pockets in edges.values()
         for pocket in pockets
     )
-    return forbids + pockets
+    return forbids + magnets
 
 
 def test_the_reported_objective_is_the_checkers():
@@ -119,8 +119,9 @@ def test_pinning_the_example_keeps_its_design():
         assert (found[name]["top"], found[name]["bottom"]) == (example[name]["top"], example[name]["bottom"])
     assert (found["literal"]["left"], found["literal"]["right"]) == (example["literal"]["left"], example["literal"]["right"])
     # The example doesn't mention simple_head's left and right edges, nor the other
-    # classes, so the search designs them.
-    assert found["simple_head"]["left"] and found["simple_head"]["right"]
+    # classes, so the search designs them: its right edge must snap to what
+    # follows, and under no_snap its left edge, which nothing may snap to, needs nothing.
+    assert found["simple_head"]["right"] and not found["simple_head"]["left"]
     assert result.check.valid
 
 
@@ -282,12 +283,36 @@ def test_no_snap_leaves_a_forbid_weak_where_repel_adds_pockets():
     assert no_snap.objective == objective(no_snap.check, "no_snap") == 0
 
 
-def test_the_default_goal_is_repel():
+def test_the_default_goal_is_no_snap():
     result = solve("top_bottom", **LONE_PROBLEM)
-    assert result.goal == "repel"
-    assert beside(result.check, "lone.lone", "lone.lone").labels[0].grade == "strong"
+    assert result.goal == "no_snap"
+    assert beside(result.check, "lone.lone", "lone.lone").labels[0].grade == "weak"
 
 
 def test_an_unknown_goal_is_rejected():
     with pytest.raises(ValueError, match="unknown goal 'push'; expected one of repel, no_snap"):
         solve("top_bottom", goal="push", **LONE_PROBLEM)
+
+
+# A toy grammar: one single-sided 1U class that must snap to itself, side by
+# side, and nothing else is graded but low.
+LINK = {"left": "value", "right": "value", "top": "free", "bottom": "free"}
+LINK_CLASSES = {"link": {"min_length": 1, "pocket_reach": 1, "sides": {"link": {"[link]": LINK}}}}
+LINK_RULES = {
+    **LONE_RULES,
+    "roles": {"left": ["value"], "right": ["value"], "top": ["free"], "bottom": ["free"]},
+    "horizontal": {"connect": {"value": ["value"]}, "forbid": "should", "off_line": "low"},
+    "vertical": {**LONE_RULES["vertical"], "coexist": {"never": ["free"], "line_heads": [], "not_inline": []}},
+}
+
+
+def test_of_two_arrangements_with_the_same_pockets_the_search_picks_fewer_magnets():
+    # [link][link] snaps with one magnet on each facing edge (two half
+    # pockets) or with two (two uniform pockets): the same pockets, and both
+    # snap, but the half pockets have half the magnets.
+    result = solve("top_bottom", class_data=LINK_CLASSES, rule_data=LINK_RULES, max_length=2, time_limit=5, workers=1)
+    assert result.status == "optimal"
+    assert beside(result.check, "link.link", "link.link").result == "snap"
+    link = result.arrangement.fronts["link"]
+    assert [p.shape for p in (*link["left"], *link["right"])] == ["half", "half"]
+    assert result.objective == objective(result.check) == Fraction(2, 100)

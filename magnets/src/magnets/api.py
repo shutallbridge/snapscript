@@ -73,6 +73,7 @@ class ProgramResult:
     `failures` is what keeps the program from holding together, if it is
     legal. `forbids` is every forbid contact it contains, which is what an
     illegal program is judged by. `info` is every ungraded contact.
+    `magnets` is how many magnets its cards hold, to size a kit by.
     """
 
     arrangement: Arrangement
@@ -83,6 +84,7 @@ class ProgramResult:
     failures: tuple[Failure, ...]
     forbids: tuple[Forbid, ...]
     info: tuple[Info, ...]
+    magnets: int
 
     @property
     def passed(self) -> bool:
@@ -111,6 +113,7 @@ def check_program(
     """
     grammar, classes, loaded, all_sides = _load(arrangement, max_length, class_data, rule_data)
     strips = _programs.parse(program_text, classes)
+    owners = {side.name: name for name, cls in classes.items() for side in cls.sides}
     found = _programs.layouts(
         strips, all_sides, grammar, loaded.flip, lengths=lengths, seed=seed, draws=draws, max_length=max_length
     )
@@ -123,6 +126,7 @@ def check_program(
         failures=tuple(_programs.failures(found)),
         forbids=tuple(_programs.forbids(found)),
         info=tuple(_programs.info(found)),
+        magnets=sum(loaded.magnets(owners[card.side]) for card in _programs.all_cards(strips)),
     )
 
 
@@ -189,8 +193,8 @@ class SolveResult:
     `status` is optimal (proven best), feasible (the best found within the
     time limit), infeasible (proven to have no valid arrangement) or unknown
     (nothing found within the time limit). `objective` and `bound` are in
-    cost units: a should-leak contact costs 10, a nice-leak 1, a pocket
-    0.01 to 0.02. `arrangement` and `check` are None if nothing was found.
+    cost units: a should-leak contact costs 10, a nice-leak 1, a magnet
+    0.01. `arrangement` and `check` are None if nothing was found.
 
     If infeasible, `conflicts` names requirements that can't all hold
     (enough to make it infeasible, not always the fewest), and `arrangement`
@@ -222,7 +226,7 @@ class SolveResult:
 def solve(
     flip: str,
     *,
-    goal: str = "repel",
+    goal: str = "no_snap",
     pinned: str | Path | Mapping | Arrangement | None = None,
     classes: Sequence[str] | None = None,
     seed: int = 0,
@@ -238,12 +242,13 @@ def solve(
     Every connect contact must snap and every coexist contact must not
     repel. Among those arrangements the search minimises, over every
     forbid contact that isn't unavoidable, its priority weight times its
-    grade's penalty, plus a cost per pocket by its shape (uniform 0.01,
-    half 0.015, split 0.02). The penalties depend on the search `goal`:
-    under "repel" the search tries to push illegal neighbours apart (leak
-    1, partial 0.5, weak 0.2, strong 0); under "no_snap" it is enough that
-    they don't snap (weak 0 too). Objectives found with different goals
-    can't be compared; `check` grades the same way for both.
+    grade's penalty, plus 0.01 per magnet (a half pocket holds one, a
+    uniform or split pocket two). The penalties depend on the search
+    `goal`: under "no_snap", the default, it is enough that illegal
+    neighbours don't snap (leak 1, partial 0.5, weak and strong 0); under
+    "repel" the search also tries to push them apart (weak 0.2), with
+    about twice the magnets. Objectives found with different goals can't
+    be compared; `check` grades the same way for both.
     `pinned`, an arrangement as for `check` with the same flip, fixes every
     edge it mentions, even an empty one (`right: []`); a loaded arrangement
     fixes every edge. Like any arrangement checked with `classes`, it may
