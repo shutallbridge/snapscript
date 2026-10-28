@@ -201,8 +201,8 @@ def test_an_unavoidable_leak_costs_nothing():
     # arrangements differ only in the left pocket of set, facing set's N.
     # Every edge is pinned, so each search can only return its pinned
     # arrangement.
-    leaking = set_get(top=[], bottom=[], left=[(0.5, "S/-")], right=[(0.5, "N/-")])
-    blocked = set_get(top=[], bottom=[], left=[(0.5, "N/-")], right=[(0.5, "N/-")])
+    leaking = set_get(top=[], bottom=[], left=[("1/2", "S/-")], right=[("1/2", "N/-")])
+    blocked = set_get(top=[], bottom=[], left=[("1/2", "N/-")], right=[("1/2", "N/-")])
     only = dict(classes=["set_get"], time_limit=5, workers=1, **TOY)
     results = [solve("top_bottom", pinned=pinned, **only) for pinned in (leaking, blocked)]
     assert [r.fewest_status for r in results] == ["optimal", "optimal"]

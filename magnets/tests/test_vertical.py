@@ -5,7 +5,7 @@ from fractions import Fraction
 from helpers import arrangement, check_pairs, over, pair_classes
 
 
-def test_offsets_are_every_quarter_u_where_the_edges_overlap():
+def test_offsets_are_every_third_u_where_the_edges_overlap():
     # set_get is 2U to 6U long, so set over set overlaps for -6 < d < 6.
     result = check_pairs({})
     offsets = {
@@ -13,7 +13,7 @@ def test_offsets_are_every_quarter_u_where_the_edges_overlap():
         for c in result.groups
         if c.axis == "vertical" and (c.a, c.b) == ("set_get.set", "set_get.set")
     }
-    assert offsets == {Fraction(k, 4) for k in range(-23, 24)}
+    assert offsets == {Fraction(k, 3) for k in range(-17, 18)}
 
 
 def test_contacts_cover_every_ordered_pair_of_sides_including_a_side_with_itself():
@@ -30,8 +30,8 @@ def test_an_offset_only_occurs_at_lengths_where_the_edges_overlap():
     assert over(result, "set_get.set", "define_call.call", 2).lengths == (3, 2)
     assert over(result, "set_get.set", "define_call.call", 2).count == 4 * 5
     assert over(result, "set_get.set", "define_call.call", -1).lengths == (2, 2)
-    assert over(result, "set_get.set", "define_call.call", 5.75).lengths == (6, 2)
-    assert over(result, "set_get.set", "define_call.call", 5.75).count == 5
+    assert over(result, "set_get.set", "define_call.call", Fraction(17, 3)).lengths == (6, 2)
+    assert over(result, "set_get.set", "define_call.call", Fraction(17, 3)).count == 5
     assert over(result, "block_head.head", "set_get.set", 0).lengths == (2, 2)
     assert over(result, "block_head.head", "set_get.set", 0).count == 5 * 5
 
@@ -129,7 +129,7 @@ def test_two_inline_cards_coexist_at_any_whole_offset():
     assert kinds(over(result, "literal.num", "literal.num", 0)) == [("coexist", "must"), ("forbid", "should")]
     # Off the meaningful offsets, coexist replaces forbid / low.
     assert kinds(over(result, "literal.num", "literal.num", 2)) == [("coexist", "must")]
-    assert kinds(over(result, "literal.num", "literal.num", 0.5)) == [("forbid", "low")]
+    assert kinds(over(result, "literal.num", "literal.num", Fraction(1, 3))) == [("forbid", "low")]
     # [call{f}] can head a line and sit inline, so it coexists with [none] @0.
     assert kinds(over(result, "define_call.call", "none.none", 0)) == [
         ("coexist", "must"),
@@ -248,7 +248,7 @@ def grades(contact):
 def test_two_inline_cards_that_repel_fail_coexist():
     # [num{1}] over [num{2}] @0: N/- on N/- repels.
     result = check_pairs(
-        arrangement(literal={"top": [("left", 0.25, "N/-")], "bottom": [("left", 0.25, "N/-")]})
+        arrangement(literal={"top": [("left", "1/6", "N/-")], "bottom": [("left", "1/6", "N/-")]})
     )
     contact = over(result, "literal.num", "literal.num", 0)
     assert contact.result == "repel"
@@ -259,12 +259,12 @@ def test_two_inline_cards_that_repel_fail_coexist():
 
 
 def test_a_from_right_pocket_only_aligns_at_some_length_pairs():
-    # set's bottom and [if]'s top pockets both sit 0.25U from the right
+    # set's bottom and [if]'s top pockets both sit 1/6 U from the right
     # end, so @0 they line up only on cards of equal length.
     result = check_pairs(
         arrangement(
-            set_get={"bottom": [("right", 0.25, "N/-")]},
-            block_head={"top": [("right", 0.25, "S/-")]},
+            set_get={"bottom": [("right", "1/6", "N/-")]},
+            block_head={"top": [("right", "1/6", "S/-")]},
         )
     )
     snapped, missed = sorted(
@@ -287,12 +287,12 @@ def test_a_from_right_pocket_only_aligns_at_some_length_pairs():
 
 
 def test_a_block_heads_indent_pocket_meets_the_body_line_head():
-    # [if]'s pocket 1.25U from its left end meets set's at 0.25 when set
+    # [if]'s pocket 7/6 U from its left end meets set's at 1/6 when set
     # sits 1U right, as a body line head.
     result = check_pairs(
         arrangement(
-            block_head={"bottom": [("left", 1.25, "N/-")]},
-            set_get={"top": [("left", 0.25, "S/-")]},
+            block_head={"bottom": [("left", "7/6", "N/-")]},
+            set_get={"top": [("left", "1/6", "S/-")]},
         )
     )
     contact = over(result, "block_head.head", "set_get.set", 1)
@@ -305,12 +305,12 @@ def test_a_block_heads_indent_pocket_meets_the_body_line_head():
 
 
 def test_a_dedent_meets_the_last_body_line_one_column_left():
-    # set's bottom pocket at 0.25 meets [dedent]'s top pocket at 1.25 when
+    # set's bottom pocket at 1/6 meets [dedent]'s top pocket at 7/6 when
     # the [dedent] sits 1U left.
     result = check_pairs(
         arrangement(
-            set_get={"bottom": [("left", 0.25, "N/-")]},
-            dedent={"top": [("left", 1.25, "S/-")]},
+            set_get={"bottom": [("left", "1/6", "N/-")]},
+            dedent={"top": [("left", "7/6", "S/-")]},
         )
     )
     contact = over(result, "set_get.set", "dedent.dedent", -1)

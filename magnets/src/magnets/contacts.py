@@ -7,6 +7,7 @@ from fractions import Fraction
 
 from .data import Arrangement, CardClass, Rules, Side
 from .physics import (
+    OFFSET_STEP,
     Edges,
     PocketPair,
     Result,
@@ -243,9 +244,9 @@ def _stacks(
     on it.
     """
     bottom, top = upper.edges["bottom"], lower.edges["top"]
-    # Cards shift in 1/4 U steps; every position is a multiple of 1/4 U, so
-    # every offset where pockets line up is one of these steps.
-    steps = [Fraction(step, 4) for step in range(-4 * max_length + 1, 4 * max_length)]
+    # Cards shift in OFFSET_STEP steps: every offset where pockets line up is one of them.
+    per_u = OFFSET_STEP.denominator
+    steps = [step * OFFSET_STEP for step in range(-per_u * max_length + 1, per_u * max_length)]
     labels = {offset: _vertical_labels(rules, upper.side, lower.side, offset) for offset in steps}
     unavoidable = None if tied is None else _forbids_only(tied, labels)
     # offset -> (aligned pocket indices, unavoidable) -> [smallest lengths, count, pairs]

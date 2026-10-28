@@ -89,15 +89,15 @@ def test_a_card_that_is_not_a_flip_pair_has_an_unlabelled_back(card):
 # pockets too; and a block head, which is not a flip pair.
 EVERY_EDGE = dict(
     literal={
-        "top": [("left", 0.25, "N/-"), ("right", 0.5, "F/S")],
-        "bottom": [("left", 0.75, "-/S")],
-        "left": [(0.25, "S/N")],
-        "right": [(0.5, "N/F"), (0.75, "-/N")],
+        "top": [("left", "1/6", "N/-"), ("right", "1/2", "F/S")],
+        "bottom": [("left", "5/6", "-/S")],
+        "left": [("1/6", "S/N")],
+        "right": [("1/2", "N/F"), ("5/6", "-/N")],
     },
     block_head={
-        "top": [("left", 0.5, "S/F")],
-        "bottom": [("right", 0.25, "N/-")],
-        "left": [(0.75, "F/-")],
+        "top": [("left", "1/2", "S/F")],
+        "bottom": [("right", "1/6", "N/-")],
+        "left": [("5/6", "F/-")],
     },
 )
 
@@ -105,10 +105,29 @@ EVERY_EDGE = dict(
 def test_letters_are_the_layer_nearest_each_face():
     (head,) = pieces(card_sheet(arrangement(**EVERY_EDGE), "[repeat]"))
     assert head.front.notation == "[repeat]"
-    assert marks(head.front) == [("bottom", 60 - 7.5, "N"), ("left", 22.5, "F"), ("top", 15, "S")]
+    # At 30 mm per U the positions sit 5, 15 and 25 mm into each U.
+    assert marks(head.front) == [("bottom", 60 - 5, "N"), ("left", 25, "F"), ("top", 15, "S")]
     # Its back is unlabelled and shows the front's down layers.
     assert head.back.notation is None
-    assert marks(head.back) == [("bottom", 15, "F"), ("left", 7.5, "–"), ("top", 60 - 7.5, "–")]
+    assert marks(head.back) == [("bottom", 15, "F"), ("left", 5, "–"), ("top", 60 - 5, "–")]
+
+
+@pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
+@pytest.mark.parametrize("unit", [30, 20])
+def test_the_fold_mark_sits_between_pocket_positions(flip, unit):
+    # Pockets at the two positions nearest the right end, on the edges
+    # either side of the fold line, and on the right edge either side of
+    # it. The fold mark sits midway between them, 1/3 U in from the right.
+    near_right = [("right", "1/6", "N/-"), ("right", "1/2", "N/-")]
+    edges = {"top": near_right, "bottom": near_right, "right": [("1/6", "N/-"), ("5/6", "N/-")]}
+    classes = {"block_head": edges}
+    (piece,) = pieces(card_sheet(arrangement(flip, **classes), "[repeat]", unit=unit))
+    right = piece.front.x + piece.front.width
+    assert piece.fold_x == pytest.approx(right - unit / 3)
+    # No pocket on the fold line is nearer than 1/6 U along it.
+    for m in piece.front.marks + piece.back.marks:
+        if m.y == pytest.approx(piece.fold_y):
+            assert abs(m.x - piece.fold_x) >= unit / 6 - 1e-9
 
 
 @pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
@@ -131,9 +150,9 @@ def test_back_folds_onto_front(flip, rotated, fold):
         assert piece.fold == fold
         assert piece.back.rotated is rotated and piece.front.rotated is False
         # Mirrored through the fold line, each back mark lands on a front mark.
-        front = sorted((m.x, m.y) for m in piece.front.marks)
-        mirrored = sorted((m.x, 2 * piece.fold_y - m.y) for m in piece.back.marks)
-        assert mirrored == pytest.approx(front)
+        front = sorted((round(m.x, 6), round(m.y, 6)) for m in piece.front.marks)
+        mirrored = sorted((round(m.x, 6), round(2 * piece.fold_y - m.y, 6)) for m in piece.back.marks)
+        assert mirrored == front
         assert len(front) == len(set(front))
 
 

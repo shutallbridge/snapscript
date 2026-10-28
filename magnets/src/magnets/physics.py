@@ -4,6 +4,7 @@ A pocket's layers are written `P/Q` (P = up, Q = down); each is `N`, `S`,
 `F` (steel) or `-` (empty). Facing pockets interact layer by layer.
 """
 
+import math
 from dataclasses import dataclass, replace
 from fractions import Fraction
 from typing import Literal
@@ -14,9 +15,18 @@ TOP_BOTTOM_EDGES = ("top", "bottom")
 LEFT_RIGHT_EDGES = ("left", "right")
 EDGES = TOP_BOTTOM_EDGES + LEFT_RIGHT_EDGES
 # Where a pocket can sit within one 1U cell, in U from the cell's start.
-# Every cell has the same positions. A left/right edge is one cell, and a
-# pocket's position there is its height from the top edge.
-POSITIONS = (Fraction(1, 4), Fraction(1, 2), Fraction(3, 4))
+# Every cell has the same positions, spread evenly, so neighbouring pockets
+# are as far apart across a cell boundary as within a cell. A left/right
+# edge is one cell, and a pocket's position there is its height from the
+# top edge. The positions are symmetric (h and 1 - h), so they are the same
+# from either end of a card.
+POSITIONS = (Fraction(1, 6), Fraction(1, 2), Fraction(5, 6))
+# Pockets line up only at offsets that are a multiple of this: a difference
+# of two positions (same anchor) or a sum (opposite anchors), give or take
+# whole U.
+OFFSET_STEP = Fraction(
+    1, math.lcm(*(d.denominator for p in POSITIONS for q in POSITIONS for d in (p - q, p + q)))
+)
 
 Interaction = Literal["attract", "repel", "nothing"]
 Result = Literal["snap", "repel", "mixed", "nothing"]
@@ -78,7 +88,7 @@ class Pocket:
         return length - self.at if self.anchor == "right" else self.at
 
     def to_dict(self) -> dict:
-        at = int(self.at) if self.at.denominator == 1 else float(self.at)
+        at = int(self.at) if self.at.denominator == 1 else u_text(self.at)
         if self.anchor is None:
             return {"at": at, "layers": self.layers}
         return {"from": self.anchor, "at": at, "layers": self.layers}
@@ -170,6 +180,11 @@ def horizontal_pairs(
     `offset` is how far the right card sits lower than the left card, in U.
     """
     return tuple(PocketPair(a, b) for a in right for b in left if a.at == offset + b.at)
+
+
+def u_text(x: Fraction) -> str:
+    """A length or offset in U as an exact fraction: `2`, `1/6`, `-7/6`."""
+    return str(x)
 
 
 def positions(reach: int) -> tuple[Fraction, ...]:

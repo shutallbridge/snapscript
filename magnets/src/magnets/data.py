@@ -12,7 +12,7 @@ import re
 
 import yaml
 
-from .physics import EDGES, FLIPS, LAYERS, LEFT_RIGHT_EDGES, POSITIONS, Edges, Pocket, on_grid
+from .physics import EDGES, FLIPS, LAYERS, LEFT_RIGHT_EDGES, POSITIONS, Edges, Pocket, on_grid, u_text
 
 MAX_POCKETS = {"top": 2, "bottom": 2, "left": 3, "right": 3}
 
@@ -401,9 +401,9 @@ def _parse_vertical(raw: Any, roles: Mapping[str, tuple[str, ...]], priorities: 
             for offset in sorted(offsets):
                 matched = [r for r in rules if r.matches(upper, lower, offset)]
                 if (upper, lower, offset) in connect and matched:
-                    raise DataError(f"{where}: {upper} over {lower} @{_u(offset)} is both connect and forbid")
+                    raise DataError(f"{where}: {upper} over {lower} @{u_text(offset)} is both connect and forbid")
                 if len(matched) > 1:
-                    raise DataError(f"{where}.priorities: {upper} over {lower} @{_u(offset)} matches more than one rule")
+                    raise DataError(f"{where}.priorities: {upper} over {lower} @{u_text(offset)} matches more than one rule")
 
     coexist = raw.get("coexist")
     coexist_keys = {"never", "line_heads", "not_inline", "indents", "outdents"}
@@ -666,7 +666,7 @@ def _pocket(cls: CardClass, edge: str, index: int, raw: Any) -> Pocket:
     if edge in LEFT_RIGHT_EDGES:
         _no_extra_keys(raw, {"at", "layers"}, where)
         if at not in POSITIONS:
-            raise ArrangementError(f"{where}: at {_u(at)} must be {_positions_text()} (U from the top edge)")
+            raise ArrangementError(f"{where}: at {u_text(at)} must be {_positions_text()} (U from the top edge)")
         return Pocket(edge=edge, anchor=None, at=at, layers=layers, index=index)
     _no_extra_keys(raw, {"from", "at", "layers"}, where)
     anchor = raw.get("from")
@@ -674,12 +674,12 @@ def _pocket(cls: CardClass, edge: str, index: int, raw: Any) -> Pocket:
         raise ArrangementError(f"{where}: `from` must be left or right, not {anchor!r}")
     if not on_grid(at):
         raise ArrangementError(
-            f"{where}: at {_u(at)} is off the grid; positions sit at {_positions_text()} of each U, "
+            f"{where}: at {u_text(at)} is off the grid; positions sit at {_positions_text()} of each U, "
             "never on a cell boundary"
         )
     if not 0 < at < cls.pocket_reach:
         raise ArrangementError(
-            f"{where}: at {_u(at)} is beyond its pocket reach {cls.pocket_reach}U from the {anchor} end"
+            f"{where}: at {u_text(at)} is beyond its pocket reach {cls.pocket_reach}U from the {anchor} end"
         )
     return Pocket(edge=edge, anchor=anchor, at=at, layers=layers, index=index)
 
@@ -696,9 +696,17 @@ def _layers(where: str, raw: Any) -> str:
 
 
 def _fraction(where: str, raw: Any) -> Fraction:
-    if isinstance(raw, bool) or not isinstance(raw, (int, float)) or not math.isfinite(raw):
-        raise ArrangementError(f"{where}: `at` must be a number, not {raw!r}")
-    return Fraction(str(raw))
+    """`at` as written: a number, or a fraction like `1/6` (YAML reads it as text)."""
+    if isinstance(raw, Fraction):
+        return raw
+    try:
+        if isinstance(raw, str):
+            return Fraction(raw)
+        if not isinstance(raw, bool) and isinstance(raw, (int, float)) and math.isfinite(raw):
+            return Fraction(str(raw))
+    except (ValueError, ZeroDivisionError):
+        pass
+    raise ArrangementError(f"{where}: `at` must be a number or a fraction like 1/6, not {raw!r}")
 
 
 def _check_collision(where: str, p: Pocket, q: Pocket, min_length: int, max_length: int) -> None:
@@ -709,7 +717,7 @@ def _check_collision(where: str, p: Pocket, q: Pocket, min_length: int, max_leng
     length = collision_length(p, q, min_length, max_length)
     if length is not None:
         raise ArrangementError(
-            f"{where}: pockets {_anchored(p)} and {_anchored(q)} collide on a card {_u(length)}U long"
+            f"{where}: pockets {_anchored(p)} and {_anchored(q)} collide on a card {u_text(length)}U long"
         )
 
 
@@ -725,16 +733,12 @@ def collision_length(p: Pocket, q: Pocket, min_length: int, max_length: int) -> 
 
 
 def _anchored(p: Pocket) -> str:
-    return f"at {_u(p.at)}" if p.anchor is None else f"{{from: {p.anchor}, at: {_u(p.at)}}}"
-
-
-def _u(x: Fraction) -> str:
-    return str(int(x)) if x.denominator == 1 else str(float(x))
+    return f"at {u_text(p.at)}" if p.anchor is None else f"{{from: {p.anchor}, at: {u_text(p.at)}}}"
 
 
 def _positions_text() -> str:
     """The positions within a U, listed as `a, b or c`."""
-    *rest, last = (_u(at) for at in POSITIONS)
+    *rest, last = (u_text(at) for at in POSITIONS)
     return f"{', '.join(rest)} or {last}"
 
 

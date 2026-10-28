@@ -5,16 +5,16 @@ flip: top_bottom
 classes:
   simple_head:
     top:
-      - {from: left, at: 0.25, layers: F/F}
+      - {from: left, at: 1/6, layers: F/F}
     bottom:
-      - {from: left, at: 0.25, layers: N/S}
+      - {from: left, at: 1/6, layers: N/S}
   get:
     top:
-      - {from: left, at: 0.25, layers: F/F}
+      - {from: left, at: 1/6, layers: F/F}
     bottom:
-      - {from: left, at: 0.25, layers: N/S}
+      - {from: left, at: 1/6, layers: N/S}
   literal:
     left:
-      - {at: 0.5, layers: F/F}
+      - {at: 1/2, layers: F/F}
     right:
-      - {at: 0.5, layers: N/S}
+      - {at: 1/2, layers: N/S}

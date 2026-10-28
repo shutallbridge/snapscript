@@ -8,7 +8,7 @@ from magnets import check
 # The worked set_get example on the TOY_PAIRS data, whose set_get flip pair
 # takes different roles on each side: get over set, set over get and both
 # self-stacks all snap under a top-to-bottom flip.
-SET_GET_EXAMPLE = set_get(top=[("left", 0.25, "F/N")], bottom=[("left", 0.25, "F/S")])
+SET_GET_EXAMPLE = set_get(top=[("left", "1/6", "F/N")], bottom=[("left", "1/6", "F/S")])
 
 
 def pockets(result, side, edge):
@@ -44,7 +44,7 @@ def test_four_set_get_stacks_snap(upper, lower, upper_bottom, lower_top, up, dow
 
 def test_nn_on_set_get_top_fails_get_over_set():
     # The derived get's bottom is N/N too, and N/N on N/N repels.
-    result = check_pairs(set_get(top=[("left", 0.25, "N/N")], bottom=[("left", 0.25, "F/S")]))
+    result = check_pairs(set_get(top=[("left", "1/6", "N/N")], bottom=[("left", "1/6", "F/S")]))
     contact = stack(result, "get", "set")
     assert contact.result == "repel"
     [label] = contact.labels

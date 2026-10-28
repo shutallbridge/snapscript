@@ -32,8 +32,8 @@ def _alone_up(layer):
 def test_layer_table(upper, lower, expected):
     # set over set: set's bottom edge faces set's own top edge.
     arrangement = set_get(
-        bottom=[("left", 0.25, _alone_up(upper))],
-        top=[("left", 0.25, _alone_up(lower))],
+        bottom=[("left", "1/6", _alone_up(upper))],
+        top=[("left", "1/6", _alone_up(lower))],
     )
     contact = stack(check_pairs(arrangement), "set", "set")
     [pair] = contact.pairs
@@ -48,27 +48,27 @@ def test_layer_table(upper, lower, expected):
     "bottom, top, attract, repel, result",
     [
         # One pocket pair, both layers counted.
-        ([("left", 0.25, "N/S")], [("left", 0.25, "S/N")], 2, 0, "snap"),
-        ([("left", 0.25, "N/S")], [("left", 0.25, "N/S")], 0, 2, "repel"),
-        ([("left", 0.25, "N/N")], [("left", 0.25, "N/S")], 1, 1, "mixed"),
-        ([("left", 0.25, "F/F")], [("left", 0.25, "F/-")], 0, 0, "nothing"),
+        ([("left", "1/6", "N/S")], [("left", "1/6", "S/N")], 2, 0, "snap"),
+        ([("left", "1/6", "N/S")], [("left", "1/6", "N/S")], 0, 2, "repel"),
+        ([("left", "1/6", "N/N")], [("left", "1/6", "N/S")], 1, 1, "mixed"),
+        ([("left", "1/6", "F/F")], [("left", "1/6", "F/-")], 0, 0, "nothing"),
         # Counts sum across pocket pairs.
         (
-            [("left", 0.25, "N/-"), ("left", 0.75, "N/-")],
-            [("left", 0.25, "S/-"), ("left", 0.75, "N/-")],
+            [("left", "1/6", "N/-"), ("left", "5/6", "N/-")],
+            [("left", "1/6", "S/-"), ("left", "5/6", "N/-")],
             1,
             1,
             "mixed",
         ),
         (
-            [("left", 0.25, "N/N"), ("left", 0.75, "S/-")],
-            [("left", 0.25, "F/F"), ("left", 0.75, "N/-")],
+            [("left", "1/6", "N/N"), ("left", "5/6", "S/-")],
+            [("left", "1/6", "F/F"), ("left", "5/6", "N/-")],
             3,
             0,
             "snap",
         ),
         # Pockets that don't line up don't interact.
-        ([("left", 0.25, "N/N")], [("left", 0.5, "N/N")], 0, 0, "nothing"),
+        ([("left", "1/6", "N/N")], [("left", "1/2", "N/N")], 0, 0, "nothing"),
         # No pockets at all.
         ([], [], 0, 0, "nothing"),
     ],
@@ -84,9 +84,9 @@ def test_connect_grades():
         [label] = contact.labels
         return label.kind, contact.result, label.grade
 
-    assert grade([("left", 0.25, "N/-")], [("left", 0.25, "S/-")]) == ("connect", "snap", "pass")
-    assert grade([("left", 0.25, "N/-")], [("left", 0.25, "N/-")]) == ("connect", "repel", "FAIL")
-    assert grade([("left", 0.25, "N/N")], [("left", 0.25, "N/S")]) == ("connect", "mixed", "FAIL")
+    assert grade([("left", "1/6", "N/-")], [("left", "1/6", "S/-")]) == ("connect", "snap", "pass")
+    assert grade([("left", "1/6", "N/-")], [("left", "1/6", "N/-")]) == ("connect", "repel", "FAIL")
+    assert grade([("left", "1/6", "N/N")], [("left", "1/6", "N/S")]) == ("connect", "mixed", "FAIL")
     assert grade([], []) == ("connect", "nothing", "FAIL")
 
 
@@ -106,7 +106,7 @@ def test_connect_grades():
     ],
 )
 def test_pocket_shapes(layers, shape):
-    result = check_pairs(set_get(top=[("left", 0.25, layers)], left=[(0.5, layers)]))
+    result = check_pairs(set_get(top=[("left", "1/6", layers)], left=[("1/2", layers)]))
     # A flip changes every split pocket's layers but never its shape.
     for side in ("set", "get"):
         edges = result.sides[f"set_get.{side}"].edges
@@ -121,7 +121,7 @@ SELF_FACING = [(p, q, expected) for p, q, expected in LAYER_TABLE if (p, q) != (
 def test_a_pocket_facing_its_own_flipped_copy_snaps_only_if_its_layers_attract(p, q, expected):
     # Under top_bottom get's top is set's bottom flipped, so set over get puts
     # P/Q against Q/P: P faces Q in both layers.
-    contact = stack(check_pairs(set_get(bottom=[("left", 0.25, f"{p}/{q}")])), "set", "get")
+    contact = stack(check_pairs(set_get(bottom=[("left", "1/6", f"{p}/{q}")])), "set", "get")
     [pair] = contact.pairs
     assert (pair.a.layers, pair.b.layers) == (f"{p}/{q}", f"{q}/{p}")
     assert (pair.up, pair.down) == (expected, expected)

@@ -122,7 +122,7 @@ def test_left_right_ties_every_flip_pair_contact_to_its_partner(raw):
 def test_a_flip_pair_contact_and_its_partner_in_numbers():
     # set's right edge N/S at 1/2 and left edge N/S at 1/2. Under top_bottom
     # get's edges are S/N at 1/2: [get][set] snaps exactly like [set][get].
-    result = check_pairs(arrangement(set_get={"left": [(0.5, "N/S")], "right": [(0.5, "N/S")]}))
+    result = check_pairs(arrangement(set_get={"left": [("1/2", "N/S")], "right": [("1/2", "N/S")]}))
     pairs = {
         (c.a, c.b): (c.attract, c.repel, c.result)
         for c in result.groups

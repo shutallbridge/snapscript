@@ -13,7 +13,7 @@ import yaml
 from .api import CheckResult, ProgramResult, SolveResult
 from .contacts import ContactGroup, Label
 from .data import Arrangement, BundledProgram
-from .physics import Shape
+from .physics import Shape, u_text
 from .programs import ProgramContact
 from .sheet import CardSheet, Page, Panel, Piece, Ruler
 from .solver import Requirement
@@ -239,8 +239,7 @@ def _describe(result: CheckResult, group: ContactGroup, label: Label, with_prior
 def _offset(offset: Fraction) -> str:
     if offset == 0:
         return "0"
-    number = str(int(offset)) if offset.denominator == 1 else str(float(offset))
-    return number if offset < 0 else f"+{number}"
+    return u_text(offset) if offset < 0 else f"+{u_text(offset)}"
 
 
 def program_report_text(checked: Sequence[tuple[BundledProgram, ProgramResult]]) -> str:
@@ -364,8 +363,7 @@ def _piece_svg(piece: Piece) -> list[str]:
         f'height="{front.height + back.height:g}" fill="none" stroke="black" stroke-width="0.3"/>',
         f'<line x1="{front.x:g}" y1="{piece.fold_y:g}" x2="{right:g}" y2="{piece.fold_y:g}" '
         'stroke="black" stroke-width="0.2" stroke-dasharray="2 1.5"/>',
-        # On the fold line, inside the cut, clear of the nearest pocket (¼ U in).
-        f'<text x="{right - 2.5:g}" y="{piece.fold_y:g}" font-size="{_SMALL:g}" text-anchor="middle" '
+        f'<text x="{piece.fold_x:g}" y="{piece.fold_y:g}" font-size="{_SMALL:g}" text-anchor="middle" '
         f'dominant-baseline="central" stroke="white" stroke-width="0.8" paint-order="stroke">{piece.fold}</text>',
     ]
     for panel in (front, back):

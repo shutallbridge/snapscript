@@ -67,11 +67,11 @@ def test_check_reports_horizontal_contacts(tmp_path):
         "flip: top_bottom\n"
         "classes:\n"
         "  simple_head:\n"
-        "    left: [{at: 0.5, layers: S/-}]\n"
-        "    right: [{at: 0.5, layers: N/-}]\n"
+        "    left: [{at: 1/2, layers: S/-}]\n"
+        "    right: [{at: 1/2, layers: N/-}]\n"
         "  get:\n"
-        "    left: [{at: 0.5, layers: -/S}]\n"
-        "    right: [{at: 0.5, layers: -/N}]\n"
+        "    left: [{at: 1/2, layers: -/S}]\n"
+        "    right: [{at: 1/2, layers: -/N}]\n"
     )
     out = tmp_path / "reports"
     run = subprocess.run(
@@ -125,8 +125,8 @@ def test_check_lists_must_failures_in_notation(tmp_path):
         "flip: top_bottom\n"
         "classes:\n"
         "  simple_head:\n"
-        "    top: [{from: left, at: 0.25, layers: N/N}]\n"
-        "    bottom: [{from: left, at: 0.25, layers: N/N}]\n"
+        "    top: [{from: left, at: 1/6, layers: N/N}]\n"
+        "    bottom: [{from: left, at: 1/6, layers: N/N}]\n"
     )
     run = subprocess.run(
         [*MAGNETS, "check", str(nn), "--out", str(tmp_path / "reports")],
@@ -145,12 +145,12 @@ def test_check_reports_vertical_contacts(tmp_path):
         "flip: top_bottom\n"
         "classes:\n"
         "  literal:\n"
-        "    top: [{from: left, at: 0.25, layers: N/-}]\n"
-        "    bottom: [{from: left, at: 0.25, layers: N/-}]\n"
+        "    top: [{from: left, at: 1/6, layers: N/-}]\n"
+        "    bottom: [{from: left, at: 1/6, layers: N/-}]\n"
         "  simple_head:\n"
-        "    bottom: [{from: left, at: 0.25, layers: N/-}]\n"
+        "    bottom: [{from: left, at: 1/6, layers: N/-}]\n"
         "  define:\n"
-        "    top: [{from: left, at: 0.25, layers: S/-}]\n"
+        "    top: [{from: left, at: 1/6, layers: S/-}]\n"
     )
     out = tmp_path / "reports"
     run = subprocess.run(
@@ -254,6 +254,15 @@ def test_search_writes_an_arrangement_that_check_accepts(tmp_path):
     assert found.read_text().startswith(
         "# Found by `magnets search`, lengths up to 6U.\n# Search (goal repel): "
     )
+    # Positions are written as exact fractions, which YAML reads as text.
+    written = [
+        pocket["at"]
+        for edges in yaml.safe_load(found.read_text())["classes"].values()
+        for pockets in edges.values()
+        for pocket in pockets
+    ]
+    assert written and set(written) <= {"1/6", "1/2", "5/6", "7/6", "3/2", "11/6"}
+    assert "0.16" not in found.read_text() and "0.83" not in found.read_text()
 
     checked = subprocess.run(
         [*MAGNETS, "check", str(found), "--classes", classes, "--out", str(tmp_path / "rechecked")],
@@ -424,3 +433,24 @@ def test_print_rejects_an_unknown_program_name(tmp_path):
     run = subprocess.run([*MAGNETS, "print", "example", "--program", "nope"], capture_output=True, text=True, cwd=tmp_path)
     assert run.returncode == 2
     assert f"no bundled program named 'nope'; expected one of {', '.join(BUNDLED)}" in run.stderr
+
+
+def test_check_reports_off_line_offsets_as_exact_fractions(tmp_path):
+    # simple_head's right pocket at 1/6 meets its own left pocket at 1/2 when
+    # the right card sits 1/3 U higher.
+    toy = tmp_path / "toy.yaml"
+    toy.write_text(
+        "flip: top_bottom\n"
+        "classes:\n"
+        "  simple_head:\n"
+        "    left: [{at: 1/2, layers: S/-}]\n"
+        "    right: [{at: 1/6, layers: N/-}]\n"
+    )
+    out = tmp_path / "reports"
+    subprocess.run([*MAGNETS, "check", str(toy), "--out", str(out)], capture_output=True, text=True, check=True)
+    _, rows = read_csv(out / "contacts.csv")
+    [row] = [
+        r for r in rows
+        if r["axis"] == "horizontal" and (r["upper_or_left"], r["lower_or_right"]) == ("simple_head.head",) * 2
+    ]
+    assert (row["offset"], row["result"], row["grade"]) == ("-1/3", "snap", "leak")

@@ -19,7 +19,7 @@ from typing import Literal
 
 from .contacts import SideEdges
 from .data import Arrangement, CardClass, carry_over
-from .physics import Edges, Pocket, flip
+from .physics import POSITIONS, Edges, Pocket, flip
 from .programs import Card, Strip, all_cards
 
 Paper = Literal["a4", "letter"]  # also the CSS @page size keyword
@@ -60,7 +60,7 @@ class Panel:
 @dataclass(frozen=True)
 class Piece:
     """One card to cut out and fold: `front` above, `back` below, the fold
-    line between them at `fold_y`, marked `fold` (↕ or ↔)."""
+    line between them at `fold_y`, marked `fold` (↕ or ↔) at `fold_x`."""
 
     card: Card
     length: int
@@ -68,6 +68,7 @@ class Piece:
     back: Panel
     fold_y: float
     fold: str
+    fold_x: float
 
 
 @dataclass(frozen=True)
@@ -237,6 +238,9 @@ def _piece(
         back=_panel(back_text, back_edges, length, x, y + unit, unit, rotated=rotated),
         fold_y=y + unit,
         fold=FOLDS[arrangement.flip],
+        # Midway between the two positions nearest the right end, clear of
+        # every pocket on the fold line and beside it.
+        fold_x=x + (length - float(POSITIONS[0] + POSITIONS[1]) / 2) * unit,
     )
 
 

@@ -1,5 +1,7 @@
 """Left/right-edge contacts between line neighbours: `[A][B]`, A's right edge facing B's left."""
 
+from fractions import Fraction
+
 import pytest
 
 from helpers import arrangement, beside, check_pairs
@@ -49,10 +51,10 @@ def test_contacts_cover_every_ordered_pair_of_sides_including_a_side_with_itself
     assert ("set_get.set", "set_get.set") in pairs
 
 
-def test_offsets_are_every_quarter_u_where_pockets_can_align():
+def test_offsets_are_every_third_u_where_pockets_can_align():
     result = check_pairs({})
     offsets = {c.offset for c in result.groups if c.axis == "horizontal"}
-    assert offsets == {-0.5, -0.25, 0, 0.25, 0.5}
+    assert offsets == {Fraction(k, 3) for k in (-2, -1, 0, 1, 2)}
 
 
 def test_off_line_contacts_are_forbid_low():
@@ -78,8 +80,8 @@ def test_set_then_num_snaps_as_connect():
     # [set{x}to][num{1}]: open -> value.
     result = check_pairs(
         arrangement(
-            set_get={"right": [(0.5, "N/-")]},
-            literal={"left": [(0.5, "S/-")]},
+            set_get={"right": [("1/2", "N/-")]},
+            literal={"left": [("1/2", "S/-")]},
         )
     )
     contact = beside(result, "set_get.set", "literal.num")
@@ -105,8 +107,8 @@ def test_num_then_set_is_graded_forbid(num_right, set_left, result, grade):
     contact = beside(
         check_pairs(
             arrangement(
-                literal={"right": [(0.25, num_right)]},
-                set_get={"left": [(0.25, set_left)]},
+                literal={"right": [("1/6", num_right)]},
+                set_get={"left": [("1/6", set_left)]},
             )
         ),
         "literal.num",
@@ -118,23 +120,23 @@ def test_num_then_set_is_graded_forbid(num_right, set_left, result, grade):
 
 
 def test_pockets_at_different_heights_meet_off_line_as_forbid_low():
-    # set's right pocket at 0.25 meets num's left pocket at 0.5 when num sits 0.25U higher.
+    # set's right pocket at 1/6 meets num's left pocket at 1/2 when num sits 1/3 U higher.
     result = check_pairs(
         arrangement(
-            set_get={"right": [(0.25, "N/-")]},
-            literal={"left": [(0.5, "S/-")]},
+            set_get={"right": [("1/6", "N/-")]},
+            literal={"left": [("1/2", "S/-")]},
         )
     )
     on_line = beside(result, "set_get.set", "literal.num")
     assert on_line.pairs == () and on_line.result == "nothing"
-    off_line = beside(result, "set_get.set", "literal.num", offset=-0.25)
+    off_line = beside(result, "set_get.set", "literal.num", offset=Fraction(-1, 3))
     [pair] = off_line.pairs
-    assert (pair.a.at, pair.b.at) == (0.25, 0.5)
+    assert (pair.a.at, pair.b.at) == (Fraction(1, 6), Fraction(1, 2))
     assert off_line.result == "snap"
     [label] = off_line.labels
     assert (label.kind, label.priority, label.grade) == ("forbid", "low", "leak")
-    # Lower B by 0.25U and B's pocket at 0.5 sits at 0.75, which A doesn't have.
-    assert beside(result, "set_get.set", "literal.num", offset=0.25).pairs == ()
+    # Lower B by 1/3 U and B's pocket at 1/2 sits at 5/6, which A doesn't have.
+    assert beside(result, "set_get.set", "literal.num", offset=Fraction(1, 3)).pairs == ()
 
 
 def test_contacts_are_independent_of_length():
@@ -144,7 +146,7 @@ def test_contacts_are_independent_of_length():
     assert contact.count == 5 * 5
 
 
-@pytest.mark.parametrize("height", [0.25, 0.5, 0.75])
+@pytest.mark.parametrize("height", [Fraction(1, 6), Fraction(1, 2), Fraction(5, 6)])
 def test_heights_mirror_under_top_bottom_and_stay_in_their_series(height):
     result = check_pairs(arrangement(set_get={"left": [(height, "N/-")], "right": [(height, "S/F")]}))
     for edge in ("left", "right"):
@@ -152,5 +154,5 @@ def test_heights_mirror_under_top_bottom_and_stay_in_their_series(height):
         [back] = result.sides["set_get.get"].edges[edge]
         assert back.at == 1 - height
         assert back.layers == front.layers[::-1]
-        # Series A is 1/4 and 3/4 of a U, series B is 1/2.
+        # Series A is 1/6 and 5/6 of a U, series B is 1/2.
         assert (front.at == 0.5) == (back.at == 0.5)

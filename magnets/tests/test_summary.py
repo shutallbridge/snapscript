@@ -54,16 +54,19 @@ def test_both_flips_have_the_same_contacts_in_different_contact_groups(flips):
         return {flip: by_kind(table(summary_text(r), heading)) for flip, r in results.items()}
 
     # 27 sides, each pair at 25 length pairs (2U to 6U): 5 horizontal
-    # offsets each, and 875 (length pair, quarter-U offset) overlaps above each other.
-    assert "\n37908 contact groups, 656100 contacts\n" in summary_text(flips["top_bottom"])
-    assert "\n37908 contact groups, 656100 contacts\n" in summary_text(flips["left_right"])
+    # offsets each, and 575 (length pair, third-U offset) overlaps above each
+    # other, 3(a + b) - 1 at lengths a and b. With no pockets, a pair's contact
+    # groups are its 5 horizontal offsets and 35 vertical ones.
+    assert "\n29160 contact groups, 510300 contacts\n" in summary_text(flips["top_bottom"])
+    assert "\n29160 contact groups, 510300 contacts\n" in summary_text(flips["left_right"])
     # With nothing unavoidable, the bundled card set's contact groups are the same under both flips.
     assert counts(flips, GROUPS_HEADING)["top_bottom"] == counts(flips, GROUPS_HEADING)["left_right"]
     # With the TOY_PAIRS data, left_right splits some forbid contact groups by
     # whether they are unavoidable.
     toy = {flip: check_pairs({"flip": flip}) for flip in flips}
     assert counts(toy, CONTACTS_HEADING)["top_bottom"] == counts(toy, CONTACTS_HEADING)["left_right"]
-    assert "\n37984 contact groups, 656100 contacts\n" in summary_text(toy["left_right"])
+    # The 76 split groups are all at whole-U offsets, so they don't depend on the positions.
+    assert "\n29236 contact groups, 510300 contacts\n" in summary_text(toy["left_right"])
     assert counts(toy, GROUPS_HEADING)["top_bottom"] != counts(toy, GROUPS_HEADING)["left_right"]
 
 
@@ -90,7 +93,7 @@ def test_the_pocket_line_counts_front_pockets_by_shape():
     lines = summary_text(check("example")).splitlines()
     # Right after the contact group line.
     assert lines[1].endswith(" contacts") and lines[2] == "Pockets: 6 (uniform 3, half 0, split 3)"
-    toy = set_get(top=[("left", 0.25, "N/N")], bottom=[("left", 0.25, "N/-")], left=[(0.5, "-/S")], right=[])
+    toy = set_get(top=[("left", "1/6", "N/N")], bottom=[("left", "1/6", "N/-")], left=[("1/2", "-/S")], right=[])
     assert "\nPockets: 3 (uniform 1, half 2, split 0)\n" in summary_text(check_pairs(toy))
 
 
@@ -100,10 +103,10 @@ def test_unavoidable_low_leaks_are_counted_not_listed():
     # [set{x}to][set{x}to] (forbid should) like [get{x}][get{x}].
     toy = set_get(
         "left_right",
-        top=[("right", 0.25, "S/-")],
-        bottom=[("right", 0.25, "N/-")],
-        left=[(0.5, "S/-")],
-        right=[(0.5, "N/-")],
+        top=[("right", "1/6", "S/-")],
+        bottom=[("right", "1/6", "N/-")],
+        left=[("1/2", "S/-")],
+        right=[("1/2", "N/-")],
     )
     summary = summary_text(check_pairs(toy))
     count, listed = section(summary, "Unavoidable should- and nice-leaks")

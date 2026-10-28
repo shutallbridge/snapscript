@@ -110,14 +110,14 @@ def beside(result: CheckResult, left: str, right: str, offset: float = 0) -> Con
 
 
 LAYER_PAIRS = [f"{p}/{q}" for p in "NSF-" for q in "NSF-" if (p, q) != ("-", "-")]
-ANCHORED = [(f, at) for f in ("left", "right") for at in (0.25, 0.5, 0.75)]
+ANCHORED = [(f, at) for f in ("left", "right") for at in ("1/6", "1/2", "5/6")]
 
 
 @st.composite
 def top_bottom_pockets(draw):
     """Up to two pockets for a top or bottom edge with a 1U pocket reach, as `(from, at, layers)`.
 
-    No two collide on a class 2U at its shortest: their distances add up to 1.5U at most.
+    No two collide on a class 2U at its shortest: their distances add up to 5/3 U at most.
     """
     places = draw(st.lists(st.sampled_from(ANCHORED), max_size=2, unique=True))
     return [(f, at, draw(st.sampled_from(LAYER_PAIRS))) for f, at in places]
@@ -126,5 +126,5 @@ def top_bottom_pockets(draw):
 @st.composite
 def left_right_pockets(draw):
     """Up to three pockets for a left or right edge, as `(at, layers)`."""
-    heights = draw(st.lists(st.sampled_from([0.25, 0.5, 0.75]), max_size=3, unique=True))
+    heights = draw(st.lists(st.sampled_from(["1/6", "1/2", "5/6"]), max_size=3, unique=True))
     return [(h, draw(st.sampled_from(LAYER_PAIRS))) for h in heights]

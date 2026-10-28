@@ -98,8 +98,11 @@ _Avoid_: side edge (say "left/right edges")
 A place on an edge that holds magnets or steel pieces.
 _Avoid_: slot, magnet slot
 
+**Position**:
+A place on an edge where a pocket can sit. Every 1U cell has the same three positions, ⅙, ½ and ⅚ U into it, spread evenly, so neighbouring pockets are as far apart across a cell boundary as within one (⅓ U). Positions are written as exact fractions: `1/6`, `1/2`, `5/6`, and `7/6`, `3/2`, `11/6` in a 2U reach.
+
 **Pocket reach**:
-How far a top or bottom pocket may sit from its end of the card: less than the reach, measured from the left or the right end. Most card classes reach 1U, so a pocket sits ¼, ½ or ¾U from an end; block heads and `[dedent]` reach 2U, for the indent pocket. It keeps the pockets near the ends, and the search small.
+How far a top or bottom pocket may sit from its end of the card: less than the reach, measured from the left or the right end. Most card classes reach 1U, so a pocket sits ⅙, ½ or ⅚ U from an end; block heads and `[dedent]` reach 2U, for the indent pocket. It keeps the pockets near the ends, and the search small.
 
 **Layer**:
 One of a pocket's two levels through the card's thickness: up (towards the ceiling) or down (towards the table).

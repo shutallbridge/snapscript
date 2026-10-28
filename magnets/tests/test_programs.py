@@ -196,19 +196,19 @@ def test_draws_stay_within_max_length():
 # top, and simple_head's right edge snaps to a num's left edge.
 TOY = arrangement(
     simple_head={
-        "top": [("left", 0.25, "F/N")],
-        "bottom": [("left", 0.25, "F/S")],
-        "left": [(0.5, "S/-")],
-        "right": [(0.5, "N/-")],
+        "top": [("left", "1/6", "F/N")],
+        "bottom": [("left", "1/6", "F/S")],
+        "left": [("1/2", "S/-")],
+        "right": [("1/2", "N/-")],
     },
     get={
-        "top": [("left", 0.25, "S/F")],
-        "bottom": [("left", 0.25, "N/F")],
-        "left": [(0.5, "-/S")],
-        "right": [(0.5, "-/N")],
+        "top": [("left", "1/6", "S/F")],
+        "bottom": [("left", "1/6", "N/F")],
+        "left": [("1/2", "-/S")],
+        "right": [("1/2", "-/N")],
     },
-    define={"bottom": [("left", 0.25, "F/S")]},
-    literal={"left": [(0.5, "S/-")]},
+    define={"bottom": [("left", "1/6", "F/S")]},
+    literal={"left": [("1/2", "S/-")]},
 )
 
 
@@ -241,8 +241,8 @@ def test_an_intended_column_contact_that_does_not_snap_fails():
 def test_cards_that_push_apart_between_lines_fail():
     # num's top and bottom repel: num over num must coexist but pushes apart.
     toy = copy.deepcopy(TOY)
-    toy["classes"]["literal"]["top"] = [{"from": "left", "at": 0.25, "layers": "N/-"}]
-    toy["classes"]["literal"]["bottom"] = [{"from": "left", "at": 0.25, "layers": "N/-"}]
+    toy["classes"]["literal"]["top"] = [{"from": "left", "at": "1/6", "layers": "N/-"}]
+    toy["classes"]["literal"]["bottom"] = [{"from": "left", "at": "1/6", "layers": "N/-"}]
     result = check_program(toy, "[define{f}]\n[set{x}to][num{1}]\n[set{y}to][num{2}]", draws=0)
     [failure] = result.failures
     assert where(failure.contact) == ("vertical", (2, "[num{1}]"), (3, "[num{2}]"), 0)
@@ -252,7 +252,7 @@ def test_cards_that_push_apart_between_lines_fail():
 
 def test_ungraded_contacts_are_info_only():
     # [global] has free top and bottom edges: what it does is not graded.
-    toy = arrangement(**{"global": {"bottom": [("left", 0.25, "N/-")]}, "simple_head": {"top": [("left", 0.25, "N/-")]}})
+    toy = arrangement(**{"global": {"bottom": [("left", "1/6", "N/-")]}, "simple_head": {"top": [("left", "1/6", "N/-")]}})
     result = check_program(toy, "[global{n}][num{0}]\n[set{x}to][num{1}]", draws=0)
     assert not any(f.contact.contact.axis == "vertical" for f in result.failures)
     assert [(where(i.contact), i.contact.contact.result) for i in result.info] == [
@@ -269,10 +269,10 @@ def test_the_illegal_program_lists_its_forbid_contacts_with_grades():
     # [(][)] snaps, and so does [if] over [dedent]; nothing else has pockets.
     # At minimum lengths only the five forbidden constructs touch.
     toy = arrangement(
-        open_paren={"right": [(0.5, "N/-")]},
-        close_paren={"left": [(0.5, "S/-")]},
-        block_head={"bottom": [("left", 0.25, "N/-")]},
-        dedent={"top": [("left", 0.25, "S/-")]},
+        open_paren={"right": [("1/2", "N/-")]},
+        close_paren={"left": [("1/2", "S/-")]},
+        block_head={"bottom": [("left", "1/6", "N/-")]},
+        dedent={"top": [("left", "1/6", "S/-")]},
     )
     result = check_program(toy, ILLEGAL, draws=0)
     found = {

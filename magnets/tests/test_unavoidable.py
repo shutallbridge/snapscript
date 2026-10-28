@@ -7,6 +7,8 @@ unavoidable (ADR 0003). The other tests use the toy TOY_PAIRS class data, whose
 flip pairs (set_get, define_call, prop, param) take different roles.
 """
 
+from fractions import Fraction
+
 import pytest
 
 from helpers import beside, check_pairs, over
@@ -57,7 +59,7 @@ def test_a_forbid_tied_to_another_forbid_is_avoidable():
     assert forbid(beside(result, "set_get.set", "set_get.set")).unavoidable
     assert not forbid(beside(result, "define_call.define", "set_get.get")).unavoidable
     # Off the line, no partner contact is a connect.
-    assert not forbid(beside(result, "set_get.get", "set_get.set", 0.25)).unavoidable
+    assert not forbid(beside(result, "set_get.get", "set_get.set", Fraction(1, 3))).unavoidable
 
 
 @pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
@@ -118,16 +120,16 @@ def test_left_right_ties_a_stack_to_its_mirror_image_which_depends_on_lengths():
 
 
 def test_left_right_unavoidable_stacks_with_pockets():
-    # set's bottom and define's top pockets both sit 0.25U from the left
+    # set's bottom and define's top pockets both sit 1/6 U from the left
     # end: @0 they line up at every length pair, but only equal lengths are
-    # unavoidable. Under left_right get's bottom and call's top sit 0.25U
+    # unavoidable. Under left_right get's bottom and call's top sit 1/6 U
     # from the right end, so [get{x}] over [call{f}] snaps at equal lengths.
     result = check_pairs(
         {
             "flip": "left_right",
             "classes": {
-                "set_get": {"bottom": [{"from": "left", "at": 0.25, "layers": "N/-"}]},
-                "define_call": {"top": [{"from": "left", "at": 0.25, "layers": "S/-"}]},
+                "set_get": {"bottom": [{"from": "left", "at": "1/6", "layers": "N/-"}]},
+                "define_call": {"top": [{"from": "left", "at": "1/6", "layers": "S/-"}]},
             },
         }
     )

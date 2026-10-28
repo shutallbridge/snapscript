@@ -20,20 +20,20 @@ def edges(result, side):
 def test_top_bottom_swaps_edges_mirrors_heights_and_swaps_layers():
     result = check_pairs(
         set_get(
-            top=[("left", 0.25, "N/S"), ("right", 0.5, "F/-")],
-            bottom=[("right", 0.25, "S/S")],
-            left=[(0.25, "N/F")],
-            right=[(0.5, "-/N"), (0.75, "S/N")],
+            top=[("left", "1/6", "N/S"), ("right", "1/2", "F/-")],
+            bottom=[("right", "1/6", "S/S")],
+            left=[("1/6", "N/F")],
+            right=[("1/2", "-/N"), ("5/6", "S/N")],
         )
     )
     assert edges(result, "get") == {
-        "top": [{"from": "right", "at": 0.25, "layers": "S/S"}],
+        "top": [{"from": "right", "at": "1/6", "layers": "S/S"}],
         "bottom": [
-            {"from": "left", "at": 0.25, "layers": "S/N"},
-            {"from": "right", "at": 0.5, "layers": "-/F"},
+            {"from": "left", "at": "1/6", "layers": "S/N"},
+            {"from": "right", "at": "1/2", "layers": "-/F"},
         ],
-        "left": [{"at": 0.75, "layers": "F/N"}],
-        "right": [{"at": 0.5, "layers": "N/-"}, {"at": 0.25, "layers": "N/S"}],
+        "left": [{"at": "5/6", "layers": "F/N"}],
+        "right": [{"at": "1/2", "layers": "N/-"}, {"at": "1/6", "layers": "N/S"}],
     }
 
 
@@ -41,39 +41,39 @@ def test_left_right_swaps_edges_mirrors_anchors_and_swaps_layers():
     result = check_pairs(
         set_get(
             "left_right",
-            top=[("left", 0.25, "N/S"), ("right", 0.5, "F/-")],
-            bottom=[("right", 0.25, "S/S")],
-            left=[(0.25, "N/F")],
-            right=[(0.5, "-/N"), (0.75, "S/N")],
+            top=[("left", "1/6", "N/S"), ("right", "1/2", "F/-")],
+            bottom=[("right", "1/6", "S/S")],
+            left=[("1/6", "N/F")],
+            right=[("1/2", "-/N"), ("5/6", "S/N")],
         )
     )
     assert edges(result, "get") == {
         # Top and bottom stay; anchors mirror, keeping `at`.
         "top": [
-            {"from": "right", "at": 0.25, "layers": "S/N"},
-            {"from": "left", "at": 0.5, "layers": "-/F"},
+            {"from": "right", "at": "1/6", "layers": "S/N"},
+            {"from": "left", "at": "1/2", "layers": "-/F"},
         ],
-        "bottom": [{"from": "left", "at": 0.25, "layers": "S/S"}],
+        "bottom": [{"from": "left", "at": "1/6", "layers": "S/S"}],
         # Left and right swap; heights stay.
-        "left": [{"at": 0.5, "layers": "N/-"}, {"at": 0.75, "layers": "N/S"}],
-        "right": [{"at": 0.25, "layers": "F/N"}],
+        "left": [{"at": "1/2", "layers": "N/-"}, {"at": "5/6", "layers": "N/S"}],
+        "right": [{"at": "1/6", "layers": "F/N"}],
     }
 
 
-SERIES = {Fraction(1, 4): "A", Fraction(3, 4): "A", Fraction(1, 2): "B"}
+SERIES = {Fraction(1, 6): "A", Fraction(5, 6): "A", Fraction(1, 2): "B"}
 
 
 @pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
 def test_positions_stay_in_their_series(flip):
-    # Series A = 1/4 and 3/4 of a U, series B = 1/2: at a whole-U offset a
+    # Series A = 1/6 and 5/6 of a U, series B = 1/2: at a whole-U offset a
     # pocket only meets one in the same series, front or back.
     result = check_pairs(
         set_get(
             flip,
-            top=[("left", 0.25, "N/S"), ("right", 0.5, "F/-")],
-            bottom=[("right", 0.75, "S/S")],
-            left=[(0.25, "N/F"), (0.5, "S/-")],
-            right=[(0.75, "S/N")],
+            top=[("left", "1/6", "N/S"), ("right", "1/2", "F/-")],
+            bottom=[("right", "5/6", "S/S")],
+            left=[("1/6", "N/F"), ("1/2", "S/-")],
+            right=[("5/6", "S/N")],
         ),
         max_length=3,
     )
@@ -94,7 +94,7 @@ def test_positions_stay_in_their_series(flip):
 
 @pytest.mark.parametrize("flip", ["top_bottom", "left_right"])
 def test_uniform_pockets_are_unchanged_by_a_flip(flip):
-    result = check_pairs(set_get(flip, top=[("left", 0.5, "N/N")], left=[(0.5, "F/F")], right=[(0.5, "S/S")]))
+    result = check_pairs(set_get(flip, top=[("left", "1/2", "N/N")], left=[("1/2", "F/F")], right=[("1/2", "S/S")]))
     layers = {edge: [p.layers for p in pockets] for edge, pockets in result.sides["set_get.get"].edges.items()}
     assert sorted(ly for found in layers.values() for ly in found) == ["F/F", "N/N", "S/S"]
     shapes = [p.shape for pockets in result.sides["set_get.get"].edges.values() for p in pockets]
