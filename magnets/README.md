@@ -23,11 +23,10 @@ contacts it holds; under `left_right` a geometry can split into two contact
 groups. `contacts.csv` has one row per contact group and label, leaving out
 those where no pockets line up, unless the label is connect.
 `summary.txt` counts the pockets of every front by shape, and their
-magnets (`Pockets: 41 (uniform 20, half 12, split 9), 70 magnets`; a flip
-pair's back shares its front's), and
-both kinds of count: contact groups by kind and result, then contacts
-(the sum of `count`), where a contact with two labels counts once under
-each. It lists must failures and should and nice leaks. `programs.txt`
+magnets (`Pockets: 61 (uniform 11, half 49, split 1), 73 magnets`; a flip
+pair's back shares its front's), and both kinds of count: contact groups
+by kind and result, then contacts (the sum of `count`), where a contact
+with two labels counts once under each. It lists must failures and should and nice leaks. `programs.txt`
 lays each bundled test program (`src/magnets/data/programs.yaml`) out on
 the table, once at minimum card lengths and 20 times at seeded random
 lengths, and reports a legal program's PASS or FAIL and the magnets its
@@ -67,9 +66,9 @@ split pocket two). `--goal` says what a forbid must achieve: `no_snap` (the
 default) is satisfied with "nothing", so a weak forbid costs nothing and
 magnets go only where a contact needs them; `repel` makes illegal
 neighbours not snap and also tries to push them apart, so a weak forbid
-costs 0.2 of a leak, and needs about twice the magnets. Objectives found with different goals can't
-be compared; `check` grades the same way for both. It writes the arrangement
-to `out/search_<flip>_<goal>.yaml` (or `--out`), e.g.
+costs 0.2 of a leak, and needs about twice the magnets. Objectives found
+with different goals can't be compared; `check` grades the same way for
+both. It writes the arrangement to `out/search_<flip>_<goal>.yaml` (or `--out`), e.g.
 `out/search_top_bottom_no_snap.yaml`, and its checker reports next to it in
 `out/search_<flip>_<goal>/`; the summary's first search line gives the goal,
 the status (optimal, feasible, infeasible or unknown), objective, bound and

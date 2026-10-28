@@ -48,7 +48,7 @@ MAGNET_COST = Fraction(1, 100)
 
 def objective(checked, goal="no_snap"):
     """The objective of a checked arrangement under a search goal, from its
-    grades and pockets."""
+    grades and magnets."""
     forbids = sum(
         WEIGHTS[label.priority] * PENALTIES[goal][label.grade] * group.count
         for group in checked.groups
@@ -294,10 +294,10 @@ def test_an_unknown_goal_is_rejected():
         solve("top_bottom", goal="push", **LONE_PROBLEM)
 
 
-# A toy grammar: one single-sided 1U class that must snap to itself, side by
+# A toy grammar: one single-sided 2U class that must snap to itself, side by
 # side, and nothing else is graded but low.
 LINK = {"left": "value", "right": "value", "top": "free", "bottom": "free"}
-LINK_CLASSES = {"link": {"min_length": 1, "pocket_reach": 1, "sides": {"link": {"[link]": LINK}}}}
+LINK_CLASSES = {"link": {"min_length": 2, "pocket_reach": 1, "sides": {"link": {"[link]": LINK}}}}
 LINK_RULES = {
     **LONE_RULES,
     "roles": {"left": ["value"], "right": ["value"], "top": ["free"], "bottom": ["free"]},
