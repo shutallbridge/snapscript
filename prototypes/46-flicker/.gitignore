@@ -1,0 +1,4 @@
+runs/**/*.npy
+runs/**/*.jpg
+runs/**/near-*.png
+runs/**/far-*.png

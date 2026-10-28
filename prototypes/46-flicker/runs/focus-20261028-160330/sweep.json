@@ -1,0 +1,70 @@
+{
+ "exposure": 25495,
+ "gain": 1.5,
+ "rows": [
+  {
+   "lens": 3.55,
+   "markers": 30,
+   "near_n": 17,
+   "near_sharp": 289.2,
+   "far_n": 13,
+   "far_sharp": 457.2
+  },
+  {
+   "lens": 3.6,
+   "markers": 30,
+   "near_n": 17,
+   "near_sharp": 287.8,
+   "far_n": 13,
+   "far_sharp": 467.3
+  },
+  {
+   "lens": 3.65,
+   "markers": 29,
+   "near_n": 17,
+   "near_sharp": 321.5,
+   "far_n": 12,
+   "far_sharp": 503.1
+  },
+  {
+   "lens": 3.7,
+   "markers": 29,
+   "near_n": 17,
+   "near_sharp": 339.7,
+   "far_n": 12,
+   "far_sharp": 478.5
+  },
+  {
+   "lens": 3.75,
+   "markers": 29,
+   "near_n": 17,
+   "near_sharp": 350.1,
+   "far_n": 12,
+   "far_sharp": 477.7
+  },
+  {
+   "lens": 3.8,
+   "markers": 30,
+   "near_n": 17,
+   "near_sharp": 360.4,
+   "far_n": 13,
+   "far_sharp": 431.3
+  },
+  {
+   "lens": 3.85,
+   "markers": 29,
+   "near_n": 17,
+   "near_sharp": 366.9,
+   "far_n": 12,
+   "far_sharp": 378.4
+  },
+  {
+   "lens": 3.9,
+   "markers": 28,
+   "near_n": 17,
+   "near_sharp": 368.7,
+   "far_n": 11,
+   "far_sharp": 343.5
+  }
+ ]
+}

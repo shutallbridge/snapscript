@@ -1,0 +1,81 @@
+{
+ "label": "smoke",
+ "lens": 3.75,
+ "gain": 1.0,
+ "roi": [
+  0.12,
+  0.22,
+  0.45,
+  0.78
+ ],
+ "rows": [
+  {
+   "field": "white",
+   "exposure_ms": 9.973,
+   "level": [
+    167.3,
+    145.9,
+    95.8
+   ],
+   "banding_pct": 18.03,
+   "banding_rgb": [
+    4.68,
+    6.75,
+    18.03
+   ],
+   "flicker_pct": 0.69,
+   "clip": 0.0
+  },
+  {
+   "field": "white",
+   "exposure_ms": 16.646,
+   "level": [
+    200.6,
+    181.4,
+    134.7
+   ],
+   "banding_pct": 0.12,
+   "banding_rgb": [
+    0.05,
+    0.04,
+    0.12
+   ],
+   "flicker_pct": 0.03,
+   "clip": 0.0
+  },
+  {
+   "field": "black",
+   "exposure_ms": 9.973,
+   "level": [
+    57.0,
+    27.3,
+    9.6
+   ],
+   "banding_pct": 0.76,
+   "banding_rgb": [
+    0.11,
+    0.12,
+    0.76
+   ],
+   "flicker_pct": 0.38,
+   "clip": 0.0
+  },
+  {
+   "field": "black",
+   "exposure_ms": 16.646,
+   "level": [
+    83.4,
+    41.0,
+    16.1
+   ],
+   "banding_pct": 0.68,
+   "banding_rgb": [
+    0.3,
+    0.25,
+    0.68
+   ],
+   "flicker_pct": 0.08,
+   "clip": 0.0
+  }
+ ]
+}
