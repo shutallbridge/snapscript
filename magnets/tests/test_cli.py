@@ -1,6 +1,7 @@
 """Smoke test: `magnets check` runs and writes its reports."""
 
 import csv
+import re
 import subprocess
 import sys
 
@@ -210,12 +211,10 @@ def test_check_writes_the_program_report(tmp_path):
     )
     sections = report.split("\n\n")[1:]
     titles = [s.splitlines()[0] for s in sections]
-    assert titles[:4] == [
-        "first_sketch (legal): FAIL in 21 of 21 layouts",
-        "nested_blocks (legal): FAIL in 21 of 21 layouts",
-        "parameters (legal): FAIL in 21 of 21 layouts",
-        "receivers_and_groups (legal): FAIL in 21 of 21 layouts",
-    ]
+    # Two [set{x}to], two [get{x}] and seven [num] at 4 magnets each.
+    assert titles[0] == "first_sketch (legal): FAIL in 21 of 21 layouts, 44 magnets"
+    for title, name in zip(titles[1:4], ("nested_blocks", "parameters", "receivers_and_groups")):
+        assert re.fullmatch(rf"{name} \(legal\): FAIL in 21 of 21 layouts, \d+ magnets", title)
     assert titles[4].startswith("illegal (illegal): ") and titles[4].endswith(" forbid contacts in 21 layouts")
     # The example only designs simple_head's, get's and literal's edges.
     first_sketch = sections[0].splitlines()
@@ -226,7 +225,7 @@ def test_check_writes_the_program_report(tmp_path):
     assert "  line 10 [set{y}to] over line 11 [define{inner}] @0: forbid nice weak (21 of 21 layouts)" in illegal
     assert "  line 3 [(] [)] @0: forbid should weak (21 of 21 layouts)" in illegal
     # stdout has each program's status after the summary.
-    assert "\nINVALID\n\nPrograms:\n  first_sketch (legal): FAIL in 21 of 21 layouts\n" in run.stdout
+    assert "\nINVALID\n\nPrograms:\n  first_sketch (legal): FAIL in 21 of 21 layouts, 44 magnets\n" in run.stdout
     assert "programs.txt" in run.stdout
 
 
@@ -246,13 +245,13 @@ def test_search_writes_an_arrangement_that_check_accepts(tmp_path):
     assert (tmp_path / "found" / "contacts.csv").is_file()
     assert summary in run.stdout
     assert summary.startswith("Arrangement: found (flip top_bottom, lengths up to 6U)\n")
-    status = summary.split("Search (goal repel): ")[1].splitlines()[0]
+    status = summary.split("Search (goal no_snap): ")[1].splitlines()[0]
     assert status.startswith(("optimal", "feasible")) and "objective" in status and "bound" in status
     assert "classes simple_head, get, call, literal, operator; seed 0, 1 worker, time limit 2s" in summary
     assert summary.endswith("\nVALID\n")
     # The arrangement's header copies the search lines, goal and all.
     assert found.read_text().startswith(
-        "# Found by `magnets search`, lengths up to 6U.\n# Search (goal repel): "
+        "# Found by `magnets search`, lengths up to 6U.\n# Search (goal no_snap): "
     )
     # Positions are written as exact fractions, which YAML reads as text.
     written = [
@@ -293,8 +292,8 @@ def test_an_infeasible_search_names_the_conflict_and_writes_the_fewest_failures(
     assert run.returncode == 1
     summary = (tmp_path / "found" / "summary.txt").read_text()
     assert summary in run.stdout
-    assert summary.split("Search (goal repel): ")[1].startswith("infeasible in ")
-    assert "\n# Search (goal repel): infeasible in " in found.read_text()
+    assert summary.split("Search (goal no_snap): ")[1].startswith("infeasible in ")
+    assert "\n# Search (goal no_snap): infeasible in " in found.read_text()
     assert "\n  Fewest must failures (optimal): " in summary
     listed = summary.split("  Conflicting requirements: ")[1].splitlines()
     conflicts = listed[1 : 1 + int(listed[0])]
@@ -319,6 +318,19 @@ def test_search_names_its_default_output_after_the_flip_and_goal(tmp_path):
     assert (out / "search_left_right_no_snap" / "summary.txt").is_file()
     assert (out / "search_left_right_no_snap" / "contacts.csv").is_file()
     assert "Wrote out/search_left_right_no_snap.yaml" in run.stdout
+
+
+def test_search_defaults_to_the_no_snap_goal(tmp_path):
+    subprocess.run(
+        [*MAGNETS, "search", "--flip", "left_right", "--classes", "simple_head,literal", "--time-limit", "2",
+         "--workers", "1"],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=tmp_path,
+    )
+    summary = (tmp_path / "out" / "search_left_right_no_snap" / "summary.txt").read_text()
+    assert "\nSearch (goal no_snap): " in summary
 
 
 def test_search_rejects_an_unknown_goal():

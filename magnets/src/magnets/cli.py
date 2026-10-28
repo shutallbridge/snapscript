@@ -33,8 +33,8 @@ def main(argv: list[str] | None = None) -> int:
     search_cmd.add_argument(
         "--goal",
         choices=GOALS,
-        default="repel",
-        help="what a forbid must do: repel, or only not snap (default: repel)",
+        default="no_snap",
+        help="what a forbid must do: only not snap, or repel (default: no_snap)",
     )
     search_cmd.add_argument("--seed", type=int, default=0, help="random seed (default: 0)")
     search_cmd.add_argument(

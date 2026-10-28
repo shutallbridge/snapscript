@@ -32,11 +32,11 @@ GRADE_PENALTY: dict[Goal, dict[str, Fraction]] = {
     "repel": {"leak": Fraction(1), "partial": Fraction(1, 2), "weak": Fraction(1, 5), "strong": Fraction(0)},
     "no_snap": {"leak": Fraction(1), "partial": Fraction(1, 2), "weak": Fraction(0), "strong": Fraction(0)},
 }
-# What each occupied pocket costs, so the solver uses a second layer, or two
-# different pieces, only where the grammar needs it.
-SHAPE_COST = {"uniform": Fraction(1, 100), "half": Fraction(3, 200), "split": Fraction(1, 50)}
+# What each magnet costs, so the solver puts a magnet only where the grammar
+# needs it: a half pocket costs one, a uniform or split pocket two.
+MAGNET_COST = Fraction(1, 100)
 # CP-SAT needs integers: every cost times SCALE is whole.
-COSTS = [*(cost for penalty in GRADE_PENALTY.values() for cost in penalty.values()), *SHAPE_COST.values()]
+COSTS = [*(cost for penalty in GRADE_PENALTY.values() for cost in penalty.values()), MAGNET_COST]
 SCALE = math.lcm(*(cost.denominator for cost in COSTS))
 
 STATUSES = {
@@ -81,7 +81,7 @@ class Solution:
     is a set of requirements that can't all hold, and `arrangement` the
     one with the fewest must failures (`fewest_status` says whether
     that is proven), which fail as `must_failures` counts them. Its
-    `objective` is then the cost of its forbids and pockets, and it has no
+    `objective` is then the cost of its forbids and magnets, and it has no
     bound.
     """
 
@@ -100,7 +100,7 @@ def solve(
     rules: Rules,
     classes: Mapping[str, CardClass],
     *,
-    goal: Goal = "repel",
+    goal: Goal = "no_snap",
     max_length: int,
     seed: int,
     time_limit: float,
@@ -109,8 +109,8 @@ def solve(
     split: bool = True,
 ) -> Solution:
     """The arrangement of `classes` under `flip` with no must failures and
-    the least weighted forbid grades, costed as `goal` says, then the least
-    pocket cost.
+    the least weighted forbid grades, costed as `goal` says, then the
+    fewest magnets.
 
     `pinned` fixes the pockets of some front edges, as (class, edge) -> its
     pockets; an edge with none is fixed empty. Left/right edges only face
@@ -146,7 +146,7 @@ class _Runner:
 
     With one worker the limit is CP-SAT's deterministic time, roughly
     seconds: one worker is deterministic, but a wall-clock limit would cut
-    it off at a point that varies from run to run. The pocket costs leave
+    it off at a point that varies from run to run. The magnet costs leave
     many near-ties, and a single worker only proves them with core-based
     search; more workers run it among others.
     """
@@ -281,7 +281,7 @@ class _Model:
         self._pin(pinned)
         self._products: dict[tuple, cp_model.IntVar] = {}
         self._tallies: dict[tuple, tuple[cp_model.IntVar, cp_model.IntVar, cp_model.IntVar]] = {}
-        # The forbid and pocket costs, and the most they can add up to.
+        # The forbid and magnet costs, and the most they can add up to.
         self.costs: list[cp_model.LinearExprT] = []
         self.most_cost = 0
         # Every must label: its requirement, contacts, and the results that
@@ -300,7 +300,7 @@ class _Model:
         elif musts == "assumed":
             self.model.add_assumptions(self.assumed.values())
         else:
-            # One failing contact outweighs every forbid and pocket together.
+            # One failing contact outweighs every forbid and magnet together.
             weight = self.most_cost + 1
             self.model.minimize(sum([*self.costs, *(weight * n * (1 - holds) for n, holds in self.held)]))
 
@@ -329,16 +329,11 @@ class _Model:
 
     def _pocket_rules(self, max_length: int) -> None:
         """At most so many pockets per edge, no two sharing a position, and
-        each occupied pocket's cost by its shape."""
+        each magnet's cost."""
         self.empty = {c: self._and(up["-"], down["-"]) for c, (up, down) in self.layers.items()}
-        for candidate, (up, down) in self.layers.items():
-            empty = self.empty[candidate]
-            uniform = sum(self._and(up[layer], down[layer]) for layer in LAYERS if layer != "-")
-            half = up["-"] + down["-"] - 2 * empty
-            split = 1 - empty - uniform - half
-            shapes = {"uniform": uniform, "half": half, "split": split}
-            self.costs.append(sum(int(cost * SCALE) * shapes[shape] for shape, cost in SHAPE_COST.items()))
-            self.most_cost += int(max(SHAPE_COST.values()) * SCALE)
+        for up, down in self.layers.values():
+            self.costs.append(int(MAGNET_COST * SCALE) * (2 - up["-"] - down["-"]))
+            self.most_cost += 2 * int(MAGNET_COST * SCALE)
         for name, edges in self.fronts.items():
             min_length = self.classes[name].min_length
             for edge, pockets in edges.items():
@@ -440,7 +435,7 @@ class _Model:
                 constraint.only_enforce_if(holds)
 
     def cost(self, solver: cp_model.CpSolver) -> Fraction:
-        """The solved arrangement's forbid and pocket cost, in cost units."""
+        """The solved arrangement's forbid and magnet cost, in cost units."""
         return Fraction(solver.value(sum(self.costs)), SCALE)
 
     def failures(self, solver: cp_model.CpSolver) -> dict[Requirement, int]:

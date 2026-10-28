@@ -37,6 +37,14 @@ def test_every_bundled_program_parses_and_every_card_resolves():
         assert cards and all(card.side for card in cards), program.name
 
 
+def test_a_program_counts_the_magnets_in_its_cards():
+    # The example gives simple_head ([set{x}to], [return]), get and literal four
+    # magnets each (two two-layer pockets), and call none; a [str]
+    # shares its [num]'s magnets.
+    result = check_program("example", "[set{x}to][num{1}]\n[return][get{x}][str{a}]\n[call(p5.circle)]")
+    assert result.magnets == 20
+
+
 def test_lines_strips_and_comments():
     text = (
         "// a comment line\n"

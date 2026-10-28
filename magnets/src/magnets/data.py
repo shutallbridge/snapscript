@@ -247,6 +247,11 @@ class Arrangement:
     flip: str
     fronts: Mapping[str, Edges]  # class -> edge -> pockets
 
+    def magnets(self, cls: str) -> int:
+        """The magnets in one card of a class: its back shares its front's.
+        A class the arrangement doesn't mention has none."""
+        return sum(p.magnets for pockets in self.fronts.get(cls, {}).values() for p in pockets)
+
     def to_dict(self) -> dict:
         classes = {
             cls: {edge: [p.to_dict() for p in pockets] for edge, pockets in edges.items() if pockets}
