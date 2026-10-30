@@ -29,7 +29,8 @@ BAR_W = 2.0  # also the centre rib's width
 RIB_FROM_LENGTH = 4  # a centre rib from this length up, in U
 LEG_T = 1.0
 LEG_W = 4.0
-BACK_LEG_Y = (0.0,)  # a back face's legs, from the card's centre line: one per end
+FRONT_LEG_Y = (-6.0, 6.0)  # a front face's legs, from the card's centre line: two per end
+BACK_LEG_Y = (0.0,)  # a back face's legs: one per end
 CATCH_DEPTH = 3.4  # the hook's catch, from the side of the core the leg comes in from
 LEG_REACH = 8.8  # the leg's tip, from that same side
 HOOK_REACH = 1.4  # the hook's tip, out from the leg; the catch is at 45°
@@ -44,8 +45,10 @@ class Tolerances:
     change what snaps.
 
     `slide_clearance` is between parts that slide together (the core in the
-    frame), `sheet_clearance` the room for the paper sheet (a single-sided
-    frame's back sits this far below it), `magnet_clearance` around a
+    frame, and a face's leg past its cross-bar and in its window),
+    `sheet_clearance` the room for the paper sheet (a face plate is inset
+    this far from the frame's outline and sits this far above it, and a
+    single-sided frame's back this far below it), `magnet_clearance` around a
     magnet in its bore, and `magnet_depth_clearance` how far a magnet can
     move front to back. Raises `ValueError` for a negative tolerance, or
     tolerances that leave no wall.
@@ -100,14 +103,19 @@ class Tolerances:
 
 @dataclass(frozen=True)
 class BasePart:
-    """One printed part of a base: `kind` "frame", for one card class at
-    one length in U. `solid` is a build123d Part in mm, ready to print: laid
-    flat on z = 0, a single-sided frame on its built-in back."""
+    """One printed part of a base, for cards of one length in U: `kind`
+    "frame", for one card class, or "core", "front-face" or "back-face",
+    which serve every class (`card_class` None). `solid` is a build123d Part
+    in mm, ready to print: laid flat on z = 0, a single-sided frame on its
+    built-in back, a core flat and a face on its plate with its legs up.
+    `placement` is the build123d Location that puts it where it sits in the
+    card: `placement * solid`, in the frame's axes."""
 
     kind: str
-    card_class: str
+    card_class: str | None
     length: int
     solid: Any
+    placement: Any
 
 
 def bores(edges: Edges, length: int) -> list[tuple[str, float, str]]:

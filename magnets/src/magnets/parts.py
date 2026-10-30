@@ -1,8 +1,13 @@
-"""The solids of a base's printed parts: for now, the frames (#79). This
-module needs build123d, the `bases` extra; `blueprint` holds what doesn't.
+"""The solids of a base's printed parts: frames (#79), and the cores and
+faces (#80). This module needs build123d, the `bases` extra; `blueprint`
+holds what doesn't.
+
+Each part is built where it sits in the card, then laid on the print bed.
 """
 
-from build123d import Align, Box, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude, mirror
+from collections.abc import Sequence
+
+from build123d import Align, Box, Compound, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude, mirror
 
 from .blueprint import (
     BACK_LEG_Y,
@@ -10,6 +15,7 @@ from .blueprint import (
     BAR_W,
     CATCH_DEPTH,
     CORE_WALL,
+    FRONT_LEG_Y,
     GUSSET,
     HOOK_FLAT,
     HOOK_REACH,
@@ -23,6 +29,7 @@ from .blueprint import (
     THICKNESS,
     WIDTH,
     Tolerances,
+    BasePart,
     U,
     bores,
 )
@@ -31,7 +38,7 @@ from .physics import Edges
 _MIN = (Align.MIN, Align.MIN, Align.MIN)
 
 
-def frame(edges: Edges, length: int, double_sided: bool, tolerances: Tolerances) -> Part:
+def frame(card_class: str, edges: Edges, length: int, double_sided: bool, tolerances: Tolerances) -> BasePart:
     """The frame of a card of `length` U whose front has these edges: a ring
     with a bore for each magnet, and solid wall everywhere else. A
     single-sided frame has the back face, the wall down to it and the pads
@@ -53,26 +60,71 @@ def frame(edges: Edges, length: int, double_sided: bool, tolerances: Tolerances)
         else:
             part -= Pos(length_mm - mid, along, z) * Rot(0, 90, 0) * bore
     if double_sided:
-        return part
+        return _on_bed("frame", card_class, length, part, Location())
     s = t.sheet_clearance
     part += Pos(0, 0, -s - PLATE) * Box(length_mm, WIDTH, PLATE, align=_MIN)
     if s > 0:
         # The wall down to the back, and pads under the core where the sheet would be.
         part += Pos(0, 0, -s) * _ring(length_mm, wall, s)
         part += Pos(0, 0, -s) * _core_footprint(length_mm, t, s)
-    part += _back_legs(length_mm, t)
-    return Pos(0, 0, s + PLATE) * part
+    part += _legs(length_mm, t, front=False)
+    return _on_bed("frame", card_class, length, part, Pos(0, 0, s + PLATE))
 
 
-def _ring(length_mm: float, wall: float, height: float) -> Part:
-    inner = Box(length_mm - 2 * wall, WIDTH - 2 * wall, height, align=_MIN)
-    return Box(length_mm, WIDTH, height, align=_MIN) - Pos(wall, wall, 0) * inner
+def core(length: int, tolerances: Tolerances) -> BasePart:
+    """The core of a card of `length` U: a ring that slides into the frame,
+    with a cross-bar near each end and, from 4U up, a centre rib. Each end's
+    cross-bar has a window for each leg of the front face and the back face."""
+    t, length_mm = tolerances, length * U
+    part = _core_footprint(length_mm, t, THICKNESS)
+    window_w = LEG_W + 2 * t.slide_clearance
+    window_h = LEG_REACH - CATCH_DEPTH
+    for x in _bar_xs(length_mm)[:2]:
+        # A front face's legs come in from z = T, and a back face's from z = 0.
+        for dy, z in [(dy, THICKNESS - LEG_REACH) for dy in FRONT_LEG_Y] + [(dy, CATCH_DEPTH) for dy in BACK_LEG_Y]:
+            part -= Pos(x, WIDTH / 2 + dy - window_w / 2, z) * Box(BAR_W, window_w, window_h, align=_MIN)
+    return _on_bed("core", None, length, part, Location())
+
+
+def face(length: int, front: bool, tolerances: Tolerances) -> BasePart:
+    """The front or back face of a card of `length` U: a plate over that
+    side, inset from the frame's outline and clear of it by the sheet
+    clearance, with legs that hook through the core's windows."""
+    t, length_mm = tolerances, length * U
+    s = t.sheet_clearance
+    z = THICKNESS + s if front else -s - PLATE
+    part = Pos(s, s, z) * Box(length_mm - 2 * s, WIDTH - 2 * s, PLATE, align=_MIN)
+    part += _legs(length_mm, t, front)
+    if front:
+        # Turned over about the card's long axis, onto its plate.
+        return _on_bed("front-face", None, length, part, Pos(0, WIDTH, z + PLATE) * Rot(180, 0, 0))
+    return _on_bed("back-face", None, length, part, Pos(0, 0, s + PLATE))
+
+
+def assembly(parts: Sequence[BasePart], label: str) -> Compound:
+    """These parts where they sit in the card, each labelled by its kind."""
+    placed = []
+    for part in parts:
+        solid = part.placement * part.solid
+        solid.label = part.kind
+        placed.append(solid)
+    return Compound(children=placed, label=label)
+
+
+def _on_bed(kind: str, card_class: str | None, length: int, part: Part, bed: Location) -> BasePart:
+    """The part, built where it sits in the card, moved by `bed` onto the print bed."""
+    return BasePart(kind, card_class, length, bed * part, bed.inverse())
+
+
+def _ring(length_mm: float, wall: float, height: float, width: float = WIDTH) -> Part:
+    inner = Box(length_mm - 2 * wall, width - 2 * wall, height, align=_MIN)
+    return Box(length_mm, width, height, align=_MIN) - Pos(wall, wall, 0) * inner
 
 
 def _core_footprint(length_mm: float, t: Tolerances, height: float) -> Part:
     """Where the core sits, `height` tall: its ring and cross-bars."""
     gap = t.frame_wall + t.slide_clearance
-    part = Pos(gap, gap, 0) * _ring(length_mm - 2 * gap, CORE_WALL, height)
+    part = Pos(gap, gap, 0) * _ring(length_mm - 2 * gap, CORE_WALL, height, WIDTH - 2 * gap)
     inner = WIDTH - 2 * (gap + CORE_WALL)
     for x in _bar_xs(length_mm):
         part += Pos(x, gap + CORE_WALL, 0) * Box(BAR_W, inner, height, align=_MIN)
@@ -87,9 +139,11 @@ def _bar_xs(length_mm: float) -> list[float]:
     return xs
 
 
-def _back_legs(length_mm: float, t: Tolerances) -> Part:
-    """The back face's legs, which hook the core from below: drawn as a
-    front face's near-end leg, then mirrored to the far end and to the back."""
+def _legs(length_mm: float, t: Tolerances, front: bool) -> Part:
+    """A face's legs, which go in on the middle side of each end's cross-bar
+    and hook back through its windows: drawn as a front face's near-end leg,
+    then copied across, mirrored to the far end and, for the back, to the
+    back."""
     s = t.sheet_clearance
     x1 = BAR_OFFSET + BAR_W + t.slide_clearance  # the leg's outer side, past the cross-bar's inner side
     tip = x1 - HOOK_REACH
@@ -105,10 +159,10 @@ def _back_legs(length_mm: float, t: Tolerances) -> Part:
         (x1 + LEG_T + GUSSET, THICKNESS + s),
     ]
     legs = None
-    for dy in BACK_LEG_Y:
+    for dy in FRONT_LEG_Y if front else BACK_LEG_Y:
         y0 = WIDTH / 2 + dy - LEG_W / 2
         # Plane.XZ faces -y, so this extrudes from y0 to y0 + LEG_W.
         leg = extrude(Plane.XZ.offset(-y0) * Polygon(*profile, align=None), amount=-LEG_W)
         legs = leg if legs is None else legs + leg
     legs += mirror(legs, Plane.YZ.offset(length_mm / 2))
-    return mirror(legs, Plane.XY.offset(THICKNESS / 2))
+    return legs if front else mirror(legs, Plane.XY.offset(THICKNESS / 2))

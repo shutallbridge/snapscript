@@ -473,13 +473,45 @@ def file_names(directory):
     return sorted(p.relative_to(directory).as_posix() for p in directory.rglob("*") if p.is_file())
 
 
-def test_bases_writes_every_frame_of_the_example(tmp_path):
+def test_bases_writes_every_frame_and_shared_part_of_the_example(tmp_path):
     run = subprocess.run([*MAGNETS, "bases", "example"], capture_output=True, text=True, check=True, cwd=tmp_path)
     out = tmp_path / "out" / "example" / "bases"
-    expected = [f"frames/{cls}-{n}u.stl" for cls in ("get", "literal", "simple_head") for n in range(2, 7)]
-    assert file_names(out) == expected
+    frames = [f"frames/{cls}-{n}u.stl" for cls in ("get", "literal", "simple_head") for n in range(2, 7)]
+    shared = [f"shared/{kind}-{n}u.stl" for kind in ("back-face", "core", "front-face") for n in range(2, 7)]
+    assert file_names(out) == frames + shared
     assert "15 frames" in run.stdout
+    assert "15 shared parts" in run.stdout
     assert (out / "frames" / "get-2u.stl").read_bytes()[:5] != b"solid"  # binary STL
+
+
+def test_bases_writes_no_back_face_without_a_flip_pair(tmp_path):
+    subprocess.run([*MAGNETS, "bases", "example", "--classes", "get", "--max-length", "3"], check=True, cwd=tmp_path)
+    out = tmp_path / "out" / "example" / "bases"
+    assert [name for name in file_names(out) if name.startswith("shared/")] == [
+        "shared/core-2u.stl",
+        "shared/core-3u.stl",
+        "shared/front-face-2u.stl",
+        "shared/front-face-3u.stl",
+    ]
+
+
+def test_bases_step_writes_each_card_assembled(tmp_path):
+    from build123d import import_step
+
+    args = ["bases", "example", "--classes", "get,literal", "--max-length", "3", "--step"]
+    run = subprocess.run([*MAGNETS, *args], capture_output=True, text=True, check=True, cwd=tmp_path)
+    out = tmp_path / "out" / "example" / "bases"
+    steps = [name for name in file_names(out) if name.endswith(".step")]
+    assert steps == [f"assembled/{cls}-{n}u.step" for cls in ("get", "literal") for n in (2, 3)]
+    assert "4 assembled cards" in run.stdout
+    # A single-sided card: frame, core, front face; a flip pair also has a back face.
+    assert len(import_step(out / "assembled" / "get-3u.step").solids()) == 3
+    assert len(import_step(out / "assembled" / "literal-3u.step").solids()) == 4
+
+
+def test_bases_writes_no_step_without_the_option(tmp_path):
+    subprocess.run([*MAGNETS, "bases", "example", "--classes", "get", "--max-length", "2"], check=True, cwd=tmp_path)
+    assert not any(name.endswith(".step") for name in file_names(tmp_path / "out"))
 
 
 def test_bases_classes_max_length_and_out_narrow_and_move_it(tmp_path):
@@ -491,7 +523,8 @@ def test_bases_classes_max_length_and_out_narrow_and_move_it(tmp_path):
         check=True,
         cwd=tmp_path,
     )
-    assert file_names(out) == ["frames/get-2u.stl", "frames/get-3u.stl", "frames/on-2u.stl", "frames/on-3u.stl"]
+    frames = [name for name in file_names(out) if name.startswith("frames/")]
+    assert frames == ["frames/get-2u.stl", "frames/get-3u.stl", "frames/on-2u.stl", "frames/on-3u.stl"]
     assert not (tmp_path / "out").exists()
 
 

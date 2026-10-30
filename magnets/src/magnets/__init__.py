@@ -1,6 +1,6 @@
 """Checker and CP-SAT solver for the Snapscript magnet arrangement."""
 
-from .api import CheckResult, ProgramResult, SolveResult, bases, card_sheet, check, check_program, solve
+from .api import CheckResult, ProgramResult, SolveResult, assemblies, bases, card_sheet, check, check_program, solve
 from .blueprint import BasePart, Tolerances
 from .contacts import ContactGroup, Label, SideEdges
 from .data import Arrangement, ArrangementError, BundledProgram, DataError, bundled_programs
@@ -41,6 +41,7 @@ __all__ = [
     "SolveResult",
     "TextLine",
     "Tolerances",
+    "assemblies",
     "bases",
     "bundled_programs",
     "card_sheet",
