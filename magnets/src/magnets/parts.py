@@ -28,8 +28,8 @@ from .blueprint import (
     SKIN,
     THICKNESS,
     WIDTH,
-    Tolerances,
     BasePart,
+    Tolerances,
     U,
     bores,
 )
@@ -86,7 +86,7 @@ def core(length: int, tolerances: Tolerances) -> BasePart:
     return _on_bed("core", None, length, part, Location())
 
 
-def face(length: int, front: bool, tolerances: Tolerances) -> BasePart:
+def face(length: int, tolerances: Tolerances, *, front: bool) -> BasePart:
     """The front or back face of a card of `length` U: a plate over that
     side, inset from the frame's outline and clear of it by the sheet
     clearance, with legs that hook through the core's windows."""

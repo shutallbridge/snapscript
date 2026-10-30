@@ -239,9 +239,9 @@ def bases(
     ]
     shared = []
     for n in range(min(cls.min_length for cls in chosen), max_length + 1):
-        shared += [_parts.core(n, tolerances), _parts.face(n, True, tolerances)]
+        shared += [_parts.core(n, tolerances), _parts.face(n, tolerances, front=True)]
         if any(cls.flip_pair and cls.min_length <= n for cls in chosen):
-            shared.append(_parts.face(n, False, tolerances))
+            shared.append(_parts.face(n, tolerances, front=False))
     return frames + shared
 
 
