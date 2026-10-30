@@ -3,7 +3,7 @@
 import argparse
 import re
 import sys
-from dataclasses import replace
+from dataclasses import fields, replace
 from pathlib import Path
 
 from .api import CheckResult, SolveResult, bases, card_sheet, check, check_program, solve
@@ -118,12 +118,7 @@ def _common(command: argparse.ArgumentParser, classes_help: str, every: str = "e
 
 
 def _bases(args: argparse.Namespace, classes: list[str] | None) -> int:
-    tolerances = Tolerances(
-        slide_clearance=args.slide_clearance,
-        sheet_clearance=args.sheet_clearance,
-        magnet_clearance=args.magnet_clearance,
-        magnet_depth_clearance=args.magnet_depth_clearance,
-    )
+    tolerances = Tolerances(**{f.name: getattr(args, f.name) for f in fields(Tolerances)})
     try:
         parts = bases(args.arrangement, tolerances=tolerances, classes=classes, max_length=args.max_length)
     except ModuleNotFoundError as err:

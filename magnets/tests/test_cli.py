@@ -469,7 +469,7 @@ def test_check_reports_off_line_offsets_as_exact_fractions(tmp_path):
     assert (row["offset"], row["result"], row["grade"]) == ("-1/3", "snap", "leak")
 
 
-def stl_names(directory):
+def file_names(directory):
     return sorted(p.relative_to(directory).as_posix() for p in directory.rglob("*") if p.is_file())
 
 
@@ -477,7 +477,7 @@ def test_bases_writes_every_frame_of_the_example(tmp_path):
     run = subprocess.run([*MAGNETS, "bases", "example"], capture_output=True, text=True, check=True, cwd=tmp_path)
     out = tmp_path / "out" / "example" / "bases"
     expected = [f"frames/{cls}-{n}u.stl" for cls in ("get", "literal", "simple_head") for n in range(2, 7)]
-    assert stl_names(out) == expected
+    assert file_names(out) == expected
     assert "15 frames" in run.stdout
     assert (out / "frames" / "get-2u.stl").read_bytes()[:5] != b"solid"  # binary STL
 
@@ -491,7 +491,7 @@ def test_bases_classes_max_length_and_out_narrow_and_move_it(tmp_path):
         check=True,
         cwd=tmp_path,
     )
-    assert stl_names(out) == ["frames/get-2u.stl", "frames/get-3u.stl", "frames/on-2u.stl", "frames/on-3u.stl"]
+    assert file_names(out) == ["frames/get-2u.stl", "frames/get-3u.stl", "frames/on-2u.stl", "frames/on-3u.stl"]
     assert not (tmp_path / "out").exists()
 
 

@@ -223,8 +223,8 @@ def bases(
     if classes is None:
         classes = mentioned_classes(arrangement, classes=every)
     unknown = [name for name in classes if name not in every]
-    if unknown:
-        raise ValueError(f"unknown card class(es): {', '.join(unknown)}")
+    if unknown or not classes:
+        raise ValueError(f"unknown card class(es): {', '.join(unknown)}" if unknown else "no card classes given")
     chosen = [cls for name, cls in every.items() if name in classes]
     too_short = [cls.name for cls in chosen if cls.min_length > max_length]
     if too_short:

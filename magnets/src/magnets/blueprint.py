@@ -24,15 +24,15 @@ SKIN = 0.6  # plastic between a magnet and the outside: thinner won't print, thi
 # Design values from the reference STEP (#74).
 CORE_WALL = 2.0
 PLATE = 1.2  # a face plate's thickness
-BAR_OFFSET = 10.0  # a cross-bar's outer face, from the card's end, at every length
+BAR_OFFSET = 10.0  # a cross-bar's outer side, from the card's end, at every length
 BAR_W = 2.0  # also the centre rib's width
 RIB_FROM_LENGTH = 4  # a centre rib from this length up, in U
 LEG_T = 1.0
 LEG_W = 4.0
 BACK_LEG_Y = (0.0,)  # a back face's legs, from the card's centre line: one per end
-CATCH_DEPTH = 3.4  # the hook's catch, from the core face the leg comes in from
-LEG_REACH = 8.8  # the leg's tip, from that same face
-HOOK_REACH = 1.4  # the hook's tip, out from the leg's face; the catch is at 45°
+CATCH_DEPTH = 3.4  # the hook's catch, from the side of the core the leg comes in from
+LEG_REACH = 8.8  # the leg's tip, from that same side
+HOOK_REACH = 1.4  # the hook's tip, out from the leg; the catch is at 45°
 HOOK_FLAT = 1.0
 GUSSET = 1.0  # where the leg meets the plate
 
@@ -92,7 +92,7 @@ class Tolerances:
 
     @property
     def bore_depth(self) -> float:
-        """From the skin to the frame's inner face: a bore has to reach it, or
+        """From the skin to the frame wall's inside: a bore has to reach it, or
         the magnet can't go in. The magnet moves in the bore and the slide gap
         together."""
         return self.frame_wall - SKIN

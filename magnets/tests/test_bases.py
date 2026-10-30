@@ -44,7 +44,7 @@ def every_place(length):
 
 
 def probe(edge, along, depth, length):
-    """A point `depth` mm in from an edge's outer face, at `along`, in the frame's (x, y)."""
+    """A point `depth` mm in from the outside of an edge, at `along`, in the frame's (x, y)."""
     return {
         "top": (along, U - depth),
         "bottom": (along, depth),
@@ -164,6 +164,8 @@ def test_classes_and_max_length_narrow_the_set():
 def test_an_unknown_class_or_too_short_max_length_is_an_error():
     with pytest.raises(ValueError, match="unknown card class.*nope"):
         bases("example", classes=["nope"])
+    with pytest.raises(ValueError, match="no card classes given"):
+        bases("example", classes=[])
     with pytest.raises(ValueError, match="max_length 1"):
         bases("example", max_length=1)
 

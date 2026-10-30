@@ -39,7 +39,7 @@ def frame(edges: Edges, length: int, double_sided: bool, tolerances: Tolerances)
     t, length_mm = tolerances, length * U
     wall = t.frame_wall
     part = _ring(length_mm, wall, THICKNESS)
-    # Each layer of a pocket is its own bore, from the skin to the frame's inner face.
+    # Each layer of a pocket is its own bore, from the skin to the frame wall's inside.
     mid = SKIN + t.bore_depth / 2
     for edge, along, layer in bores(edges, length):
         z = LAYER_Z[layer]
@@ -91,7 +91,7 @@ def _back_legs(length_mm: float, t: Tolerances) -> Part:
     """The back face's legs, which hook the core from below: drawn as a
     front face's near-end leg, then mirrored to the far end and to the back."""
     s = t.sheet_clearance
-    x1 = BAR_OFFSET + BAR_W + t.slide_clearance  # the leg's outer face, past the cross-bar's inner face
+    x1 = BAR_OFFSET + BAR_W + t.slide_clearance  # the leg's outer side, past the cross-bar's inner side
     tip = x1 - HOOK_REACH
     catch = THICKNESS - CATCH_DEPTH
     profile = [
