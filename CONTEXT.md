@@ -17,6 +17,9 @@ _Avoid_: block (a block is part of a program), body
 **Frame**:
 The outer ring of a base, as long as the card, with a bore for each magnet. It is the only part that depends on the magnet arrangement, so each class and length has its own. A single-sided frame has its back built in.
 
+**ID beam**:
+A beam across the back of a frame whose marks show its class number in 5 bits, so frames that look alike can be told apart. Cores and faces have none: they serve every class.
+
 **Core**:
 The inner ring that slides into a frame and holds the magnets in their bores. One core serves every class of one length.
 
@@ -165,6 +168,9 @@ What one edge of a side needs from the edge that faces it. For example, `head` o
 **Card class**:
 A group of cards that have the same roles on every edge, so that they can have the same magnets: for example, the operator cards but `[%]`, or `[get{…}]` and `[root]`. A printed card and the same card handwritten are in the same class: `[call(p5.circle)]` and `[call{f}]`. A class also has a shortest length, 2U for every class, and a pocket reach.
 
+**Class number**:
+A card class's number, shown by the ID beam on its frames. Each language version sets it.
+
 **Connect**:
 A contact between two cards that the grammar lets be neighbours there. It must snap.
 
@@ -226,3 +232,9 @@ How far to trust a search result: **optimal** (proven the best), **feasible** (v
 
 **Pinned arrangement**:
 An arrangement given to the search to keep. The search keeps every edge it mentions exactly, empty edges too, and designs the rest.
+
+## Releases
+
+**Language version**:
+One release of Snapscript: its language, its card classes and one magnet arrangement, found by the search when the release is made and then fixed. A builder prints every base from one version.
+_Avoid_: release (on its own), arrangement version
