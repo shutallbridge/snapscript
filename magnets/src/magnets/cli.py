@@ -3,10 +3,11 @@
 import argparse
 import re
 import sys
-from dataclasses import replace
+from dataclasses import fields, replace
 from pathlib import Path
 
-from .api import CheckResult, SolveResult, card_sheet, check, check_program, solve
+from .api import CheckResult, SolveResult, bases, card_sheet, check, check_program, solve
+from .blueprint import Tolerances
 from .data import ArrangementError, bundled_programs
 from .physics import FLIPS
 from .reports import arrangement_text, cards_html, conflict_lines, csv_text, program_report_text, program_status, summary_text
@@ -71,11 +72,34 @@ def main(argv: list[str] | None = None) -> int:
     print_cmd.add_argument("--paper", choices=PAPERS, default="a4", help="paper size (default: a4)")
     print_cmd.add_argument("--out", type=Path, help="HTML file to write (default: out/<arrangement>/cards.html)")
 
+    bases_cmd = commands.add_parser("bases", help="build a printable frame for every card class and length")
+    bases_cmd.add_argument("arrangement", help="an arrangement YAML file, or a bundled arrangement's name")
+    bases_cmd.add_argument(
+        "--out", type=Path, help="directory to write frames/ to (default: out/<arrangement>/bases)"
+    )
+    defaults = Tolerances()
+    for name, what in [
+        ("slide_clearance", "gap between parts that slide together"),
+        ("sheet_clearance", "room for the paper sheet"),
+        ("magnet_clearance", "gap around a magnet in its bore"),
+        ("magnet_depth_clearance", "how far a magnet can move front to back"),
+    ]:
+        bases_cmd.add_argument(
+            f"--{name.replace('_', '-')}",
+            dest=name,
+            type=float,
+            default=getattr(defaults, name),
+            help=f"{what}, in mm per side (default: {getattr(defaults, name)})",
+        )
+    _common(bases_cmd, "build only these card classes", "every class the arrangement names")
+
     args = parser.parse_args(argv)
     classes = args.classes.split(",") if getattr(args, "classes", None) else None
     try:
         if args.command == "print":
             return _print(args)
+        if args.command == "bases":
+            return _bases(args, classes)
         if args.command == "check":
             result = check(args.arrangement, max_length=args.max_length, classes=classes)
             return _write_reports(result, args.out or Path("out") / result.arrangement.name, classes)
@@ -88,9 +112,29 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
 
-def _common(command: argparse.ArgumentParser, classes_help: str) -> None:
+def _common(command: argparse.ArgumentParser, classes_help: str, every: str = "every class") -> None:
     command.add_argument("--max-length", type=int, default=6, help="longest card, in U (default: 6)")
-    command.add_argument("--classes", help=f"{classes_help}, comma-separated (default: every class)")
+    command.add_argument("--classes", help=f"{classes_help}, comma-separated (default: {every})")
+
+
+def _bases(args: argparse.Namespace, classes: list[str] | None) -> int:
+    tolerances = Tolerances(**{f.name: getattr(args, f.name) for f in fields(Tolerances)})
+    try:
+        parts = bases(args.arrangement, tolerances=tolerances, classes=classes, max_length=args.max_length)
+    except ModuleNotFoundError as err:
+        if err.name != "build123d":
+            raise
+        print("magnets: bases needs build123d: install magnets with its `bases` extra", file=sys.stderr)
+        return 1
+    from build123d import export_stl
+
+    out = args.out or Path("out") / Path(args.arrangement).stem / "bases"
+    frames = out / "frames"
+    frames.mkdir(parents=True, exist_ok=True)
+    for part in parts:
+        export_stl(part.solid, str(frames / f"{part.card_class}-{part.length}u.stl"))
+    print(f"Wrote {len(parts)} frames to {frames}")
+    return 0
 
 
 def _print(args: argparse.Namespace) -> int:

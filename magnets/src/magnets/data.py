@@ -123,6 +123,10 @@ class CardClass:
     def front(self) -> Side:
         return self.sides[0]
 
+    @property
+    def flip_pair(self) -> bool:
+        return len(self.sides) == 2
+
 
 @dataclass(frozen=True)
 class HorizontalRules:
@@ -587,6 +591,18 @@ def load_pinned(
     else:
         mentioned = [(cls, edge) for cls, edges in (raw.get("classes") or {}).items() for edge in edges or {}]
     return {(cls, edge): loaded.fronts[cls][edge] for cls, edge in mentioned}
+
+
+def mentioned_classes(source: str | Path | Mapping | Arrangement, *, classes: Mapping[str, CardClass]) -> tuple[str, ...]:
+    """The classes an arrangement names, in class order, even with no
+    pockets (`import: {}`); a loaded arrangement names every class.
+    `source` is as for `load_arrangement`, and loaded first."""
+    raw, _ = _arrangement_source(source)
+    if isinstance(source, Arrangement):
+        named = source.fronts
+    else:
+        named = raw.get("classes") or {} if isinstance(raw, Mapping) else {}
+    return tuple(name for name in classes if name in named)
 
 
 def _arrangement_source(source: str | Path | Mapping | Arrangement) -> tuple[Any, str]:

@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 
+import pytest
 import yaml
 
 SET_AND_GET = {"simple_head.head", "get.get"}
@@ -466,3 +467,73 @@ def test_check_reports_off_line_offsets_as_exact_fractions(tmp_path):
         if r["axis"] == "horizontal" and (r["upper_or_left"], r["lower_or_right"]) == ("simple_head.head",) * 2
     ]
     assert (row["offset"], row["result"], row["grade"]) == ("-1/3", "snap", "leak")
+
+
+def file_names(directory):
+    return sorted(p.relative_to(directory).as_posix() for p in directory.rglob("*") if p.is_file())
+
+
+def test_bases_writes_every_frame_of_the_example(tmp_path):
+    run = subprocess.run([*MAGNETS, "bases", "example"], capture_output=True, text=True, check=True, cwd=tmp_path)
+    out = tmp_path / "out" / "example" / "bases"
+    expected = [f"frames/{cls}-{n}u.stl" for cls in ("get", "literal", "simple_head") for n in range(2, 7)]
+    assert file_names(out) == expected
+    assert "15 frames" in run.stdout
+    assert (out / "frames" / "get-2u.stl").read_bytes()[:5] != b"solid"  # binary STL
+
+
+def test_bases_classes_max_length_and_out_narrow_and_move_it(tmp_path):
+    out = tmp_path / "mine"
+    subprocess.run(
+        [*MAGNETS, "bases", "example", "--classes", "get,on", "--max-length", "3", "--out", str(out)],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=tmp_path,
+    )
+    assert file_names(out) == ["frames/get-2u.stl", "frames/get-3u.stl", "frames/on-2u.stl", "frames/on-3u.stl"]
+    assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize(
+    "args, message",
+    [
+        (["nope.yaml"], "invalid arrangement"),
+        (["example", "--classes", "nope"], "unknown card class"),
+        (["example", "--max-length", "1"], "max_length 1"),
+        (["example", "--magnet-clearance", "-0.1"], "magnet_clearance must be 0 or more"),
+        (["example", "--slide-clearance", "2"], "tolerances leave no wall"),
+        (["example", "--magnet-depth-clearance", "x"], "invalid float value"),
+    ],
+)
+def test_bases_exits_2_for_a_bad_arrangement_or_tolerance(tmp_path, args, message):
+    run = subprocess.run([*MAGNETS, "bases", *args], capture_output=True, text=True, cwd=tmp_path)
+    assert run.returncode == 2
+    assert message in run.stderr
+    assert not (tmp_path / "out").exists()
+
+
+# `magnets` as if installed without the `bases` extra: importing build123d fails.
+WITHOUT_BASES = [
+    sys.executable,
+    "-c",
+    "import sys; sys.modules['build123d'] = None; from magnets.cli import main; sys.exit(main())",
+]
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["check", "example"],
+        ["search", "--flip", "top_bottom", "--classes", "simple_head,get", "--time-limit", "5"],
+        ["print", "example"],
+    ],
+)
+def test_check_search_and_print_run_without_the_bases_extra(tmp_path, args):
+    subprocess.run([*WITHOUT_BASES, *args], capture_output=True, text=True, check=True, cwd=tmp_path)
+
+
+def test_bases_without_its_extra_says_how_to_get_it(tmp_path):
+    run = subprocess.run([*WITHOUT_BASES, "bases", "example"], capture_output=True, text=True, cwd=tmp_path)
+    assert run.returncode == 1
+    assert "`bases` extra" in run.stderr

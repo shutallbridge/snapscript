@@ -15,14 +15,23 @@ dependencies = [
 [project.scripts]
 magnets = "magnets.cli:main"
 
+[project.optional-dependencies]
+bases = [
+    "build123d>=0.13.0",
+]
+
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    # The tests build bases too.
+    "magnets[bases]",
     "hypothesis>=6.170.0",
     "pytest>=9.1.1",
+    "trimesh>=5.2.0",
+    "rtree>=1.4.1",
 ]
 
 [tool.pytest.ini_options]
