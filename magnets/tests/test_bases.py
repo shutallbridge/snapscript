@@ -18,6 +18,8 @@ CELL = (5, 15, 25)
 LAYERS = {"up": 7.5, "down": 2.5}
 # Inside a bore, if there is one: past the 0.6 mm skin.
 IN_BORE = 1.0
+# num/str, true/false, two colors, and + - * / < > <= >= == != and or.
+FLIP_PAIRS = {"literal", "bool", "color", "operator"}
 
 
 def magnets_at(pockets, length):
@@ -165,15 +167,13 @@ def test_magnet_tolerances_resize_bores_but_never_move_them(tolerances, diameter
 
 
 def test_flip_pairs_get_double_sided_frames_and_others_a_built_in_back(full_frames):
-    # num/str, true/false, two colors, and + - * / < > <= >= == != and or.
-    flip_pairs = {"literal", "bool", "color", "operator"}
     for part, mesh in full_frames:
         middle = (part.length * U / 2, U / 2)
         height = mesh.bounds[1][2] - mesh.bounds[0][2]
         assert mesh.bounds[0][2] == pytest.approx(0)
         # Within the card's outline, pads and all.
         assert list(mesh.bounds[:, :2].flatten()) == pytest.approx([0, 0, part.length * U, U])
-        if part.card_class in flip_pairs:
+        if part.card_class in FLIP_PAIRS:
             # Open front and back, for the core to slide into.
             assert height == pytest.approx(10)
             assert not mesh.contains([(*middle, 0.6)])[0]
@@ -285,8 +285,8 @@ def test_cores_from_4u_have_a_centre_rib(length, rib):
 def card(parts, card_class, length):
     """{kind: part} of one card's base."""
     found = {p.kind: p for p in parts if p.length == length and p.card_class in (card_class, None)}
-    if card_class != "literal":
-        del found["back-face"]
+    if card_class not in FLIP_PAIRS:
+        found.pop("back-face", None)
     return found
 
 
@@ -301,10 +301,11 @@ def overlap(a, b):
 FRONT_HOOK, BACK_HOOK, IN_WINDOW = 4.5, 5.5, 11
 
 
-@pytest.mark.parametrize("length", [3, 4])
-@pytest.mark.parametrize("card_class", ["literal", "get"])  # double- and single-sided
+@pytest.mark.parametrize("length", [2, 3, 4])
+@pytest.mark.parametrize("card_class", ["literal", "color", "get"])  # double- and single-sided
 def test_assembled_parts_fit_without_overlap_and_hook_through_the_windows(card_class, length):
-    parts = card(bases(FULL_SEARCH, classes=["literal", "get"], max_length=length), card_class, length)
+    # Over the ID beam too: color's is 01010, get's 00001.
+    parts = card(bases(FULL_SEARCH, classes=[card_class], max_length=length), card_class, length)
     kinds = list(parts)
     pairs = [(a, b) for i, a in enumerate(kinds) for b in kinds[i + 1 :]]
     assert [(a, b) for a, b in pairs if overlap(parts[a], parts[b]) > 1e-6] == []
@@ -362,4 +363,110 @@ def fits(tolerances):
 )
 def test_slide_and_sheet_clearances_set_the_fits_but_never_move_a_bore(tolerances, core, window, plate):
     assert fits(tolerances) == {"core": core, "window": window, "plate": plate}
+    assert [b[:2] for b in bores(tolerances)] == [(15, 2.5), (15, 7.5)]
+
+
+# The ID beam: 3.2 mm along the card at x = 20, 2 mm thick, its marks 1 mm
+# tall on top. With the default tolerances the marks span y = 4.6 to 25.4:
+# a baseline 0.8 mm wide along the beam's left-end edge, and 6 cross ridges
+# that leave 5 cells 2.4 mm along by 3.2 mm across, bit 1's nearest the top edge.
+BEAM_X, IN_BEAM, IN_MARKS = 20, 1, 2.5
+ON_BASELINE = 18.8  # along the card: the baseline's middle, from the beam's 18.4 start
+CELL_MID_X = 20.4  # a cell's middle, along the card: past the baseline
+CELL_MID_Y = (23, 19, 15, 11, 7)  # each cell's middle, bit 1 first
+
+
+@pytest.mark.parametrize("length", [2, 4])
+def test_every_frame_has_an_id_beam_and_cores_and_faces_none(length):
+    parts = [p for p in bases(FULL_SEARCH, classes=["get", "color"], max_length=length) if p.length == length]
+    for part in parts:
+        assert solid_at(part, BEAM_X, U / 2, IN_BEAM) == (part.kind == "frame"), part.kind
+
+
+def read_beam(frame):
+    """The frame's beam as read: a 1 for each cell with a stroke through its middle."""
+    return "".join("1" if solid_at(frame, CELL_MID_X, y, IN_MARKS) else "0" for y in CELL_MID_Y)
+
+
+@pytest.mark.parametrize("length", [2, 4])
+@pytest.mark.parametrize("card_class, bits", [("get", "00001"), ("color", "01010")])
+def test_a_frames_beam_reads_back_its_class_id(card_class, bits, length):
+    (frame,) = [p for p in bases(FULL_SEARCH, classes=[card_class], max_length=length) if p.kind == "frame" and p.length == length]
+    assert read_beam(frame) == bits
+    # Every cell is walled in, so an empty one still reads as a 0: the baseline
+    # along its left-end edge, and a cross ridge either side.
+    for y in CELL_MID_Y:
+        assert solid_at(frame, ON_BASELINE, y, IN_MARKS)
+        assert solid_at(frame, CELL_MID_X, y + 2, IN_MARKS)
+        assert solid_at(frame, CELL_MID_X, y - 2, IN_MARKS)
+    # Nothing past the marks, a slide gap clear of the core's inner walls at 4.4 and 25.6.
+    assert not solid_at(frame, CELL_MID_X, 4.5, IN_MARKS)
+    assert not solid_at(frame, CELL_MID_X, 25.5, IN_MARKS)
+
+
+def test_a_beam_stroke_is_a_slash_as_read():
+    # Read with the left end toward you, so left is +y: a / runs from the
+    # cell's near left corner to its far right one.
+    (frame, *_) = bases(FULL_SEARCH, classes=["get"], max_length=2)
+    near, far = 19.5, 21.3
+    assert solid_at(frame, near, 7 + 1.2, IN_MARKS) and solid_at(frame, far, 7 - 1.2, IN_MARKS)
+    assert not solid_at(frame, near, 7 - 1.2, IN_MARKS) and not solid_at(frame, far, 7 + 1.2, IN_MARKS)
+
+
+@pytest.mark.parametrize("length", [2, 4])
+def test_a_core_has_a_notch_over_the_beam_at_both_ends(length):
+    (core,) = [p for p in bases(FULL_SEARCH, classes=["get"], max_length=length) if p.kind == "core" and p.length == length]
+    # Its long walls are 2 mm thick, at y = 2.4 to 4.4 and 25.6 to 27.6.
+    for x in (BEAM_X, length * U - BEAM_X):
+        for y in (3.4, 26.6):
+            assert not solid_at(core, x, y, 1)
+            assert solid_at(core, x, y, 2.5)  # above the notch
+            assert solid_at(core, x - 2.5, y, 1)  # beside it
+            assert solid_at(core, x + 2.5, y, 1)
+
+
+def test_a_single_sided_frames_beam_is_joined_to_its_back():
+    (frame, *_) = bases(FULL_SEARCH, classes=["get"], max_length=2)
+    # Through the 0.2 mm sheet gap between the frame and its back.
+    assert solid_at(frame, BEAM_X, U / 2, -0.1)
+    assert not solid_at(frame, BEAM_X + 3, U / 2, -0.1)
+
+
+def beam_fits(tolerances):
+    """In get's 2U card, in mm: the beam's ends along the card, at the
+    middle; its top; the core's notch's ends along the card and its top, in
+    the near long wall; and where the marks start across the card, along
+    the baseline, and where the core's inner wall ends."""
+    parts = {p.kind: p for p in bases(FULL_SEARCH, classes=["get"], max_length=2, tolerances=tolerances)}
+    frame, core = parts["frame"], parts["core"]
+    in_wall = 3.4
+    return {
+        "beam": (
+            first(lambda x: solid_at(frame, x, U / 2, IN_BEAM), 15, 25),
+            first(lambda x: not solid_at(frame, x, U / 2, IN_BEAM), 19, 25),
+            first(lambda z: not solid_at(frame, CELL_MID_X, CELL_MID_Y[2], z), 0, 5),  # in an empty cell
+        ),
+        "notch": (
+            first(lambda x: not solid_at(core, x, in_wall, IN_BEAM), 15, 25),
+            first(lambda x: solid_at(core, x, in_wall, IN_BEAM), 19, 25),
+            first(lambda z: solid_at(core, BEAM_X, in_wall, z), 0, 5),
+        ),
+        "marks": (
+            first(lambda y: solid_at(frame, ON_BASELINE, y, IN_MARKS), 3, 10),
+            first(lambda y: not solid_at(core, 30, y, 5), 2.5, 10),
+        ),
+    }
+
+
+@pytest.mark.parametrize(
+    "tolerances, notch, marks",
+    [
+        # The beam's 3.2 by 2 mm, and 0.2 mm all round it; the marks 0.2 mm from the core.
+        (Tolerances(), (18.2, 21.8, 2.2), (4.6, 4.4)),
+        (Tolerances(slide_clearance=0.3), (18.1, 21.9, 2.3), (4.7, 4.4)),
+        (Tolerances(slide_clearance=0), (18.4, 21.6, 2.0), (4.4, 4.4)),
+    ],
+)
+def test_slide_clearance_sets_the_notch_and_the_marks_gap_but_never_moves_the_beam(tolerances, notch, marks):
+    assert beam_fits(tolerances) == {"beam": (18.4, 21.6, 2.0), "notch": notch, "marks": marks}
     assert [b[:2] for b in bores(tolerances)] == [(15, 2.5), (15, 7.5)]

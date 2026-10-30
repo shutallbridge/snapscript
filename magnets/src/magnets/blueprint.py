@@ -37,6 +37,14 @@ HOOK_REACH = 1.4  # the hook's tip, out from the leg; the catch is at 45°
 HOOK_FLAT = 1.0
 GUSSET = 1.0  # where the leg meets the plate
 
+# The ID beam across a frame's back, from the prototype (#81).
+BEAM_X = 20.0  # its centre, from the left end: between the 2nd and 3rd pockets
+BEAM_W = 3.2  # along the card
+BEAM_H = 2.0
+MARK_W = 0.8  # every ridge and stroke on it
+MARK_H = 1.0
+ID_BITS = 5
+
 
 @dataclass(frozen=True)
 class Tolerances:
