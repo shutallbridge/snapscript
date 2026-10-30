@@ -1,6 +1,6 @@
 # Reference card base (3U)
 
-Shu's Fusion 360 reference for the card base, from #74. It's a reference only: the base generator never loads it, and this branch never lands on main. #75 turns it into a blueprint.
+Shu's Fusion 360 reference for the card base, from #74. It's a reference only: the base generator never loads it, and this branch never lands on main. #75 turns it into a blueprint: see `BLUEPRINT.md`.
 
 - `card-base-3u.step`: the design, exported from Fusion.
 - `card-base-3u-bench.jpg`: the bench print, wrapped in paper, with a `circle` sheet.
@@ -40,3 +40,10 @@ STEP doesn't carry Fusion's user parameters, so here they are by hand.
 | *(not yet a parameter)* | 0.2 mm | Gap around the magnet in its pocket |
 
 These are the three builder tolerances from #73: slide fit, sheet fit and magnet fit. #75 settles their final names. One proposal is `slide_clearance`, `sheet_clearance` and `magnet_clearance`.
+
+## Blueprint (#75)
+
+- `BLUEPRINT.md`: the parameter table. Each value is a tolerance, varies with the arrangement, or is fixed.
+- `blueprint.py`: a rough build123d rebuild from that table. Run `uv run --with build123d python reference/blueprint.py` to check it against the STEP.
+- `blueprint-3u.step`: the reference rebuilt with the default tolerances.
+- `blueprint-4u.step`: a 4U base with the centre rib, and a half, a uniform and an empty position on the bottom edge's first cell.
