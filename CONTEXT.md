@@ -11,8 +11,21 @@ One physical piece that lies flat on the table and stands for one block of the p
 One printed face of a card. Most cards have one side; a flip pair has two.
 
 **Base**:
-The 3D-printed body of a card that holds its magnets. A flip pair has a double-sided base and every other card a single-sided one; apart from that, every card of one class and length has the same base, whether it is printed or handwritten.
+The 3D-printed body of a card that holds its magnets. A flip pair has a double-sided base and every other card a single-sided one; apart from that, every card of one class and length has the same base, whether it is printed or handwritten. A base is printed in parts: a frame, a core and its faces.
 _Avoid_: block (a block is part of a program), body
+
+**Frame**:
+The outer ring of a base, as long as the card, with a bore for each magnet. It is the only part that depends on the magnet arrangement, so each class and length has its own. A single-sided frame has its back built in.
+
+**Core**:
+The inner ring that slides into a frame and holds the magnets in their bores. One core serves every class of one length.
+
+**Face**:
+A plate that clips onto the core and covers one side of the base, under that side's sheet. A base has a **front face**, and a flip pair also a **back face**, matching its front and back sides. One face of each kind serves every class of one length.
+_Avoid_: top face (top is an edge), side (a side is the printed face of a card)
+
+**Tolerance**:
+A gap that a builder sets to suit their printer, magnets and paper: how loosely parts slide together, how much room the sheet gets, and how loosely a magnet sits in its bore. Tolerances never change what snaps, so bases built with different tolerances from the same arrangement snap together.
 
 **Sheet**:
 The printed paper wrapped onto a side of a base, carrying that side's label and marker. It wraps rather than being taped, so it can't come off. The base comes with the language; the sheet comes with the card, such as a library card.
