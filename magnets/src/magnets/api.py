@@ -233,7 +233,7 @@ def bases(
     if too_short:
         raise ValueError(f"max_length {max_length} is shorter than the minimum length of {', '.join(too_short)}")
     frames = [
-        _parts.frame(cls.name, loaded.fronts[cls.name], n, cls.flip_pair, tolerances)
+        _parts.frame(cls.name, cls.id, loaded.fronts[cls.name], n, cls.flip_pair, tolerances)
         for cls in chosen
         for n in range(cls.min_length, max_length + 1)
     ]
@@ -249,7 +249,8 @@ def assemblies(parts: Sequence[BasePart]) -> dict[tuple[str, int], Any]:
     """Each card's base assembled from `bases`'s parts, by (class, length):
     a build123d Compound of the frame, the core and the front face of its
     length and, for a flip pair, the back face, each where it sits in the
-    card and labelled by its kind. Needs build123d, the `bases` extra.
+    card and labelled by its kind. The Compound is labelled by the frame's
+    name, as in "01-get-2u". Needs build123d, the `bases` extra.
     """
     from . import parts as _parts
 
@@ -261,7 +262,7 @@ def assemblies(parts: Sequence[BasePart]) -> dict[tuple[str, int], Any]:
             continue
         kinds = ("core", "front-face", "back-face") if every[frame.card_class].flip_pair else ("core", "front-face")
         card = [frame, *(shared[kind, frame.length] for kind in kinds)]
-        found[frame.card_class, frame.length] = _parts.assembly(card, f"{frame.card_class}-{frame.length}u")
+        found[frame.card_class, frame.length] = _parts.assembly(card, frame.name)
     return found
 
 

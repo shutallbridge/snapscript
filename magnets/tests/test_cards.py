@@ -175,8 +175,8 @@ def test_an_unknown_card_is_a_clear_error(card):
 def test_a_card_matching_two_sides_is_a_clear_error():
     line = {"left": "head", "right": "end", "top": "line", "bottom": "line"}
     classes = {
-        "any": {"min_length": 1, "pocket_reach": 1, "sides": {"call": {"[call(…)]": line}}},
-        "print": {"min_length": 1, "pocket_reach": 1, "sides": {"print": {"[call(print)]": line}}},
+        "any": {"id": 0, "min_length": 1, "pocket_reach": 1, "sides": {"call": {"[call(…)]": line}}},
+        "print": {"id": 1, "min_length": 1, "pocket_reach": 1, "sides": {"print": {"[call(print)]": line}}},
     }
     with pytest.raises(ProgramError) as err:
         check_program({}, "[call(print)]", class_data=classes)

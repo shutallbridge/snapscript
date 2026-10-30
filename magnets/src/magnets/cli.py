@@ -137,15 +137,16 @@ def _bases(args: argparse.Namespace, classes: list[str] | None) -> int:
     for directory in ("frames", "shared"):
         (out / directory).mkdir(parents=True, exist_ok=True)
     for part in frames:
-        export_stl(part.solid, str(out / "frames" / f"{part.card_class}-{part.length}u.stl"))
+        export_stl(part.solid, str(out / "frames" / f"{part.name}.stl"))
     for part in shared:
-        export_stl(part.solid, str(out / "shared" / f"{part.kind}-{part.length}u.stl"))
+        export_stl(part.solid, str(out / "shared" / f"{part.name}.stl"))
     print(f"Wrote {len(frames)} frames to {out / 'frames'} and {len(shared)} shared parts to {out / 'shared'}")
     if args.step:
         cards = assemblies(parts)
         (out / "assembled").mkdir(exist_ok=True)
-        for (card_class, length), card in cards.items():
-            export_step(card, out / "assembled" / f"{card_class}-{length}u.step")
+        names = {(p.card_class, p.length): p.name for p in frames}
+        for key, card in cards.items():
+            export_step(card, out / "assembled" / f"{names[key]}.step")
         print(f"Wrote {len(cards)} assembled cards to {out / 'assembled'}")
     return 0
 

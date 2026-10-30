@@ -15,6 +15,7 @@ import yaml
 from .physics import EDGES, FLIPS, LAYERS, LEFT_RIGHT_EDGES, POSITIONS, Edges, Pocket, on_grid, u_text
 
 MAX_POCKETS = {"top": 2, "bottom": 2, "left": 3, "right": 3}
+MAX_ID = 2**5 - 1  # a class ID is shown in 5 bits on its frames
 
 
 class ArrangementError(ValueError):
@@ -115,6 +116,7 @@ def matching_sides(card: str, classes: Mapping[str, "CardClass"]) -> list[Side]:
 @dataclass(frozen=True)
 class CardClass:
     name: str
+    id: int  # the class ID, shown on its printed frames; 0 to MAX_ID
     min_length: int  # the shortest card, in U
     pocket_reach: int  # a top or bottom pocket sits less than this from its end, in U
     sides: tuple[Side, ...]  # front first; a flip pair's back second
@@ -471,6 +473,11 @@ def _parse_classes(raw: Any, grammar: Rules) -> dict[str, CardClass]:
     if not isinstance(raw, Mapping) or not raw:
         raise DataError("card classes must be a mapping of class names to classes")
     classes = {str(name): _parse_class(str(name), spec, grammar) for name, spec in raw.items()}
+    ids: dict[int, str] = {}  # id -> the class it was first given to
+    for cls in classes.values():
+        first = ids.setdefault(cls.id, cls.name)
+        if first != cls.name:
+            raise DataError(f"{first} and {cls.name} share class ID {cls.id}")
     # A member may be on both sides of one flip pair, as `[color(…)]` is, but
     # not in two classes.
     owners: dict[str, tuple[str, str]] = {}  # member -> (class, side) it is first on
@@ -485,12 +492,15 @@ def _parse_classes(raw: Any, grammar: Rules) -> dict[str, CardClass]:
 
 def _parse_class(name: str, spec: Any, grammar: Rules) -> CardClass:
     if not isinstance(spec, Mapping):
-        raise DataError(f"{name}: expected a mapping with `min_length`, `pocket_reach` and `sides`")
-    _no_extra_keys(spec, {"min_length", "pocket_reach", "flip_pair", "sides"}, name, DataError)
-    min_length = _whole_u(spec.get("min_length"), 1, None)
+        raise DataError(f"{name}: expected a mapping with `id`, `min_length`, `pocket_reach` and `sides`")
+    _no_extra_keys(spec, {"id", "min_length", "pocket_reach", "flip_pair", "sides"}, name, DataError)
+    class_id = _whole_between(spec.get("id"), 0, MAX_ID)
+    if class_id is None:
+        raise DataError(f"{name}: `id`, the class ID, must be a whole number from 0 to {MAX_ID}")
+    min_length = _whole_between(spec.get("min_length"), 1, None)
     if min_length is None:
         raise DataError(f"{name}: `min_length` must be a whole number of U, at least 1")
-    reach = _whole_u(spec.get("pocket_reach"), 1, min_length)
+    reach = _whole_between(spec.get("pocket_reach"), 1, min_length)
     if reach is None:
         raise DataError(f"{name}: `pocket_reach` must be a whole number of U, from 1 to `min_length` {min_length}")
     flip_pair = spec.get("flip_pair", False)
@@ -510,11 +520,11 @@ def _parse_class(name: str, spec: Any, grammar: Rules) -> CardClass:
             f"{name}: a flip pair's sides pair their members in order, but {front} has "
             f"{len(parsed[0].members)} and {back} has {len(parsed[1].members)}"
         )
-    return CardClass(name=name, min_length=min_length, pocket_reach=reach, sides=parsed)
+    return CardClass(name=name, id=class_id, min_length=min_length, pocket_reach=reach, sides=parsed)
 
 
-def _whole_u(raw: Any, least: int, most: int | None) -> int | None:
-    """`raw` if it is a whole number of U from `least` to `most`, else None."""
+def _whole_between(raw: Any, least: int, most: int | None) -> int | None:
+    """`raw` if it is a whole number from `least` to `most`, else None."""
     if isinstance(raw, bool) or not isinstance(raw, int) or raw < least or (most is not None and raw > most):
         return None
     return raw
