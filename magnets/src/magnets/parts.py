@@ -5,6 +5,7 @@ holds what doesn't.
 Each part is built where it sits in the card, then laid on the print bed.
 """
 
+import math
 from collections.abc import Sequence
 
 from build123d import Align, Box, Compound, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude, mirror
@@ -13,16 +14,22 @@ from .blueprint import (
     BACK_LEG_Y,
     BAR_OFFSET,
     BAR_W,
+    BEAM_H,
+    BEAM_W,
+    BEAM_X,
     CATCH_DEPTH,
     CORE_WALL,
     FRONT_LEG_Y,
     GUSSET,
     HOOK_FLAT,
     HOOK_REACH,
+    ID_BITS,
     LAYER_Z,
     LEG_REACH,
     LEG_T,
     LEG_W,
+    MARK_H,
+    MARK_W,
     PLATE,
     RIB_FROM_LENGTH,
     SKIN,
@@ -44,7 +51,8 @@ def frame(
     """The frame of a card of `length` U, of the class with this name and
     ID, whose front has these edges: a ring with a bore for each magnet, and
     solid wall everywhere else. A single-sided frame has the back face, the
-    wall down to it and the pads under the core built in."""
+    wall down to it, the pads under the core and the ID beam's join to the
+    back built in. Every frame has the ID beam, showing its class ID."""
     t, length_mm = tolerances, length * U
     wall = t.frame_wall
     part = _ring(length_mm, wall, THICKNESS)
@@ -61,6 +69,7 @@ def frame(
             part -= Pos(mid, along, z) * Rot(0, 90, 0) * bore
         else:
             part -= Pos(length_mm - mid, along, z) * Rot(0, 90, 0) * bore
+    part += _beam(class_id, t)
     if double_sided:
         return _on_bed("frame", length, part, Location(), card_class, class_id)
     s = t.sheet_clearance
@@ -69,6 +78,7 @@ def frame(
         # The wall down to the back, and pads under the core where the sheet would be.
         part += Pos(0, 0, -s) * _ring(length_mm, wall, s)
         part += Pos(0, 0, -s) * _core_footprint(length_mm, t, s)
+        part += Pos(BEAM_X - BEAM_W / 2, wall, -s) * Box(BEAM_W, WIDTH - 2 * wall, s, align=_MIN)
     part += _legs(length_mm, t, front=False)
     return _on_bed("frame", length, part, Pos(0, 0, s + PLATE), card_class, class_id)
 
@@ -76,7 +86,9 @@ def frame(
 def core(length: int, tolerances: Tolerances) -> BasePart:
     """The core of a card of `length` U: a ring that slides into the frame,
     with a cross-bar near each end and, from 4U up, a centre rib. Each end's
-    cross-bar has a window for each leg of the front face and the back face."""
+    cross-bar has a window for each leg of the front face and the back face,
+    and its long walls a notch over a frame's ID beam near each end, so it
+    goes in either way round."""
     t, length_mm = tolerances, length * U
     part = _core_footprint(length_mm, t, THICKNESS)
     window_w = LEG_W + 2 * t.slide_clearance
@@ -85,6 +97,9 @@ def core(length: int, tolerances: Tolerances) -> BasePart:
         # A front face's legs come in from z = T, and a back face's from z = 0.
         for dy, z in [(dy, THICKNESS - LEG_REACH) for dy in FRONT_LEG_Y] + [(dy, CATCH_DEPTH) for dy in BACK_LEG_Y]:
             part -= Pos(x, WIDTH / 2 + dy - window_w / 2, z) * Box(BAR_W, window_w, window_h, align=_MIN)
+    notch_w = BEAM_W + 2 * t.slide_clearance
+    for x in (BEAM_X, length_mm - BEAM_X):
+        part -= Pos(x - notch_w / 2, 0, 0) * Box(notch_w, WIDTH, BEAM_H + t.slide_clearance, align=_MIN)
     return _on_bed("core", length, part, Location())
 
 
@@ -118,6 +133,32 @@ def _on_bed(
 ) -> BasePart:
     """The part, built where it sits in the card, moved by `bed` onto the print bed."""
     return BasePart(kind, card_class, class_id, length, bed * part, bed.inverse())
+
+
+def _beam(class_id: int, t: Tolerances) -> Part:
+    """The ID beam, on the back side from one long wall to the other, with
+    the class ID in ID_BITS bits on its top: a baseline along its left-end
+    edge, cross ridges that split the rest into a cell per bit, bit 1 at the
+    top-edge end, and a / stroke as read (left end toward you) in each 1's
+    cell. The marks stay a slide gap clear of the core's inner walls."""
+    wall, x0 = t.frame_wall, BEAM_X - BEAM_W / 2
+    part = Pos(x0, wall, 0) * Box(BEAM_W, WIDTH - 2 * wall, BEAM_H, align=_MIN)
+    inner = wall + t.slide_clearance + CORE_WALL
+    y_lo, y_hi = inner + t.slide_clearance, WIDTH - inner - t.slide_clearance
+    part += Pos(x0, y_lo, BEAM_H) * Box(MARK_W, y_hi - y_lo, MARK_H, align=_MIN)
+    cell_x0, cell_x = x0 + MARK_W, BEAM_W - MARK_W
+    cell_y = (y_hi - y_lo - (ID_BITS + 1) * MARK_W) / ID_BITS
+    stroke = Box(math.hypot(cell_x, cell_y), MARK_W, MARK_H)
+    # From the near end, at high y, to the far end, at low y.
+    turn = Rot(0, 0, 180 - math.degrees(math.atan2(cell_y, cell_x)))
+    for i, bit in enumerate(format(class_id, f"0{ID_BITS}b")):
+        top = y_hi - i * (cell_y + MARK_W)  # this cell's ridge, then the cell below it
+        part += Pos(cell_x0, top - MARK_W, BEAM_H) * Box(cell_x, MARK_W, MARK_H, align=_MIN)
+        if bit == "1":
+            cell = Pos(cell_x0, top - MARK_W - cell_y, BEAM_H) * Box(cell_x, cell_y, MARK_H, align=_MIN)
+            middle = Pos(cell_x0 + cell_x / 2, top - MARK_W - cell_y / 2, BEAM_H + MARK_H / 2)
+            part += cell & (middle * turn * stroke)
+    return part + Pos(cell_x0, y_lo, BEAM_H) * Box(cell_x, MARK_W, MARK_H, align=_MIN)
 
 
 def _ring(length_mm: float, wall: float, height: float, width: float = WIDTH) -> Part:
