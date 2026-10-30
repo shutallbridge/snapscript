@@ -11,11 +11,11 @@ One physical piece that lies flat on the table and stands for one block of the p
 One printed face of a card. Most cards have one side; a flip pair has two.
 
 **Base**:
-The 3D-printed body of a card that holds its magnets. Every card of one class and length has the same base, whether it is printed or handwritten, and whichever side faces up.
+The 3D-printed body of a card that holds its magnets. A flip pair has a double-sided base and every other card a single-sided one; apart from that, every card of one class and length has the same base, whether it is printed or handwritten.
 _Avoid_: block (a block is part of a program), body
 
 **Sheet**:
-The printed face taped onto a base, carrying a side's label and marker. The base comes with the language; the sheet comes with the card, such as a library card.
+The printed paper wrapped onto a side of a base, carrying that side's label and marker. It wraps rather than being taped, so it can't come off. The base comes with the language; the sheet comes with the card, such as a library card.
 _Avoid_: sticker, label (a label is what the grammar demands of a contact)
 
 **Flip pair**:
