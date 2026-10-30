@@ -12,6 +12,8 @@ uv run magnets search --flip left_right --goal repel    # also push illegal neig
 uv run magnets print example         # every bundled program's cards, to cut and fold
 uv run magnets print example --program nested_blocks --seed 3   # at the lengths of programs.txt's draw 3
 uv run magnets print example --program my_program.txt --unit 30 --paper letter
+uv run magnets bases example         # a printable frame for each class and length
+uv run magnets bases example --classes get,literal --max-length 3 --magnet-clearance 0.25
 uv run pytest
 ```
 
@@ -136,9 +138,38 @@ arrangement, a missing program file, an unknown program name, a card that
 matches no class side, or a card too long for the page at `--unit`; that
 error names the card and the largest unit that fits.
 
+`magnets bases <arrangement>` builds the printed parts of the cards'
+bases, for a builder to print with their own tolerances. For now that is
+the **frame** (see `CONTEXT.md`): the only part that depends on the
+arrangement, so each card class and length has its own. It writes
+`frames/<class>-<n>u.stl` for every class the arrangement names, from the
+class's `min_length` up to `--max-length` (6 by default), to
+`out/<arrangement>/bases/` (or `--out`); `--classes` builds only those
+classes, named or not. Each STL is in mm and ready to print, laid flat on
+z = 0. A frame has a bore for each magnet of its class's front, one per
+filled layer, so a half pocket has one bore, a uniform or split pocket two
+and an empty position solid wall. A flip pair's frame is double-sided;
+every other class's is single-sided, with its back and the pads under the
+core built in, and lies on its back. Nothing else is written: no manifest
+and no config file. The builder's tolerances, each a gap on one side in
+mm, are options: `--slide-clearance` (0.2), `--sheet-clearance` (0.2),
+`--magnet-clearance` (0.2) and `--magnet-depth-clearance` (0.3). The frame
+wall is 0.6 mm of skin + the magnet's 1.5 mm + the magnet depth clearance
+− the slide clearance, 2.2 mm by default, and a bore is the magnet's 3 mm
++ twice the magnet clearance, 3.4 mm. Tolerances never move a bore's
+centre, so frames built with different tolerances from the same
+arrangement snap together. The fixed sizes (U, the card's width and
+thickness, the magnet, positions and layers) and the design values from
+the reference base are constants in `blueprint.py`. It needs build123d, in
+the `bases` extra (`uv sync --extra bases`; the dev dependencies include
+it), which `check`, `search` and `print` don't. The API is `magnets.bases`,
+which returns the parts (`kind`, `card_class`, `length` and the build123d
+`solid`) without writing anything, with a `magnets.Tolerances`.
+
 `magnets search` exits 0 only when it writes a valid arrangement (optimal
 or feasible). It exits 1 when the search is infeasible, even though it
 still writes the arrangement with the fewest must failures, and when it is
 unknown (nothing found in the time limit: it writes no files). `magnets
 check` exits 0 whenever it writes its reports, valid or not. Both exit 2 for
-an invalid arrangement or argument.
+an invalid arrangement or argument, as `print` and `bases` do; for
+`bases`, that includes a tolerance that is negative or leaves no wall.

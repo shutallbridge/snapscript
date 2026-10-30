@@ -11,7 +11,18 @@ from . import programs as _programs
 from . import sheet as _sheet
 from . import solver as _solver
 from .contacts import ContactGroup, Label, SideEdges
-from .data import Arrangement, CardClass, Rules, bundled_programs, load_arrangement, load_classes, load_pinned, load_rules
+from .blueprint import BasePart, Tolerances
+from .data import (
+    Arrangement,
+    CardClass,
+    Rules,
+    bundled_programs,
+    load_arrangement,
+    load_classes,
+    load_pinned,
+    load_rules,
+    mentioned_classes,
+)
 from .physics import FLIPS
 from .programs import Failure, Forbid, Info, Layout, Strip
 from .sheet import CardSheet, Paper
@@ -184,6 +195,45 @@ def card_sheet(
         sections.append(_sheet.Section(name, text, strips, tuple(lengths), note))
     label = "min lengths" if draw is None else f"draw {draw}, seed {seed}"
     return _sheet.card_sheet(loaded, classes, all_sides, sections, label, unit, paper)
+
+
+def bases(
+    arrangement: str | Path | Mapping | Arrangement,
+    *,
+    tolerances: Tolerances = Tolerances(),
+    classes: Sequence[str] | None = None,
+    max_length: int = 6,
+) -> list[BasePart]:
+    """The printed parts of the cards' bases, built from an arrangement:
+    for now, one frame per card class and length, from the class's minimum
+    length up to `max_length`, in class order.
+
+    A frame has a bore for each magnet of its class's front and solid wall
+    everywhere else; a flip pair's is double-sided, and every other class's
+    single-sided, with its back built in. `classes` names the classes to
+    build; by default, those the arrangement names. `arrangement` is as for
+    `check`. Needs build123d, the `bases` extra. Raises `ArrangementError`
+    for an invalid arrangement and `ValueError` for an unknown class or a
+    `max_length` shorter than a class's minimum.
+    """
+    from . import parts as _parts
+
+    every = load_classes(grammar=load_rules())
+    loaded = load_arrangement(arrangement, max_length=max_length, classes=every)
+    if classes is None:
+        classes = mentioned_classes(arrangement, classes=every)
+    unknown = [name for name in classes if name not in every]
+    if unknown:
+        raise ValueError(f"unknown card class(es): {', '.join(unknown)}")
+    chosen = [cls for name, cls in every.items() if name in classes]
+    too_short = [cls.name for cls in chosen if cls.min_length > max_length]
+    if too_short:
+        raise ValueError(f"max_length {max_length} is shorter than the minimum length of {', '.join(too_short)}")
+    return [
+        BasePart("frame", cls.name, n, _parts.frame(loaded.fronts[cls.name], n, cls.flip_pair, tolerances))
+        for cls in chosen
+        for n in range(cls.min_length, max_length + 1)
+    ]
 
 
 @dataclass(frozen=True)
