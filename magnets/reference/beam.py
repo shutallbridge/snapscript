@@ -2,7 +2,7 @@
 
 A beam lies on the frame's back side at x = 20, from one long wall to the other.
 On its front-facing top stand a baseline along its left-end edge, cross ridges
-that split it into 5 cells, and an X in each cell that holds a 1. The number is
+that split it into 5 cells, and a / stroke in each cell that holds a 1. The number is
 the class's place in classes.yaml, counting from 1; bit 1 is the most significant
 and sits at the top-edge end. The core gets a notch over the beam at both ends.
 
@@ -64,8 +64,8 @@ def beam(number: int, f: Fixed, t: Tolerances, x_mid: float, flip_x=False) -> Pa
         y1 = y_hi - MARK - (i + 1) * (cell_y + MARK) + MARK
         cell = Pos(cx0, y1, z) * Box(cell_x, cell_y, MARK_H, align=MIN)
         mid = Pos(cx0 + cell_x / 2, y1 + cell_y / 2, z + MARK_H / 2)
-        for a in (ang, -ang):
-            part += cell & (mid * Rot(0, 0, 90 - a) * Box(diag, MARK, MARK_H))
+        # one stroke, a / as read: from the bottom-left corner to the top-right
+        part += cell & (mid * Rot(0, 0, 90 + ang) * Box(diag, MARK, MARK_H))
     return part
 
 
