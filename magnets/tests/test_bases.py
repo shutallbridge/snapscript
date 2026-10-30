@@ -371,8 +371,9 @@ def test_slide_and_sheet_clearances_set_the_fits_but_never_move_a_bore(tolerance
 # a baseline 0.8 mm wide along the beam's left-end edge, and 6 cross ridges
 # that leave 5 cells 2.4 mm along by 3.2 mm across, bit 1's nearest the top edge.
 BEAM_X, IN_BEAM, IN_MARKS = 20, 1, 2.5
-CELL_X = 20.4  # a cell's middle, along the card: past the beam's 18.4 start and the 0.8 mm baseline
-CELL_Y = (23, 19, 15, 11, 7)  # each cell's middle, bit 1 first
+ON_BASELINE = 18.8  # along the card: the baseline's middle, from the beam's 18.4 start
+CELL_MID_X = 20.4  # a cell's middle, along the card: past the baseline
+CELL_MID_Y = (23, 19, 15, 11, 7)  # each cell's middle, bit 1 first
 
 
 @pytest.mark.parametrize("length", [2, 4])
@@ -384,23 +385,23 @@ def test_every_frame_has_an_id_beam_and_cores_and_faces_none(length):
 
 def read_beam(frame):
     """The frame's beam as read: a 1 for each cell with a stroke through its middle."""
-    return "".join("1" if solid_at(frame, CELL_X, y, IN_MARKS) else "0" for y in CELL_Y)
+    return "".join("1" if solid_at(frame, CELL_MID_X, y, IN_MARKS) else "0" for y in CELL_MID_Y)
 
 
 @pytest.mark.parametrize("length", [2, 4])
 @pytest.mark.parametrize("card_class, bits", [("get", "00001"), ("color", "01010")])
 def test_a_frames_beam_reads_back_its_class_id(card_class, bits, length):
-    (frame,) = [p for p in bases(FULL_SEARCH, classes=[card_class], max_length=length) if p.length == length][:1]
+    (frame,) = [p for p in bases(FULL_SEARCH, classes=[card_class], max_length=length) if p.kind == "frame" and p.length == length]
     assert read_beam(frame) == bits
     # Every cell is walled in, so an empty one still reads as a 0: the baseline
     # along its left-end edge, and a cross ridge either side.
-    for y in CELL_Y:
-        assert solid_at(frame, 18.8, y, IN_MARKS)
-        assert solid_at(frame, CELL_X, y + 2, IN_MARKS)
-        assert solid_at(frame, CELL_X, y - 2, IN_MARKS)
+    for y in CELL_MID_Y:
+        assert solid_at(frame, ON_BASELINE, y, IN_MARKS)
+        assert solid_at(frame, CELL_MID_X, y + 2, IN_MARKS)
+        assert solid_at(frame, CELL_MID_X, y - 2, IN_MARKS)
     # Nothing past the marks, a slide gap clear of the core's inner walls at 4.4 and 25.6.
-    assert not solid_at(frame, CELL_X, 4.5, IN_MARKS)
-    assert not solid_at(frame, CELL_X, 25.5, IN_MARKS)
+    assert not solid_at(frame, CELL_MID_X, 4.5, IN_MARKS)
+    assert not solid_at(frame, CELL_MID_X, 25.5, IN_MARKS)
 
 
 def test_a_beam_stroke_is_a_slash_as_read():
@@ -443,7 +444,7 @@ def beam_fits(tolerances):
         "beam": (
             first(lambda x: solid_at(frame, x, U / 2, IN_BEAM), 15, 25),
             first(lambda x: not solid_at(frame, x, U / 2, IN_BEAM), 19, 25),
-            first(lambda z: not solid_at(frame, CELL_X, CELL_Y[2], z), 0, 5),  # in an empty cell
+            first(lambda z: not solid_at(frame, CELL_MID_X, CELL_MID_Y[2], z), 0, 5),  # in an empty cell
         ),
         "notch": (
             first(lambda x: not solid_at(core, x, in_wall, IN_BEAM), 15, 25),
@@ -451,7 +452,7 @@ def beam_fits(tolerances):
             first(lambda z: solid_at(core, BEAM_X, in_wall, z), 0, 5),
         ),
         "marks": (
-            first(lambda y: solid_at(frame, 18.8, y, IN_MARKS), 3, 10),
+            first(lambda y: solid_at(frame, ON_BASELINE, y, IN_MARKS), 3, 10),
             first(lambda y: not solid_at(core, 30, y, 5), 2.5, 10),
         ),
     }

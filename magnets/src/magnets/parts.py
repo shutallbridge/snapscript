@@ -78,7 +78,7 @@ def frame(
         # The wall down to the back, and pads under the core where the sheet would be.
         part += Pos(0, 0, -s) * _ring(length_mm, wall, s)
         part += Pos(0, 0, -s) * _core_footprint(length_mm, t, s)
-        part += Pos(BEAM_X - BEAM_W / 2, wall, -s) * Box(BEAM_W, WIDTH - 2 * wall, s, align=_MIN)
+        part += Pos(0, 0, -s) * _beam_footprint(t, s)
     part += _legs(length_mm, t, front=False)
     return _on_bed("frame", length, part, Pos(0, 0, s + PLATE), card_class, class_id)
 
@@ -136,29 +136,35 @@ def _on_bed(
 
 
 def _beam(class_id: int, t: Tolerances) -> Part:
-    """The ID beam, on the back side from one long wall to the other, with
+    """The ID beam, on the frame's back from one long wall to the other, with
     the class ID in ID_BITS bits on its top: a baseline along its left-end
     edge, cross ridges that split the rest into a cell per bit, bit 1 at the
     top-edge end, and a / stroke as read (left end toward you) in each 1's
     cell. The marks stay a slide gap clear of the core's inner walls."""
-    wall, x0 = t.frame_wall, BEAM_X - BEAM_W / 2
-    part = Pos(x0, wall, 0) * Box(BEAM_W, WIDTH - 2 * wall, BEAM_H, align=_MIN)
-    inner = wall + t.slide_clearance + CORE_WALL
-    y_lo, y_hi = inner + t.slide_clearance, WIDTH - inner - t.slide_clearance
+    part = _beam_footprint(t, BEAM_H)
+    core_inside = t.frame_wall + t.slide_clearance + CORE_WALL  # the core's inner wall, from either long edge
+    y_lo, y_hi = core_inside + t.slide_clearance, WIDTH - core_inside - t.slide_clearance
+    x0 = BEAM_X - BEAM_W / 2
     part += Pos(x0, y_lo, BEAM_H) * Box(MARK_W, y_hi - y_lo, MARK_H, align=_MIN)
-    cell_x0, cell_x = x0 + MARK_W, BEAM_W - MARK_W
-    cell_y = (y_hi - y_lo - (ID_BITS + 1) * MARK_W) / ID_BITS
-    stroke = Box(math.hypot(cell_x, cell_y), MARK_W, MARK_H)
+    cell_x0, cell_len, cell_width = x0 + MARK_W, BEAM_W - MARK_W, (y_hi - y_lo - (ID_BITS + 1) * MARK_W) / ID_BITS
+    ridge = Box(cell_len, MARK_W, MARK_H, align=_MIN)
+    stroke = Box(math.hypot(cell_len, cell_width), MARK_W, MARK_H)
     # From the near end, at high y, to the far end, at low y.
-    turn = Rot(0, 0, 180 - math.degrees(math.atan2(cell_y, cell_x)))
+    turn = Rot(0, 0, 180 - math.degrees(math.atan2(cell_width, cell_len)))
     for i, bit in enumerate(format(class_id, f"0{ID_BITS}b")):
-        top = y_hi - i * (cell_y + MARK_W)  # this cell's ridge, then the cell below it
-        part += Pos(cell_x0, top - MARK_W, BEAM_H) * Box(cell_x, MARK_W, MARK_H, align=_MIN)
+        top = y_hi - i * (cell_width + MARK_W)  # this cell's ridge, then the cell below it
+        part += Pos(cell_x0, top - MARK_W, BEAM_H) * ridge
         if bit == "1":
-            cell = Pos(cell_x0, top - MARK_W - cell_y, BEAM_H) * Box(cell_x, cell_y, MARK_H, align=_MIN)
-            middle = Pos(cell_x0 + cell_x / 2, top - MARK_W - cell_y / 2, BEAM_H + MARK_H / 2)
+            cell = Pos(cell_x0, top - MARK_W - cell_width, BEAM_H) * Box(cell_len, cell_width, MARK_H, align=_MIN)
+            middle = Pos(cell_x0 + cell_len / 2, top - MARK_W - cell_width / 2, BEAM_H + MARK_H / 2)
             part += cell & (middle * turn * stroke)
-    return part + Pos(cell_x0, y_lo, BEAM_H) * Box(cell_x, MARK_W, MARK_H, align=_MIN)
+    return part + Pos(cell_x0, y_lo, BEAM_H) * ridge  # the last ridge, under bit ID_BITS's cell
+
+
+def _beam_footprint(t: Tolerances, height: float) -> Part:
+    """Under the ID beam, `height` tall from z = 0, between the frame's long walls."""
+    wall = t.frame_wall
+    return Pos(BEAM_X - BEAM_W / 2, wall, 0) * Box(BEAM_W, WIDTH - 2 * wall, height, align=_MIN)
 
 
 def _ring(length_mm: float, wall: float, height: float, width: float = WIDTH) -> Part:

@@ -175,7 +175,7 @@ a cross-bar near each end, with windows the face legs hook through at a
 centre line, and the back face's one), and from 4U up a centre rib with no
 windows, which nothing hooks and which holds the faces up when pressed.
 
-Every frame has an **ID beam** (see `CONTEXT.md`) across its back side,
+Every frame has an **ID beam** (see `CONTEXT.md`) across its back,
 from one long wall to the other, 20 mm from the left end, between the 2nd
 and 3rd pockets: 3.2 mm along the card and 2 mm thick. Frames of the same
 length look alike, since only their bores differ, so the beam shows the
@@ -183,7 +183,7 @@ frame's class ID in 5 bits. On its top, towards the front, stand marks
 0.8 mm wide and 1 mm tall: a baseline along its edge nearest the left end,
 and 6 cross ridges that split it into 5 cells, each about 3.2 × 2.4 mm. A
 1 is one `/` stroke from corner to corner of its cell, and a 0 an empty
-cell, so ID 0 reads `00000`. To read it, hold the frame back side down
+cell, so ID 0 reads `00000`. To read it, hold the frame with its back down
 with its left end toward you, so the baseline is nearest you, and read
 left to right through the core's opening: bit 1 is the most significant,
 at the top-edge end. `get` (ID 1) reads `00001` and `color` (ID 10)
