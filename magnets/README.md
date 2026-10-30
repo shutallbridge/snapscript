@@ -12,8 +12,8 @@ uv run magnets search --flip left_right --goal repel    # also push illegal neig
 uv run magnets print example         # every bundled program's cards, to cut and fold
 uv run magnets print example --program nested_blocks --seed 3   # at the lengths of programs.txt's draw 3
 uv run magnets print example --program my_program.txt --unit 30 --paper letter
-uv run magnets bases example         # a printable frame for each class and length
-uv run magnets bases example --classes get,literal --max-length 3 --magnet-clearance 0.25
+uv run magnets bases example         # a printable base for each class and length: frames, cores and faces
+uv run magnets bases example --classes get,literal --max-length 3 --magnet-clearance 0.25 --step
 uv run pytest
 ```
 
@@ -139,32 +139,57 @@ matches no class side, or a card too long for the page at `--unit`; that
 error names the card and the largest unit that fits.
 
 `magnets bases <arrangement>` builds the printed parts of the cards'
-bases, for a builder to print with their own tolerances. For now that is
-the **frame** (see `CONTEXT.md`): the only part that depends on the
-arrangement, so each card class and length has its own. It writes
+bases, for a builder to print with their own tolerances (see `CONTEXT.md`
+for **frame**, **core** and **face**). Only the frame depends on the
+arrangement, so each card class and length has its own: it writes
 `frames/<class>-<n>u.stl` for every class the arrangement names, from the
-class's `min_length` up to `--max-length` (6 by default), to
-`out/<arrangement>/bases/` (or `--out`); `--classes` builds only those
-classes, named or not. Each STL is in mm and ready to print, laid flat on
-z = 0. A frame has a bore for each magnet of its class's front, one per
-filled layer, so a half pocket has one bore, a uniform or split pocket two
-and an empty position solid wall. A flip pair's frame is double-sided;
-every other class's is single-sided, with its back and the pads under the
-core built in, and lies on its back. Nothing else is written: no manifest
-and no config file. The builder's tolerances, each a gap on one side in
-mm, are options: `--slide-clearance` (0.2), `--sheet-clearance` (0.2),
-`--magnet-clearance` (0.2) and `--magnet-depth-clearance` (0.3). The frame
-wall is 0.6 mm of skin + the magnet's 1.5 mm + the magnet depth clearance
-− the slide clearance, 2.2 mm by default, and a bore is the magnet's 3 mm
-+ twice the magnet clearance, 3.4 mm. Tolerances never move a bore's
-centre, so frames built with different tolerances from the same
-arrangement snap together. The fixed sizes (U, the card's width and
-thickness, the magnet, positions and layers) and the design values from
-the reference base are constants in `blueprint.py`. It needs build123d, in
-the `bases` extra (`uv sync --extra bases`; the dev dependencies include
-it), which `check`, `search` and `print` don't. The API is `magnets.bases`,
-which returns the parts (`kind`, `card_class`, `length` and the build123d
-`solid`) without writing anything, with a `magnets.Tolerances`.
+class's `min_length` up to `--max-length` (6 by default). The core and
+faces serve every class of one length, so it writes `shared/core-<n>u.stl`
+and `shared/front-face-<n>u.stl` once for every length in the run, and
+`shared/back-face-<n>u.stl` for every length of a flip pair in it (none if
+the run has no flip pair). All of it goes to `out/<arrangement>/bases/`
+(or `--out`); `--classes` builds only those classes, named or not. Each
+STL is in mm and ready to print, laid flat on z = 0: a frame on its
+front or its built-in back, a core flat, and a face on its plate with its
+legs up. With `--step` it also writes `assembled/<class>-<n>u.step`, each
+card's base put together to inspect in CAD: its frame, core and front
+face, and a back face for a flip pair, each labelled by its kind. Nothing
+else is written: no manifest and no config file.
+
+A frame has a bore for each magnet of its class's front, one per filled
+layer, so a half pocket has one bore, a uniform or split pocket two and an
+empty position solid wall. A flip pair's frame is double-sided; every
+other class's is single-sided, with its back and the pads under the core
+built in. The core slides into the frame and holds the magnets in. It has
+a cross-bar near each end, with windows the face legs hook through at a
+45° catch (the front face's two per end, 6 mm either side of the card's
+centre line, and the back face's one), and from 4U up a centre rib with no
+windows, which nothing hooks and which holds the faces up when pressed.
+
+The builder's tolerances, each a gap on one side in mm, are options:
+
+- `--slide-clearance` (0.2): between the core and the frame, and between a
+  leg and its cross-bar; a window is the 4 mm leg + twice this.
+- `--sheet-clearance` (0.2): room for the paper sheet. A face plate is
+  inset this far from the frame's outline (89.6 × 29.6 mm at 3U by
+  default) and sits this far above it, and a single-sided frame's back
+  sits this far below it, with pads under the core.
+- `--magnet-clearance` (0.2): around a magnet in its bore. A bore is the
+  magnet's 3 mm + twice this, 3.4 mm.
+- `--magnet-depth-clearance` (0.3): how far a magnet can move front to
+  back. The frame wall is 0.6 mm of skin + the magnet's 1.5 mm + this −
+  the slide clearance, 2.2 mm by default, so the core stays put.
+
+Tolerances never move a bore's centre, so bases built with different
+tolerances from the same arrangement snap together. The fixed sizes (U,
+the card's width and thickness, the magnet, positions and layers) and the
+design values from the reference base are constants in `blueprint.py`. It
+needs build123d, in the `bases` extra (`uv sync --extra bases`; the dev
+dependencies include it), which `check`, `search` and `print` don't. The
+API is `magnets.bases`, which returns the parts (`kind`, `card_class`,
+None for a core or face, `length`, the build123d `solid` ready to print,
+and its `placement` in the card) without writing anything, with a
+`magnets.Tolerances`; `magnets.assemblies` puts them together per card.
 
 `magnets search` exits 0 only when it writes a valid arrangement (optimal
 or feasible). It exits 1 when the search is infeasible, even though it

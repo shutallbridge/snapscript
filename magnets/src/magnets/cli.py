@@ -6,7 +6,7 @@ import sys
 from dataclasses import fields, replace
 from pathlib import Path
 
-from .api import CheckResult, SolveResult, bases, card_sheet, check, check_program, solve
+from .api import CheckResult, SolveResult, assemblies, bases, card_sheet, check, check_program, solve
 from .blueprint import Tolerances
 from .data import ArrangementError, bundled_programs
 from .physics import FLIPS
@@ -72,10 +72,13 @@ def main(argv: list[str] | None = None) -> int:
     print_cmd.add_argument("--paper", choices=PAPERS, default="a4", help="paper size (default: a4)")
     print_cmd.add_argument("--out", type=Path, help="HTML file to write (default: out/<arrangement>/cards.html)")
 
-    bases_cmd = commands.add_parser("bases", help="build a printable frame for every card class and length")
+    bases_cmd = commands.add_parser("bases", help="build the printable parts of every class's base at every length")
     bases_cmd.add_argument("arrangement", help="an arrangement YAML file, or a bundled arrangement's name")
     bases_cmd.add_argument(
-        "--out", type=Path, help="directory to write frames/ to (default: out/<arrangement>/bases)"
+        "--out", type=Path, help="directory to write frames/ and shared/ to (default: out/<arrangement>/bases)"
+    )
+    bases_cmd.add_argument(
+        "--step", action="store_true", help="also write each card's base assembled, as STEP, to assembled/"
     )
     defaults = Tolerances()
     for name, what in [
@@ -126,14 +129,24 @@ def _bases(args: argparse.Namespace, classes: list[str] | None) -> int:
             raise
         print("magnets: bases needs build123d: install magnets with its `bases` extra", file=sys.stderr)
         return 1
-    from build123d import export_stl
+    from build123d import export_step, export_stl
 
     out = args.out or Path("out") / Path(args.arrangement).stem / "bases"
-    frames = out / "frames"
-    frames.mkdir(parents=True, exist_ok=True)
-    for part in parts:
-        export_stl(part.solid, str(frames / f"{part.card_class}-{part.length}u.stl"))
-    print(f"Wrote {len(parts)} frames to {frames}")
+    frames = [p for p in parts if p.kind == "frame"]
+    shared = [p for p in parts if p.kind != "frame"]
+    for directory in ("frames", "shared"):
+        (out / directory).mkdir(parents=True, exist_ok=True)
+    for part in frames:
+        export_stl(part.solid, str(out / "frames" / f"{part.card_class}-{part.length}u.stl"))
+    for part in shared:
+        export_stl(part.solid, str(out / "shared" / f"{part.kind}-{part.length}u.stl"))
+    print(f"Wrote {len(frames)} frames to {out / 'frames'} and {len(shared)} shared parts to {out / 'shared'}")
+    if args.step:
+        cards = assemblies(parts)
+        (out / "assembled").mkdir(exist_ok=True)
+        for (card_class, length), card in cards.items():
+            export_step(card, out / "assembled" / f"{card_class}-{length}u.step")
+        print(f"Wrote {len(cards)} assembled cards to {out / 'assembled'}")
     return 0
 
 

@@ -5,6 +5,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from fractions import Fraction
 from pathlib import Path
+from typing import Any
 
 from . import contacts as _contacts
 from . import programs as _programs
@@ -205,16 +206,18 @@ def bases(
     max_length: int = 6,
 ) -> list[BasePart]:
     """The printed parts of the cards' bases, built from an arrangement:
-    for now, one frame per card class and length, from the class's minimum
-    length up to `max_length`, in class order.
+    one frame per card class and length, from the class's minimum length up
+    to `max_length`, in class order; then, for each length of those, a core,
+    a front face and, if a flip pair has that length, a back face.
 
     A frame has a bore for each magnet of its class's front and solid wall
     everywhere else; a flip pair's is double-sided, and every other class's
-    single-sided, with its back built in. `classes` names the classes to
-    build; by default, those the arrangement names. `arrangement` is as for
-    `check`. Needs build123d, the `bases` extra. Raises `ArrangementError`
-    for an invalid arrangement and `ValueError` for an unknown class or a
-    `max_length` shorter than a class's minimum.
+    single-sided, with its back built in. The core and faces don't depend on
+    the arrangement. `classes` names the classes to build; by default, those
+    the arrangement names. `arrangement` is as for `check`. Needs build123d,
+    the `bases` extra. Raises `ArrangementError` for an invalid arrangement
+    and `ValueError` for an unknown class or a `max_length` shorter than a
+    class's minimum.
     """
     from . import parts as _parts
 
@@ -229,11 +232,37 @@ def bases(
     too_short = [cls.name for cls in chosen if cls.min_length > max_length]
     if too_short:
         raise ValueError(f"max_length {max_length} is shorter than the minimum length of {', '.join(too_short)}")
-    return [
-        BasePart("frame", cls.name, n, _parts.frame(loaded.fronts[cls.name], n, cls.flip_pair, tolerances))
+    frames = [
+        _parts.frame(cls.name, loaded.fronts[cls.name], n, cls.flip_pair, tolerances)
         for cls in chosen
         for n in range(cls.min_length, max_length + 1)
     ]
+    shared = []
+    for n in range(min(cls.min_length for cls in chosen), max_length + 1):
+        shared += [_parts.core(n, tolerances), _parts.face(n, tolerances, front=True)]
+        if any(cls.flip_pair and cls.min_length <= n for cls in chosen):
+            shared.append(_parts.face(n, tolerances, front=False))
+    return frames + shared
+
+
+def assemblies(parts: Sequence[BasePart]) -> dict[tuple[str, int], Any]:
+    """Each card's base assembled from `bases`'s parts, by (class, length):
+    a build123d Compound of the frame, the core and the front face of its
+    length and, for a flip pair, the back face, each where it sits in the
+    card and labelled by its kind. Needs build123d, the `bases` extra.
+    """
+    from . import parts as _parts
+
+    every = load_classes(grammar=load_rules())
+    shared = {(p.kind, p.length): p for p in parts if p.kind != "frame"}
+    found = {}
+    for frame in parts:
+        if frame.card_class is None:
+            continue
+        kinds = ("core", "front-face", "back-face") if every[frame.card_class].flip_pair else ("core", "front-face")
+        card = [frame, *(shared[kind, frame.length] for kind in kinds)]
+        found[frame.card_class, frame.length] = _parts.assembly(card, f"{frame.card_class}-{frame.length}u")
+    return found
 
 
 @dataclass(frozen=True)
