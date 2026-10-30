@@ -48,7 +48,13 @@ Card classes (`classes.yaml`), grammar rules (`rules.yaml`) and bundled
 arrangements live in `src/magnets/data/`. A class has a `min_length`, its
 shortest card (2U for every class for now; a class can be set to 1U), and a
 `pocket_reach`: a top or bottom pocket sits less than the reach from its end
-(1U, or 2U on block heads and `[dedent]`). Contacts, program checks and the
+(1U, or 2U on block heads and `[dedent]`). Each class also has an `id`, its
+**class ID** (see `CONTEXT.md`): a whole number from 0 to 31, so it fits 5
+bits, unique to the class. It is shown on the class's printed frames, so it
+stays with the class wherever the class sits in the file; changing it makes
+frames already printed read as another class. Each language version sets
+the IDs. Loading the classes stops with an error for a class with no ID,
+one outside 0–31, or two classes sharing one. Contacts, program checks and the
 print sheet use the lengths; the search tries every pocket position within
 the reach. The public API is `magnets.check`,
 `magnets.check_program` (a program text in spec notation) and
@@ -142,16 +148,19 @@ error names the card and the largest unit that fits.
 bases, for a builder to print with their own tolerances (see `CONTEXT.md`
 for **frame**, **core** and **face**). Only the frame depends on the
 arrangement, so each card class and length has its own: it writes
-`frames/<class>-<n>u.stl` for every class the arrangement names, from the
+`frames/<id>-<class>-<n>u.stl` for every class the arrangement names, from the
 class's `min_length` up to `--max-length` (6 by default). The core and
 faces serve every class of one length, so it writes `shared/core-<n>u.stl`
 and `shared/front-face-<n>u.stl` once for every length in the run, and
 `shared/back-face-<n>u.stl` for every length of a flip pair in it (none if
 the run has no flip pair). All of it goes to `out/<arrangement>/bases/`
-(or `--out`); `--classes` builds only those classes, named or not. Each
+(or `--out`); `--classes` builds only those classes, named or not. A
+frame's file starts with its class ID, two digits, as in
+`frames/01-get-2u.stl`, so a printed frame can be matched to its file; a
+class built alone with `--classes` keeps its ID. Each
 STL is in mm and ready to print, laid flat on z = 0: a frame on its
 front or its built-in back, a core flat, and a face on its plate with its
-legs up. With `--step` it also writes `assembled/<class>-<n>u.step`, each
+legs up. With `--step` it also writes `assembled/<id>-<class>-<n>u.step`, each
 card's base put together to inspect in CAD: its frame, core and front
 face, and a back face for a flip pair, each labelled by its kind. Nothing
 else is written: no manifest and no config file.

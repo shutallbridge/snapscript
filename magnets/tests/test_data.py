@@ -12,12 +12,14 @@ IF = {"left": "head", "right": "open", "top": "line", "bottom": "block"}
 
 TOY_CLASSES = {
     "set_get": {
+        "id": 0,
         "min_length": 2,
         "pocket_reach": 1,
         "flip_pair": True,
         "sides": {"set": {"[set{x}to]": SET}, "get": {"[get{x}]": GET}},
     },
     "block_head": {
+        "id": 1,
         "min_length": 2,
         "pocket_reach": 2,
         "sides": {"head": {"[if]": IF, "[repeat]": IF}},
@@ -122,6 +124,11 @@ def test_bundled_members_belong_to_one_class_each():
             classes_with(block_head__sides={"head": {"[set{x}to]": IF}}),
             "[set{x}to] is a member of both set_get.set and block_head.head",
         ),
+        (classes_with(block_head__id=None), "block_head: `id`, the class ID, must be a whole number from 0 to 31"),
+        (classes_with(block_head__id=32), "block_head: `id`, the class ID, must be a whole number from 0 to 31"),
+        (classes_with(block_head__id=-1), "block_head: `id`, the class ID, must be a whole number from 0 to 31"),
+        (classes_with(block_head__id="1"), "block_head: `id`, the class ID, must be a whole number from 0 to 31"),
+        (classes_with(block_head__id=0), "set_get and block_head share class ID 0"),
         (classes_with(block_head__min_length=0), "block_head: `min_length` must be"),
         (classes_with(block_head__pocket_reach=None), "block_head: `pocket_reach` must be"),
         (classes_with(block_head__pocket_reach=0), "block_head: `pocket_reach` must be"),

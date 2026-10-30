@@ -150,7 +150,7 @@ def test_a_pin_may_not_mention_a_class_outside_the_search():
 # same column takes a `from: left` and a `from: right` pocket that collide
 # on a 1U card. (Real block heads and [dedent] are 2U for this reason.)
 HEAD = {"left": "head", "right": "end", "top": "line", "bottom": "line"}
-CROWDED_CLASSES = {"line_head": {"min_length": 1, "pocket_reach": 1, "sides": {"head": {"[head]": HEAD}}}}
+CROWDED_CLASSES = {"line_head": {"id": 0, "min_length": 1, "pocket_reach": 1, "sides": {"head": {"[head]": HEAD}}}}
 CROWDED_RULES = {
     "roles": {"left": ["head"], "right": ["end"], "top": ["line"], "bottom": ["line"]},
     "priorities": {"should": 10, "low": 0},
@@ -250,7 +250,7 @@ def test_the_solver_grades_a_pinned_arrangement_as_the_checker_does(pinned, goal
 # A toy grammar: one single-sided 1U class whose left edge is a line head,
 # so [lone][lone] is forbid / should, and nothing else is graded but low.
 LONE = {"left": "head", "right": "end", "top": "free", "bottom": "free"}
-LONE_CLASSES = {"lone": {"min_length": 1, "pocket_reach": 1, "sides": {"lone": {"[lone]": LONE}}}}
+LONE_CLASSES = {"lone": {"id": 0, "min_length": 1, "pocket_reach": 1, "sides": {"lone": {"[lone]": LONE}}}}
 LONE_RULES = {
     "roles": {"left": ["head"], "right": ["end"], "top": ["free"], "bottom": ["free"]},
     "priorities": {"should": 10, "low": 0},
@@ -297,7 +297,7 @@ def test_an_unknown_goal_is_rejected():
 # A toy grammar: one single-sided 2U class that must snap to itself, side by
 # side, and nothing else is graded but low.
 LINK = {"left": "value", "right": "value", "top": "free", "bottom": "free"}
-LINK_CLASSES = {"link": {"min_length": 2, "pocket_reach": 1, "sides": {"link": {"[link]": LINK}}}}
+LINK_CLASSES = {"link": {"id": 0, "min_length": 2, "pocket_reach": 1, "sides": {"link": {"[link]": LINK}}}}
 LINK_RULES = {
     **LONE_RULES,
     "roles": {"left": ["value"], "right": ["value"], "top": ["free"], "bottom": ["free"]},

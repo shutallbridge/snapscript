@@ -38,11 +38,13 @@ from .physics import Edges
 _MIN = (Align.MIN, Align.MIN, Align.MIN)
 
 
-def frame(card_class: str, edges: Edges, length: int, double_sided: bool, tolerances: Tolerances) -> BasePart:
-    """The frame of a card of `length` U whose front has these edges: a ring
-    with a bore for each magnet, and solid wall everywhere else. A
-    single-sided frame has the back face, the wall down to it and the pads
-    under the core built in."""
+def frame(
+    card_class: str, class_id: int, edges: Edges, length: int, double_sided: bool, tolerances: Tolerances
+) -> BasePart:
+    """The frame of a card of `length` U, of the class with this name and
+    ID, whose front has these edges: a ring with a bore for each magnet, and
+    solid wall everywhere else. A single-sided frame has the back face, the
+    wall down to it and the pads under the core built in."""
     t, length_mm = tolerances, length * U
     wall = t.frame_wall
     part = _ring(length_mm, wall, THICKNESS)
@@ -60,7 +62,7 @@ def frame(card_class: str, edges: Edges, length: int, double_sided: bool, tolera
         else:
             part -= Pos(length_mm - mid, along, z) * Rot(0, 90, 0) * bore
     if double_sided:
-        return _on_bed("frame", card_class, length, part, Location())
+        return _on_bed("frame", length, part, Location(), card_class, class_id)
     s = t.sheet_clearance
     part += Pos(0, 0, -s - PLATE) * Box(length_mm, WIDTH, PLATE, align=_MIN)
     if s > 0:
@@ -68,7 +70,7 @@ def frame(card_class: str, edges: Edges, length: int, double_sided: bool, tolera
         part += Pos(0, 0, -s) * _ring(length_mm, wall, s)
         part += Pos(0, 0, -s) * _core_footprint(length_mm, t, s)
     part += _legs(length_mm, t, front=False)
-    return _on_bed("frame", card_class, length, part, Pos(0, 0, s + PLATE))
+    return _on_bed("frame", length, part, Pos(0, 0, s + PLATE), card_class, class_id)
 
 
 def core(length: int, tolerances: Tolerances) -> BasePart:
@@ -83,7 +85,7 @@ def core(length: int, tolerances: Tolerances) -> BasePart:
         # A front face's legs come in from z = T, and a back face's from z = 0.
         for dy, z in [(dy, THICKNESS - LEG_REACH) for dy in FRONT_LEG_Y] + [(dy, CATCH_DEPTH) for dy in BACK_LEG_Y]:
             part -= Pos(x, WIDTH / 2 + dy - window_w / 2, z) * Box(BAR_W, window_w, window_h, align=_MIN)
-    return _on_bed("core", None, length, part, Location())
+    return _on_bed("core", length, part, Location())
 
 
 def face(length: int, tolerances: Tolerances, *, front: bool) -> BasePart:
@@ -97,8 +99,8 @@ def face(length: int, tolerances: Tolerances, *, front: bool) -> BasePart:
     part += _legs(length_mm, t, front)
     if front:
         # Turned over about the card's long axis, onto its plate.
-        return _on_bed("front-face", None, length, part, Pos(0, WIDTH, z + PLATE) * Rot(180, 0, 0))
-    return _on_bed("back-face", None, length, part, Pos(0, 0, s + PLATE))
+        return _on_bed("front-face", length, part, Pos(0, WIDTH, z + PLATE) * Rot(180, 0, 0))
+    return _on_bed("back-face", length, part, Pos(0, 0, s + PLATE))
 
 
 def assembly(parts: Sequence[BasePart], label: str) -> Compound:
@@ -111,9 +113,11 @@ def assembly(parts: Sequence[BasePart], label: str) -> Compound:
     return Compound(children=placed, label=label)
 
 
-def _on_bed(kind: str, card_class: str | None, length: int, part: Part, bed: Location) -> BasePart:
+def _on_bed(
+    kind: str, length: int, part: Part, bed: Location, card_class: str | None = None, class_id: int | None = None
+) -> BasePart:
     """The part, built where it sits in the card, moved by `bed` onto the print bed."""
-    return BasePart(kind, card_class, length, bed * part, bed.inverse())
+    return BasePart(kind, card_class, class_id, length, bed * part, bed.inverse())
 
 
 def _ring(length_mm: float, wall: float, height: float, width: float = WIDTH) -> Part:

@@ -83,6 +83,21 @@ def test_a_core_and_faces_per_length_and_a_back_face_only_for_a_flip_pair():
     assert shared == [("core", 2), ("front-face", 2), ("core", 3), ("front-face", 3)]
 
 
+def test_a_frame_carries_its_class_id_and_a_shared_part_none():
+    parts = bases("example", max_length=2)
+    assert [(p.kind, p.card_class, p.class_id) for p in parts] == [
+        ("frame", "simple_head", 0),
+        ("frame", "get", 1),
+        ("frame", "literal", 8),
+        ("core", None, None),
+        ("front-face", None, None),
+        ("back-face", None, None),
+    ]
+    # Building some classes alone keeps each one's usual ID.
+    [frame] = [p for p in bases(FULL_SEARCH, classes=["color"], max_length=2) if p.kind == "frame"]
+    assert (frame.card_class, frame.class_id) == ("color", 10)
+
+
 def test_every_frame_of_the_full_search_is_watertight(full_frames):
     assert len(full_frames) == 23 * 5
     leaky = [(p.card_class, p.length) for p, mesh in full_frames if not mesh.is_watertight]

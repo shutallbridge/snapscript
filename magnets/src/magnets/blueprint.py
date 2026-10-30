@@ -104,18 +104,28 @@ class Tolerances:
 @dataclass(frozen=True)
 class BasePart:
     """One printed part of a base, for cards of one length in U: `kind`
-    "frame", for one card class, or "core", "front-face" or "back-face",
-    which serve every class (`card_class` None). `solid` is a build123d Part
-    in mm, ready to print: laid flat on z = 0, a single-sided frame on its
-    built-in back, a core flat and a face on its plate with its legs up.
-    `placement` is the build123d Location that puts it where it sits in the
-    card: `placement * solid`, in the frame's axes."""
+    "frame", for one card class and carrying its class ID, or "core",
+    "front-face" or "back-face", which serve every class (`card_class` and
+    `class_id` None). `solid` is a build123d Part in mm, ready to print:
+    laid flat on z = 0, a single-sided frame on its built-in back, a core
+    flat and a face on its plate with its legs up. `placement` is the
+    build123d Location that puts it where it sits in the card:
+    `placement * solid`, in the frame's axes."""
 
     kind: str
     card_class: str | None
+    class_id: int | None
     length: int
     solid: Any
     placement: Any
+
+    @property
+    def name(self) -> str:
+        """What its files are named by: a frame's class ID, two digits, then
+        its class, as in "01-get-2u", and a shared part's kind, "core-2u"."""
+        if self.card_class is None:
+            return f"{self.kind}-{self.length}u"
+        return f"{self.class_id:02d}-{self.card_class}-{self.length}u"
 
 
 def bores(edges: Edges, length: int) -> list[tuple[str, float, str]]:
