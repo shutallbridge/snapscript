@@ -10,6 +10,14 @@ One physical piece that lies flat on the table and stands for one block of the p
 **Side**:
 One printed face of a card. Most cards have one side; a flip pair has two.
 
+**Base**:
+The 3D-printed body of a card that holds its magnets. A flip pair has a double-sided base and every other card a single-sided one; apart from that, every card of one class and length has the same base, whether it is printed or handwritten.
+_Avoid_: block (a block is part of a program), body
+
+**Sheet**:
+The printed paper wrapped onto a side of a base, carrying that side's label and marker. It wraps rather than being taped, so it can't come off. The base comes with the language; the sheet comes with the card, such as a library card.
+_Avoid_: sticker, label (a label is what the grammar demands of a contact)
+
 **Flip pair**:
 A card with a different card on each side, changed by flipping it over. Both sides take the same roles: `[num{…}]` / `[str{…}]`, `[bool(true)]` / `[bool(false)]`, `[color(…)]` / `[color(…)]` (two different colors, such as `[color(yellow)]` / `[color(purple)]`), `[+]` / `[-]`, `[*]` / `[/]`, `[<]` / `[>]`, `[<=]` / `[>=]`, `[==]` / `[!=]`, `[and]` / `[or]`. Every other card has one side, `[%]`, `[set{x}to]`, `[get{x}]`, `[define{f}]` and `[call{f}]` among them.
 
