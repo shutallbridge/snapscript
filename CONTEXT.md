@@ -38,11 +38,23 @@ A gap that an instructor sets to suit their printer, magnets and paper: how loos
 The printed paper wrapped onto a side of a base, carrying that side's label and marker. It wraps rather than being taped, so it can't come off. The base comes with the language; the sheet comes with the card, such as a library card.
 _Avoid_: sticker, label (a label is what the grammar demands of a contact)
 
+**Marker zone**:
+The white square at the left end of a sheet, 17 mm wide, with the side's marker in its center.
+
+**Stripe**:
+The narrow band, 1.5 mm, between the marker zone and the rest of the sheet, where the card's color starts. It is a darker shade of that color.
+
+**Whiteboard**:
+The white area on a handwritten card's sheet where the label is written by hand, at least 2U long: `set` ▢ `to`.
+
+**Paper tab**:
+A flap on each edge of a sheet that folds under the face plate and holds the sheet on the base: 8 mm at the ends, 5 mm on the top and bottom.
+
 **Flip pair**:
 A card with a different card on each side, changed by flipping it over. Both sides take the same roles: `[num{…}]` / `[str{…}]`, `[bool(true)]` / `[bool(false)]`, `[color(…)]` / `[color(…)]` (two different colors, such as `[color(yellow)]` / `[color(purple)]`), `[+]` / `[-]`, `[*]` / `[/]`, `[<]` / `[>]`, `[<=]` / `[>=]`, `[==]` / `[!=]`, `[and]` / `[or]`. Every other card has one side, `[%]`, `[set{x}to]`, `[get{x}]`, `[define{f}]` and `[call{f}]` among them.
 
 **Marker**:
-The printed pattern on a card's side that the camera reads to learn which side it is, where it lies and how it is turned. A marker names a keyword (`[repeat]`), a handwritten kind and its length (`[get{…}]` at 3U), or a library card (`[call(p5.fill)]`); it does not name the physical card. Two `[get{x}]` cards of the same length carry the same marker and are told apart by where they lie.
+The printed pattern on a card's side that the camera reads to learn which side it is, where it lies and how it is turned. A marker names a keyword (`[repeat]`), a handwritten kind and its length (`[get{…}]` at 4U), or a library card (`[call(p5.fill)]`); it does not name the physical card. Two `[get{x}]` cards of the same length carry the same marker and are told apart by where they lie.
 _Avoid_: fiducial, tag, code
 
 **Printed / handwritten**:
@@ -89,6 +101,10 @@ A printed card that a library offers with a `@card` tag in a doc comment: `[call
 
 **Builtin**:
 A name that every file has without an import: functions such as `[call(print)]` and `[call(sin)]`, and the value `[get(pi)]`. A local or a top-level declaration with the same name hides it.
+
+**Function color**:
+Which of four colors a function card is printed in: action (violet: `[call(p5.circle)]`), action 2 (fuchsia: `[call(p5.translate)]`), helper (sky: `[call(random)]`) or setting (rose: `[call(p5.fill)]`). Variable cards such as `[get(p5.width)]` are orange instead.
+_Avoid_: role (a role is what an edge needs from the edge that faces it)
 
 **Prelude**:
 Text that the system puts at the start of every table program, such as `[import(snapscript-p5)as(p5)]`. Nobody lays it on the table.
