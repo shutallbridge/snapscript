@@ -50,6 +50,16 @@
   .B-toggle { display: inline-flex; border: 1px solid #999; border-radius: 8px; overflow: hidden; }
   .B-toggle button { border: 0; background: #fff; padding: 6px 14px; cursor: pointer; }
   .B-toggle button.on { background: var(--ink); color: #fff; }
+  .B-key { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+  .B-key span { display: flex; align-items: center; gap: 6px; }
+  .B-len { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
+  .B-select { position: relative; display: inline-block; }
+  .B-select::after { content: ""; position: absolute; right: 14px; top: 50%; width: 7px; height: 7px; margin-top: -6px;
+    border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg); pointer-events: none; }
+  .B-select select { appearance: none; -webkit-appearance: none; font-size: 18px; font-weight: 600; color: var(--ink); text-transform: none; letter-spacing: 0;
+    padding: 8px 40px 8px 14px; border: 1px solid #c8c8cd; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.06); cursor: pointer; }
+  .B-select select:hover { border-color: #999; }
+  .B-select select:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(29,29,31,.12); }
   .B-wall { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
 
   /* C */
@@ -244,23 +254,23 @@ function variantB(r) {
   const cells = state.bits.map((b, i) => `<button data-bit="${i}" title="bit ${i + 1}"><svg width="58" height="58">${b ? `<line x1="10" y1="48" x2="48" y2="10" stroke="#222" stroke-width="6" stroke-linecap="round"/>` : ""}</svg></button>`).join("");
   const nums = state.bits.map((_, i) => `<span>${i === 0 ? "1 · top edge" : i === 4 ? "5 · bottom" : i + 1}</span>`).join("");
   const lens = [];
-  for (let n = 2; n <= run.maxLength; n++) lens.push(`<option ${n === r.L ? "selected" : ""}>${n}</option>`);
+  for (let n = 2; n <= run.maxLength; n++) lens.push(`<option value="${n}" ${n === r.L ? "selected" : ""}>${n}U</option>`);
   let body = r.status === "ok" ? title(r) : problem(r);
   if (r.status === "ok") {
     const toggle = ["inside", "outside"].map((v) => `<button data-view="${v}" class="${state.view === v ? "on" : ""}">From ${v}</button>`).join("");
-    const words = inside
-      ? `You stand <b>inside the ring</b> and look out at each wall, as you do when you push a magnet into its bore. The big letter is the face you push in; the small one is the pole that ends up facing <b>out</b> of the edge.`
-      : `You stand <b>outside the frame</b> and look in at each wall, as a neighbouring card would. The big letter is the pole facing out of the edge; the small one is the face that went in first, facing <b>in</b>.`;
-    body += `<div class="B-orient">${keyPlanB(r.L, inside)}<div style="max-width:520px">
+    const [big, small] = inside ? ["face you push in", "pole facing out"] : ["pole facing out", "face pushed in"];
+    const key = (pole, txt, r) => `<svg width="22" height="22"><circle cx="11" cy="11" r="${r}" fill="${COL[pole]}"/><text x="11" y="15" text-anchor="middle" font-size="${r > 8 ? 12 : 9}" font-weight="700" fill="#fff">${pole}</text></svg> ${txt}`;
+    body += `<div class="B-orient">${keyPlanB(r.L, inside)}<div>
       <div class="B-toggle">${toggle}</div>
-      <p>${words}</p><p class="mute">Frame back down, left end toward you, as on the beam. In each wall the upper row is the up layer (the front), the lower row the down layer.</p></div></div>`;
+      <p>${inside ? "Looking out from inside the ring." : "Looking in from outside the frame."}</p>
+      <div class="B-key"><span>${key("N", "Big: " + big, 10)}</span><span>${key("S", "Small: " + small, 7)}</span><span class="mute">Upper row: up layer · lower row: down layer</span></div></div></div>`;
     body += `<div class="B-walls">${["left", "top", "right", "bottom"].map((e) => wallB(e, r.walls[e], r.L, inside)).join("")}</div>`;
   }
   return `<h1>Magnet poles from the ID beam</h1>
     <div class="B-row">
       <div><div class="mute">Copy the beam: back down, left end toward you, read left to right.</div>
         <div class="B-beam"><div class="B-cells">${cells}</div><div class="B-base"></div><div class="B-bitnums">${nums}</div></div></div>
-      <label>Length <select id="lensel">${lens.join("")}</select> U</label>
+      <label class="B-len"><span>Length</span><span class="B-select"><select id="lensel">${lens.join("")}</select></span></label>
       <div style="font-size:22px"><code>${r.bits}</code> = ${r.id}</div>
     </div>${body}`;
 }
