@@ -1,0 +1,359 @@
+<!doctype html>
+<!--
+  PROTOTYPE (#101), throwaway. Three ways a card's sheet could look, switchable
+  with ?variant=A|B|C (or ← →). Every sheet is drawn in mm, so printing at 100%
+  gives true size (U = 30 mm, marker 13 mm). Each printed card is drawn at the
+  shortest length its label fits, and the table at the foot is the length rule.
+  The markers are stand-ins with the tagStandard41h12 layout; they don't read.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PROTOTYPE #101 — card sheets</title>
+<style>
+  :root { --scale: 2; }
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 24px 24px 90px; color: #222; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .note { color: #666; max-width: 70em; margin: 0 0 12px; }
+  .controls { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin: 12px 0 20px; }
+  .controls label { display: flex; gap: 6px; align-items: center; }
+  .group { margin: 0 0 22px; }
+  .group h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #888; margin: 0 0 8px; }
+  .cards { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { font: 11px/1.3 ui-monospace, Menlo, monospace; color: #666; margin-top: 4px; max-width: 60em; }
+  figcaption b { color: #222; }
+  .bad { color: #b3261e; }
+  .pair { display: flex; gap: 6px; align-items: center; }
+  .pair .flip { font-size: 11px; color: #999; }
+  svg.card { display: block; overflow: visible; }
+  table { border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  th, td { border: 1px solid #ddd; padding: 3px 8px; text-align: left; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  td.cur { background: #fff6d6; }
+  #bar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 10px; align-items: center;
+         background: #111; color: #fff; padding: 8px 14px; border-radius: 999px; box-shadow: 0 4px 18px rgba(0,0,0,.3); font-size: 13px; z-index: 9; }
+  #bar button { background: #333; color: #fff; border: 0; border-radius: 999px; width: 30px; height: 30px; font-size: 16px; cursor: pointer; }
+  #bar span { min-width: 22em; text-align: center; }
+  @media print {
+    :root { --scale: 1 !important; }
+    #bar, .controls, .screen-only { display: none; }
+    body { margin: 10mm; }
+    @page { size: a4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<h1>PROTOTYPE #101 — what a card's sheet could look like</h1>
+<p class="note" id="about"></p>
+<div class="controls">
+  <label>Label text height (capitals)
+    <input id="cap" type="range" min="3" max="8" step="0.5" value="5"> <b id="capv"></b> mm</label>
+  <label class="screen-only">On screen
+    <select id="zoom"><option value="1">1× (true size when printed)</option><option value="2" selected>2×</option><option value="3">3×</option></select></label>
+  <label><input id="hw" type="checkbox" checked> sample handwriting</label>
+  <span class="screen-only" style="color:#888">Print at 100% for true size; the ruler measures 50 mm.</span>
+</div>
+<div id="out"></div>
+<div id="bar"><button id="prev" title="previous (←)">←</button><span id="name"></span><button id="next" title="next (→)">→</button></div>
+
+<script>
+// ---- fixed sizes (mm) -------------------------------------------------------
+const U = 30, H = 30, MK = 13;   // U, card height (1U), marker (whole printed square)
+const EDGE = 1.5;                // keep-out at every edge of the face: the sheet folds round it here
+const QUIET = 2;                 // white round the marker (the rig test used 2 mm)
+const GAP = 2.5;                 // marker block to label
+const LETTER = 5.5;              // mm per handwritten letter, rough: drawCircle (10) didn't fit 44 mm in the rig test
+const SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+const MONO = 'Menlo, "DejaVu Sans Mono", Consolas, "Courier New", monospace';
+const HAND = '"Bradley Hand", "Segoe Print", "Comic Sans MS", cursive';
+const CAP = { sans: 0.72, mono: 0.73 };  // cap height / font size
+
+const CAT = {  // category: band colour, tint
+  control: ['#e8890c', '#fdf1e1'], vars: ['#2f6fdb', '#e6effc'], calls: ['#8c43c9', '#f2e8fa'],
+  values: ['#2e9b4f', '#e5f5ea'], ops: ['#5b6470', '#eceef1'],
+};
+
+// ---- the cards ----------------------------------------------------------------
+// side kinds: kw (printed word), call / getp (library card), op, val, color, hw (handwritten)
+const CARDS = [
+  { group: 'Printed keywords', items: [
+    { sides: [{ k: 'kw', text: 'repeat', cat: 'control' }], note: '[repeat]' },
+    { sides: [{ k: 'kw', text: 'dedent', cat: 'control' }], note: '[dedent]' },
+    { sides: [{ k: 'kw', text: 'else', cat: 'control' }], note: '[else]' },
+  ]},
+  { group: 'Library cards (printed)', items: [
+    { sides: [{ k: 'call', ns: 'p5', name: 'circle', cat: 'calls' }], note: '[call(p5.circle)]' },
+    { sides: [{ k: 'call', ns: 'p5', name: 'createCanvas', cat: 'calls' }], note: '[call(p5.createCanvas)]' },
+    { sides: [{ k: 'getp', ns: 'p5', name: 'frameCount', cat: 'calls' }], note: '[get(p5.frameCount)]' },
+    { sides: [{ k: 'call', ns: '', name: 'print', cat: 'calls' }], note: '[call(print)] (builtin)' },
+  ]},
+  { group: 'Flip pairs (front | back)', items: [
+    { sides: [{ k: 'op', text: '+', cat: 'ops' }, { k: 'op', text: '−', cat: 'ops' }], note: '[+] / [-]' },
+    { sides: [{ k: 'op', text: '<=', cat: 'ops' }, { k: 'op', text: '>=', cat: 'ops' }], note: '[<=] / [>=]' },
+    { sides: [{ k: 'kw', text: 'and', cat: 'ops' }, { k: 'kw', text: 'or', cat: 'ops' }], note: '[and] / [or]' },
+    { sides: [{ k: 'val', text: 'true', cat: 'values' }, { k: 'val', text: 'false', cat: 'values' }], note: '[bool(true)] / [bool(false)]' },
+    { sides: [{ k: 'color', name: 'yellow', css: '#f5c400', cat: 'values' }, { k: 'color', name: 'midnightblue', css: '#191970', cat: 'values' }], note: '[color(yellow)] / [color(midnightblue)]' },
+  ]},
+  { group: 'Handwritten (drawn at kit lengths; the length is the instructor\'s pick, not the label\'s)', items: [
+    { sides: [{ k: 'hw', before: 'get', after: '', sample: 'x', cat: 'vars' }], lengths: [2, 3], note: '[get{x}]' },
+    { sides: [{ k: 'hw', before: 'set', after: 'to', sample: 'score', cat: 'vars' }], lengths: [2, 3], note: '[set{score}to]' },
+    { sides: [{ k: 'hw', before: 'for', after: 'in', sample: 'i', cat: 'control' }], lengths: [2], note: '[for{i}in]' },
+    { sides: [{ k: 'hw', before: 'define', after: '', sample: 'drawCircle', cat: 'control' }], lengths: [3, 4], note: '[define{drawCircle}]' },
+    { sides: [{ k: 'hw', before: 'num', after: '', sample: '500', cat: 'values' }, { k: 'hw', before: 'str', after: '', sample: 'hi', cat: 'values' }], lengths: [2], note: '[num{500}] / [str{hi}]' },
+  ]},
+];
+
+// ---- measuring text in mm -------------------------------------------------------
+const NS = 'http://www.w3.org/2000/svg';
+const probe = document.createElementNS(NS, 'svg');
+probe.setAttribute('viewBox', '0 0 100 100');
+probe.style.cssText = 'position:absolute;left:-9999px;width:100px;height:100px';
+document.body.appendChild(probe);
+const probeText = document.createElementNS(NS, 'text');
+probe.appendChild(probeText);
+function measure(str, size, family, weight = 400) {
+  if (!str) return 0;
+  probeText.setAttribute('font-size', size);
+  probeText.setAttribute('font-family', family);
+  probeText.setAttribute('font-weight', weight);
+  probeText.textContent = str;
+  return probeText.getComputedTextLength();
+}
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const T = (x, y, str, size, family, o = {}) =>
+  `<text x="${x}" y="${y}" font-size="${size}" font-family='${family}' font-weight="${o.w || 400}" fill="${o.fill || '#111'}"` +
+  `${o.anchor ? ` text-anchor="${o.anchor}"` : ''}${o.ls ? ` letter-spacing="${o.ls}"` : ''}>${esc(str)}</text>`;
+
+// ---- the stand-in marker: tagStandard41h12's layout (9×9 cells: data ring, white ring, black ring, 3×3 data) -----
+function rng(seed) { let s = seed * 9301 + 49297; return () => ((s = (s * 9301 + 49297) % 233280) / 233280); }
+function marker(x, y, seed) {
+  const c = MK / 9, r = rng(seed);
+  let out = `<rect x="${x - QUIET}" y="${y - QUIET}" width="${MK + 2 * QUIET}" height="${MK + 2 * QUIET}" fill="#fff"/>`;
+  for (let i = 0; i < 9; i++) for (let j = 0; j < 9; j++) {
+    const ring = Math.min(i, j, 8 - i, 8 - j);
+    const black = ring === 0 || ring === 4 || (ring === 3 && i === 4 && j === 4) ? r() < 0.5 : ring === 2 ? true : ring === 3 ? r() < 0.5 : false;
+    if (black) out += `<rect x="${x + j * c}" y="${y + i * c}" width="${c + 0.02}" height="${c + 0.02}" fill="#000"/>`;
+  }
+  return out;
+}
+
+// ---- shared bits ------------------------------------------------------------------
+const room = L => L * U - 2 * EDGE - QUIET * 2 - MK - GAP - 1;   // label room beside a marker block
+function frame(L, inner, opts = {}) {
+  const w = L * U;
+  return `<svg class="card" xmlns="${NS}" viewBox="0 0 ${w} ${H}" style="width:calc(${w}mm * var(--scale));height:calc(${H}mm * var(--scale))">` +
+    `<rect x="0" y="0" width="${w}" height="${H}" fill="${opts.bg || '#fff'}"/>` + inner +
+    // U ticks and the keep-out, for judging (not printed on a real sheet)
+    Array.from({ length: L - 1 }, (_, i) => `<line x1="${(i + 1) * U}" y1="0" x2="${(i + 1) * U}" y2="1" stroke="#bbb" stroke-width=".2"/>`).join('') +
+    `<rect x="${EDGE}" y="${EDGE}" width="${w - 2 * EDGE}" height="${H - 2 * EDGE}" fill="none" stroke="#e33" stroke-width=".12" stroke-dasharray=".6 .6" opacity=".45"/>` +
+    `<rect x="0" y="0" width="${w}" height="${H}" fill="none" stroke="#444" stroke-width=".25"/></svg>`;
+}
+const whiteboard = (x, y, w, h, sample, hand, rounded = 2) =>
+  `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rounded}" fill="#fff" stroke="#9aa" stroke-width=".3" stroke-dasharray="1.2 .8"/>` +
+  (hand && sample ? `<svg x="${x}" y="${y}" width="${w}" height="${h}">${T(2, h / 2 + 3.2, sample, 9.5, HAND, { fill: '#1d3f8f' })}</svg>` : '');
+
+// ---- variant A: plain words, marker left, black on white --------------------------------
+// The label is the card's text much as the notation spells it ("call p5.circle"), in one line, mono.
+const A = {
+  name: 'Plain words',
+  about: 'Marker at the left, as in the rig test. One line of text spelt as the notation spells it, keyword included ("call p5.circle"). Black on white: cheapest to print, nothing to learn, but "call" and "p5." cost length.',
+  font: () => [cap() / CAP.mono, MONO],
+  label(s) {
+    if (s.k === 'call') return `call ${s.ns ? s.ns + '.' : ''}${s.name}`;
+    if (s.k === 'getp') return `get ${s.ns}.${s.name}`;
+    if (s.k === 'color') return s.name;
+    return s.text;
+  },
+  need(s) {
+    const [fs, ff] = this.font();
+    if (s.k === 'hw') return measure(s.before, fs, ff) + (s.after ? measure(s.after, fs, ff) + 2 : 0) + 2 + 4 * LETTER;
+    return measure(this.label(s), fs, ff, s.k === 'op' ? 700 : 400) + (s.k === 'color' ? 7 : 0);
+  },
+  draw(s, L, seed, hand) {
+    const [fs, ff] = this.font(), x0 = EDGE + QUIET + MK + GAP, mx = EDGE + QUIET, base = H / 2 + cap() / 2;
+    let g = marker(mx, (H - MK) / 2, seed), wb = 0;
+    if (s.k === 'hw') {
+      const bw = measure(s.before, fs, ff), aw = s.after ? measure(s.after, fs, ff) : 0;
+      wb = L * U - EDGE - 1.5 - x0 - bw - 2 - (s.after ? aw + 2 : 0);
+      g += T(x0, base, s.before, fs, ff);
+      g += whiteboard(x0 + bw + 2, 5, wb, H - 10, s.sample, hand);
+      if (s.after) g += T(L * U - EDGE - 1.5, base, s.after, fs, ff, { anchor: 'end' });
+    } else if (s.k === 'color') {
+      g += `<rect x="${x0}" y="${H / 2 - 2.5}" width="5" height="5" fill="${s.css}" stroke="#000" stroke-width=".2"/>` + T(x0 + 7, base, s.name, fs, ff);
+    } else g += T(x0, base, this.label(s), fs, ff, { w: s.k === 'op' ? 700 : 400 });
+    return { svg: frame(L, g), wb };
+  },
+};
+
+// ---- variant B: reads like code, marker right, colour band --------------------------------
+// The category is a colour band along the top; the name leads; "p5." shrinks; calls get "( )".
+const B = {
+  name: 'Name first, colour band',
+  about: 'Marker at the right end, so a line reads name-first like code. The kind is a colour band along the top edge instead of a word: library calls read "p5.circle( )" with the namespace small and grey, get cards just "p5.frameCount". Needs a colour printer.',
+  font: () => [cap() / CAP.sans, SANS],
+  parts(s) {  // [small prefix, main, suffix]
+    if (s.k === 'call') return [s.ns ? s.ns + '.' : '', s.name, '( )'];
+    if (s.k === 'getp') return [s.ns + '.', s.name, ''];
+    if (s.k === 'color') return ['', s.name, ''];
+    return ['', s.text, ''];
+  },
+  widths(s) {
+    const [fs, ff] = this.font(), [p, m, x] = this.parts(s), big = s.k === 'op' ? fs * 1.5 : fs;
+    return [measure(p, fs * 0.6, ff), measure(m, big, ff, 700), measure(x, fs, ff)];
+  },
+  need(s) {
+    const [fs, ff] = this.font();
+    if (s.k === 'hw') return measure(s.before, fs, ff) + (s.after ? measure(s.after, fs, ff) + 2 : 0) + 2 + 4 * LETTER;
+    const [a, b, c] = this.widths(s);
+    return a + b + c + (s.k === 'color' ? 7 : 0);
+  },
+  draw(s, L, seed, hand) {
+    const [fs, ff] = this.font(), [band] = CAT[s.cat], w = L * U, x0 = EDGE + 1, mx = w - EDGE - QUIET - MK;
+    const end = mx - QUIET - GAP + 1.5, base = H / 2 + 1.5 + cap() / 2;
+    let g = `<rect x="0" y="0" width="${w}" height="4.5" fill="${band}"/>` + marker(mx, (H - MK) / 2 + 1.5, seed), wb = 0;
+    if (s.k === 'hw') {
+      const bw = measure(s.before, fs, ff), aw = s.after ? measure(s.after, fs, ff) : 0;
+      wb = end - x0 - bw - 2 - (s.after ? aw + 2 : 0);
+      g += T(x0, base, s.before, fs, ff, { fill: band, w: 700 });
+      g += whiteboard(x0 + bw + 2, 7, wb, H - 10, s.sample, hand);
+      if (s.after) g += T(end, base, s.after, fs, ff, { anchor: 'end', fill: band, w: 700 });
+    } else {
+      const [p, m, x] = this.parts(s), [a, b] = this.widths(s), big = s.k === 'op' ? fs * 1.5 : fs;
+      let cx = x0;
+      if (s.k === 'color') { g += `<rect x="${cx}" y="${base - cap() + 0.3}" width="5" height="5" fill="${s.css}" stroke="#000" stroke-width=".2"/>`; cx += 7; }
+      if (p) g += T(cx, base, p, fs * 0.6, ff, { fill: '#888' });
+      g += T(cx + a, s.k === 'op' ? H / 2 + 1.5 + cap() * 0.75 : base, m, big, ff, { w: 700 });
+      if (x) g += T(cx + a + b, base, x, fs, ff, { fill: '#666' });
+    }
+    return { svg: frame(L, g), wb };
+  },
+};
+
+// ---- variant C: two tiers, tinted, big whiteboard --------------------------------------------
+// A small caps line names the kind ("CALL · P5"); the name sits big under it; handwritten
+// cards print their words small up top, so the whiteboard takes the full height.
+const C = {
+  name: 'Two tiers, tinted',
+  about: 'Marker at the left. A small capitals line on top names the kind ("CALL · P5", "SET … TO"), and the name sits big below, so the length is set by the name alone. On handwritten cards the words go small up top and the whiteboard takes the rest of the height. A light tint by kind, white round the marker; reads in greyscale too.',
+  font: () => [cap() / CAP.sans, SANS],
+  tier(s) {
+    if (s.k === 'call') return s.ns ? `CALL · ${s.ns.toUpperCase()}` : 'CALL';
+    if (s.k === 'getp') return `GET · ${s.ns.toUpperCase()}`;
+    if (s.k === 'color') return 'COLOR';
+    if (s.k === 'val') return 'BOOL';
+    if (s.k === 'hw') return s.after ? `${s.before} … ${s.after}`.toUpperCase() : s.before.toUpperCase();
+    return '';
+  },
+  main(s) { return s.k === 'color' ? s.name : s.name || s.text; },
+  need(s) {
+    const [fs, ff] = this.font(), t = measure(this.tier(s), 3.2, ff, 700);
+    if (s.k === 'hw') return Math.max(t, 4 * LETTER);
+    const big = s.k === 'op' ? fs * 1.6 : fs;
+    return Math.max(t, measure(this.main(s), big, ff, 700) + (s.k === 'color' ? 7 : 0));
+  },
+  draw(s, L, seed, hand) {
+    const [fs, ff] = this.font(), [band, tint] = CAT[s.cat], x0 = EDGE + QUIET + MK + GAP, w = L * U, tier = this.tier(s);
+    let g = marker(EDGE + QUIET, (H - MK) / 2, seed), wb = 0;
+    if (tier) g += T(x0, 8, tier, 3.2, ff, { w: 700, fill: band, ls: 0.25 });
+    if (s.k === 'hw') {
+      wb = w - EDGE - 1.5 - x0;
+      g += whiteboard(x0, 10, wb, H - 10 - EDGE - 1.5, s.sample, hand, 1.5);
+    } else if (s.k === 'op') {
+      g += T(x0, H / 2 + cap() * 0.8, this.main(s), fs * 1.6, ff, { w: 700 });
+    } else {
+      let cx = x0, base = tier ? 10.5 + cap() : H / 2 + cap() / 2;
+      if (s.k === 'color') { g += `<rect x="${cx}" y="${base - cap()}" width="5" height="${cap()}" fill="${s.css}" stroke="#000" stroke-width=".2"/>`; cx += 7; }
+      g += T(cx, base, this.main(s), fs, ff, { w: 700 });
+    }
+    return { svg: frame(L, g, { bg: tint }), wb };
+  },
+};
+
+// ---- page ------------------------------------------------------------------------------
+const VARIANTS = { A, B, C }, KEYS = Object.keys(VARIANTS);
+const params = new URLSearchParams(location.search);
+let cur = KEYS.includes(params.get('variant')) ? params.get('variant') : 'A';
+const cap = () => +document.getElementById('cap').value;
+const lengthFor = (v, s) => Math.max(2, Math.ceil((v.need(s) - room(2)) / U) + 2);   // shortest whole U that fits
+
+function render() {
+  const v = VARIANTS[cur], hand = document.getElementById('hw').checked;
+  document.documentElement.style.setProperty('--scale', document.getElementById('zoom').value);
+  document.getElementById('capv').textContent = cap();
+  document.getElementById('name').textContent = `${cur} — ${v.name}   (${KEYS.indexOf(cur) + 1}/${KEYS.length})`;
+  document.getElementById('about').innerHTML =
+    `<b>${cur}. ${v.name}.</b> ${v.about}<br>Each printed card is drawn at the shortest length its label fits. ` +
+    `Faint red dashes: ${EDGE} mm keep-out where the sheet folds round the face. Markers are stand-ins (right size and layout, they don't read).`;
+  let html = window.SHOW_ALL ? KEYS.map(k => `<h1 style="margin-top:28px">${k}. ${VARIANTS[k].name}</h1><p class="note">${VARIANTS[k].about}</p>` + cardsHtml(VARIANTS[k], hand)).join('') : cardsHtml(v, hand);
+  html += table();
+  document.getElementById('out').innerHTML = html;
+}
+
+function cardsHtml(v, hand) {
+  let html = '', seed = 1;
+  for (const grp of CARDS) {
+    html += `<div class="group"><h2>${grp.group}</h2><div class="cards">`;
+    for (const card of grp.items) {
+      const printed = card.sides[0].k !== 'hw';
+      const lens = printed ? [Math.max(...card.sides.map(s => lengthFor(v, s)))] : card.lengths;
+      for (const L of lens) {
+        const drawn = card.sides.map(s => v.draw(s, L, seed++, hand));
+        const svgs = drawn.map(d => d.svg).join('<span class="flip">|</span>');
+        let cap2;
+        if (printed) {
+          const need = Math.max(...card.sides.map(s => v.need(s)));
+          cap2 = `<b>${card.note}</b> → <b>${L}U</b> · label ${need.toFixed(0)} mm, room ${room(L).toFixed(0)} mm`;
+        } else {
+          const wb = drawn[0].wb;
+          cap2 = `<b>${card.note}</b> at <b>${L}U</b> · whiteboard ${wb.toFixed(0)} mm ≈ ${Math.floor(wb / LETTER)} letters`;
+        }
+        html += `<figure><div class="pair">${svgs}</div><figcaption>${cap2}</figcaption></figure>`;
+      }
+    }
+    html += `</div></div>`;
+  }
+  return html;
+}
+
+function table() {
+  let html = '';
+  // the length rule: every printed card in every variant at this text height
+  html += `<div class="group"><h2>Length rule at ${cap()} mm capitals (U = ${U} mm)</h2>` +
+    `<div class="note">Room beside the marker block: 2U ${room(2).toFixed(1)} mm · 3U ${room(3).toFixed(1)} mm · 4U ${room(4).toFixed(1)} mm. ` +
+    `A printed card is the shortest whole U whose room holds its label (never under 2U).</div><table><tr><th>card</th>` +
+    KEYS.map(k => `<th class="${k === cur ? 'cur' : ''}">${k}. ${VARIANTS[k].name}</th>`).join('') + '</tr>';
+  for (const grp of CARDS) for (const card of grp.items) {
+    if (card.sides[0].k === 'hw') continue;
+    html += `<tr><td>${card.note}</td>` + KEYS.map(k => {
+      const V = VARIANTS[k], need = Math.max(...card.sides.map(s => V.need(s))), L = Math.max(...card.sides.map(s => lengthFor(V, s)));
+      return `<td class="n ${k === cur ? 'cur' : ''}${L > 3 ? ' bad' : ''}">${L}U <span style="color:#999">(${need.toFixed(0)} mm)</span></td>`;
+    }).join('') + '</tr>';
+  }
+  html += `</table></div>`;
+  html += `<div class="group"><svg xmlns="${NS}" viewBox="0 0 52 8" style="width:calc(52mm * var(--scale));height:calc(8mm * var(--scale))">` +
+    `<line x1="1" y1="6" x2="51" y2="6" stroke="#000" stroke-width=".25"/>` +
+    Array.from({ length: 11 }, (_, i) => `<line x1="${1 + i * 5}" y1="6" x2="${1 + i * 5}" y2="${i % 2 ? 4.5 : 3.5}" stroke="#000" stroke-width=".25"/>`).join('') +
+    T(1, 2.6, '50 mm', 2.4, SANS) + `</svg></div>`;
+  return html;
+}
+
+function go(d) {
+  cur = KEYS[(KEYS.indexOf(cur) + d + KEYS.length) % KEYS.length];
+  params.set('variant', cur);
+  history.replaceState(null, '', '?' + params);
+  render();
+}
+document.getElementById('prev').onclick = () => go(-1);
+document.getElementById('next').onclick = () => go(1);
+addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (e.key === 'ArrowLeft') go(-1);
+  if (e.key === 'ArrowRight') go(1);
+});
+for (const id of ['cap', 'zoom', 'hw']) document.getElementById(id).addEventListener('input', render);
+document.fonts.ready.then(render);
+render();
+</script>
+</body>
+</html>
