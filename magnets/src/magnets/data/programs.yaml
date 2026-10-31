@@ -3,7 +3,8 @@
 #
 # Each program is `legal` or not, and its `text` holds cards and `//`
 # comments only. Two spaces of indentation per depth; a line head sits at
-# depth x 1U. [dedent] is written at the outer depth, where the card sits.
+# depth x 1U. [dedent], [elif] and [else] are written at the outer depth,
+# where the card sits, and the line after an [elif] or [else] is indented.
 # A blank line starts a new strip; contacts only happen within a strip.
 
 first_sketch:
@@ -17,8 +18,8 @@ first_sketch:
     [call(p5.background)][color(midnightblue)]
 
     [define{draw}]
-    [set{x}to][call(p5.random)][num{0}][num{500}]
-    [set{y}to][call(p5.random)][num{0}][num{500}]
+    [set{x}to][call(random)][num{0}][num{500}]
+    [set{y}to][call(random)][num{0}][num{500}]
     [call(p5.circle)][get{x}][get{y}][num{5}]
 
 nested_blocks:
@@ -34,6 +35,24 @@ nested_blocks:
     [dedent]
     [repeat][num{2}]
       [call(print)][str{hi}]
+    [dedent]
+
+chains:
+  legal: true
+  text: |
+    // An [if]/[elif]/[else] chain closed by one [dedent], then a chain
+    // whose [if] body is empty.
+    [define{draw}]
+    [if][get{score}][>][num{10}]
+      [call(print)][str{win}]
+    [elif][get{score}][>][num{5}]
+      [call(print)][str{close}]
+    [else]
+      [call(print)][str{lose}]
+    [dedent]
+    [if][get{ready}]
+    [else]
+      [call(print)][str{wait}]
     [dedent]
 
 parameters:
@@ -73,8 +92,9 @@ illegal:
     [call(print)][(][)]          // an empty group
 
     [define{b}]
-    [if][get{x}]                // an empty block body
+    [if][get{x}]
     [dedent]
+    [elif][get{y}]              // an [elif] after a [dedent]
 
     [define{c}]
     [set{y}to][num{1}]

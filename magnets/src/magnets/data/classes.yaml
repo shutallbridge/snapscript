@@ -32,7 +32,8 @@
 # written text, which needs 2U. Which one-symbol cards (`[(]`, `[+]`, …) may be
 # 1U is TBD, decided with the marker (#26, #32). `pocket_reach` keeps a top or
 # bottom pocket near its end: it sits less than the reach from its end of the
-# card. Block heads and `[dedent]` reach 2U, for the indent pocket.
+# card. Block heads, `[elif]`, `[else]` and `[dedent]` reach 2U, for the
+# indent pocket.
 
 # `[set{x}to]` and `[return]` head a line without opening a block, unlike
 # the block heads. `[return]` takes the roles of `[set{x}to]`, so it shares
@@ -161,6 +162,33 @@ block_head:
       "[if]": {left: head, right: open, top: line, bottom: block}
       "[repeat]": {left: head, right: open, top: line, bottom: block}
       "[for{x}in]": {left: head, right: open, top: line, bottom: block}
+
+# `[elif]` and `[else]` continue an `[if]` chain in its column: each closes
+# the block above it, as a `[dedent]` does, and opens its own, as a block
+# head does. Neither can share a class: their tops differ from the block
+# heads' and their bottoms from `[dedent]`'s, and their right roles differ,
+# so they can't be a flip pair (ADR 0003). Their length is TBD, decided with
+# a card design.
+#
+# The magnets can't tell an `[if]` body from a `[repeat]` or `[for{x}in]`
+# body, or an `[elif]` block from an `[else]` block, so an `[elif]` or
+# `[else]` after a `[repeat]` or `[for{x}in]` body, and an `[elif]` after an
+# `[else]`, snap: they are SyntaxErrors that aren't physically enforced.
+elif:
+  id: 23
+  min_length: 2
+  pocket_reach: 2
+  sides:
+    elif:
+      "[elif]": {left: head, right: open, top: dedent, bottom: block}
+
+else:
+  id: 24
+  min_length: 2
+  pocket_reach: 2
+  sides:
+    else:
+      "[else]": {left: head, right: end, top: dedent, bottom: block}
 
 dedent:
   id: 13

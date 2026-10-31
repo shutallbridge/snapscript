@@ -50,8 +50,9 @@ BOTTOM_ROLES = ("line", "block", "none", "free")
 TOP_ROLES = ("line", "dedent", "top_level", "none", "free")
 MEANINGFUL = (-1, 0, 1)
 
-# #10's vertical table: (upper bottom, lower top, offset) -> verdict.
-CONNECTS = {("line", "line", 0), ("block", "line", 1), ("line", "dedent", -1)}
+# #10's vertical table: (upper bottom, lower top, offset) -> verdict. A block
+# head over a [dedent], [elif] or [else] in its column is an empty body.
+CONNECTS = {("line", "line", 0), ("block", "line", 1), ("line", "dedent", -1), ("block", "dedent", 0)}
 
 
 def grammar_verdict(bottom, top, offset):
@@ -61,8 +62,6 @@ def grammar_verdict(bottom, top, offset):
         return ("connect", "must")
     if top == "top_level":
         return ("forbid", "nice")
-    if (bottom, top, offset) == ("block", "dedent", 0):
-        return ("forbid", "nice")  # an empty body
     return ("forbid", "should")
 
 
@@ -159,7 +158,7 @@ def test_coexist_appears_exactly_where_the_narrow_rule_says():
             and (bottom, top, d) not in CONNECTS
             and (
                 (can_head(upper) and inline(lower) and d >= (3 if bottom == "block" else 2))
-                or (inline(upper) and can_head(lower) and d <= (-3 if top == "dedent" else -1))
+                or (inline(upper) and can_head(lower) and d <= (-2 if top == "dedent" else -1))
                 or (inline(upper) and inline(lower))
             )
         )
@@ -221,14 +220,21 @@ def test_the_shortest_line_head_counts_even_when_its_class_is_not_graded():
     assert ("coexist", "must") in kinds(over(result, "set_get.set", "literal.num", 1))
 
 
-def test_an_inline_card_meets_a_dedent_below_only_three_columns_left_or_more():
-    # The [dedent] sits 1U left of the last body line's head, and an inline
-    # card at least 2U right of it:
-    #     [set{x}to][num{1}]
+def test_an_inline_card_meets_a_dedent_below_only_two_columns_left_or_more():
+    # After an empty body, the [dedent] (or [elif], or [else]) sits in the
+    # block head's column, and an inline card at least 2U right of it:
+    #   [if][num{1}]
     #   [dedent]
+    # Otherwise it sits 1U left of the last body line's head, further still.
     result = check_pairs({})
-    assert kinds(over(result, "literal.num", "dedent.dedent", -2)) == [("forbid", "low")]
+    assert kinds(over(result, "literal.num", "dedent.dedent", -1)) == [("forbid", "should")]
+    assert kinds(over(result, "literal.num", "dedent.dedent", -2)) == [("coexist", "must")]
     assert kinds(over(result, "literal.num", "dedent.dedent", -3)) == [("coexist", "must")]
+
+
+def test_an_empty_body_connects():
+    # A block head over a [dedent] in its column: the spec allows an empty body.
+    assert kinds(over(check_pairs({}), "block_head.head", "dedent.dedent", 0)) == [("connect", "must")]
 
 
 def test_a_block_head_meets_an_inline_card_below_only_three_columns_right_or_more():

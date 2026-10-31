@@ -20,6 +20,7 @@ Skipping lines puts the leniency in the language, once, for every library. The l
 
 - The checker treats a skipped line as absent, so a skip causes follow-on errors: skipping `[set(x)to]` makes every later `[get(x)]` a `NameError`. A follow-on error names the line that caused it, so the projection can point there.
 - Skipping is safe for libraries that only produce output, such as drawing and sound. A library with real-world effects can be left running in an unsafe state: if `[call:robot.stop][get(sped)]` is skipped, the robot keeps driving. Python leaves the same state when it stops at that line. The safeguard is `[on:stop]`, which runs whenever the program stops, so a library can halt its hardware there.
+- In an `[if]`/`[elif]`/`[else]` chain, skipping a block head skips its block and every later block of the chain; the earlier blocks still run. Skipping only the one block would make the chain choose wrongly: with a half-built `[elif]` skipped, its `[else]` would run for the cases the `[elif]` was meant to catch, and with the `[if]` skipped, the `[else]` would run every time.
 - A skipped line can change later state silently: a skipped `[call:append]` leaves a list short, and a later `IndexError` points elsewhere. Skipped lines must look skipped on the table.
 - A future `[try]` catches runtime errors only. A skipped line never runs, so it never conflicts with `[try]`.
 - A strict mode, which refuses to run while any line is skipped, can be added later for libraries that need it, without changing the language.

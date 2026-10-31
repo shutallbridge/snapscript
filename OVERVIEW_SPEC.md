@@ -90,8 +90,8 @@ A doc comment anywhere else stands alone. Tags other than `@param` and `@returns
 [call(p5.background)][color(midnightblue)]
 
 [define{draw}]
-[set{x}to][call(p5.random)][num{0}][num{500}]
-[set{y}to][call(p5.random)][num{0}][num{500}]
+[set{x}to][call(random)][num{0}][num{500}]
+[set{y}to][call(random)][num{0}][num{500}]
 [call(p5.circle)][get{x}][get{y}][num{5}]
 ```
 
@@ -99,7 +99,7 @@ A doc comment anywhere else stands alone. Tags other than `@param` and `@returns
 
 | Form         | Examples                                                                                                                                              |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Keyword card | `[+]`, `[(]`, `[)]`, `[not]`, `[repeat]`, `[dedent]`, `[return]`, `[none]`, `[root]`                                                                  |
+| Keyword card | `[+]`, `[(]`, `[)]`, `[not]`, `[if]`, `[elif]`, `[else]`, `[repeat]`, `[dedent]`, `[return]`, `[none]`, `[root]`                                     |
 | Printed      | `[color(purple)]`, `[bool(true)]`, `[call(p5.circle)]`, `[get(p5.frameCount)]`, `[on(load)]`                                                          |
 | Handwritten  | `[define{foo}]`, `[call{foo}]`, `[set{x}to]`, `[get{x}]`, `[setProp{p}to]`, `[getProp{p}]`, `[num{500}]`, `[str{hello}]`, `[for{x}in]`, `[global{x}]` |
 
@@ -321,10 +321,14 @@ A bare name resolves where the cards are written: in the local scope, then among
 [set{f}to][get{helper}]     the function as a value
 ```
 
-A top-level declaration may take a builtin's name, and hides the builtin in its file.
+A local or a top-level declaration may take a builtin's name, and hides the builtin: a local in its function, a top-level declaration in its file.
 
 ```
 [define{print}][required{message}]      [call(print)] in this file calls this
+
+[define{draw}]
+[set{pi}to][num{3}]
+[call(print)][get(pi)]                  3, the local
 ```
 
 Variables are function-scoped.
@@ -372,7 +376,7 @@ A global starts with one literal card, or an empty list or dict. Anything worked
 [global{scores}][call(list)]
 [global{user}][call(dict)]
 [global{mid}][num{500}][/][num{2}]        SyntaxError
-[global{r}][call(p5.random)]              SyntaxError
+[global{r}][call(random)]                 SyntaxError
 ```
 
 ### Errors
@@ -414,6 +418,18 @@ A line with a structure or check error is **skipped**: it does not run, and the 
 [call(p5.circle)][num{5}]                     TypeError: skipped
 [if][get{a}][>]                               SyntaxError: skipped with its body
   [call(print)][get{a}]
+[dedent]
+```
+
+Skipping an `[if]`, `[elif]` or `[else]` line skips its block and every later block of its chain. The earlier blocks still run.
+
+```
+[if][get{a}]                                  runs
+  [call(print)][str{a}]
+[elif][get{b}][>]                             SyntaxError: skipped with the rest of the chain
+  [call(print)][str{b}]
+[else]                                        skipped
+  [call(print)][str{neither}]
 [dedent]
 ```
 
@@ -470,8 +486,8 @@ A module's attributes are read from any file, and written only in its own file.
 [global(frameCount)][num(0)]
 
 [extern(createCanvas)][required(width)][required(height)]
-[extern(random)][optional(min)][num(0)][optional(max)][num(1)]
 [extern(circle)][required(x)][required(y)][required(d)]
+[extern(rotate)][required(angle)]       an angle in degrees
 
 [extern(fill)][required(color)]
 [extern(fill)][required(r)][required(g)][required(b)]
@@ -518,8 +534,8 @@ A card with slots grabs values to its right until the end of the line, or until 
 A group ends every grab inside it:
 
 ```
-[call(print)][call{random}][num{5}]                      print(random(5))
-[call(print)][(][call{random}][)][num{5}]                print(random(), 5)
+[call(print)][call{random}][num{0}][num{5}]              print(random(0, 5))
+[call(print)][(][call{random}][)][num{0}][num{5}]        print(random(), 0, 5)
 [if][(][call(len)][get{a}][)][>][num{5}]                 if len(a) > 5
 [call(p5.circle)][(][call{random}][num{0}][num{500}][)][num{5}][num{5}]
                                                          circle(random(0, 500), 5, 5)
@@ -569,6 +585,13 @@ Operators at the same level evaluate left to right.
 ```
 [num{2}][+][num{3}][*][num{4}]        14
 [num{10}][-][num{3}][-][num{2}]       5
+```
+
+A second comparison operator in the same expression, outside a group, is a `SyntaxError`. Group the comparisons and join them with `[and]`.
+
+```
+[get{a}][<][get{b}][<][get{c}]                                  SyntaxError
+[(][get{a}][<][get{b}][)][and][(][get{b}][<][get{c}][)]         a < b and b < c
 ```
 
 | Operator                  | Takes                                       |
@@ -634,7 +657,7 @@ A group holds exactly one value.
 
 ## Compound statements
 
-A block's body is indented. The bottom magnet of `[repeat]`, `[for{x}in]` and `[if]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block, in the column of the block's head.
+A block's body is indented. The bottom magnet of `[repeat]`, `[for{x}in]`, `[if]`, `[elif]` and `[else]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block, in the column of the block's head.
 
 ```
 [for{i}in][call(range)][num{100}]
@@ -665,6 +688,48 @@ A block's body may be empty. A block with no `[dedent]` closes at the end of its
 [if][get{a}]
   [call(print)][get{a}]
 [call(print)][str{done}]                IndentationError: no [dedent]; the block closes here anyway
+```
+
+### `[if]`, `[elif]` and `[else]`
+
+`[if]` runs its body when its value counts as true. It takes one value.
+
+`[elif]` and `[else]` continue the `[if]` in its column, where a `[dedent]` would snap. Each one closes the block above it and opens its own, and one `[dedent]` closes the whole chain. `[elif]` takes one value, as `[if]` does; `[else]` takes none. The first block whose value counts as true runs; if none does, the `[else]` block runs.
+
+```
+[if][get{score}][>][num{10}]            if score > 10:
+  [call(print)][str{win}]
+[elif][get{score}][>][num{5}]           elif score > 5:
+  [call(print)][str{close}]
+[else]                                  else:
+  [call(print)][str{lose}]
+[dedent]
+```
+
+A block of a chain may be empty.
+
+```
+[if][get{ready}]
+[else]
+  [call(print)][str{wait}]
+[dedent]
+```
+
+An `[elif]` or `[else]` after a `[dedent]` or after a `[repeat]` or `[for{…}in]` body is a `SyntaxError`, and so is an `[elif]` after an `[else]`.
+
+```
+[if][get{a}]
+  [call(print)][get{a}]
+[dedent]
+[else]                                  SyntaxError: no chain to continue
+
+[repeat][num{3}]
+  [call(print)][str{hi}]
+[else]                                  SyntaxError: [repeat] has no [else]
+
+[if][get{a}]
+[else]
+[elif][get{b}]                          SyntaxError: [elif] after [else]
 ```
 
 ### Loops
@@ -727,12 +792,14 @@ In a text file, a doc comment can give the types of a function's parameters and 
 
 ```
 /**
- * A random number between min and max.
- * @param {num} min
- * @param {num} max
+ * How far apart two points are.
+ * @param {num} x1
+ * @param {num} y1
+ * @param {num} x2
+ * @param {num} y2
  * @returns {num}
  */
-[extern(random)][optional(min)][num(0)][optional(max)][num(1)]
+[extern(dist)][required(x1)][required(y1)][required(x2)][required(y2)]
 
 /**
  * Sets the color that shapes are filled with.
@@ -745,7 +812,7 @@ A parameter or result with no type can be any type. The result of a `[define{…
 
 ## Builtins
 
-Builtins are called without a namespace. These are all of them:
+Builtins are used without a namespace. `pi` is a value; every other builtin is a function. These are all of them:
 
 ```
 [call(print)][get{a}][get{b}]           any number of values
@@ -754,12 +821,52 @@ Builtins are called without a namespace. These are all of them:
 [call(len)][get{scores}]                3, for a list or a str
 [call(list)][num{1}][num{2}]            a list
 [call(dict)]                            an empty dict
+[call(abs)][num{-5}]                    5
+[call(min)][num{3}][num{1}][num{2}]     1
+[call(max)][get{scores}]                30, when scores holds 10 20 30
+[call(round)][num{2.5}]                 3
+[call(sqrt)][num{16}]                   4
+[call(sin)][num{90}]                    1
+[call(cos)][num{180}]                   -1
+[call(random)]                          a num from 0 to 1
+[call(random)][num{0}][num{500}]        a num from 0 to 500
+[get(pi)]                               3.14159…
 ```
 
 `[call(range)]` takes whole numbers and a step that is not 0.
 
 ```
 [call(range)][num{0}][num{10}][num{0}]  ValueError
+```
+
+`[call(min)]` and `[call(max)]` take any number of values, or one list.
+
+```
+[call(min)]                             ValueError
+[call(max)][call(list)]                 ValueError
+```
+
+`[call(round)]` takes one value and gives a whole number. A half rounds away from zero.
+
+```
+[call(round)][num{2.4}]                 2
+[call(round)][num{-2.5}]                -3
+```
+
+```
+[call(sqrt)][num{-1}]                   ValueError
+```
+
+`random` is declared twice, as `fill` is: with no values, and with two.
+
+```
+[call(random)][num{5}]                  TypeError: random takes 0 or 2 values
+```
+
+Every angle is in degrees, in the builtins and in every library.
+
+```
+[call(sin)][num{30}]                    0.5
 ```
 
 # The Physical System
