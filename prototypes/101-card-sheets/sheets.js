@@ -244,8 +244,8 @@ const CSS_NAMES = 'aliceblue antiquewhite aqua aquamarine azure beige bisque bla
 // ---- page ------------------------------------------------------------------------------------------------------
 const $ = id => document.getElementById(id);
 const val = (id, d) => $(id) ? +$(id).value : d;
-const settings = () => ({ pt: val('pt', 26), margin: val('margin', 3), gap: val('gap', 3), wbPad: val('wbpad', 4), wbMin: val('wbmin', 60),
-  colorLen: val('colorlen', 4), iconSize: val('iconsize', 12), iconStroke: val('iconstroke', 1.25) });
+const settings = () => ({ pt: val('pt', 26), margin: val('margin', 3), gap: val('gap', 3), wbPad: val('wbpad', 3), wbMin: val('wbmin', 60),
+  colorLen: val('colorlen', 4), iconSize: val('iconsize', 12), iconStroke: val('iconstroke', 1.5) });
 const show = (id, v) => { if ($(id)) $(id).textContent = v; };
 
 // print.html: a few sheets to cut, fold and try on a base, at true size
