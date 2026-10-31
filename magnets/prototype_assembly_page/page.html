@@ -46,6 +46,10 @@
   .B-bitnums { display: flex; } .B-bitnums span { width: 58px; text-align: center; font-size: 11px; color: var(--mute); }
   .B-row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
   .B-walls { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 10px; }
+  .B-orient { display: flex; gap: 24px; align-items: center; margin-top: 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px 16px; }
+  .B-toggle { display: inline-flex; border: 1px solid #999; border-radius: 8px; overflow: hidden; }
+  .B-toggle button { border: 0; background: #fff; padding: 6px 14px; cursor: pointer; }
+  .B-toggle button.on { background: var(--ink); color: #fff; }
   .B-wall { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
 
   /* C */
@@ -66,7 +70,7 @@
 <div id="switcher"></div>
 <script>
 const D = /*DATA*/null;
-const VARIANTS = { A: "Plan, as held", B: "Walls from inside", C: "Pocket list" };
+const VARIANTS = { A: "Plan, as held", B: "Walls", C: "Pocket list" };
 const KEYS = Object.keys(VARIANTS);
 const P = new URLSearchParams(location.search);
 const state = {
@@ -75,6 +79,7 @@ const state = {
   bits: (P.get("bits") || "00001").split("").map(Number),
   length: 3,
   showEmpty: false,
+  view: P.get("view") === "outside" ? "outside" : "inside",
 };
 const U = 30, W = 30, T = 10, WALL = 2.2, BEAM_X = 20, BEAM_W = 3.2;
 const OPP = { N: "S", S: "N", "-": "-" };
@@ -225,25 +230,31 @@ function legendA() {
     `<text x="160" y="31" font-size="11" fill="#666">the pocket N/-:</text><text x="160" y="45" font-size="11" fill="#666">up: N out, S in</text><text x="160" y="59" font-size="11" fill="#666">down: empty</text>`;
 }
 
-// ---------- B: each wall as seen from inside the ring ----------
-// Standing inside the ring, front up: a wall's up layer is its upper row, and each bore shows the face you push in.
+// ---------- B: each wall as seen from inside or outside the ring ----------
+// Front up: a wall's up layer is its upper row. The big letter is the face you look at: the in-face from inside, the out-pole from outside.
 const B_VIEW = {
-  // which end of the wall is on your left, looking at it from inside
+  // which end of the wall is on your left, looking at it from inside; from outside it's the mirror image
   left: { name: "Left end wall", leftLabel: "bottom edge", rightLabel: "top edge", reverse: true },
   top: { name: "Top edge wall", leftLabel: "left end", rightLabel: "right end", reverse: false },
   right: { name: "Right end wall", leftLabel: "top edge", rightLabel: "bottom edge", reverse: false },
   bottom: { name: "Bottom edge wall", leftLabel: "right end", rightLabel: "left end", reverse: true },
 };
 function variantB(r) {
-  const run = r.run;
+  const run = r.run, inside = state.view === "inside";
   const cells = state.bits.map((b, i) => `<button data-bit="${i}" title="bit ${i + 1}"><svg width="58" height="58">${b ? `<line x1="10" y1="48" x2="48" y2="10" stroke="#222" stroke-width="6" stroke-linecap="round"/>` : ""}</svg></button>`).join("");
   const nums = state.bits.map((_, i) => `<span>${i === 0 ? "1 · top edge" : i === 4 ? "5 · bottom" : i + 1}</span>`).join("");
   const lens = [];
   for (let n = 2; n <= run.maxLength; n++) lens.push(`<option ${n === r.L ? "selected" : ""}>${n}</option>`);
   let body = r.status === "ok" ? title(r) : problem(r);
   if (r.status === "ok") {
-    body += `<div class="B-row" style="margin-top:10px">${keyPlanB(r.L)}<div class="mute" style="max-width:520px">Each wall below is drawn as you see it <b>from inside the ring</b>, frame back down: the upper row is the up layer, the lower row the down layer. The big letter is the face you push into the bore; the small one is the pole facing <b>out</b> of the edge, always the other one.</div></div>`;
-    body += `<div class="B-walls">${["left", "top", "right", "bottom"].map((e) => wallB(e, r.walls[e], r.L)).join("")}</div>`;
+    const toggle = ["inside", "outside"].map((v) => `<button data-view="${v}" class="${state.view === v ? "on" : ""}">From ${v}</button>`).join("");
+    const words = inside
+      ? `You stand <b>inside the ring</b> and look out at each wall, as you do when you push a magnet into its bore. The big letter is the face you push in; the small one is the pole that ends up facing <b>out</b> of the edge.`
+      : `You stand <b>outside the frame</b> and look in at each wall, as a neighbouring card would. The big letter is the pole facing out of the edge; the small one is the face that went in first, facing <b>in</b>.`;
+    body += `<div class="B-orient">${keyPlanB(r.L, inside)}<div style="max-width:520px">
+      <div class="B-toggle">${toggle}</div>
+      <p>${words}</p><p class="mute">Frame back down, left end toward you, as on the beam. In each wall the upper row is the up layer (the front), the lower row the down layer.</p></div></div>`;
+    body += `<div class="B-walls">${["left", "top", "right", "bottom"].map((e) => wallB(e, r.walls[e], r.L, inside)).join("")}</div>`;
   }
   return `<h1>Magnet poles from the ID beam</h1>
     <div class="B-row">
@@ -253,38 +264,59 @@ function variantB(r) {
       <div style="font-size:22px"><code>${r.bits}</code> = ${r.id}</div>
     </div>${body}`;
 }
-function keyPlanB(L) {
-  const s = 1.1, w = W * s * 2.2, h = L * U * s, ox = 60, oy = 18;
-  return `<svg width="${w + 120}" height="${h + 40}">
-    <rect x="${ox}" y="${oy}" width="${w}" height="${h}" fill="#ece8df" stroke="#555" stroke-width="2"/>
-    <rect x="${ox + 3}" y="${oy + h - BEAM_X * s - 2}" width="${w - 6}" height="4" fill="#555"/>
-    <text x="${ox + w / 2}" y="${oy + h + 15}" text-anchor="middle" font-size="10">Left end · you</text>
-    <text x="${ox + w / 2}" y="${oy - 5}" text-anchor="middle" font-size="10">Right end</text>
-    <text x="${ox - 4}" y="${oy + h / 2}" text-anchor="end" font-size="10">Top</text>
-    <text x="${ox + w + 4}" y="${oy + h / 2}" font-size="10">Bottom</text></svg>`;
+// The frame from above, as held, with a sight-line arrow at each wall: outward from inside the ring, or inward from outside.
+function keyPlanB(L, inside) {
+  const s = 3.2, w = W * s, h = L * U * s, ox = 150, oy = 74, wl = WALL * s * 1.6;
+  const cx = ox + w / 2, cy = oy + h / 2;
+  const col = inside ? "#0f8a5f" : "#b0590e";
+  // [x, y at the wall, unit vector pointing out of the wall, label]
+  const walls = [
+    [ox, cy, -1, 0, "Top edge wall"], [ox + w, cy, 1, 0, "Bottom edge wall"],
+    [cx, oy + h, 0, 1, "Left end wall"], [cx, oy, 0, -1, "Right end wall"],
+  ];
+  let g = `<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${col}"/></marker></defs>`;
+  g += `<rect x="${ox}" y="${oy}" width="${w}" height="${h}" fill="#d8d2c4" stroke="#555" stroke-width="2" rx="3"/>`;
+  g += `<rect x="${ox + wl}" y="${oy + wl}" width="${w - 2 * wl}" height="${h - 2 * wl}" fill="#faf8f3" stroke="#888"/>`;
+  g += `<rect x="${ox + wl}" y="${oy + h - BEAM_X * s - 3}" width="${w - 2 * wl}" height="6" fill="#555"/>`;
+  g += `<text x="${cx}" y="${oy + h - BEAM_X * s - 7}" text-anchor="middle" font-size="9" fill="#555">ID beam</text>`;
+  for (const [x, y, dx, dy, label] of walls) {
+    // inside: from within the ring toward the wall; outside: from beyond the wall toward it
+    const gapIn = wl + 4, gapOut = 6, len = inside ? (dx ? w / 2 - gapIn - 8 : 26) : 30;
+    const [x1, y1, x2, y2] = inside
+      ? [x - dx * (gapIn + len), y - dy * (gapIn + len), x - dx * gapIn, y - dy * gapIn]
+      : [x + dx * (gapOut + len), y + dy * (gapOut + len), x + dx * gapOut, y + dy * gapOut];
+    g += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="3" marker-end="url(#ah)"/>`;
+    g += `<circle cx="${x1}" cy="${y1}" r="4" fill="#fff" stroke="${col}" stroke-width="2"/>`;
+    const lx = x + dx * 46, ly = y + dy * 46;
+    const anchor = dx < 0 ? "end" : dx > 0 ? "start" : "middle";
+    g += `<text x="${lx}" y="${ly + (dy > 0 ? 8 : dy < 0 ? 0 : 4)}" text-anchor="${anchor}" font-size="11" font-weight="600">${label}</text>`;
+  }
+  g += `<text x="${cx}" y="${oy + h + 72}" text-anchor="middle" font-size="11" fill="#666">you hold this end</text>`;
+  return `<svg width="${w + ox + 170}" height="${h + oy + 82}">${g}</svg>`;
 }
-function wallB(edge, list, L) {
+function wallB(edge, list, L, inside) {
   const v = B_VIEW[edge], s = 5, wallLen = edge === "top" || edge === "bottom" ? L * U : W;
-  const items = v.reverse ? [...list].reverse() : list;
+  const reverse = inside ? v.reverse : !v.reverse;
+  const [leftLabel, rightLabel] = inside ? [v.leftLabel, v.rightLabel] : [v.rightLabel, v.leftLabel];
   const pad = 70, w = wallLen * s, h = T * s;
   let g = `<rect x="${pad}" y="10" width="${w}" height="${h}" fill="#ece8df" stroke="#555" stroke-width="1.5" rx="3"/>`;
   g += `<line x1="${pad}" y1="${10 + h / 2}" x2="${pad + w}" y2="${10 + h / 2}" stroke="#ccc" stroke-dasharray="3 3"/>`;
   g += `<text x="${pad - 8}" y="${10 + h / 4 + 4}" text-anchor="end" font-size="11" fill="#666">up</text><text x="${pad - 8}" y="${10 + (3 * h) / 4 + 4}" text-anchor="end" font-size="11" fill="#666">down</text>`;
-  for (const p of items) {
-    const along = v.reverse ? wallLen - p.mm : p.mm, cx = pad + along * s;
+  for (const p of list) {
+    const along = reverse ? wallLen - p.mm : p.mm, cx = pad + along * s;
     [[p.up, 10 + h / 4], [p.down, 10 + (3 * h) / 4]].forEach(([pole, cy]) => {
       if (pole === "-") { g += `<circle cx="${cx}" cy="${cy}" r="${p.filled ? 9 : 4}" fill="none" stroke="#c4c4c4" stroke-dasharray="${p.filled ? "3 2" : "0"}"/>`; return; }
-      const inn = OPP[pole];
-      g += `<circle cx="${cx}" cy="${cy}" r="10" fill="${COL[inn]}"/><text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">${inn}</text>`;
-      g += `<text x="${cx + 12}" y="${cy - 5}" font-size="9" font-weight="700" fill="${COL[pole]}">out ${pole}</text>`;
+      const [big, small, word] = inside ? [OPP[pole], pole, "out"] : [pole, OPP[pole], "in"];
+      g += `<circle cx="${cx}" cy="${cy}" r="10" fill="${COL[big]}"/><text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">${big}</text>`;
+      g += `<text x="${cx + 12}" y="${cy - 5}" font-size="9" font-weight="700" fill="${COL[small]}">${word} ${small}</text>`;
     });
     if (p.filled) g += `<text x="${cx}" y="${10 + h + 14}" text-anchor="middle" font-size="10" fill="#666">${p.text}</text>`;
   }
   const measure = edge === "top" || edge === "bottom" ? "U from the left end" : "U from the top edge";
   return `<div class="B-wall"><b>${v.name}</b> <span class="mute">· ${EDGE_HINT[edge]} · positions in ${measure}</span>
     <div><svg width="${pad + w + 80}" height="${h + 46}">${g}
-    <text x="${pad}" y="${h + 42}" font-size="10" fill="#999">← ${v.leftLabel}</text>
-    <text x="${pad + w}" y="${h + 42}" text-anchor="end" font-size="10" fill="#999">${v.rightLabel} →</text></svg></div></div>`;
+    <text x="${pad}" y="${h + 42}" font-size="10" fill="#999">← ${leftLabel}</text>
+    <text x="${pad + w}" y="${h + 42}" text-anchor="end" font-size="10" fill="#999">${rightLabel} →</text></svg></div></div>`;
 }
 
 // ---------- C: a list of pockets, round the ring ----------
@@ -340,6 +372,7 @@ function render() {
   if (len) len.addEventListener("change", () => { state.length = len.value === "" ? NaN : Number(len.value); render(); });
   const sel = app.querySelector("#lensel");
   if (sel) sel.addEventListener("change", () => { state.length = Number(sel.value); render(); });
+  app.querySelectorAll("[data-view]").forEach((el) => el.addEventListener("click", () => { state.view = el.dataset.view; sync(); render(); }));
   const se = app.querySelector("#showEmpty");
   if (se) se.addEventListener("change", () => { state.showEmpty = se.checked; render(); });
   const runs = Object.keys(D.runs).map((k) => `<button class="${k === state.run ? "on" : ""}" data-run="${k}">${k === "full" ? "full search" : k}</button>`).join("");
@@ -351,7 +384,7 @@ function render() {
 }
 function sync() {
   const q = new URLSearchParams(location.search);
-  q.set("variant", state.variant); q.set("run", state.run);
+  q.set("variant", state.variant); q.set("run", state.run); q.set("view", state.view);
   history.replaceState(null, "", "?" + q);
 }
 function step(d) { state.variant = KEYS[(KEYS.indexOf(state.variant) + d + KEYS.length) % KEYS.length]; sync(); render(); }
