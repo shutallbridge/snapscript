@@ -12,9 +12,9 @@ from .solver import Requirement
 
 __all__ = [
     "Arrangement",
+    "ArrangementError",
     "AssemblyFrame",
     "AssemblyPage",
-    "ArrangementError",
     "BasePart",
     "BundledProgram",
     "Card",
@@ -43,8 +43,8 @@ __all__ = [
     "SideEdges",
     "SolveResult",
     "TextLine",
-    "WallPosition",
     "Tolerances",
+    "WallPosition",
     "assemblies",
     "assembly_page",
     "bases",

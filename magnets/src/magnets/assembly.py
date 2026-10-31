@@ -12,11 +12,11 @@ from .blueprint import BEAM_W, BEAM_X, THICKNESS, U, Tolerances
 from .data import Arrangement, CardClass
 from .physics import POSITIONS, Edges, Pocket, u_text
 
-# Each wall as a builder sees it from inside the ring, back down and left
-# end toward them, and whether it runs against its positions' order there:
-# a left or right end is measured from the top edge, a top or bottom edge
-# from the left end.
-WALLS = {"left": True, "top": False, "right": False, "bottom": True}
+# Each wall in the order the page shows it, and whether it runs against its
+# positions' order when seen from inside the ring, back down and left end
+# toward the builder: a left or right end is measured from the top edge, a
+# top or bottom edge from the left end.
+WALLS_REVERSED = {"left": True, "top": False, "right": False, "bottom": True}
 _OPPOSITE = {"N": "S", "S": "N", "-": "-"}
 
 
@@ -65,7 +65,7 @@ class AssemblyFrame:
 
 def frame(cls: CardClass, front: Edges, length: int, magnets: int) -> AssemblyFrame:
     """The assembly page's view of a class's frame at `length`, from its front edges."""
-    walls = {edge: _wall(front.get(edge, ()), edge, length, reverse) for edge, reverse in WALLS.items()}
+    walls = {edge: _wall(front.get(edge, ()), edge, length, reverse) for edge, reverse in WALLS_REVERSED.items()}
     return AssemblyFrame(cls.name, cls.id, length, cls.flip_pair, _members(cls), magnets, walls)
 
 
@@ -78,7 +78,6 @@ def _wall(pockets: tuple[Pocket, ...], edge: str, length: int, reverse: bool) ->
         up, down = (pocket.up, pocket.down) if pocket else ("-", "-")
         wall.append(WallPosition(at, span - at if reverse else at, up, down))
     return tuple(reversed(wall) if reverse else wall)
-
 
 
 def page_html(

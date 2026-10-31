@@ -212,7 +212,7 @@ empty layer of a half pocket, and a small faint circle for an empty
 position. **From inside**, the big letter is the face you push into the
 bore and the small one the pole facing out of the edge; **from outside**,
 to check a finished frame, the strips are mirrored, and the big letter is
-the pole facing out. The view stays in the URL (`?view=outside`), with the
+the pole facing out. The view stays in the URL (`view=outside`), with the
 beam and length. An ID no class has gets a red notice, a class the run
 didn't build a yellow one; both list the classes one mark away, to click,
 and what the run built. The page shows exactly the frames the run built,
