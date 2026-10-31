@@ -3,7 +3,6 @@
   PROTOTYPE (#101), throwaway. Card sheets in Shu's Figma row 3 style: a white marker
   zone, a Tailwind v4 300 tint with a thin stripe, Geist Mono. Text and stripe colours
   come from one rule applied to the background, so color cards follow it too.
-  The bottom bar (or ← →) switches between three proposals for define / get / set colours.
   Everything is drawn in mm: print at 100% for true size. Markers are stand-ins.
 -->
 <html lang="en">
@@ -49,22 +48,21 @@
 <h1>PROTOTYPE #101 — card sheets (row 3)</h1>
 <p class="note" id="about"></p>
 <div class="controls">
-  <label>Label <input id="pt" type="range" min="22" max="36" step="1" value="27"> <b id="ptv"></b> pt</label>
-  <label>Text margin <input id="margin" type="range" min="2" max="6" step="0.5" value="4"> <b id="marginv"></b> mm</label>
+  <label>Label <input id="pt" type="range" min="22" max="36" step="1" value="26"> <b id="ptv"></b> pt</label>
+  <label>Padding <input id="margin" type="range" min="2" max="6" step="0.5" value="4"> <b id="marginv"></b> mm</label>
+  <label>Gap <input id="gap" type="range" min="2" max="6" step="0.5" value="4"> <b id="gapv"></b> mm</label>
+  <label>Whiteboard padding (top, bottom) <input id="wbpad" type="range" min="2" max="7" step="0.5" value="4"> <b id="wbpadv"></b> mm</label>
   <label>Shortest whiteboard <select id="wbmin"><option value="45">1.5U (45 mm)</option><option value="60" selected>2U (60 mm)</option></select></label>
   <label>Color cards <select id="colorlen"><option value="3">3U</option><option value="4" selected>4U</option></select></label>
   <label><input id="hw" type="checkbox" checked> sample handwriting</label>
 </div>
 <div id="out"></div>
-<div id="bar"><button id="prev" title="previous (←)">←</button><span id="name"></span><button id="next" title="next (→)">→</button></div>
 
 <script>
 // ---- sizes (mm) ------------------------------------------------------------------------------
 const U = 30, H = 30, MK = 13, MZ = 17;  // U, card height, marker, white marker zone
 const STRIPE = 1.5;     // the stripe where the tint starts (Figma had 2)
-const WB_INSET = 2;     // whiteboard inset from the top, bottom and right
-const WB_GAP = 3;       // a printed word to the whiteboard
-const TAB = 7.5, TAB_INSET = 4;  // paper tabs at both ends, tucked under the face (as in the Figma; geometry TBD with the base)
+const TAB_END = 8, TAB_SIDE = 5;  // paper tabs: left/right 8 mm, top/bottom 5 mm (Shu's tests); they tuck under the face and are the bleed
 const LETTER = 5.5;     // mm per handwritten letter, rough, from the rig test
 const MONO = '"Geist Mono", ui-monospace, Menlo, monospace';
 const HAND = 'Caveat, "Bradley Hand", cursive';
@@ -139,20 +137,16 @@ const cssColor = (() => {  // a CSS color name to its shades, through the browse
 const ROLE_FAMILY = { action: 'violet', action2: 'fuchsia', helper: 'sky', setting: 'rose' };
 const FN_ROLE = { circle: 'action', rect: 'action', line: 'action', background: 'action', translate: 'action2', rotate: 'action2', scale: 'action2',
   random: 'helper', print: 'helper', len: 'helper', range: 'helper', frameCount: 'helper', createCanvas: 'setting', fill: 'setting', noStroke: 'setting', stroke: 'setting' };
-const PROPOSALS = [
-  { name: 'P1 · variables orange, your own functions teal', vars: 'orange', define: 'teal', callhw: 'teal' },
-  { name: 'P2 · variables orange, define like control', vars: 'orange', define: 'yellow', callhw: 'sky' },
-  { name: 'P3 · variables teal, your own functions orange', vars: 'teal', define: 'orange', callhw: 'orange' },
-];
+const P = { vars: 'orange', define: 'teal', callhw: 'teal' };  // proposal 1: variables orange, your own functions teal
 const OPS = new Set(['+', '-', '*', '/', '%', '<', '>', '<=', '>=', '==', '!=', 'and', 'or', 'not', '(', ')']);
 const CONTROL = new Set(['repeat', 'if', 'elif', 'else', 'for', 'return']);
 
-function parseCard(t, P) {  // "[set{x}to]" → a side: { k, label | word/after/sample, colours }
+function parseCard(t) {  // "[set{x}to]" → a side: { k, label | word/after/sample, colours }
   const m = t.match(/^\[([^\[\]{}()]*)(?:([({])([^)}]*)[)}])?([^\[\]{}()]*)\]$/) || [t, t.slice(1, -1), undefined, '', ''];  // [(] and [)] fall through
   const [, kw, open, inner, after] = m;
   if (open === '{') {
     const fam = ['get', 'set', 'global', 'getProp', 'setProp'].includes(kw) ? P.vars : kw === 'define' ? P.define : kw === 'call' ? P.callhw : kw === 'for' ? 'yellow' : 'stone';
-    return { k: 'hw', word: kw === 'call' ? '' : kw, after, sample: inner, c: family(fam), fam, text: t };
+    return { k: 'hw', word: kw, after, sample: inner, c: family(fam), fam, text: t };
   }
   if (open === '(') {
     const name = inner.split('.').pop();
@@ -166,7 +160,7 @@ function parseCard(t, P) {  // "[set{x}to]" → a side: { k, label | word/after/
   if (CONTROL.has(kw)) return { k: 'printed', label: kw, c: family('yellow'), fam: 'yellow', text: t };
   return { k: 'printed', label: kw, c: family('stone'), fam: 'stone', text: t };
 }
-const parseLine = (s, P) => (s.match(/\[[^\[\]]*\]/g) || []).map(c => parseCard(c, P));
+const parseLine = s => (s.match(/\[[^\[\]]*\]/g) || []).map(parseCard);
 
 // ---- measuring -----------------------------------------------------------------------------------
 const NS = 'http://www.w3.org/2000/svg';
@@ -199,16 +193,17 @@ function marker(x, y, seed) {
 const hash = s => [...s].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 9973, 7);
 
 // ---- layout: how long a side must be -----------------------------------------------------------------
-// S = { pt, margin, wbMin, colorLen }
+// S = { pt, margin, gap, wbPad, wbMin, colorLen }. The main area right of the marker zone is a row:
+// stripe, then padding · word · gap · whiteboard · gap · word · padding (a flex row with px = margin, gap = gap).
 const fsz = S => S.pt * PT;
 const labelX = S => MZ + STRIPE + S.margin;
 function minLength(side, S) {
   if (side.k === 'icon') return 2;
   if (side.k === 'color') return S.colorLen;
   if (side.k === 'printed') return Math.max(2, Math.ceil((labelX(S) + measure(side.label, fsz(S)) + S.margin) / U - 1e-9));
-  const start = side.word ? labelX(S) + measure(side.word, fsz(S)) + WB_GAP : MZ + STRIPE + WB_INSET;
-  const end = side.after ? WB_GAP + measure(side.after, fsz(S)) + S.margin : WB_INSET;
-  return Math.max(2, Math.ceil((start + S.wbMin + end) / U - 1e-9));
+  const words = [side.word, side.after].filter(Boolean);
+  const need = labelX(S) + words.reduce((n, w) => n + measure(w, fsz(S)) + S.gap, 0) + S.wbMin + S.margin;
+  return Math.max(2, Math.ceil(need / U - 1e-9));
 }
 
 // ---- drawing one side: the face, and with tabs for printing ---------------------------------------------
@@ -221,30 +216,34 @@ function face(side, L, S, hand) {
     g += side.center ? T(mid, base, side.label, f, text, { anchor: 'middle' }) : T(x0, base, side.label, f, text);
     if (side.k === 'color' && x0 + measure(side.label, f) + S.margin > w)  // too long for this kit's color cards
       g += `<rect x="${w - 3}" y="2" width="2" height="${H - 4}" fill="#e11d48"/>`;
-  } else if (side.k === 'icon') {  // lucide corner-down-left, 24-unit box scaled to 16 mm
-    const s = 16 / 24;
-    g += `<g transform="translate(${mid - 8} ${H / 2 - 8}) scale(${s})" fill="none" stroke="${text}" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">` +
+  } else if (side.k === 'icon') {  // lucide corner-down-left, 24-unit box scaled to 8 mm
+    const s = 8 / 24;
+    g += `<g transform="translate(${mid - 4} ${H / 2 - 4}) scale(${s})" fill="none" stroke="${text}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">` +
       `<path d="M20 4v7a4 4 0 0 1-4 4H4"/><path d="m9 10-5 5 5 5"/></g>`;
   } else {
-    let cx = side.word ? x0 : MZ + STRIPE + WB_INSET;
-    if (side.word) { g += T(cx, base, side.word, f, text); cx += measure(side.word, f) + WB_GAP; }
+    let cx = x0;
+    g += T(cx, base, side.word, f, text); cx += measure(side.word, f) + S.gap;
     const afterW = side.after ? measure(side.after, f) : 0;
-    const wbEnd = side.after ? w - S.margin - afterW - WB_GAP : w - WB_INSET, wbW = wbEnd - cx;
-    g += `<rect x="${cx}" y="${WB_INSET}" width="${wbW}" height="${H - 2 * WB_INSET}" fill="#fff"/>`;
-    if (hand) g += `<svg x="${cx}" y="${WB_INSET}" width="${wbW}" height="${H - 2 * WB_INSET}">${T(2.5, H / 2 + 2.5, side.sample, 17, '#1d3f8f', { family: HAND })}</svg>`;
+    const wbEnd = side.after ? w - S.margin - afterW - S.gap : w - S.margin, wbW = wbEnd - cx, wbH = H - 2 * S.wbPad;
+    g += `<rect x="${cx}" y="${S.wbPad}" width="${wbW}" height="${wbH}" fill="#fff"/>`;
+    if (hand) g += `<svg x="${cx}" y="${S.wbPad}" width="${wbW}" height="${wbH}">${T(2.5, wbH / 2 + 2.5, side.sample, Math.min(17, wbH * 0.8), '#1d3f8f', { family: HAND })}</svg>`;
     if (side.after) g += T(w - S.margin - afterW, base, side.after, f, text);
   }
   return g;
 }
-// a sheet to print: the face, a tab at each end as bleed (its neighbour's colour), fold lines, cut outline
+// a sheet to print: the face and a tab on every edge (left/right TAB_END, top/bottom TAB_SIDE), corners cut
+// away so the tabs fold past each other. Each tab is bleed in the colour it folds from. Dashed: fold; solid: cut.
 function sheet(side, L, S, hand) {
-  const w = L * U, { bg } = side.c, y0 = TAB_INSET, th = H - 2 * TAB_INSET;
-  const cut = `M0 0 H${w} V${y0} H${w + TAB} V${y0 + th} H${w} V${H} H0 V${y0 + th} H${-TAB} V${y0} H0 Z`;
-  return `<rect x="${-TAB}" y="${y0}" width="${TAB + 0.1}" height="${th}" fill="#fff"/>` +
-    `<rect x="${w - 0.1}" y="${y0}" width="${TAB + 0.1}" height="${th}" fill="${bg}"/>` + face(side, L, S, hand) +
-    `<path d="M0 ${y0} V${y0 + th} M${w} ${y0} V${y0 + th}" stroke="#888" stroke-width=".2" stroke-dasharray="1 .8"/>` +
+  const w = L * U, { bg } = side.c, E = TAB_END, V = TAB_SIDE;
+  const cut = `M0 ${-V} H${w} V0 H${w + E} V${H} H${w} V${H + V} H0 V${H} H${-E} V0 H0 Z`;
+  return `<rect x="${-E}" y="0" width="${E + 0.1}" height="${H}" fill="#fff"/>` +
+    `<rect x="${w - 0.1}" y="0" width="${E + 0.1}" height="${H}" fill="${bg}"/>` +
+    `<rect x="0" y="${-V}" width="${MZ}" height="${H + 2 * V}" fill="#fff"/><rect x="${MZ}" y="${-V}" width="${w - MZ}" height="${H + 2 * V}" fill="${bg}"/>` +
+    `<rect x="${MZ}" y="${-V}" width="${STRIPE}" height="${H + 2 * V}" fill="${side.c.stripe}"/>` + face(side, L, S, hand) +
+    `<path d="M0 0 V${H} M${w} 0 V${H} M0 0 H${w} M0 ${H} H${w}" stroke="#888" stroke-width=".2" stroke-dasharray="1 .8"/>` +
     `<path d="${cut}" fill="none" stroke="#333" stroke-width=".2"/>`;
 }
+const sheetBox = L => [-TAB_END - 0.3, -TAB_SIDE - 0.3, L * U + 2 * TAB_END + 0.6, H + 2 * TAB_SIDE + 0.6];
 const svgMm = (inner, x, y, w, h) => `<svg xmlns="${NS}" viewBox="${x} ${y} ${w} ${h}" style="display:block;width:${w}mm;height:${h}mm">${inner}</svg>`;
 
 // ---- programs -------------------------------------------------------------------------------------------
@@ -274,13 +273,13 @@ ${REP}
 [call(p5.fill)][color(aquamarine)]
 ${REP}`] },
 ];
-function tableSvg(prog, S, P, hand) {
+function tableSvg(prog, S, hand) {
   let inner = '', ox = 0, maxH = 0;
   for (const strip of prog.strips) {
     let y = 0, stripW = 0;
     for (const line of strip.split('\n')) {
       let x = ox + ((line.match(/^ */)[0].length / 2) | 0) * U;
-      for (const side of parseLine(line.trim(), P)) {
+      for (const side of parseLine(line.trim())) {
         const L = minLength(side, S);
         inner += `<g transform="translate(${x} ${y})">${face(side, L, S, hand)}<rect width="${L * U}" height="${H}" fill="none" stroke="#bbb" stroke-width=".3"/></g>`;
         x += L * U + 0.6;
@@ -297,39 +296,37 @@ const CATALOG = [
   ['Control and dedent', ['[repeat]', '[if]', '[else]', '[for{i}in]', '[dedent]']],
   ['Function cards: the four roles', ['[call(p5.circle)]', '[call(p5.translate)]', '[call(random)]', '[call(p5.createCanvas)]']],
   ['Operators (centred) and literals', ['[+] / [-]', '[<=] / [>=]', '[and] / [or]', '[bool(true)] / [bool(false)]', '[num{…}] / [str{…}]']],
-  ['Variables and your own functions (the bottom bar switches proposals)', ['[get{x}]', '[set{score}to]', '[define{drawDot}]', '[call{drawDot}]']],
+  ['Variables and your own functions', ['[get{x}]', '[set{score}to]', '[define{drawDot}]', '[call{drawDot}]']],
   ['Color cards (a flip pair each)', ['[color(gold)] / [color(midnightblue)]', '[color(white)] / [color(black)]', '[color(mediumaquamarine)] / [color(rebeccapurple)]']],
 ];
 const CSS_NAMES = 'aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray darkturquoise darkviolet deeppink deepskyblue dimgray dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow honeydew hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightpink lightsalmon lightseagreen lightskyblue lightslategray lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray snow springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen'.split(' ');
 
 // ---- page ------------------------------------------------------------------------------------------------------
-let cur = Math.max(0, Math.min(PROPOSALS.length - 1, +(new URLSearchParams(location.search).get('variant') || 1) - 1));
 const $ = id => document.getElementById(id);
-const settings = () => ({ pt: +$('pt').value, margin: +$('margin').value, wbMin: +$('wbmin').value, colorLen: +$('colorlen').value });
+const settings = () => ({ pt: +$('pt').value, margin: +$('margin').value, gap: +$('gap').value, wbPad: +$('wbpad').value, wbMin: +$('wbmin').value, colorLen: +$('colorlen').value });
 
 function render() {
-  const S = settings(), P = PROPOSALS[cur], hand = $('hw').checked, a = measure('0000000000', fsz(S)) / 10;
-  $('ptv').textContent = S.pt; $('marginv').textContent = S.margin;
-  $('name').textContent = `${P.name}   (${cur + 1}/${PROPOSALS.length})`;
-  $('about').innerHTML = `Row 3: ${MZ} mm white marker zone, ${STRIPE} mm stripe, Geist Mono at ${S.pt} pt (${a.toFixed(2)} mm per letter), ${S.margin} mm either side of a label. ` +
+  const S = settings(), hand = $('hw').checked, a = measure('0000000000', fsz(S)) / 10;
+  $('ptv').textContent = S.pt; $('marginv').textContent = S.margin; $('gapv').textContent = S.gap; $('wbpadv').textContent = S.wbPad;
+  $('about').innerHTML = `Row 3: ${MZ} mm white marker zone, ${STRIPE} mm stripe, Geist Mono at ${S.pt} pt (${a.toFixed(2)} mm per letter), ${S.margin} mm padding round the main area, ${S.gap} mm between a word and the whiteboard, ${S.wbPad} mm above and below the whiteboard. ` +
     `Backgrounds are Tailwind v4 300s; the stripe and the text come from one rule (see "The colour rule"). Handwritten cards are as long as a ${S.wbMin} mm whiteboard needs. ` +
     `Markers are stand-ins. Print at 100% for true size.`;
   let html = '';
 
   for (const prog of window.INLINE ? PROGRAMS.slice(0, 1) : PROGRAMS) {
-    const t = tableSvg(prog, S, P, hand), cards = prog.strips.join('\n').match(/\[[^\[\]]*\]/g);
-    const total = cards.reduce((n, c) => n + minLength(parseCard(c, P), S), 0);
+    const t = tableSvg(prog, S, hand), cards = prog.strips.join('\n').match(/\[[^\[\]]*\]/g);
+    const total = cards.reduce((n, c) => n + minLength(parseCard(c), S), 0);
     html += `<h2>${prog.name}</h2><p class="note">${cards.length} cards, ${total}U of card; ${(t.w / 10).toFixed(0)} × ${(t.h / 10).toFixed(0)} cm on the table. Scaled to fit.</p>` +
       `<div class="program"><div class="table" style="flex:1 1 600px"><svg xmlns="${NS}" viewBox="-2 -2 ${t.w + 4} ${t.h + 4}" style="display:block;width:100%">${t.inner}</svg></div>` +
       `<pre class="screen-only">${esc(prog.strips.join('\n\n'))}</pre></div>`;
   }
 
-  html += `<h2 class="print-break">Sheets to print (true size, with tabs)</h2><p class="note">Solid line: cut. Dashed: fold, at the card's ends; the tabs tuck under the face. Each tab is ${TAB} mm long and ${H - 2 * TAB_INSET} mm tall (a guess from the Figma). A flip pair is two sheets, front and back.</p>`;
+  html += `<h2 class="print-break">Sheets to print (true size, with tabs)</h2><p class="note">Solid line: cut. Dashed: fold, at the face's edges; the tabs tuck under the face. Left and right tabs ${TAB_END} mm, top and bottom ${TAB_SIDE} mm, corners cut away. A flip pair is two sheets, front and back.</p>`;
   for (const [title, list] of CATALOG) {
     html += `<h3>${title}</h3><div class="cards">`;
     for (const entry of list) {
-      const sides = entry.split(' / ').map(c => parseCard(c, P)), L = Math.max(...sides.map(s => minLength(s, S)));
-      for (const s of sides) html += `<figure>${svgMm(sheet(s, L, S, hand), -TAB - 0.3, -0.3, L * U + 2 * TAB + 0.6, H + 0.6)}<figcaption><b>${esc(s.text)}</b> ${L}U${s.role ? ' · ' + s.role : ''}</figcaption></figure>`;
+      const sides = entry.split(' / ').map(c => parseCard(c)), L = Math.max(...sides.map(s => minLength(s, S)));
+      for (const s of sides) html += `<figure>${svgMm(sheet(s, L, S, hand), ...sheetBox(L))}<figcaption><b>${esc(s.text)}</b> ${L}U${s.role ? ' · ' + s.role : ''}</figcaption></figure>`;
     }
     html += `</div>`;
   }
@@ -340,8 +337,8 @@ function render() {
   for (const pt of [26, 27, 28]) {
     const S2 = { ...S, pt };
     html += `<h3>${pt} pt</h3><div class="cards">` + ['[repeat]', '[call(p5.createCanvas)]', '[+]', '[num{…}]', '[set{x}to]'].map(c => {
-      const s = parseCard(c, P), L = minLength(s, S2);
-      return `<figure>${svgMm(sheet(s, L, S2, false), -TAB - 0.3, -0.3, L * U + 2 * TAB + 0.6, H + 0.6)}<figcaption><b>${esc(c)}</b> ${L}U</figcaption></figure>`;
+      const s = parseCard(c), L = minLength(s, S2);
+      return `<figure>${svgMm(sheet(s, L, S2, false), ...sheetBox(L))}<figcaption><b>${esc(c)}</b> ${L}U</figcaption></figure>`;
     }).join('') + `</div>`;
   }
   }
@@ -365,34 +362,21 @@ function render() {
 
   // the length rule
   if (!window.INLINE) {
-  html += `<h2>Length rule at ${S.pt} pt, ${S.margin} mm margins</h2><p class="note">Printed label: room = length − ${labelX(S) + S.margin} mm (marker zone, stripe, two margins). ` +
-    `Handwritten: the printed words plus a ${S.wbMin} mm whiteboard.</p><table><tr><th>length</th><th>room</th><th>letters</th><th>printed labels that land here</th><th>handwritten cards at their shortest</th></tr>`;
+  html += `<h2>Length rule at ${S.pt} pt, ${S.margin} mm padding, ${S.gap} mm gap</h2><p class="note">Printed label: room = length − ${labelX(S) + S.margin} mm (marker zone, stripe, two margins). ` +
+    `Handwritten: padding, each printed word and its gap, a ${S.wbMin} mm whiteboard, padding.</p><table><tr><th>length</th><th>room</th><th>letters</th><th>printed labels that land here</th><th>handwritten cards at their shortest</th></tr>`;
   const names = ['else', 'fill', 'rect', 'repeat', 'circle', 'random', 'noStroke', 'translate', 'background', 'createCanvas', 'frameCount'];
   const hws = ['[get{…}]', '[set{…}to]', '[num{…}]', '[str{…}]', '[for{…}in]', '[define{…}]', '[call{…}]'];
   for (let L = 2; L <= 6; L++) {
     const r = L * U - labelX(S) - S.margin;
     html += `<tr><td>${L}U</td><td class="n">${r.toFixed(1)} mm</td><td class="n">${Math.floor(r / a + 1e-9)}</td>` +
-      `<td>${names.filter(n => minLength({ k: 'printed', label: n }, S) === L).join(', ')}</td><td>${hws.filter(c => minLength(parseCard(c, P), S) === L).join(' ')}</td></tr>`;
+      `<td>${names.filter(n => minLength({ k: 'printed', label: n }, S) === L).join(', ')}</td><td>${hws.filter(c => minLength(parseCard(c), S) === L).join(' ')}</td></tr>`;
   }
   html += `</table>`;
   }
   $('out').innerHTML = html;
 }
 
-function go(d) {
-  cur = (cur + d + PROPOSALS.length) % PROPOSALS.length;
-  const p = new URLSearchParams(location.search); p.set('variant', cur + 1);
-  history.replaceState(null, '', '?' + p);
-  render();
-}
-$('prev').onclick = () => go(-1);
-$('next').onclick = () => go(1);
-addEventListener('keydown', e => {
-  if (e.target.closest('input, textarea, select, [contenteditable]')) return;
-  if (e.key === 'ArrowLeft') go(-1);
-  if (e.key === 'ArrowRight') go(1);
-});
-for (const id of ['pt', 'margin', 'wbmin', 'colorlen', 'hw']) $(id).addEventListener('input', render);
+for (const id of ['pt', 'margin', 'gap', 'wbpad', 'wbmin', 'colorlen', 'hw']) $(id).addEventListener('input', render);
 render();
 Promise.all([document.fonts.load('500 12px "Geist Mono"'), document.fonts.load('500 12px Caveat')]).then(render, render);
 </script>
