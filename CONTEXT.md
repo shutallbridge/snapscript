@@ -20,6 +20,10 @@ The outer ring of a base, as long as the card, with a bore for each magnet. It i
 **ID beam**:
 A beam across the back of a frame whose marks show its class ID in 5 bits, so frames that look alike can be told apart. Cores and faces have none: they serve every class.
 
+**Assembly page**:
+The page that comes with a set of bases. A builder copies a frame's ID beam into it and picks a length, and it shows which pockets of that frame get a magnet and which pole faces out. It tells the orientation; it doesn't teach assembly or how to find a magnet's pole.
+_Avoid_: assembly guide, placement guide, walkthrough
+
 **Core**:
 The inner ring that slides into a frame and holds the magnets in their bores. One core serves every class of one length.
 

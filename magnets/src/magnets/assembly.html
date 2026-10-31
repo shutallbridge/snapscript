@@ -1,0 +1,215 @@
+<!doctype html>
+<!-- The assembly page that `magnets bases` writes; `assembly.py` fills in its data. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>/*TITLE*/</title>
+<style>
+  :root { --N: #d9342b; --S: #2563eb; --empty: #b9b9b9; --ink: #1d1d1f; --mute: #6b6b70; --line: #d6d6db; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 system-ui, -apple-system, sans-serif; color: var(--ink); background: #fafafa; }
+  main { padding: 24px 28px 48px; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .mute { color: var(--mute); }
+  code { font: 13px ui-monospace, Menlo, monospace; }
+  button, select { font: inherit; }
+  svg text { font-family: system-ui, sans-serif; }
+  .msg { border: 1px solid #f0c36d; background: #fff8e6; padding: 10px 14px; border-radius: 8px; margin: 10px 0; max-width: 620px; }
+  .msg.bad { border-color: #e9a0a0; background: #fff0f0; }
+  .row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .beam { display: inline-flex; flex-direction: column; align-items: stretch; margin: 6px 0 4px; }
+  .cells { display: flex; border: 2px solid #555; border-bottom: 0; background: #e6e2da; }
+  .cells button { width: 58px; height: 58px; border: 0; border-right: 2px solid #555; background: transparent; cursor: pointer; padding: 0; }
+  .cells button:last-child { border-right: 0; }
+  .baseline { height: 8px; background: #555; }
+  .bitnums { display: flex; } .bitnums span { width: 58px; text-align: center; font-size: 11px; color: var(--mute); }
+  .readout { font-size: 22px; }
+  .length { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
+  .select { position: relative; display: inline-block; }
+  .select::after { content: ""; position: absolute; right: 14px; top: 50%; width: 7px; height: 7px; margin-top: -6px;
+    border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg); pointer-events: none; }
+  .select select { appearance: none; -webkit-appearance: none; font-size: 18px; font-weight: 600; color: var(--ink); text-transform: none; letter-spacing: 0;
+    padding: 8px 40px 8px 14px; border: 1px solid #c8c8cd; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.06); cursor: pointer; }
+  .select select:hover { border-color: #999; }
+  .select select:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(29,29,31,.12); }
+  .orient { display: flex; gap: 24px; align-items: center; margin-top: 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px 16px; }
+  .toggle { display: inline-flex; border: 1px solid #999; border-radius: 8px; overflow: hidden; }
+  .toggle button { border: 0; background: #fff; padding: 6px 14px; cursor: pointer; }
+  .toggle button.on { background: var(--ink); color: #fff; }
+  .key { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+  .key span { display: flex; align-items: center; gap: 6px; }
+  .walls { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 10px; }
+  .wall { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const D = /*DATA*/null;
+const G = D.geometry;
+const OPP = { N: "S", S: "N" };
+const COL = { N: "var(--N)", S: "var(--S)" };
+// Each wall from inside the ring: its name, the hint for where it is as held, what its
+// positions are measured from, and the walls its left and right ends meet.
+const WALLS = {
+  left: { name: "Left end", hint: "nearest you", measured: "top edge", ends: ["bottom edge", "top edge"] },
+  top: { name: "Top edge", hint: "on your left", measured: "left end", ends: ["left end", "right end"] },
+  right: { name: "Right end", hint: "away from you", measured: "top edge", ends: ["top edge", "bottom edge"] },
+  bottom: { name: "Bottom edge", hint: "on your right", measured: "left end", ends: ["right end", "left end"] },
+};
+const LENGTHS = [...new Set(D.frames.map((f) => f.length))].sort((a, b) => a - b);
+const BUILT = [...new Set(D.frames.map((f) => f.class))];
+
+const P = new URLSearchParams(location.search);
+const first = D.frames[0];
+const state = {
+  bits: /^[01]{5}$/.test(P.get("beam") || "") ? P.get("beam").split("").map(Number) : bitsOf(first.id).split("").map(Number),
+  length: Number.isInteger(Number(P.get("length"))) && P.get("length") ? Number(P.get("length")) : first.length,
+  view: P.get("view") === "outside" ? "outside" : "inside",
+};
+
+function bitsOf(id) { return id.toString(2).padStart(5, "0"); }
+function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+function classTag(c) { return `${esc(c.name)} <code>${bitsOf(c.id)}</code>`; }
+
+function lookup() {
+  const id = parseInt(state.bits.join(""), 2), L = state.length;
+  const base = { id, bits: bitsOf(id), L };
+  const cls = D.classes.find((c) => c.id === id);
+  // Classes whose ID differs from this one by one mark.
+  const near = D.classes.filter((c) => { const x = c.id ^ id; return x && !(x & (x - 1)); });
+  if (!cls) return { ...base, status: "no-class", near };
+  if (!BUILT.includes(cls.name)) return { ...base, status: "not-built", cls, near };
+  const frame = D.frames.find((f) => f.class === cls.name && f.length === L);
+  if (!frame) return { ...base, status: "bad-length", cls };
+  return { ...base, status: "ok", cls, frame };
+}
+
+function notice(r) {
+  const built = BUILT.map((n) => classTag(D.classes.find((c) => c.name === n))).join(", ");
+  const near = r.near && r.near.length
+    ? `<br>One mark off: ${r.near.map((c) => `<a href="#" data-id="${c.id}">${classTag(c)}</a>`).join(", ")}.` : "";
+  const run = `<br><span class="mute">This run built: ${built}.</span>`;
+  if (r.status === "no-class")
+    return `<div class="msg bad"><b>No class has ID <code>${r.bits}</code> (${r.id}).</b> Check the beam: back down, left end toward you, bit 1 at the top-edge end.${near}${run}</div>`;
+  if (r.status === "not-built")
+    return `<div class="msg"><b><code>${r.bits}</code> is ${esc(r.cls.name)}</b> (${esc(r.cls.members.join(" "))}), but this run built no ${esc(r.cls.name)} frames.${near}${run}</div>`;
+  const lengths = D.frames.filter((f) => f.class === r.cls.name).map((f) => f.length);
+  return `<div class="msg"><b>This run has no ${esc(r.L)}U ${esc(r.cls.name)} frame.</b> It built ${esc(r.cls.name)} from ${Math.min(...lengths)}U to ${Math.max(...lengths)}U.</div>`;
+}
+
+function header(r) {
+  const f = r.frame;
+  return `<h1>${esc(f.class)} · ${f.length}U <span class="mute" style="font-weight:400">· ID <code>${r.bits}</code> = ${r.id}</span></h1>
+    <div class="mute">${esc(f.members.join(" "))}${f.flipPair ? " · flip pair: double-sided frame" : " · single-sided: back built in"} · ${f.magnets} magnets</div>`;
+}
+
+function page(r) {
+  const inside = state.view === "inside";
+  const cells = state.bits.map((b, i) => `<button data-bit="${i}" title="bit ${i + 1}"><svg width="58" height="58">${b ? `<line x1="10" y1="48" x2="48" y2="10" stroke="#222" stroke-width="6" stroke-linecap="round"/>` : ""}</svg></button>`).join("");
+  const nums = state.bits.map((_, i) => `<span>${i === 0 ? "1 · top edge" : i === 4 ? "5 · bottom" : i + 1}</span>`).join("");
+  const lengths = LENGTHS.includes(state.length) ? LENGTHS : [...LENGTHS, state.length];
+  const options = lengths.map((n) => `<option value="${n}" ${n === state.length ? "selected" : ""}>${esc(n)}U</option>`).join("");
+  let body = r.status === "ok" ? header(r) : notice(r);
+  if (r.status === "ok") {
+    const toggle = ["inside", "outside"].map((v) => `<button data-view="${v}" class="${state.view === v ? "on" : ""}">From ${v}</button>`).join("");
+    const [big, small] = inside ? ["face you push in", "pole facing out"] : ["pole facing out", "face pushed in"];
+    const key = (pole, text, radius) => `<svg width="22" height="22"><circle cx="11" cy="11" r="${radius}" fill="${COL[pole]}"/><text x="11" y="15" text-anchor="middle" font-size="${radius > 8 ? 12 : 9}" font-weight="700" fill="#fff">${pole}</text></svg> ${text}`;
+    body += `<div class="orient">${orientation(r.frame.length, inside)}<div>
+      <div class="toggle">${toggle}</div>
+      <p>${inside ? "Looking out from inside the ring." : "Looking in from outside the frame."}</p>
+      <div class="key"><span>${key("N", "Big: " + big, 10)}</span><span>${key("S", "Small: " + small, 7)}</span><span class="mute">Upper row: up layer · lower row: down layer</span></div></div></div>`;
+    body += `<div class="walls">${Object.keys(WALLS).map((e) => wall(e, r.frame, inside)).join("")}</div>`;
+  }
+  return `<h1>Magnet poles from the ID beam</h1>
+    <div class="row">
+      <div><div class="mute">Copy the beam: back down, left end toward you, read left to right.</div>
+        <div class="beam"><div class="cells">${cells}</div><div class="baseline"></div><div class="bitnums">${nums}</div></div></div>
+      <label class="length"><span>Length</span><span class="select"><select id="length">${options}</select></span></label>
+      <div class="readout"><code>${r.bits}</code> = ${r.id}</div>
+    </div>${body}`;
+}
+
+// The frame from above, as held, with an arrow at each wall for the way you look at it:
+// out of the ring from inside, or into it from outside.
+function orientation(L, inside) {
+  const s = 3.2, w = G.u * s, h = L * G.u * s, ox = 150, oy = 74, wl = G.wall * s * 1.6;
+  const cx = ox + w / 2, cy = oy + h / 2;
+  const col = inside ? "#0f8a5f" : "#b0590e";
+  // [x, y at the wall, unit vector out of the wall, name]
+  const walls = [
+    [ox, cy, -1, 0, WALLS.top.name], [ox + w, cy, 1, 0, WALLS.bottom.name],
+    [cx, oy + h, 0, 1, WALLS.left.name], [cx, oy, 0, -1, WALLS.right.name],
+  ];
+  let g = `<defs><marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${col}"/></marker></defs>`;
+  g += `<rect x="${ox}" y="${oy}" width="${w}" height="${h}" fill="#d8d2c4" stroke="#555" stroke-width="2" rx="3"/>`;
+  g += `<rect x="${ox + wl}" y="${oy + wl}" width="${w - 2 * wl}" height="${h - 2 * wl}" fill="#faf8f3" stroke="#888"/>`;
+  g += `<rect x="${ox + wl}" y="${oy + h - G.beamX * s - (G.beamW * s) / 2}" width="${w - 2 * wl}" height="${G.beamW * s}" fill="#555"/>`;
+  g += `<text x="${cx}" y="${oy + h - G.beamX * s - (G.beamW * s) / 2 - 4}" text-anchor="middle" font-size="9" fill="#555">ID beam</text>`;
+  for (const [x, y, dx, dy, label] of walls) {
+    const gapIn = wl + 4, gapOut = 6, len = inside ? (dx ? w / 2 - gapIn - 8 : 26) : 30;
+    const [x1, y1, x2, y2] = inside
+      ? [x - dx * (gapIn + len), y - dy * (gapIn + len), x - dx * gapIn, y - dy * gapIn]
+      : [x + dx * (gapOut + len), y + dy * (gapOut + len), x + dx * gapOut, y + dy * gapOut];
+    g += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="3" marker-end="url(#head)"/>`;
+    g += `<circle cx="${x1}" cy="${y1}" r="4" fill="#fff" stroke="${col}" stroke-width="2"/>`;
+    const anchor = dx < 0 ? "end" : dx > 0 ? "start" : "middle";
+    g += `<text x="${x + dx * 46}" y="${y + dy * 46 + (dy > 0 ? 8 : dy < 0 ? 0 : 4)}" text-anchor="${anchor}" font-size="11" font-weight="600">${label}</text>`;
+  }
+  g += `<text x="${cx}" y="${oy + h + 72}" text-anchor="middle" font-size="11" fill="#666">you hold this end</text>`;
+  return `<svg width="${w + ox + 170}" height="${h + oy + 82}">${g}</svg>`;
+}
+
+// One wall face-on at scale. Its positions come in order from inside the ring; from
+// outside, the strip is the mirror image.
+function wall(edge, frame, inside) {
+  const v = WALLS[edge], s = 5, span = edge === "top" || edge === "bottom" ? frame.length : 1;
+  const [leftEnd, rightEnd] = inside ? v.ends : [...v.ends].reverse();
+  const pad = 70, w = span * G.u * s, h = G.thickness * s;
+  let g = `<rect x="${pad}" y="10" width="${w}" height="${h}" fill="#ece8df" stroke="#555" stroke-width="1.5" rx="3"/>`;
+  g += `<line x1="${pad}" y1="${10 + h / 2}" x2="${pad + w}" y2="${10 + h / 2}" stroke="#ccc" stroke-dasharray="3 3"/>`;
+  g += `<text x="${pad - 8}" y="${10 + h / 4 + 4}" text-anchor="end" font-size="11" fill="#666">up</text><text x="${pad - 8}" y="${10 + (3 * h) / 4 + 4}" text-anchor="end" font-size="11" fill="#666">down</text>`;
+  for (const p of frame.walls[edge]) {
+    const along = inside ? p.along : span - p.along, cx = pad + along * G.u * s;
+    for (const [layer, cy] of [[p.up, 10 + h / 4], [p.down, 10 + (3 * h) / 4]]) {
+      if (layer.out === "-") {
+        g += `<circle cx="${cx}" cy="${cy}" r="${p.pocket ? 9 : 4}" fill="none" stroke="#c4c4c4" stroke-dasharray="${p.pocket ? "3 2" : "0"}"/>`;
+        continue;
+      }
+      const [big, small, word] = inside ? [layer.in, layer.out, "out"] : [layer.out, layer.in, "in"];
+      g += `<circle cx="${cx}" cy="${cy}" r="10" fill="${COL[big]}"/><text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">${big}</text>`;
+      g += `<text x="${cx + 12}" y="${cy - 5}" font-size="9" font-weight="700" fill="${COL[small]}">${word} ${small}</text>`;
+    }
+    if (p.pocket) g += `<text x="${cx}" y="${10 + h + 14}" text-anchor="middle" font-size="10" fill="#666">${p.at}</text>`;
+  }
+  return `<div class="wall"><b>${v.name}</b> <span class="mute">· ${v.hint} · U from ${v.measured}</span>
+    <div><svg width="${pad + w + 80}" height="${h + 46}">${g}
+    <text x="${pad}" y="${h + 42}" font-size="10" fill="#999">← ${leftEnd}</text>
+    <text x="${pad + w}" y="${h + 42}" text-anchor="end" font-size="10" fill="#999">${rightEnd} →</text></svg></div></div>`;
+}
+
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = page(lookup());
+  app.querySelectorAll("[data-bit]").forEach((el) => el.addEventListener("click", () => { state.bits[+el.dataset.bit] ^= 1; update(); }));
+  app.querySelectorAll("[data-id]").forEach((el) => el.addEventListener("click", (e) => {
+    e.preventDefault();
+    state.bits = bitsOf(+el.dataset.id).split("").map(Number);
+    update();
+  }));
+  app.querySelector("#length").addEventListener("change", (e) => { state.length = Number(e.target.value); update(); });
+  app.querySelectorAll("[data-view]").forEach((el) => el.addEventListener("click", () => { state.view = el.dataset.view; update(); }));
+}
+// Keep the beam, length and view in the URL, so a reload or a shared link keeps them.
+function update() {
+  const q = new URLSearchParams(location.search);
+  q.set("beam", state.bits.join(""));
+  q.set("length", state.length);
+  q.set("view", state.view);
+  history.replaceState(null, "", "?" + q);
+  render();
+}
+render();
+</script>
+</body>
+</html>

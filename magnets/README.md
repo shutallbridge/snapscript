@@ -12,7 +12,7 @@ uv run magnets search --flip left_right --goal repel    # also push illegal neig
 uv run magnets print example         # every bundled program's cards, to cut and fold
 uv run magnets print example --program nested_blocks --seed 3   # at the lengths of programs.txt's draw 3
 uv run magnets print example --program my_program.txt --unit 30 --paper letter
-uv run magnets bases example         # a printable base for each class and length: frames, cores and faces
+uv run magnets bases example         # a printable base for each class and length, and the assembly page
 uv run magnets bases example --classes get,literal --max-length 3 --magnet-clearance 0.25 --step
 uv run pytest
 ```
@@ -162,8 +162,9 @@ STL is in mm and ready to print, laid flat on z = 0: a frame on its
 front or its built-in back, a core flat, and a face on its plate with its
 legs up. With `--step` it also writes `assembled/<id>-<class>-<n>u.step`, each
 card's base put together to inspect in CAD: its frame, core and front
-face, and a back face for a flip pair, each labelled by its kind. Nothing
-else is written: no manifest and no config file.
+face, and a back face for a flip pair, each labelled by its kind. It
+also writes `assembly.html`, the **assembly page** (below). Nothing else
+is written: no manifest and no config file.
 
 A frame has a bore for each magnet of its class's front, one per filled
 layer, so a half pocket has one bore, a uniform or split pocket two and an
@@ -193,6 +194,35 @@ beam's size + the slide clearance all round, 20 mm from each end, so it
 goes in either way round and still covers every magnet; the marks stay a
 slide clearance clear of its inner walls. Cores and faces have no beam:
 they serve every class.
+
+The **assembly page** (see `CONTEXT.md`), `assembly.html` next to
+`frames/` and `shared/`, tells a builder which pockets of a frame get a
+magnet and which pole faces out, since nothing on a frame shows it. It is
+one self-contained HTML file, with no scripts, fonts or requests from
+elsewhere, so it opens from disk on any machine. Hold the frame back down,
+left end toward you, and click the five boxes to copy its ID beam, a `/`
+for each stroke; the page shows the ID (`00001 = 1`) and, with a length
+picked from those the run built, the class, its members, whether its frame
+is double-sided (a flip pair) or single-sided, and its magnet count. Below
+that, a drawing of the frame as held names its four walls, and one strip
+per wall (left end, top edge, right end, bottom edge) shows every position
+on it face-on: a coloured disc for a magnet (N red, S blue) on the up
+layer's upper row or the down layer's lower one, a dashed circle for the
+empty layer of a half pocket, and a small faint circle for an empty
+position. **From inside**, the big letter is the face you push into the
+bore and the small one the pole facing out of the edge; **from outside**,
+to check a finished frame, the strips are mirrored, and the big letter is
+the pole facing out. The view stays in the URL (`view=outside`), with the
+beam and length. An ID no class has gets a red notice, a class the run
+didn't build a yellow one; both list the classes one mark away, to click,
+and what the run built. The page shows exactly the frames the run built,
+`--classes` and `--max-length` included. The API is
+`magnets.assembly_page`, which takes the arrangement, `classes` and
+`max_length` as `bases` does, raises the same errors and doesn't need
+build123d: it returns each frame's walls, in the order from inside, with
+every position's `at` (U from the left end or the top edge) and each
+layer's out-facing pole (its in-facing pole is the opposite), every card
+class, built or not, and the page's `html`.
 
 The builder's tolerances, each a gap on one side in mm, are options:
 

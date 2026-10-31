@@ -479,10 +479,20 @@ def test_bases_writes_every_frame_and_shared_part_of_the_example(tmp_path):
     # Each frame's file starts with its class ID: simple_head 0, get 1, literal 8.
     frames = [f"frames/{cls}-{n}u.stl" for cls in ("00-simple_head", "01-get", "08-literal") for n in range(2, 7)]
     shared = [f"shared/{kind}-{n}u.stl" for kind in ("back-face", "core", "front-face") for n in range(2, 7)]
-    assert file_names(out) == frames + shared
+    assert file_names(out) == ["assembly.html", *frames, *shared]
     assert "15 frames" in run.stdout
     assert "15 shared parts" in run.stdout
     assert (out / "frames" / "01-get-2u.stl").read_bytes()[:5] != b"solid"  # binary STL
+
+
+def test_bases_writes_the_assembly_page_next_to_the_parts(tmp_path):
+    out = tmp_path / "mine"
+    args = ["bases", "example", "--classes", "get", "--max-length", "2", "--out", str(out)]
+    run = subprocess.run([*MAGNETS, *args], capture_output=True, text=True, check=True, cwd=tmp_path)
+    assert file_names(out) == ["assembly.html", "frames/01-get-2u.stl", "shared/core-2u.stl", "shared/front-face-2u.stl"]
+    assert f"Wrote the assembly page to {out / 'assembly.html'}" in run.stdout
+    page = (out / "assembly.html").read_text(encoding="utf-8")
+    assert '"class": "get"' in page and '"class": "literal"' not in page
 
 
 def test_bases_writes_no_back_face_without_a_flip_pair(tmp_path):
