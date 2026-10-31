@@ -31,7 +31,8 @@ horizontal:
 # at offset = lower's left end - upper's left end, in U.
 vertical:
   # Where the next line head can sit: the same column, 1U right after a
-  # block head, or 1U left for a [dedent].
+  # block head, or 1U left for a [dedent], [elif] or [else]. After an empty
+  # body, those sit in the block head's column.
   offsets: [-1, 0, 1]
   # At those offsets, these (upper bottom role, lower top role, offset)
   # connect.
@@ -39,12 +40,12 @@ vertical:
     - {upper: line, lower: line, offset: 0}
     - {upper: block, lower: line, offset: 1}
     - {upper: line, lower: dedent, offset: -1}
+    - {upper: block, lower: dedent, offset: 0}  # an empty body
   # Every other pair at those offsets is forbid, with the priority of the
   # rule here that matches it, or else `forbid`. A rule without `upper`,
   # `lower` or `offset` matches any; a pair may match at most one rule.
   priorities:
     - {lower: top_level, priority: nice}  # top_level cards should have nothing above them
-    - {upper: block, lower: dedent, offset: 0, priority: nice}  # an empty body
   forbid: should
   # Any other offset is forbid with this priority, unless it is coexist.
   off_line: low
@@ -56,11 +57,12 @@ vertical:
   # card can head a line, the lower can sit inline and offset >= +L (+L+1 if
   # the upper's bottom role is in `indents`); or the upper can sit inline,
   # the lower can head a line and offset <= -L, or <= 1-B when the upper's
-  # line head is a block head that indents the lower line (-L-1 if the
-  # lower's top role is in `outdents`); or both can sit inline. L is the
-  # shortest length of a class that can head a line, B of a class whose
-  # bottom role is in `indents`: an inline card sits at least that far right
-  # of its line head. With every class 2U at its shortest, L and B are 2.
+  # line head is a block head that indents the lower line (if the lower's
+  # top role is in `outdents`: <= -L-1, or <= -B after an empty body); or
+  # both can sit inline. L is the shortest length of a class that can head a
+  # line, B of a class whose bottom role is in `indents`: an inline card sits
+  # at least that far right of its line head. With every class 2U at its
+  # shortest, L and B are 2.
   coexist:
     never: [top_level, free]
     # A card can head a line if its top role is one of these. A [define] or
@@ -72,5 +74,6 @@ vertical:
     # bottom roles: a block's body is indented.
     indents: [block]
     # A line head with one of these top roles sits 1U left of the line
-    # above it: a [dedent].
+    # above it, or under the block head after an empty body: a [dedent],
+    # [elif] or [else].
     outdents: [dedent]

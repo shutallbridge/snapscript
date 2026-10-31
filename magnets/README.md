@@ -48,9 +48,9 @@ Card classes (`classes.yaml`), grammar rules (`rules.yaml`) and bundled
 arrangements live in `src/magnets/data/`. A class has a `min_length`, its
 shortest card (2U for every class for now; a class can be set to 1U), and a
 `pocket_reach`: a top or bottom pocket sits less than the reach from its end
-(1U, or 2U on block heads and `[dedent]`). Each class also has an `id`, its
-**class ID** (see `CONTEXT.md`): a whole number from 0 to 31, so it fits 5
-bits, unique to the class. It is shown on the class's printed frames, so it
+(1U, or 2U on block heads, `[elif]`, `[else]` and `[dedent]`). Each class
+also has an `id`, its **class ID** (see `CONTEXT.md`): a whole number from 0
+to 31, so it fits 5 bits, unique to the class. It is shown on the class's printed frames, so it
 stays with the class wherever the class sits in the file; changing it makes
 frames already printed read as another class. Each language version sets
 the IDs. Loading the classes stops with an error for a class with no ID,

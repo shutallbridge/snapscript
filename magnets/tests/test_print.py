@@ -256,7 +256,7 @@ def test_a_row_that_fits_exactly_is_full(per_row):
     assert [len(row) for row in rows(page)] == [per_row]
 
 
-BUNDLED = ["first_sketch", "nested_blocks", "parameters", "receivers_and_groups", "illegal"]
+BUNDLED = ["first_sketch", "nested_blocks", "chains", "parameters", "receivers_and_groups", "illegal"]
 
 
 def test_with_no_program_every_bundled_program_from_a_new_page():

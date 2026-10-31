@@ -26,11 +26,12 @@ def test_every_bundled_program_parses_and_every_card_resolves():
     assert [p.name for p in programs] == [
         "first_sketch",
         "nested_blocks",
+        "chains",
         "parameters",
         "receivers_and_groups",
         "illegal",
     ]
-    assert [p.legal for p in programs] == [True, True, True, True, False]
+    assert [p.legal for p in programs] == [True, True, True, True, True, False]
     for program in programs:
         result = check_program("example", program.text)
         cards = [card for strip in result.program for line in strip for card in line.cards]
@@ -121,6 +122,48 @@ def test_nested_blocks_intended_column_contacts():
         ("[dedent]", "[dedent]", -1),
         ("[dedent]", "[repeat]", 0),
         ("[repeat]", "[call(print)]", 1),
+        ("[call(print)]", "[dedent]", -1),
+    ]
+    for pc in layout.contacts:
+        if pc.intended:
+            assert [label.kind for label in pc.contact.labels] == ["connect"]
+
+
+CHAINS = next(p for p in bundled_programs() if p.name == "chains").text
+
+
+def test_elif_and_else_sit_in_the_column_of_their_if_with_their_bodies_indented():
+    [layout] = check_program("example", CHAINS, draws=0).layouts
+    assert line_heads(layout) == [
+        (3, 0, 0),  # [define{draw}]
+        (4, 0, 1),  # [if]
+        (5, 1, 2),  #   [call(print)]
+        (6, 0, 3),  # [elif]
+        (7, 1, 4),  #   [call(print)]
+        (8, 0, 5),  # [else]
+        (9, 1, 6),  #   [call(print)]
+        (10, 0, 7),  # [dedent]
+        (11, 0, 8),  # [if]
+        (12, 0, 9),  # [else], after an empty body
+        (13, 1, 10),  #   [call(print)]
+        (14, 0, 11),  # [dedent]
+    ]
+
+
+def test_chain_intended_column_contacts_all_connect():
+    [layout] = check_program("example", CHAINS, draws=0).layouts
+    intended = [(pc.a.card.text, pc.b.card.text, pc.contact.offset) for pc in layout.contacts if pc.intended]
+    assert intended == [
+        ("[define{draw}]", "[if]", 0),
+        ("[if]", "[call(print)]", 1),
+        ("[call(print)]", "[elif]", -1),
+        ("[elif]", "[call(print)]", 1),
+        ("[call(print)]", "[else]", -1),
+        ("[else]", "[call(print)]", 1),
+        ("[call(print)]", "[dedent]", -1),
+        ("[dedent]", "[if]", 0),
+        ("[if]", "[else]", 0),
+        ("[else]", "[call(print)]", 1),
         ("[call(print)]", "[dedent]", -1),
     ]
     for pc in layout.contacts:
@@ -274,13 +317,12 @@ ILLEGAL = next(p for p in bundled_programs() if p.name == "illegal").text
 
 
 def test_the_illegal_program_lists_its_forbid_contacts_with_grades():
-    # [(][)] snaps, and so does [if] over [dedent]; nothing else has pockets.
+    # [(][)] snaps, and so does [dedent] over [elif]; nothing else has pockets.
     # At minimum lengths only the five forbidden constructs touch.
     toy = arrangement(
         open_paren={"right": [("1/2", "N/-")]},
         close_paren={"left": [("1/2", "S/-")]},
-        block_head={"bottom": [("left", "1/6", "N/-")]},
-        dedent={"top": [("left", "1/6", "S/-")]},
+        **{"dedent": {"bottom": [("left", "1/6", "N/-")]}, "elif": {"top": [("left", "1/6", "S/-")]}},
     )
     result = check_program(toy, ILLEGAL, draws=0)
     found = {
@@ -289,10 +331,10 @@ def test_the_illegal_program_lists_its_forbid_contacts_with_grades():
     }
     assert found == {
         ("horizontal", (3, "[(]"), (3, "[)]"), 0, "should", "leak", False),
-        ("vertical", (6, "[if]"), (7, "[dedent]"), 0, "nice", "leak", False),
-        ("vertical", (10, "[set{y}to]"), (11, "[define{inner}]"), 0, "nice", "weak", False),
-        ("horizontal", (13, "[optional{a}]"), (13, "[required{b}]"), 0, "should", "weak", False),
-        ("vertical", (15, "[define{e}]"), (16, "[color(red)]"), 0, "should", "weak", False),
+        ("vertical", (7, "[dedent]"), (8, "[elif]"), 0, "should", "leak", False),
+        ("vertical", (11, "[set{y}to]"), (12, "[define{inner}]"), 0, "nice", "weak", False),
+        ("horizontal", (14, "[optional{a}]"), (14, "[required{b}]"), 0, "should", "weak", False),
+        ("vertical", (16, "[define{e}]"), (17, "[color(red)]"), 0, "should", "weak", False),
     }
     assert {f.layout for f in result.forbids} == {"min lengths"}
 
@@ -301,8 +343,8 @@ def test_forbids_are_found_in_every_layout():
     result = check_program("example", ILLEGAL, seed=1)
     for layout in result.layouts:
         targeted = {where(f.contact) for f in result.forbids if f.layout == layout.name and f.contact.a.card.index == 0}
-        assert ("vertical", (6, "[if]"), (7, "[dedent]"), 0) in targeted
-        assert ("vertical", (10, "[set{y}to]"), (11, "[define{inner}]"), 0) in targeted
+        assert ("vertical", (7, "[dedent]"), (8, "[elif]"), 0) in targeted
+        assert ("vertical", (11, "[set{y}to]"), (12, "[define{inner}]"), 0) in targeted
 
 
 def test_legal_bundled_programs_agree_with_the_grammar():

@@ -214,16 +214,16 @@ def test_check_writes_the_program_report(tmp_path):
     titles = [s.splitlines()[0] for s in sections]
     # Two [set{x}to], two [get{x}] and seven [num] at 4 magnets each.
     assert titles[0] == "first_sketch (legal): FAIL in 21 of 21 layouts, 44 magnets"
-    for title, name in zip(titles[1:4], ("nested_blocks", "parameters", "receivers_and_groups")):
+    for title, name in zip(titles[1:5], ("nested_blocks", "chains", "parameters", "receivers_and_groups")):
         assert re.fullmatch(rf"{name} \(legal\): FAIL in 21 of 21 layouts, \d+ magnets", title)
-    assert titles[4].startswith("illegal (illegal): ") and titles[4].endswith(" forbid contacts in 21 layouts")
+    assert titles[5].startswith("illegal (illegal): ") and titles[5].endswith(" forbid contacts in 21 layouts")
     # The example only designs simple_head's, get's and literal's edges.
     first_sketch = sections[0].splitlines()
     assert "  line 5 [call(p5.createCanvas)] [num{500}] @0: connect nothing, should snap (21 of 21 layouts)" in first_sketch
     assert not any("[set{x}to] over [set{y}to]" in line for line in first_sketch)
-    illegal = sections[4].splitlines()
-    assert "  line 6 [if] over line 7 [dedent] @0: forbid nice weak (21 of 21 layouts)" in illegal
-    assert "  line 10 [set{y}to] over line 11 [define{inner}] @0: forbid nice weak (21 of 21 layouts)" in illegal
+    illegal = sections[5].splitlines()
+    assert "  line 7 [dedent] over line 8 [elif] @0: forbid should weak (21 of 21 layouts)" in illegal
+    assert "  line 11 [set{y}to] over line 12 [define{inner}] @0: forbid nice weak (21 of 21 layouts)" in illegal
     assert "  line 3 [(] [)] @0: forbid should weak (21 of 21 layouts)" in illegal
     # stdout has each program's status after the summary.
     assert "\nINVALID\n\nPrograms:\n  first_sketch (legal): FAIL in 21 of 21 layouts, 44 magnets\n" in run.stdout
@@ -416,7 +416,7 @@ def test_print_rejects_a_card_too_long_for_the_page(tmp_path):
     assert "the largest unit that fits is 95 mm" in run.stderr
 
 
-BUNDLED = ["first_sketch", "nested_blocks", "parameters", "receivers_and_groups", "illegal"]
+BUNDLED = ["first_sketch", "nested_blocks", "chains", "parameters", "receivers_and_groups", "illegal"]
 
 
 def test_print_every_bundled_program_by_default(tmp_path):

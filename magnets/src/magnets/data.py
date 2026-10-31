@@ -175,14 +175,16 @@ class Coexist:
         """Whether a legal program can put `upper` over `lower` at `offset`.
 
         The next line head sits in the same column, 1U right after a block
-        head, or 1U left only for a [dedent], which has no inline cards. An
-        inline card sits at least `shortest_head` right of its line head, so
-        a line head meets an inline card below only at +`shortest_head` or
-        more (1U more after a block head). An inline card meets a line head
-        below at -`shortest_head` or less; if its own line head is a block
-        head, the next line is indented, so at 1 - `shortest_block` or less.
-        It meets a [dedent] 1U further left. Two inline cards meet at any
-        offset. Connect pairs are left out by the caller.
+        head, or 1U left only for a [dedent], [elif] or [else], which sit in
+        the block head's column after an empty body. An inline card sits at
+        least `shortest_head` right of its line head, so a line head meets
+        an inline card below only at +`shortest_head` or more (1U more after
+        a block head). An inline card meets a line head below at
+        -`shortest_head` or less; if its own line head is a block head, the
+        next line is indented, so at 1 - `shortest_block` or less. It meets
+        a [dedent] 1U further left, or, after an empty body, at
+        -`shortest_block` or less. Two inline cards meet at any offset.
+        Connect pairs are left out by the caller.
         """
         if self.shortest_head is None:
             raise ValueError("coexist needs the card classes' lengths: fit the rules with `for_classes`")
@@ -201,7 +203,9 @@ class Coexist:
         """The largest offset at which a line head below, with this top role,
         meets an inline card above."""
         if top in self.outdents:
-            return -shortest_head - 1
+            if self.shortest_block is None:
+                return -shortest_head - 1
+            return max(-shortest_head - 1, -self.shortest_block)
         if self.shortest_block is None:
             return -shortest_head
         return max(-shortest_head, 1 - self.shortest_block)
