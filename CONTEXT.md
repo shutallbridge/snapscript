@@ -21,7 +21,7 @@ The outer ring of a base, as long as the card, with a bore for each magnet. It i
 A beam across the back of a frame whose marks show its class ID in 5 bits, so frames that look alike can be told apart. Cores and faces have none: they serve every class.
 
 **Assembly page**:
-The page that comes with a set of bases. A builder copies a frame's ID beam into it and picks a length, and it shows which pockets of that frame get a magnet and which pole faces out. It tells the orientation; it doesn't teach assembly or how to find a magnet's pole.
+The page that comes with a set of bases. An instructor copies a frame's ID beam into it and picks a length, and it shows which pockets of that frame get a magnet and which pole faces out. It tells the orientation; it doesn't teach assembly or how to find a magnet's pole.
 _Avoid_: assembly guide, placement guide, walkthrough
 
 **Core**:
@@ -32,7 +32,7 @@ A plate that clips onto the core and covers one side of the base, under that sid
 _Avoid_: top face (top is an edge), side (a side is the printed face of a card)
 
 **Tolerance**:
-A gap that a builder sets to suit their printer, magnets and paper: how loosely parts slide together, how much room the sheet gets, and how loosely a magnet sits in its bore. Tolerances never change what snaps, so bases built with different tolerances from the same arrangement snap together.
+A gap that an instructor sets to suit their printer, magnets and paper: how loosely parts slide together, how much room the sheet gets, and how loosely a magnet sits in its bore. Tolerances never change what snaps, so bases built with different tolerances from the same arrangement snap together.
 
 **Sheet**:
 The printed paper wrapped onto a side of a base, carrying that side's label and marker. It wraps rather than being taped, so it can't come off. The base comes with the language; the sheet comes with the card, such as a library card.
@@ -248,5 +248,40 @@ An arrangement given to the search to keep. The search keeps every edge it menti
 ## Releases
 
 **Language version**:
-One release of Snapscript: its language, its card classes and one magnet arrangement, found by the search when the release is made and then fixed. A builder prints every base from one version.
+One release of Snapscript: its language, its card classes and one magnet arrangement, found by the search when the release is made and then fixed. An instructor prints every base from one version.
 _Avoid_: release (on its own), arrangement version
+
+## The table
+
+**Instructor**:
+The person who sets up a table: prints and assembles the bases and sheets, sets up libraries, and calibrates the camera and projector.
+_Avoid_: builder
+
+**Instructor tool**:
+What the instructor runs on their own computer to set up a table. It talks to the table app for anything on the table.
+
+**Table app**:
+The program on the table's computer whose screen is projected onto the table. It joins the vision service to the language: it keeps the table program, checks and runs it, and draws the sketch, errors, read-back text and virtual cards. People use it only through the cards and the instructor tool.
+_Avoid_: IDE, desk app
+
+**Vision service**:
+The part of the table that watches the camera and reports which cards lie where and what their handwriting says. It knows card kinds, never lines or grammar.
+
+**Track**:
+One physical card as the vision service follows it over time. A card under a hand keeps its track for a moment; a card's handwriting is read again only when its track's image changes.
+
+**Table state**:
+Every track on the table at one moment, with its marker, where it lies, how it is turned, and the state of its handwriting. The vision service sends a new one whenever something changes.
+
+**Table reader**:
+What turns a table state into program text, and program text back into the cards it needs. Errors that only the camera makes, such as a read error, never enter the text.
+
+**Buffer**:
+The table program's text as the table app holds it now, rewritten whenever the table changes. A `.snap` file is what the buffer is saved as.
+
+**Virtual card**:
+An outline the projector draws where a card is not: where a missing card goes, or a card of a program loaded from a file.
+_Avoid_: virtual block, ghost card
+
+**Help spot**:
+A place on the table where putting a card shows its doc comment.
