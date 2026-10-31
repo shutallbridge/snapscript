@@ -7,10 +7,12 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+from . import assembly as _assembly
 from . import contacts as _contacts
 from . import programs as _programs
 from . import sheet as _sheet
 from . import solver as _solver
+from .assembly import AssemblyFrame
 from .contacts import ContactGroup, Label, SideEdges
 from .blueprint import BasePart, Tolerances
 from .data import (
@@ -198,6 +200,18 @@ def card_sheet(
     return _sheet.card_sheet(loaded, classes, all_sides, sections, label, unit, paper)
 
 
+@dataclass(frozen=True)
+class AssemblyPage:
+    """The assembly page of a run of `bases`: its frames, every card class,
+    built or not, and the page as HTML."""
+
+    arrangement: Arrangement
+    max_length: int
+    classes: Mapping[str, CardClass]
+    frames: tuple[AssemblyFrame, ...]
+    html: str
+
+
 def bases(
     arrangement: str | Path | Mapping | Arrangement,
     *,
@@ -221,17 +235,7 @@ def bases(
     """
     from . import parts as _parts
 
-    every = load_classes(grammar=load_rules())
-    loaded = load_arrangement(arrangement, max_length=max_length, classes=every)
-    if classes is None:
-        classes = mentioned_classes(arrangement, classes=every)
-    unknown = [name for name in classes if name not in every]
-    if unknown or not classes:
-        raise ValueError(f"unknown card class(es): {', '.join(unknown)}" if unknown else "no card classes given")
-    chosen = [cls for name, cls in every.items() if name in classes]
-    too_short = [cls.name for cls in chosen if cls.min_length > max_length]
-    if too_short:
-        raise ValueError(f"max_length {max_length} is shorter than the minimum length of {', '.join(too_short)}")
+    _, loaded, chosen = _built(arrangement, classes, max_length)
     frames = [
         _parts.frame(cls.name, cls.id, loaded.fronts[cls.name], n, cls.flip_pair, tolerances)
         for cls in chosen
@@ -243,6 +247,48 @@ def bases(
         if any(cls.flip_pair and cls.min_length <= n for cls in chosen):
             shared.append(_parts.face(n, tolerances, front=False))
     return frames + shared
+
+
+def assembly_page(
+    arrangement: str | Path | Mapping | Arrangement,
+    *,
+    classes: Sequence[str] | None = None,
+    max_length: int = 6,
+) -> AssemblyPage:
+    """The assembly page for `bases`'s frames from the same arguments: for
+    each frame, in the same order, its class and every position on its four
+    walls, with each layer's out-facing pole; and `html`, the page as one
+    self-contained HTML file, where a builder copies a frame's ID beam to
+    see them. `classes` lists every card class, built or not, so the page
+    can tell an ID no class has from a class the run didn't build. Raises
+    the same errors as `bases`, and doesn't need build123d.
+    """
+    every, loaded, chosen = _built(arrangement, classes, max_length)
+    frames = tuple(
+        _assembly.frame(cls, loaded.fronts[cls.name], n, loaded.magnets(cls.name))
+        for cls in chosen
+        for n in range(cls.min_length, max_length + 1)
+    )
+    return AssemblyPage(loaded, max_length, every, frames, _assembly.page_html(loaded, every, frames, max_length))
+
+
+def _built(
+    arrangement: str | Path | Mapping | Arrangement, classes: Sequence[str] | None, max_length: int
+) -> tuple[Mapping[str, CardClass], Arrangement, list[CardClass]]:
+    """Every bundled class, the loaded arrangement, and the classes whose
+    bases `bases` builds from these arguments, checked as it checks them."""
+    every = load_classes(grammar=load_rules())
+    loaded = load_arrangement(arrangement, max_length=max_length, classes=every)
+    if classes is None:
+        classes = mentioned_classes(arrangement, classes=every)
+    unknown = [name for name in classes if name not in every]
+    if unknown or not classes:
+        raise ValueError(f"unknown card class(es): {', '.join(unknown)}" if unknown else "no card classes given")
+    chosen = [cls for name, cls in every.items() if name in classes]
+    too_short = [cls.name for cls in chosen if cls.min_length > max_length]
+    if too_short:
+        raise ValueError(f"max_length {max_length} is shorter than the minimum length of {', '.join(too_short)}")
+    return every, loaded, chosen
 
 
 def assemblies(parts: Sequence[BasePart]) -> dict[tuple[str, int], Any]:

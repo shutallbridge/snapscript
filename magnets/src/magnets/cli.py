@@ -6,7 +6,7 @@ import sys
 from dataclasses import fields, replace
 from pathlib import Path
 
-from .api import CheckResult, SolveResult, assemblies, bases, card_sheet, check, check_program, solve
+from .api import CheckResult, SolveResult, assemblies, assembly_page, bases, card_sheet, check, check_program, solve
 from .blueprint import Tolerances
 from .data import ArrangementError, bundled_programs
 from .physics import FLIPS
@@ -75,7 +75,9 @@ def main(argv: list[str] | None = None) -> int:
     bases_cmd = commands.add_parser("bases", help="build the printable parts of every class's base at every length")
     bases_cmd.add_argument("arrangement", help="an arrangement YAML file, or a bundled arrangement's name")
     bases_cmd.add_argument(
-        "--out", type=Path, help="directory to write frames/ and shared/ to (default: out/<arrangement>/bases)"
+        "--out",
+        type=Path,
+        help="directory to write frames/, shared/ and assembly.html to (default: out/<arrangement>/bases)",
     )
     bases_cmd.add_argument(
         "--step", action="store_true", help="also write each card's base assembled, as STEP, to assembled/"
@@ -141,6 +143,9 @@ def _bases(args: argparse.Namespace, classes: list[str] | None) -> int:
     for part in shared:
         export_stl(part.solid, str(out / "shared" / f"{part.name}.stl"))
     print(f"Wrote {len(frames)} frames to {out / 'frames'} and {len(shared)} shared parts to {out / 'shared'}")
+    page = assembly_page(args.arrangement, classes=classes, max_length=args.max_length)
+    (out / "assembly.html").write_text(page.html, encoding="utf-8")
+    print(f"Wrote the assembly page to {out / 'assembly.html'}: copy a frame's ID beam into it to see its magnets")
     if args.step:
         cards = assemblies(parts)
         (out / "assembled").mkdir(exist_ok=True)
