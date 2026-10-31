@@ -66,7 +66,11 @@ Any card in a line after its line head.
 The vertical run of line heads, one under the other.
 
 **Block**:
-A block head (`[if]`, `[repeat]`, `[for{x}in]`) with its body, indented one U to the right, closed by `[dedent]`.
+A block head (`[if]`, `[elif]`, `[else]`, `[repeat]`, `[for{x}in]`) with its body, indented one U to the right, closed by `[dedent]`, or by the `[elif]` or `[else]` that continues its chain.
+
+**Chain**:
+An `[if]` block and the `[elif]` and `[else]` blocks that follow it in its column. Each `[elif]` or `[else]` closes the block above it and opens its own; one `[dedent]` closes the whole chain.
+_Avoid_: if statement, branch (a branch is one block of a chain)
 
 **Strip**:
 A free-standing group of lines that snap together, such as one function, and can be moved around the table as a whole.
@@ -78,6 +82,9 @@ A package of Snapscript modules that a program imports by its package name: `[im
 
 **Library card**:
 A printed card that a library offers with a `@card` tag in a doc comment: `[call(p5.circle)]`, `[get(p5.frameCount)]`, or `[define(setup)]` for a function that the program defines. A handwritten card with the same text means the same thing, but shows none of the library card's help.
+
+**Builtin**:
+A name that every file has without an import: functions such as `[call(print)]` and `[call(sin)]`, and the value `[get(pi)]`. A local or a top-level declaration with the same name hides it.
 
 **Prelude**:
 Text that the system puts at the start of every table program, such as `[import(snapscript-p5)as(p5)]`. Nobody lays it on the table.
@@ -103,7 +110,7 @@ The camera is not sure what a card's handwriting says. It is a mark the physical
 _Avoid_: OCR error
 
 **Skipped line**:
-A line left out of a run because it has a structure or check error, or holds a card with a read error. It is lit up and the rest of its function runs. Skipping a block head skips its body; skipping a `[define{…}]` header skips its strip.
+A line left out of a run because it has a structure or check error, or holds a card with a read error. It is lit up and the rest of its function runs. Skipping a block head skips its body, and in a chain, every later block of the chain too; skipping a `[define{…}]` header skips its strip.
 _Avoid_: ignored line, disabled line
 
 **Follow-on error**:
