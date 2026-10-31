@@ -149,13 +149,25 @@ A `[num{…}]` holds digits, with an optional `-` first and an optional `.` that
 [num{.5}]  [num{5.}]  [num{1e5}]  [num{}]      SyntaxError
 ```
 
-A name holds letters, digits and `_`. Case is significant.
+A name holds letters, digits and `_`. Case is ignored, because a handwritten `x` and `X` often can't be told apart.
 
 ```
 [set{frameCount}to]     frameCount
-[set{framecount}to]     a different name
+[set{framecount}to]     the same name
+[get{p5.framecount}]    p5.frameCount
 [set{}to]               SyntaxError
 ```
+
+This covers every name: variables, functions, parameters, attributes, module names and builtins. Every rule about names compares them ignoring case, so `[define{drawCircle}]` and `[define{drawcircle}]` in one file are two declarations with the same name. Case still counts in strings, import paths and package names.
+
+The text keeps each name as it was written. A message about a declaration uses the spelling it was declared with.
+
+```
+[define{drawCircle}][required{x}][required{y}][required{d}]
+[call{drawcircle}][num{5}]                  TypeError: drawCircle takes 3 values
+```
+
+By convention, names are camelCase: `frameCount`, `drawCircle`. In Python, case counts (`score` and `Score` are two names), and names are snake_case (`frame_count`).
 
 ## Data model
 
