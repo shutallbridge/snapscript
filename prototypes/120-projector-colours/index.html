@@ -5,7 +5,7 @@
   card programs (not the original JS), plus a colour tester.
 
   Keys:  1-4 demo   r fixed/responsive   space restart
-         c colour tester   b next background   t next trio (demos 1, 2, 4)
+         c colour tester   g background tester   b next background   t next trio (demos 1, 2, 4)
          h show/hide the label
   Remote: the page polls state.json; write it to switch (see README.md).
 -->
@@ -25,17 +25,23 @@
 <div id="hud"></div>
 <script>
 // The six colours the demos fix, each on its own card.
-const FIXED = ['midnightblue', 'gold', 'hotpink', 'aquamarine', 'black', 'white'];
+const FIXED = ['mediumblue', 'gold', 'hotpink', 'aquamarine', 'black', 'white'];
 // Candidates for the six back sides. Edit freely.
 const CANDIDATES = [
   'red', 'crimson', 'tomato', 'orange', 'yellow', 'limegreen', 'green', 'teal',
   'deepskyblue', 'royalblue', 'blue', 'purple', 'violet', 'pink', 'brown', 'gray',
 ];
 const BACKGROUNDS = ['midnightblue', 'black', 'white'];
+// Candidates for the dark background of demos 1, 2 and 4.
+const BG_CANDIDATES = [
+  'midnightblue', 'navy', 'darkblue', 'mediumblue', 'blue', 'indigo',
+  'darkslateblue', 'rebeccapurple', 'purple', 'teal', 'darkgreen', 'black',
+];
 
 const state = { demo: 1, responsive: false, mode: 'demo', bg: 0, trio: null, hud: true, rev: 0 };
 let sketch = null;
 
+function darkBg() { return state.background || 'mediumblue'; }
 function trio() { return state.trio || ['gold', 'hotpink', 'aquamarine']; }
 
 // Snapscript builtins the demos use.
@@ -52,7 +58,7 @@ const DEMOS = {
   1: (p, R) => {
     p.setup = () => {
       if (R) p.createCanvas(p.windowWidth, p.windowHeight); else p.createCanvas(500, 500);
-      p.background('midnightblue');
+      p.background(darkBg());
       p.noStroke();
       for (const colour of trio()) {        // the same 5 lines, once per colour
         p.fill(colour);
@@ -68,7 +74,7 @@ const DEMOS = {
   2: (p, R) => {
     p.setup = () => {
       if (R) p.createCanvas(p.windowWidth, p.windowHeight); else p.createCanvas(500, 500);
-      p.background('midnightblue');
+      p.background(darkBg());
       p.noStroke();
       for (const c of trio()) {
         p.fill(c);
@@ -89,14 +95,15 @@ const DEMOS = {
     p.draw = () => {
       p.background('black');
       p.fill('white');
-      const tx = p.frameCount * 0.015;
-      const ty = p.frameCount * 0.02;
-      for (const x of range(10, R ? p.width : 400, 20)) {
-        for (const y of range(10, R ? p.height : 400, 20)) {
+      const tx = p.frameCount * (state.tx ?? 0.012);
+      const ty = p.frameCount * (state.ty ?? 0.016);
+      const gap = state.gap ?? 25;
+      for (const x of range(Math.floor(gap / 2), R ? p.width : 400, gap)) {
+        for (const y of range(Math.floor(gap / 2), R ? p.height : 400, gap)) {
           const nx = x * 0.015 + tx;
           const ny = y * 0.02 + ty;
           const n = p.noise(nx, ny);
-          p.circle(x, y, n * 20);
+          p.circle(x, y, n * (state.size ?? 26));
         }
       }
     };
@@ -117,7 +124,7 @@ const DEMOS = {
       }
     };
     p.draw = () => {
-      p.background('midnightblue');
+      p.background(darkBg());
       for (const i of range(length * 3)) {
         const x = xs[i];
         let y = ys[i];
@@ -159,11 +166,37 @@ function tester(p) {
   };
 }
 
+// Background tester: the trio's confetti on each candidate background.
+function bgTester(p) {
+  p.setup = () => { p.createCanvas(p.windowWidth, p.windowHeight); p.noLoop(); };
+  p.draw = () => {
+    const bgs = state.bgs || BG_CANDIDATES;
+    const cols = Math.ceil(Math.sqrt(bgs.length * 16 / 9)), rows = Math.ceil(bgs.length / cols);
+    const w = p.width / cols, h = p.height / rows;
+    p.noStroke();
+    p.randomSeed(1);
+    bgs.forEach((name, i) => {
+      const cx = (i % cols) * w, cy = Math.floor(i / cols) * h;
+      p.fill(name);
+      p.rect(cx, cy, w, h);
+      for (const c of trio()) {
+        p.fill(c);
+        for (let k = 0; k < 8; k++) p.rect(cx + 15 + p.random(w - 40), cy + 10 + p.random(h - 60), 10, 16);
+      }
+      p.fill(160);
+      p.textFont('monospace');
+      p.textSize(18);
+      p.text(name, cx + 15, cy + h - 14);
+    });
+  };
+}
+
 function hud() {
   const el = document.getElementById('hud');
   el.style.display = state.hud ? 'block' : 'none';
   el.textContent = state.mode === 'colours'
     ? `colours on ${BACKGROUNDS[state.bg % BACKGROUNDS.length]}`
+    : state.mode === 'backgrounds' ? 'backgrounds'
     : `demo ${state.demo} ${state.responsive ? 'responsive' : 'fixed'}  [${trio().join(' ')}]`;
 }
 
@@ -172,6 +205,7 @@ function restart() {
   const stage = document.getElementById('stage');
   sketch = state.mode === 'colours'
     ? new p5(tester, stage)
+    : state.mode === 'backgrounds' ? new p5(bgTester, stage)
     : new p5(p => {
         DEMOS[state.demo](p, state.responsive);
         // The runtime restarts the sketch when the canvas changes.
@@ -193,6 +227,7 @@ window.addEventListener('keydown', e => {
   else if (k === 'r') state.responsive = !state.responsive;
   else if (k === 'c') state.mode = state.mode === 'colours' ? 'demo' : 'colours';
   else if (k === 'b') state.bg++;
+  else if (k === 'g') state.mode = state.mode === 'backgrounds' ? 'demo' : 'backgrounds';
   else if (k === 't') nextTrio();
   else if (k === 'h') { state.hud = !state.hud; hud(); return; }
   else if (k !== ' ') return;
@@ -214,6 +249,13 @@ async function poll() {
   } catch (e) { /* no server or bad JSON: keys only */ }
   setTimeout(poll, 500);
 }
+
+// Frame rate in the label, for the Pi's load.
+setInterval(() => {
+  if (!sketch || !state.hud || state.mode !== 'demo') return;
+  hud();
+  document.getElementById('hud').textContent += `  ${Math.round(sketch.frameRate())} fps`;
+}, 1000);
 
 restart();
 poll();
