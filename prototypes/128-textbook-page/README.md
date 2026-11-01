@@ -7,7 +7,8 @@ Two Session B beats ("0. Get a canvas", "1. Put something on it") as A4 pages, e
 | File | What |
 |---|---|
 | `pages.json` | the pages: marker IDs and where they sit on the paper, text, program. Read by everything below |
-| `pages.html` | the A4 pages to print. No program pictures: a callout points at the virtual cards on the table. Cards named in the text (card notation in `pages.json`) are drawn as mini cards by `sheets.js`, handwriting in Kalam |
+| `pages.html` | the A4 pages to print. No program pictures: a callout points at the virtual cards on the table. Cards named in the text (card notation in `pages.json`) are drawn as mini cards |
+| `minis.js` | mini cards: the sibling of `sheets.js`'s card faces for running text. Same look and colours, its own sizes, only as long as its text; handwriting in black Kalam |
 | `table.html` | what the projector shows (fullscreen Chromium on the Pi); virtual cards drawn with `sheets.js` (copied from #101) |
 | `vision.py` | on the Pi: camera → markers → where each page lies → `state.json` |
 | `geometry.py` | placing a page from its marker(s); `test_geometry.py` checks it on the rendered pages |
