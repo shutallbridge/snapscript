@@ -50,8 +50,9 @@ const OPTS = [  // key, label, choices
   ['canvas', 'canvas size (px)', [200, 300, 400, 500, 600]],
   ['textPx', 'table text size (px)', [12, 14, 16, 18, 20, 24, 28, 32]],
   ['bg', 'coding space brightness', [0, 6, 12, 20, 32, 48]],
-  ['margin', 'page cut-out margin (mm)', [0, 3, 5, 10, 15]],
-  ['halo', 'dim area around a page (mm)', [0, 5, 10, 20, 40, 60, 100]],
+  ['margin', 'page cut-out margin (mm)', [0, 2, 3, 5, 10, 15]],
+  ['halo', 'dim area around a page (mm)', [0, 2, 5, 10, 20, 40, 60, 100]],
+  ['radius', 'page cut-out corner radius (mm)', [0, 2, 3, 5, 10]],
   ['program', 'mock program', [true, false]],
   ['test', 'highlight test', [false, true]],
   ['marks', 'show marker reads', [true, false]],
@@ -60,7 +61,7 @@ const OPTS = [  // key, label, choices
   ['tableMm', 'work area depth (mm)', [700, 750, 780, 792, 800, 850, 900]],
 ];
 const DEFAULTS = { split: 50, cornerU: 3.5, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
-  canvas: 500, textPx: 16, bg: 12, margin: 5, halo: 10, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 792 };
+  canvas: 500, textPx: 16, bg: 12, margin: 3, halo: 5, radius: 3, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 792 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114d || '{}') };
 const save = () => { localStorage.cfg114d = JSON.stringify(cfg); };
 
@@ -265,17 +266,35 @@ function program(key) {
 }
 
 // ======================= top layer: page cut-outs, marker reads, status =======================
+// A convex polygon grown outward by d px, corners kept sharp: each edge moved out along its normal, neighbours intersected.
+function grow(pts, d) {
+  if (d <= 0) return pts;
+  const n = pts.length, cx = pts.reduce((a, p) => a + p[0], 0) / n, cy = pts.reduce((a, p) => a + p[1], 0) / n;
+  const lines = pts.map((a, i) => {
+    const b = pts[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1;
+    let nx = dy / len, ny = -dx / len;
+    if ((a[0] - cx) * nx + (a[1] - cy) * ny < 0) { nx = -nx; ny = -ny; }  // point the normal away from the middle
+    return [a[0] + nx * d, a[1] + ny * d, dx, dy];
+  });
+  return lines.map((l, i) => {
+    const m = lines[(i + n - 1) % n], det = m[2] * l[3] - m[3] * l[2];
+    if (Math.abs(det) < 1e-9) return [l[0], l[1]];
+    const t = ((l[0] - m[0]) * l[3] - (l[1] - m[1]) * l[2]) / det;
+    return [m[0] + m[2] * t, m[1] + m[3] * t];
+  });
+}
 function drawOver(L) {
   const g = over.getContext('2d'), u = UPX();
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, VW(), VH());
   if (state.mode === 'calibrate') return drawCalib(g);
   for (const page of state.pages || []) {  // every page in view: black out the paper, its margin and a dim area around it
-    const pts = page.corners.map(toPx);
-    g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath();
-    g.fillStyle = '#000'; g.fill();
-    const reach = cfg.margin + cfg.halo;
-    if (reach > 0) { g.strokeStyle = '#000'; g.lineJoin = 'round'; g.lineWidth = 2 * reach * mm(); g.stroke(); }
-    if (cfg.outline) { g.strokeStyle = '#f43f5e'; g.lineWidth = 2; g.stroke(); }
+    const pts = page.corners.map(toPx), path = q => { g.beginPath(); q.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); };
+    // grow the paper by (reach - radius) with sharp corners, then stroke that with round joins of the radius:
+    // the dark area reaches `reach` past each edge, with corners rounded to `radius` (not to the whole reach)
+    const reach = (cfg.margin + cfg.halo) * mm(), r = Math.min(cfg.radius * mm(), reach);
+    path(grow(pts, reach - r)); g.fillStyle = '#000'; g.fill();
+    if (r > 0) { g.strokeStyle = '#000'; g.lineJoin = 'round'; g.lineWidth = 2 * r; g.stroke(); }
+    if (cfg.outline) { path(pts); g.strokeStyle = '#f43f5e'; g.lineWidth = 2; g.stroke(); }
   }
   if (cfg.marks) for (const c of state.cards || []) {  // a ring round each card marker: green counts, grey crossed is ignored
     const [x, y] = toPx(c.c), r = 11 * mm(), counts = inside(L.code, [x, y]);
