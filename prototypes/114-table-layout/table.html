@@ -47,7 +47,8 @@ const OPTS = [  // key, label, choices
   ['cardU', 'card length when unknown (U)', [2, 3, 4, 5, 6]],
   ...CORNERS.map(c => ['corner_' + c, CORNER_NAME[c] + ' corner', ['none', 'help']]),
   ['fake', 'pretend a card is in a corner', ['off', ...CORNERS]],
-  ['canvas', 'canvas size (px)', [200, 300, 400, 500, 600]],
+  ['full', 'canvas window fills the table', [false, true]],
+  ['centre', 'centre the sketch in its window', [true, false]],
   ['textPx', 'table text size (px)', [12, 14, 16, 18, 20, 24, 28, 32]],
   ['bg', 'coding space brightness', [0, 6, 12, 20, 32, 48]],
   ['margin', 'page cut-out margin (mm)', [0, 2, 3, 5, 10, 15]],
@@ -61,7 +62,7 @@ const OPTS = [  // key, label, choices
   ['tableMm', 'work area depth (mm)', [700, 750, 780, 792, 800, 850, 900]],
 ];
 const DEFAULTS = { split: 50, cornerU: 3.5, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
-  canvas: 500, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 792 };
+  full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 792 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114d || '{}') };
 const save = () => { localStorage.cfg114d = JSON.stringify(cfg); };
 
@@ -107,13 +108,20 @@ const S = () => UPX() / PX_PER_U;                                   // projector
 const toPx = ([x, y]) => [x * VH(), y * VH()];                     // projector space (units of height) -> projector px
 function size() { for (const c of [base, over]) { c.width = VW(); c.height = VH(); } }
 addEventListener('resize', size); size();
-const canvasPx = () => cfg.canvas * S();  // how wide the sketch is on the table, in projector px
+// The sketch's size in app px comes from the program's createCanvas (the current page's, else the mock's).
+// The prototype doesn't run cards, so it reads the numbers out of the program's text.
+function sketchSize() {
+  const m = /\[call\(p5\.createCanvas\)\]\[num\{(\d+)\}\]\[num\{(\d+)\}\]/.exec((state.current && program(state.current)) || MOCK);
+  return m ? [+m[1], +m[2]] : [100, 100];  // p5's default canvas
+}
 
-// Two windows side by side, coding space on the left, resized by cfg.split. The sketch is centred in the canvas space.
+// Two windows side by side, coding space on the left, resized by cfg.split; or the canvas window fills the table
+// (cfg.full) and the coding space is hidden under it. The sketch sits centred in the canvas window, or at its top-left.
 function layout() {
-  const W = AW(), H = VH(), cw = canvasPx(), codeW = Math.round(W * cfg.split / 100);
-  const code = { x: 0, y: 0, w: codeW, h: H }, canvas = { x: codeW, y: 0, w: W - codeW, h: H };
-  const sketch = { x: canvas.x + (canvas.w - cw) / 2, y: (H - cw) / 2, w: cw, h: cw };
+  const W = AW(), H = VH(), [sw, sh] = sketchSize().map(v => v * S()), codeW = Math.round(W * cfg.split / 100);
+  const code = { x: 0, y: 0, w: codeW, h: H }, canvas = cfg.full ? { x: 0, y: 0, w: W, h: H } : { x: codeW, y: 0, w: W - codeW, h: H };
+  const sketch = cfg.centre ? { x: canvas.x + (canvas.w - sw) / 2, y: canvas.y + (canvas.h - sh) / 2, w: sw, h: sh }
+    : { x: canvas.x, y: canvas.y, w: sw, h: sh };
   const R = cfg.cornerU * UPX();
   const corners = { tl: [0, 0], tr: [W, 0], bl: [0, H], br: [W, H] };
   return { W, H, code, canvas, sketch, R, corners };
@@ -152,8 +160,9 @@ new p5(p => {
   const conf = [];
   p.setup = () => { p.createCanvas(10, 10).parent('sketch'); p.pixelDensity(1); };
   p.draw = () => {
-    if (p.width !== cfg.canvas) {
-      p.resizeCanvas(cfg.canvas, cfg.canvas); conf.length = 0;
+    const [w, h] = sketchSize();
+    if (p.width !== w || p.height !== h) {
+      p.resizeCanvas(w, h); conf.length = 0;
       for (let i = 0; i < 120; i++) conf.push([p.random(p.width), p.random(p.height), p.random(10, 30), ['gold', 'hotpink', 'aquamarine', 'white'][i % 4]]);
     }
     const L = layout(), el = document.getElementById('sketch'), clip = document.getElementById('clip');
@@ -210,7 +219,7 @@ const DOC = { title: 'circle(x, y, d)', body: 'Draws a circle. x and y are where
 function drawBase(L) {
   const g = base.getContext('2d'), u = UPX();
   g.setTransform(1, 0, 0, 1, 0, 0); g.setLineDash([]); g.fillStyle = '#000'; g.fillRect(0, 0, VW(), VH());
-  if (state.mode === 'calibrate') return;
+  if (state.mode === 'calibrate' || cfg.full) return;  // a full canvas window hides the coding space
   g.fillStyle = `rgb(${cfg.bg},${cfg.bg},${cfg.bg})`; g.fillRect(L.code.x, L.code.y, L.code.w, L.code.h);
   // the boundary between the windows: a card counts when its marker is on the coding space's side of it
   g.strokeStyle = '#3f3f46'; g.lineWidth = 2; g.beginPath(); g.moveTo(L.code.w, 0.5 * u); g.lineTo(L.code.w, VH() - 0.5 * u); g.stroke();
@@ -304,12 +313,13 @@ function drawOver(L) {
     if (!counts) { g.beginPath(); g.moveTo(x - r * 0.7, y - r * 0.7); g.lineTo(x + r * 0.7, y + r * 0.7); g.stroke(); }
     text(g, String(c.id), x + r + 4, y - r, counts ? '#22c55e' : '#71717a', 12);
   }
-  if (canvasPx() > L.canvas.w || L.sketch.y + canvasPx() > VH()) {
-    text(g, `sketch doesn't fit: ${(canvasPx() / mm()).toFixed(0)} mm wide, canvas space ${(L.canvas.w / mm()).toFixed(0)} mm`, L.canvas.x + 0.5 * u, 1.1 * u, '#ef4444');
+  const [sw, sh] = sketchSize();
+  if (L.sketch.x < L.canvas.x || L.sketch.y < L.canvas.y || L.sketch.x + L.sketch.w > L.canvas.x + L.canvas.w + 1 || L.sketch.y + L.sketch.h > L.canvas.y + L.canvas.h + 1) {
+    text(g, `sketch doesn't fit: ${(L.sketch.w / mm()).toFixed(0)} × ${(L.sketch.h / mm()).toFixed(0)} mm, canvas window ${(L.canvas.w / mm()).toFixed(0)} × ${(L.canvas.h / mm()).toFixed(0)} mm`, L.canvas.x + 0.5 * u, 1.1 * u, '#ef4444');
   }
   if (cfg.hud) {
     const cur = state.current && book && book.pages.find(q => q.key === state.current);
-    text(g, `1U = ${PX_PER_U} px (${u.toFixed(1)} projector px) · split ${cfg.split}% · canvas ${cfg.canvas} px = ${(cfg.canvas / PX_PER_U).toFixed(1)}U = ${(canvasPx() / mm()).toFixed(0)} mm · ` +
+    text(g, `1U = ${PX_PER_U} px (${u.toFixed(1)} projector px) · ${cfg.full ? 'canvas window full' : 'split ' + cfg.split + '%'} · sketch ${sw} × ${sh} px = ${(L.sketch.w / mm()).toFixed(0)} × ${(L.sketch.h / mm()).toFixed(0)} mm · ` +
       `text ${cfg.textPx} px = ${(cfg.textPx * S() / mm()).toFixed(1)} mm · page ${cur ? cur.name : '-'} · cards ${(state.cards || []).length}` +
       (state.calibrated === false ? ' · NOT CALIBRATED' : '') + (state.t ? '' : ' · no vision'), 0.5 * u, 0.4 * u, '#71717a', 14);
   }
