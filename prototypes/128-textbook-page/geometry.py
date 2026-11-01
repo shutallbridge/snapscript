@@ -39,15 +39,17 @@ def fit_homography(src, dst):
     return h / h[2, 2]
 
 
-def fit_similarity(src, dst):
-    """Least-squares rotation + uniform scale + shift taking src to dst (Umeyama), as a 3x3 matrix."""
+def fit_similarity(src, dst, scale=None):
+    """Least-squares rotation + uniform scale + shift taking src to dst (Umeyama), as a 3x3 matrix.
+    A known scale (dst units per src unit) leaves only rotation + shift to fit."""
     src, dst = np.asarray(src, float), np.asarray(dst, float)
     ms, md = src.mean(0), dst.mean(0)
     a, b = src - ms, dst - md
     u, sig, vt = np.linalg.svd(b.T @ a / len(src))
     d = np.diag([1, np.sign(np.linalg.det(u @ vt))])
     r = u @ d @ vt
-    scale = np.trace(np.diag(sig) @ d) / a.var(0).sum()
+    if scale is None:
+        scale = np.trace(np.diag(sig) @ d) / a.var(0).sum()
     m = np.eye(3)
     m[:2, :2], m[:2, 2] = scale * r, md - scale * r @ ms
     return m
@@ -65,9 +67,10 @@ def marker_corners_mm(top_left, size):
     return centre + CORNER_ORDER * (QUAD * size / 2)
 
 
-def page_corners(detections, page, size, paper, fit="similarity", to_plane=None):
+def page_corners(detections, page, size, paper, fit="similarity", to_plane=None, scale=None):
     """Paper corners (TL, TR, BR, BL), from whichever of the page's markers were detected, in camera px, or
     in the plane to_plane (a homography from camera px) maps to. detections: {tag_id: (4, 2) corners}.
+    scale: that plane's units per paper mm, if known; else the marker sets it (only ~4% sure from 13 mm).
     Returns (corners, ids used) or (None, [])."""
     src, dst, used = [], [], []
     for tid, top_left in page["markers"].items():
@@ -78,5 +81,5 @@ def page_corners(detections, page, size, paper, fit="similarity", to_plane=None)
     if not used:
         return None, []
     w, h = paper
-    m = fit_homography(src, dst) if fit == "homography" else fit_similarity(src, dst)
+    m = fit_homography(src, dst) if fit == "homography" else fit_similarity(src, dst, scale)
     return apply(m, [[0, 0], [w, 0], [w, h], [0, h]]), used

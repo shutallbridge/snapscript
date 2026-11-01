@@ -100,6 +100,8 @@ def main():
     ap.add_argument("--smooth", type=float, default=0.25,
                     help="share of each new reading averaged into a still page's place (1 = off)")
     ap.add_argument("--jump", type=float, default=12, help="mm a corner must move for the page to count as moved")
+    ap.add_argument("--table-mm", type=float, default=800,
+                    help="mm the work area is deep (projector height): fixes a page's size; 0 = from its marker")
     ap.add_argument("--hold", type=float, default=2, help="mm the average must move before what's projected moves")
     args = ap.parse_args()
 
@@ -121,7 +123,7 @@ def main():
     seen = {}       # page key -> {"last": t, "since": t, "corners": [...], "markers": [...]}
     current = None
     mode = "run"
-    print(f"running: {size[0]}x{size[1]}, rule {args.rule}, fit {args.fit}, smooth {args.smooth} jump {args.jump} mm hold {args.hold} mm, "
+    print(f"running: {size[0]}x{size[1]}, rule {args.rule}, fit {args.fit}, smooth {args.smooth} jump {args.jump} mm hold {args.hold} mm, table {args.table_mm} mm, "
           f"{'calibrated' if cal else 'NOT calibrated: bump calibrate in control.json'}")
 
     def publish(extra=None):
@@ -170,7 +172,8 @@ def main():
         unknown = sorted(t for t in found if t not in page_of and t not in calib_ids)
 
         for key, page in pages.items():
-            corners, used = page_corners(found, page, book["marker"], book["paper"], args.fit, to_proj)
+            corners, used = page_corners(found, page, book["marker"], book["paper"], args.fit, to_proj,
+                                         1 / args.table_mm if args.table_mm and to_proj is not None else None)
             if not used:
                 continue
             s = seen.get(key)
