@@ -1,8 +1,8 @@
 <!doctype html>
 <!-- PROTOTYPE (#114), throwaway. What the projector shows: the table as two windows, the coding space (left) and
      the canvas space (right), resized from a hidden settings menu (press , on the handheld keyboard) or with ←→.
-     The sketch is drawn at a fixed size (1U = 50 px). Each of the four corners can be given an action; a card held in
-     one counts down, then triggers it (help, bottom-right: the card's doc comment). Every textbook page in view is cut
+     The sketch is drawn at a fixed size (1U = 50 px). Each of the four corners can be given an action; a card put in
+     one triggers it at once (help, bottom-left: the card's doc comment). Every textbook page in view is cut
      out of the light with a dim area around it. Reads state.json (from vision.py) and control.json (over SSH; see README.md).
      Works without vision.py too (on a laptop): pages and card markers are then just absent. -->
 <html lang="en">
@@ -43,8 +43,7 @@ const PX_PER_U = 50;
 const CORNERS = ['tl', 'tr', 'bl', 'br'], CORNER_NAME = { tl: 'top-left', tr: 'top-right', bl: 'bottom-left', br: 'bottom-right' };
 const OPTS = [  // key, label, choices
   ['split', 'coding space width %', [30, 35, 40, 45, 50, 55, 60, 65, 70]],
-  ['dwell', 'corner countdown (s)', [0.5, 1, 1.5, 2, 2.5, 3]],
-  ['cornerU', 'corner size (U radius)', [2, 3, 4, 5, 6]],
+  ['cornerU', 'corner size (U radius)', [2, 2.5, 3, 3.5, 4, 5]],
   ...CORNERS.map(c => ['corner_' + c, CORNER_NAME[c] + ' corner', ['none', 'help']]),
   ['fake', 'pretend a card is in a corner', ['off', ...CORNERS]],
   ['canvas', 'canvas size (px)', [200, 300, 400, 500, 600]],
@@ -59,10 +58,10 @@ const OPTS = [  // key, label, choices
   ['hud', 'status line', [true, false]],
   ['tableMm', 'work area depth (mm)', [700, 750, 780, 792, 800, 850, 900]],
 ];
-const DEFAULTS = { split: 50, dwell: 1.5, cornerU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
+const DEFAULTS = { split: 50, cornerU: 3, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   canvas: 500, textPx: 16, bg: 12, margin: 10, halo: 40, program: true, test: false, marks: true, outline: false, hud: true, tableMm: 792 };
-let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114b || '{}') };
-const save = () => { localStorage.cfg114b = JSON.stringify(cfg); };
+let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114c || '{}') };
+const save = () => { localStorage.cfg114c = JSON.stringify(cfg); };
 
 let menuOpen = false, menuRow = 0;
 const menu = document.getElementById('menu'), toast = document.getElementById('toast');
@@ -119,7 +118,8 @@ function layout() {
 }
 const inside = (r, [x, y]) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
 
-// ======================= corners: a card (later a hand) held in a corner triggers it after a countdown =======================
+// ======================= corners: a card (later a hand) put in a corner triggers it at once =======================
+const CORNER_TITLE = { help: 'card help' };
 // A card counts as present while vision has seen it in the last PRESENT_S (vision.py takes ~0.8 s a frame).
 const PRESENT_S = 1.0, lastSeen = {};  // corner -> {since, seen, fired}
 const cornerState = {};
@@ -130,9 +130,8 @@ function updateCorners(L) {
     const card = (state.cards || []).find(k => { const [x, y] = toPx(k.c); return Math.hypot(x - cx, y - cy) <= L.R; });
     const here = cfg['corner_' + c] !== 'none' && (cfg.fake === c || card);
     const st = cornerState[c] || (cornerState[c] = { since: null, seen: 0, card: null, fired: false });
-    if (here) { if (st.since === null) { st.since = now; st.fired = false; } st.seen = now; st.card = card || null; }
-    else if (st.since !== null && now - st.seen > PRESENT_S) { st.since = null; st.fired = false; st.card = null; }  // moved away: cancel
-    if (st.since !== null && now - st.since >= cfg.dwell) st.fired = true;
+    if (here) { st.since = st.since ?? now; st.seen = now; st.card = card || null; st.fired = true; }
+    else if (st.since !== null && now - st.seen > PRESENT_S) { st.since = null; st.fired = false; st.card = null; }  // moved away
   }
 }
 
@@ -203,8 +202,6 @@ function drawBase(L) {
   g.fillStyle = `rgb(${cfg.bg},${cfg.bg},${cfg.bg})`; g.fillRect(L.code.x, L.code.y, L.code.w, L.code.h);
   // the boundary between the windows: a card counts when its marker is on the coding space's side of it
   g.strokeStyle = '#3f3f46'; g.lineWidth = 2; g.beginPath(); g.moveTo(L.code.w, 0.5 * u); g.lineTo(L.code.w, VH() - 0.5 * u); g.stroke();
-  text(g, 'coding space', L.code.x + 0.5 * u, VH() - 0.5 * u, '#52525b');
-  text(g, 'canvas space', L.canvas.x + 0.5 * u, VH() - 0.5 * u, '#52525b');
 
   // the program: the current page's virtual cards (placeholders), else the mock program with inline print output
   const prog = state.current && program(state.current);
@@ -224,22 +221,18 @@ function drawBase(L) {
   }
 }
 
-// A corner: idle, a faint quarter ring. Counting down, a circle with a white border and black fill, and a white
-// circle growing inside it until it fills it. Triggered, the ring stays and the corner does its thing (help: the doc comment).
+// A corner: a dotted quarter circle with its title. A card in it triggers it at once (help: the card's doc comment).
 function drawCorners(g, L) {
-  const now = performance.now() / 1000;
   g.save(); g.beginPath(); g.rect(0, 0, L.W, L.H); g.clip();
   for (const c of CORNERS) {
     const what = cfg['corner_' + c]; if (what === 'none') continue;
     const [cx, cy] = L.corners[c], st = cornerState[c] || {}, R = L.R;
-    if (st.since == null) {
-      g.strokeStyle = '#3f3f46'; g.lineWidth = 2; g.setLineDash([6, 6]); g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]);
-      continue;
-    }
-    const t = Math.min(1, (now - st.since) / cfg.dwell);
-    g.fillStyle = '#000'; g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.fill();
-    if (!st.fired) { g.fillStyle = '#fff'; g.beginPath(); g.arc(cx, cy, R * t, 0, 2 * Math.PI); g.fill(); }
-    g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.stroke();
+    g.strokeStyle = st.fired ? '#a1a1aa' : '#52525b'; g.lineWidth = 2; g.setLineDash([3, 6]); g.lineCap = 'round';
+    g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]); g.lineCap = 'butt';
+    const right = c[1] === 'r', bottom = c[0] === 'b';
+    g.textAlign = right ? 'right' : 'left';
+    text(g, CORNER_TITLE[what], cx + (right ? -1 : 1) * 0.15 * R, cy + (bottom ? -1 : 1) * 0.25 * R, '#71717a');
+    g.textAlign = 'left';
     if (st.fired && what === 'help') drawDoc(g, L, c, st.card);
   }
   g.restore();
@@ -283,7 +276,7 @@ function drawOver(L) {
   if (cfg.hud) {
     const cur = state.current && book && book.pages.find(q => q.key === state.current);
     text(g, `1U = ${PX_PER_U} px (${u.toFixed(1)} projector px) · split ${cfg.split}% · canvas ${cfg.canvas} px = ${(cfg.canvas / PX_PER_U).toFixed(1)}U = ${(canvasPx() / mm()).toFixed(0)} mm · ` +
-      `text ${cfg.textPx} px = ${(cfg.textPx * S() / mm()).toFixed(1)} mm · countdown ${cfg.dwell} s · page ${cur ? cur.name : '-'} · cards ${(state.cards || []).length}` +
+      `text ${cfg.textPx} px = ${(cfg.textPx * S() / mm()).toFixed(1)} mm · page ${cur ? cur.name : '-'} · cards ${(state.cards || []).length}` +
       (state.calibrated === false ? ' · NOT CALIBRATED' : '') + (state.t ? '' : ' · no vision'), 0.5 * u, 0.4 * u, '#71717a', 14);
   }
 }
