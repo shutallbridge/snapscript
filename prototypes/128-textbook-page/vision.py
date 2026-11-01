@@ -62,9 +62,28 @@ def calib_points(calib, aspect):
     pts = {}
     for i, tid in enumerate(calib["ids"]):
         col, row = i % calib["cols"], i // calib["cols"]
-        centre = np.array([(col + 0.5) / calib["cols"] * aspect, (row + 0.5) / calib["rows"]])
+        e = calib["inset"]  # outer tag centres this far (units of height) from the work area's edges
+        centre = np.array([e + col / (calib["cols"] - 1) * (aspect - 2 * e), e + row / (calib["rows"] - 1) * (1 - 2 * e)])
         pts[tid] = centre + CORNER_ORDER * (QUAD * calib["size"] / 2)
     return pts
+
+
+def undistort(pts, k1, size):
+    """Undo the camera lens's barrel bend: one radial term about the image centre, r in half-diagonals."""
+    pts = np.asarray(pts, float)
+    ctr = np.array(size, float) / 2
+    q = (pts - ctr) / np.hypot(*ctr)
+    return ctr + (pts - ctr) * (1 + k1 * (q ** 2).sum(-1, keepdims=True))
+
+
+def fit_lens(src, dst, size):
+    """k1 and camera px -> projector homography that best take src to dst (tag centres)."""
+    def err(k):
+        h = fit_homography(undistort(src, k, size), dst)
+        return np.linalg.norm(apply(h, undistort(src, k, size)) - dst, axis=1)
+    ks = np.linspace(-0.3, 0.3, 601) if len(src) >= 6 else [0.0]
+    k1 = float(min(ks, key=lambda k: err(k).mean()))
+    return k1, fit_homography(undistort(src, k1, size), dst), err(k1)
 
 
 def main():
@@ -97,6 +116,7 @@ def main():
     det = Detector(families="tagStandard41h12", nthreads=4, quad_decimate=args.decimate, refine_edges=1)
     cal = read_json(HERE / "calib.json", None)
     to_proj = np.array(cal["H"]) if cal else None
+    k1 = cal.get("k1", 0.0) if cal else 0.0
     ctrl_seen = read_json(HERE / "control.json", {})
     seen = {}       # page key -> {"last": t, "since": t, "corners": [...], "markers": [...]}
     current = None
@@ -129,12 +149,13 @@ def main():
             src = np.array([found[t].mean(0) for t in found]) if found else np.zeros((0, 2))
             dst = np.array([want[t].mean(0) for t in found]) if found else np.zeros((0, 2))
             if len(found) >= 4:
-                to_proj = fit_homography(src, dst)
-                err = np.linalg.norm(apply(to_proj, src) - dst, axis=1) * 1000
-                write_json(HERE / "calib.json", {"H": to_proj.tolist(), "aspect": args.aspect, "tags": sorted(found),
+                k1, to_proj, err = fit_lens(src, dst, size)
+                err = err * 1000
+                write_json(HERE / "calib.json", {"H": to_proj.tolist(), "k1": k1, "aspect": args.aspect,
+                                                 "tags": sorted(found),
                                                  "err_milli_height": [round(float(err.mean()), 2), round(float(err.max()), 2)]})
-                print(f"calibrated from {len(found)}/{len(want)} tags: mean {err.mean():.2f}, max {err.max():.2f} "
-                      f"thousandths of the projector height")
+                print(f"calibrated from {len(found)}/{len(want)} tags, lens k1 {k1:+.3f}: mean {err.mean():.2f}, "
+                      f"max {err.max():.2f} thousandths of the projector height")
             else:
                 print(f"calibration FAILED: {len(found)} of {len(want)} tags seen")
             Image.fromarray(gray).resize((size[0] // 4, size[1] // 4)).save(runs / f"calib-{time.strftime('%H%M%S')}.jpg")
@@ -145,7 +166,7 @@ def main():
         dets = det.detect(gray)
         search = time.perf_counter() - t0
         now = time.time()
-        found = {d.tag_id: d.corners for d in dets}
+        found = {d.tag_id: undistort(d.corners, k1, size) for d in dets}
         unknown = sorted(t for t in found if t not in page_of and t not in calib_ids)
 
         for key, page in pages.items():

@@ -129,7 +129,7 @@ function drawCalib(g) {
   g.fillStyle = '#000'; g.fillRect(0, 0, VW(), VH());
   c.ids.forEach((id, i) => {
     const col = i % c.cols, row = (i / c.cols) | 0, s = c.size * VH(), cell = s / 9;
-    const cx = (col + 0.5) / c.cols * aspect * VH(), cy = (row + 0.5) / c.rows * VH();
+    const cx = (c.inset + col / (c.cols - 1) * (aspect - 2 * c.inset)) * VH(), cy = (c.inset + row / (c.rows - 1) * (1 - 2 * c.inset)) * VH();
     g.fillStyle = '#fff'; g.fillRect(cx - s * 0.75, cy - s * 0.75, s * 1.5, s * 1.5);
     g.fillStyle = '#000';
     TAGS[id].forEach((r, y) => [...r].forEach((b, x) => { if (b === '1') g.fillRect(cx - s / 2 + x * cell, cy - s / 2 + y * cell, cell + 0.5, cell + 0.5); }));

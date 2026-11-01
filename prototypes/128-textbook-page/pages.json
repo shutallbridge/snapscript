@@ -22,7 +22,8 @@
     ],
     "cols": 4,
     "rows": 3,
-    "size": 0.14
+    "size": 0.12,
+    "inset": 0.1
   },
   "pages": [
     {
