@@ -43,7 +43,8 @@ const PX_PER_U = 50;
 const CORNERS = ['tl', 'tr', 'bl', 'br'], CORNER_NAME = { tl: 'top-left', tr: 'top-right', bl: 'bottom-left', br: 'bottom-right' };
 const OPTS = [  // key, label, choices
   ['split', 'coding space width %', [30, 35, 40, 45, 50, 55, 60, 65, 70]],
-  ['cornerU', 'corner size (U radius)', [2, 2.5, 3, 3.5, 4, 5]],
+  ['cornerU', 'corner size (U radius)', [2.5, 3, 3.25, 3.5, 3.75, 4, 5]],
+  ['cardU', 'card length when unknown (U)', [2, 3, 4, 5, 6]],
   ...CORNERS.map(c => ['corner_' + c, CORNER_NAME[c] + ' corner', ['none', 'help']]),
   ['fake', 'pretend a card is in a corner', ['off', ...CORNERS]],
   ['canvas', 'canvas size (px)', [200, 300, 400, 500, 600]],
@@ -58,10 +59,10 @@ const OPTS = [  // key, label, choices
   ['hud', 'status line', [true, false]],
   ['tableMm', 'work area depth (mm)', [700, 750, 780, 792, 800, 850, 900]],
 ];
-const DEFAULTS = { split: 50, cornerU: 3, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
+const DEFAULTS = { split: 50, cornerU: 3.5, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   canvas: 500, textPx: 16, bg: 12, margin: 10, halo: 40, program: true, test: false, marks: true, outline: false, hud: true, tableMm: 792 };
-let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114c || '{}') };
-const save = () => { localStorage.cfg114c = JSON.stringify(cfg); };
+let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114d || '{}') };
+const save = () => { localStorage.cfg114d = JSON.stringify(cfg); };
 
 let menuOpen = false, menuRow = 0;
 const menu = document.getElementById('menu'), toast = document.getElementById('toast');
@@ -119,7 +120,17 @@ function layout() {
 const inside = (r, [x, y]) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
 
 // ======================= corners: a card (later a hand) put in a corner triggers it at once =======================
-const CORNER_TITLE = { help: 'card help' };
+const CORNER_TITLE = { help: 'Card Help' };
+// A card's length in U, by marker ID. There's no lockfile yet, so fill in the cards on the table; others use cfg.cardU.
+const CARD_LEN = {};
+// The card's outline on the table, from its marker: the marker sits in the card's left end (centre MZ/2 in), upright,
+// and the card runs along the marker's bottom edge. Returns 4 corners in projector px.
+function cardOutline(card) {
+  const k = mm(), L = (CARD_LEN[card.id] || cfg.cardU) * U, a = card.a || 0;
+  const [x, y] = toPx(card.c), d = [Math.cos(a), Math.sin(a)], n = [-Math.sin(a), Math.cos(a)];
+  return [[-MZ / 2, -H / 2], [L - MZ / 2, -H / 2], [L - MZ / 2, H / 2], [-MZ / 2, H / 2]]
+    .map(([u, v]) => [x + (u * d[0] + v * n[0]) * k, y + (u * d[1] + v * n[1]) * k]);
+}
 // A card counts as present while vision has seen it in the last PRESENT_S (vision.py takes ~0.8 s a frame).
 const PRESENT_S = 1.0, lastSeen = {};  // corner -> {since, seen, fired}
 const cornerState = {};
@@ -229,9 +240,9 @@ function drawCorners(g, L) {
     const [cx, cy] = L.corners[c], st = cornerState[c] || {}, R = L.R;
     g.strokeStyle = st.fired ? '#a1a1aa' : '#52525b'; g.lineWidth = 2; g.setLineDash([3, 6]); g.lineCap = 'round';
     g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]); g.lineCap = 'butt';
-    const right = c[1] === 'r', bottom = c[0] === 'b';
-    g.textAlign = right ? 'right' : 'left';
-    text(g, CORNER_TITLE[what], cx + (right ? -1 : 1) * 0.15 * R, cy + (bottom ? -1 : 1) * 0.25 * R, '#71717a');
+    const right = c[1] === 'r', bottom = c[0] === 'b', m = 4 * R / (3 * Math.PI);
+    g.textAlign = 'center';
+    text(g, CORNER_TITLE[what], cx + (right ? -m : m), cy + (bottom ? -m : m), '#71717a');
     g.textAlign = 'left';
     if (st.fired && what === 'help') drawDoc(g, L, c, st.card);
   }
@@ -241,7 +252,8 @@ function drawDoc(g, L, c, card) {  // the doc comment beside the corner, on a bl
   const u = UPX(), w = 9 * u, lh = cfg.textPx * S() * 1.4, pad = 0.4 * u;
   const lines = [DOC.title + (card ? ` · card ${card.id}` : ''), ...wrap(g, DOC.body, w - 2 * pad, cfg.textPx)];
   const h = lines.length * lh + 2 * pad, [cx, cy] = L.corners[c];
-  const x = c[1] === 'r' ? cx - L.R - 0.5 * u - w : cx + L.R + 0.5 * u;
+  const xs = card ? cardOutline(card).map(q => q[0]) : [cx];
+  const x = c[1] === 'r' ? Math.min(cx - L.R, ...xs) - 0.5 * u - w : Math.max(cx + L.R, ...xs) + 0.5 * u;
   const y = c[0] === 'b' ? cy - h - 0.5 * u : cy + 0.5 * u;
   g.fillStyle = '#000'; g.fillRect(x, y, w, h); g.strokeStyle = '#52525b'; g.lineWidth = 2; g.strokeRect(x, y, w, h);
   lines.forEach((ln, i) => text(g, ln, x + pad, y + pad + i * lh + lh / 2, i ? '#d4d4d8' : '#fff'));
@@ -268,6 +280,9 @@ function drawOver(L) {
     const [x, y] = toPx(c.c), r = 11 * mm(), counts = inside(L.code, [x, y]);
     g.strokeStyle = counts ? '#22c55e' : '#71717a'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, r, 0, 2 * Math.PI); g.stroke();
     if (!counts) { g.beginPath(); g.moveTo(x - r * 0.7, y - r * 0.7); g.lineTo(x + r * 0.7, y + r * 0.7); g.stroke(); }
+    const o = cardOutline(c);  // where the card is taken to lie (for the doc box), thin and dashed
+    g.setLineDash([4, 6]); g.lineWidth = 1; g.beginPath(); o.forEach(([px, py], i) => i ? g.lineTo(px, py) : g.moveTo(px, py)); g.closePath(); g.stroke(); g.setLineDash([]);
+    text(g, String(c.id), x + r + 4, y - r, counts ? '#22c55e' : '#71717a', 12);
   }
   updateCorners(L); drawCorners(g, L);
   if (canvasPx() > L.canvas.w || L.sketch.y + canvasPx() > VH()) {

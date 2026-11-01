@@ -1,7 +1,7 @@
 """PROTOTYPE (#114, copied from #128), throwaway: where the textbook pages and card markers lie, for table.html. Runs on the Pi.
 
 Loops: grab a frame, find markers, place each page on the table (geometry.py), decide the current page, and
-write state.json for table.html. Also sends every other marker's centre in projector space as "cards", so the
+write state.json for table.html. Also sends every other marker's centre and angle in projector space as "cards", so the
 layout mock can show which cards count (marker in the coding space) and which card is on the help spot.
 
 Watches control.json (written over SSH) for one-off requests:
@@ -201,8 +201,11 @@ def main():
         elif newest is not None and (current not in in_view or seen[newest]["since"] > seen[current]["since"]):
             current = newest
 
-        cards = [{"id": int(t), "c": apply(to_proj, found[t].mean(0, keepdims=True))[0].round(4).tolist()}
-                 for t in unknown] if to_proj is not None else []
+        cards = []
+        for t in unknown if to_proj is not None else []:
+            q = apply(to_proj, found[t])  # the marker's corners on the table; 0 -> 1 is its bottom edge, left to right
+            cards.append({"id": int(t), "c": q.mean(0).round(4).tolist(),
+                          "a": round(float(np.arctan2(q[1][1] - q[0][1], q[1][0] - q[0][0])), 3)})
         publish({"search_s": round(search, 3), "unknown_ids": unknown, "cards": cards})
         log.write(json.dumps({"t": now, "search_s": round(search, 3), "current": current,
                               "found": {int(t): c.tolist() for t, c in found.items()},
