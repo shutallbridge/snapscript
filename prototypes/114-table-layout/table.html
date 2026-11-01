@@ -50,17 +50,17 @@ const OPTS = [  // key, label, choices
   ['canvas', 'canvas size (px)', [200, 300, 400, 500, 600]],
   ['textPx', 'table text size (px)', [12, 14, 16, 18, 20, 24, 28, 32]],
   ['bg', 'coding space brightness', [0, 6, 12, 20, 32, 48]],
-  ['margin', 'page cut-out margin (mm)', [0, 5, 10, 15]],
-  ['halo', 'dim area around a page (mm)', [0, 20, 40, 60, 100]],
+  ['margin', 'page cut-out margin (mm)', [0, 3, 5, 10, 15]],
+  ['halo', 'dim area around a page (mm)', [0, 5, 10, 20, 40, 60, 100]],
   ['program', 'mock program', [true, false]],
   ['test', 'highlight test', [false, true]],
   ['marks', 'show marker reads', [true, false]],
-  ['outline', 'page outline (red)', [false, true]],
+  ['outline', 'page outline (red, for debugging)', [true, false]],
   ['hud', 'status line', [true, false]],
   ['tableMm', 'work area depth (mm)', [700, 750, 780, 792, 800, 850, 900]],
 ];
 const DEFAULTS = { split: 50, cornerU: 3.5, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
-  canvas: 500, textPx: 16, bg: 12, margin: 10, halo: 40, program: true, test: false, marks: true, outline: false, hud: true, tableMm: 792 };
+  canvas: 500, textPx: 16, bg: 12, margin: 5, halo: 10, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 792 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114d || '{}') };
 const save = () => { localStorage.cfg114d = JSON.stringify(cfg); };
 
