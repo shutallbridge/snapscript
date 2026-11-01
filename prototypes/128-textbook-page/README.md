@@ -7,8 +7,8 @@ Two Session B beats ("0. Get a canvas", "1. Put something on it") as A4 pages, e
 | File | What |
 |---|---|
 | `pages.json` | the pages: marker IDs and where they sit on the paper, text, program. Read by everything below |
-| `pages.html` | the A4 pages to print, card pictures drawn by `sheets.js` (copied from #101) |
-| `table.html` | what the projector shows (fullscreen Chromium on the Pi) |
+| `pages.html` | the A4 pages to print. No card pictures: a callout points at the virtual cards on the table |
+| `table.html` | what the projector shows (fullscreen Chromium on the Pi); virtual cards drawn with `sheets.js` (copied from #101) |
 | `vision.py` | on the Pi: camera → markers → where each page lies → `state.json` |
 | `geometry.py` | placing a page from its marker(s); `test_geometry.py` checks it on the rendered pages |
 | `gen_tags.py` | writes `tags.js`, the real marker bits (pages 2000–2009, line-up tags 2100–2111) |
