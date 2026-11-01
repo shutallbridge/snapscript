@@ -47,7 +47,7 @@ const OPTS = [  // key, label, choices
   ['cardU', 'card length when unknown (U)', [2, 3, 4, 5, 6]],
   ...CORNERS.map(c => ['corner_' + c, CORNER_NAME[c] + ' corner', ['none', 'help']]),
   ['fake', 'pretend a card is in a corner', ['off', ...CORNERS]],
-  ['full', 'canvas window fills the table', [false, true]],
+  ['full', 'canvas window full screen', [false, true]],
   ['centre', 'centre the sketch in its window', [true, false]],
   ['textPx', 'table text size (px)', [12, 14, 16, 18, 20, 24, 28, 32]],
   ['bg', 'coding space brightness', [0, 6, 12, 20, 32, 48]],
@@ -115,8 +115,9 @@ function sketchSize() {
   return m ? [+m[1], +m[2]] : [100, 100];  // p5's default canvas
 }
 
-// Two windows side by side, coding space on the left, resized by cfg.split; or the canvas window fills the table
-// (cfg.full) and the coding space is hidden under it. The sketch sits centred in the canvas window, or at its top-left.
+// Two windows side by side, coding space on the left, resized by cfg.split. A window decides which markers belong to
+// it, so `code` stays the split's coding space even when the canvas window is full screen (cfg.full): full screen only
+// changes what is shown, like a browser's full screen, and cards still count by where the coding space would be. The sketch sits centred in the canvas window, or at its top-left.
 function layout() {
   const W = AW(), H = VH(), [sw, sh] = sketchSize().map(v => v * S()), codeW = Math.round(W * cfg.split / 100);
   const code = { x: 0, y: 0, w: codeW, h: H }, canvas = cfg.full ? { x: 0, y: 0, w: W, h: H } : { x: codeW, y: 0, w: W - codeW, h: H };
@@ -319,7 +320,7 @@ function drawOver(L) {
   }
   if (cfg.hud) {
     const cur = state.current && book && book.pages.find(q => q.key === state.current);
-    text(g, `1U = ${PX_PER_U} px (${u.toFixed(1)} projector px) · ${cfg.full ? 'canvas window full' : 'split ' + cfg.split + '%'} · sketch ${sw} × ${sh} px = ${(L.sketch.w / mm()).toFixed(0)} × ${(L.sketch.h / mm()).toFixed(0)} mm · ` +
+    text(g, `1U = ${PX_PER_U} px (${u.toFixed(1)} projector px) · ${cfg.full ? 'canvas full screen (split ' + cfg.split + '% kept)' : 'split ' + cfg.split + '%'} · sketch ${sw} × ${sh} px = ${(L.sketch.w / mm()).toFixed(0)} × ${(L.sketch.h / mm()).toFixed(0)} mm · ` +
       `text ${cfg.textPx} px = ${(cfg.textPx * S() / mm()).toFixed(1)} mm · page ${cur ? cur.name : '-'} · cards ${(state.cards || []).length}` +
       (state.calibrated === false ? ' · NOT CALIBRATED' : '') + (state.t ? '' : ' · no vision'), 0.5 * u, 0.4 * u, '#71717a', 14);
   }
