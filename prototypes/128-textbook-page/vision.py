@@ -81,6 +81,7 @@ def main():
     ap.add_argument("--smooth", type=float, default=0.25,
                     help="share of each new reading averaged into a still page's place (1 = off)")
     ap.add_argument("--jump", type=float, default=12, help="mm a corner must move for the page to count as moved")
+    ap.add_argument("--hold", type=float, default=2, help="mm the average must move before what's projected moves")
     args = ap.parse_args()
 
     book = json.loads((HERE / "pages.json").read_text())
@@ -100,7 +101,7 @@ def main():
     seen = {}       # page key -> {"last": t, "since": t, "corners": [...], "markers": [...]}
     current = None
     mode = "run"
-    print(f"running: {size[0]}x{size[1]}, rule {args.rule}, fit {args.fit}, smooth {args.smooth} jump {args.jump} mm, "
+    print(f"running: {size[0]}x{size[1]}, rule {args.rule}, fit {args.fit}, smooth {args.smooth} jump {args.jump} mm hold {args.hold} mm, "
           f"{'calibrated' if cal else 'NOT calibrated: bump calibrate in control.json'}")
 
     def publish(extra=None):
@@ -154,12 +155,17 @@ def main():
             s = seen.get(key)
             if s is None or now - s["last"] >= args.grace:
                 s = seen[key] = {"since": now}  # arrived (again)
-            if to_proj is not None and s.get("corners") is not None:
-                prev = np.array(s["corners"])
+            shown = corners
+            if to_proj is not None and s.get("avg") is not None:
+                avg, shown = np.array(s["avg"]), np.array(s["corners"])
                 mm = book["paper"][0] / np.linalg.norm(corners[1] - corners[0])  # mm per projector unit
-                if np.linalg.norm(corners - prev, axis=1).max() * mm < args.jump:
-                    corners = prev + args.smooth * (corners - prev)  # still: average into where it lies
-            s.update(last=now, corners=corners.tolist() if to_proj is not None else None, markers=used)
+                if np.linalg.norm(corners - avg, axis=1).max() * mm < args.jump:
+                    corners = avg + args.smooth * (corners - avg)  # still: average into where it lies
+                # what's projected only moves once the average has moved past --hold
+                if np.linalg.norm(corners - shown, axis=1).max() * mm >= args.hold:
+                    shown = corners
+            s.update(last=now, avg=corners.tolist() if to_proj is not None else None,
+                     corners=shown.tolist() if to_proj is not None else None, markers=used)
 
         in_view = [k for k, s in seen.items() if now - s["last"] < args.grace]
         newest = max(in_view, key=lambda k: seen[k]["since"], default=None)

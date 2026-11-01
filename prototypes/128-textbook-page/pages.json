@@ -30,8 +30,8 @@
       "name": "0. Get a canvas",
       "markers": {
         "2000": [
-          10,
-          10
+          187,
+          274
         ]
       },
       "intro": "<p>Two cards make a canvas and paint it. [call(p5.createCanvas)] takes two numbers: the width and the height, in pixels. [call(p5.background)] takes one colour card.</p><p>Everything in setup goes in a column under the [define{setup}] card.</p>",
@@ -49,8 +49,8 @@
       "name": "1. Put something on it",
       "markers": {
         "2001": [
-          10,
-          10
+          187,
+          274
         ]
       },
       "intro": "<p>[call(p5.rect)] draws a rectangle. It takes four numbers, and the order they sit in tells the function which is which: <code>rect&nbsp;&nbsp;x&nbsp;&nbsp;y&nbsp;&nbsp;width&nbsp;&nbsp;height</code>.</p><p><b>x</b> is how far across from the left edge. <b>y</b> is how far <b>down</b> from the top edge: a bigger y is lower, not higher. The x and y are the rectangle's <b>top-left corner</b>, not its middle.</p>",
