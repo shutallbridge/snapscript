@@ -1,0 +1,29 @@
+Arrangement: search_top_bottom_no_snap (flip top_bottom, lengths up to 6U)
+33640 contact groups, 588700 contacts
+Pockets: 62 (uniform 11, half 50, split 1), 74 magnets
+
+Contact groups by kind and result:
+                     snap    mixed  nothing    repel
+  connect             389        0        0        0
+  forbid              310       17    23391       15
+  coexist               0        0     4860        0
+  ungraded              0        0     5775        0
+
+Contacts by kind and result (one with two labels counts under each):
+                     snap    mixed  nothing    repel
+  connect            9725        0        0        0
+  forbid             7750      425   429190      375
+  coexist               0        0    74285        0
+  ungraded              0        0    94875        0
+
+Must failures: 0
+
+Avoidable should-leaks: 0
+
+Avoidable nice-leaks: 0
+
+Unavoidable should- and nice-leaks: 0
+
+Unavoidable low-leaks (not listed): 0
+
+VALID
