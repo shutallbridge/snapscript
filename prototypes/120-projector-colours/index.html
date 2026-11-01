@@ -1,0 +1,222 @@
+<!doctype html>
+<!--
+  Prototype for "Projector colour test: the 12 colours, in the demo programs" (#120).
+  Throwaway. The four demo programs from #109, translated line by line from the
+  card programs (not the original JS), plus a colour tester.
+
+  Keys:  1-4 demo   r fixed/responsive   space restart
+         c colour tester   b next background   t next trio (demos 1, 2, 4)
+         h show/hide the label
+  Remote: the page polls state.json; write it to switch (see README.md).
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Snapscript colour test</title>
+<style>
+  html, body { margin: 0; height: 100%; background: black; overflow: hidden; cursor: none; }
+  #stage { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+  #hud { position: fixed; left: 12px; bottom: 10px; font: 16px monospace; color: #777; }
+</style>
+<script src="p5.min.js"></script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="hud"></div>
+<script>
+// The six colours the demos fix, each on its own card.
+const FIXED = ['midnightblue', 'gold', 'hotpink', 'aquamarine', 'black', 'white'];
+// Candidates for the six back sides. Edit freely.
+const CANDIDATES = [
+  'red', 'crimson', 'tomato', 'orange', 'yellow', 'limegreen', 'green', 'teal',
+  'deepskyblue', 'royalblue', 'blue', 'purple', 'violet', 'pink', 'brown', 'gray',
+];
+const BACKGROUNDS = ['midnightblue', 'black', 'white'];
+
+const state = { demo: 1, responsive: false, mode: 'demo', bg: 0, trio: null, hud: true, rev: 0 };
+let sketch = null;
+
+function trio() { return state.trio || ['gold', 'hotpink', 'aquamarine']; }
+
+// Snapscript builtins the demos use.
+const range = (a, b, step) => {
+  if (b === undefined) { b = a; a = 0; }
+  step = step || 1;
+  const out = [];
+  for (let v = a; step > 0 ? v < b : v > b; v += step) out.push(v);
+  return out;
+};
+
+const DEMOS = {
+  // 1. Three separate loops confetti
+  1: (p, R) => {
+    p.setup = () => {
+      if (R) p.createCanvas(p.windowWidth, p.windowHeight); else p.createCanvas(500, 500);
+      p.background('midnightblue');
+      p.noStroke();
+      for (const colour of trio()) {        // the same 5 lines, once per colour
+        p.fill(colour);
+        for (let k = 0; k < 30; k++) {
+          const x = R ? p.random(p.width) : p.random(500);
+          const y = R ? p.random(p.height) : p.random(500);
+          p.rect(x, y, 10, 16);
+        }
+      }
+    };
+  },
+  // 2. Nested loops confetti
+  2: (p, R) => {
+    p.setup = () => {
+      if (R) p.createCanvas(p.windowWidth, p.windowHeight); else p.createCanvas(500, 500);
+      p.background('midnightblue');
+      p.noStroke();
+      for (const c of trio()) {
+        p.fill(c);
+        for (let k = 0; k < 30; k++) {
+          const x = R ? p.random(p.width) : p.random(500);
+          const y = R ? p.random(p.height) : p.random(500);
+          p.rect(x, y, 10, 16);
+        }
+      }
+    };
+  },
+  // 3. Noise animation
+  3: (p, R) => {
+    p.setup = () => {
+      if (R) p.createCanvas(p.windowWidth, p.windowHeight); else p.createCanvas(400, 400);
+      p.noStroke();
+    };
+    p.draw = () => {
+      p.background('black');
+      p.fill('white');
+      const tx = p.frameCount * 0.015;
+      const ty = p.frameCount * 0.02;
+      for (const x of range(10, R ? p.width : 400, 20)) {
+        for (const y of range(10, R ? p.height : 400, 20)) {
+          const nx = x * 0.015 + tx;
+          const ny = y * 0.02 + ty;
+          const n = p.noise(nx, ny);
+          p.circle(x, y, n * 20);
+        }
+      }
+    };
+  },
+  // 4. Animated confetti
+  4: (p, R) => {
+    const xs = [], ys = [], fills = [];
+    const length = 30;                      // confetti per colour
+    p.setup = () => {
+      if (R) p.createCanvas(p.windowWidth, p.windowHeight); else p.createCanvas(500, 500);
+      p.noStroke();
+      for (const c of trio()) {
+        for (let k = 0; k < length; k++) {
+          xs.push(R ? p.random(p.width) : p.random(500));
+          ys.push(R ? p.random(p.height) : p.random(500));
+          fills.push(c);
+        }
+      }
+    };
+    p.draw = () => {
+      p.background('midnightblue');
+      for (const i of range(length * 3)) {
+        const x = xs[i];
+        let y = ys[i];
+        if (y > (R ? p.height : 500)) {
+          y = -16;
+        } else {
+          y = y + 2;
+        }
+        ys[i] = y;
+        p.fill(fills[i]);
+        p.rect(x, y, 10, 16);
+      }
+    };
+  },
+};
+
+// Colour tester: every colour as a cluster of confetti on one background.
+function tester(p) {
+  p.setup = () => { p.createCanvas(p.windowWidth, p.windowHeight); p.noLoop(); };
+  p.draw = () => {
+    const bg = BACKGROUNDS[state.bg % BACKGROUNDS.length];
+    p.background(bg);
+    p.noStroke();
+    const colours = [...FIXED, ...CANDIDATES];
+    const cols = 6, rows = Math.ceil(colours.length / cols);
+    const w = p.width / cols, h = p.height / rows;
+    p.randomSeed(1);
+    colours.forEach((name, i) => {
+      const cx = (i % cols) * w, cy = Math.floor(i / cols) * h;
+      p.fill(name);
+      for (let k = 0; k < 14; k++) {
+        p.rect(cx + 15 + p.random(w - 40), cy + 10 + p.random(h - 60), 10, 16);
+      }
+      p.fill(bg === 'white' ? 120 : 150);
+      p.textFont('monospace');
+      p.textSize(Math.min(18, h / 6));
+      p.text((i < FIXED.length ? '* ' : '') + name, cx + 15, cy + h - 14);
+    });
+  };
+}
+
+function hud() {
+  const el = document.getElementById('hud');
+  el.style.display = state.hud ? 'block' : 'none';
+  el.textContent = state.mode === 'colours'
+    ? `colours on ${BACKGROUNDS[state.bg % BACKGROUNDS.length]}`
+    : `demo ${state.demo} ${state.responsive ? 'responsive' : 'fixed'}  [${trio().join(' ')}]`;
+}
+
+function restart() {
+  if (sketch) sketch.remove();
+  const stage = document.getElementById('stage');
+  sketch = state.mode === 'colours'
+    ? new p5(tester, stage)
+    : new p5(p => {
+        DEMOS[state.demo](p, state.responsive);
+        // The runtime restarts the sketch when the canvas changes.
+        if (state.responsive) p.windowResized = () => setTimeout(restart, 0);
+      }, stage);
+  hud();
+}
+
+function nextTrio() {
+  const all = [['gold', 'hotpink', 'aquamarine']];
+  for (let i = 0; i < CANDIDATES.length; i += 3) all.push(CANDIDATES.slice(i, i + 3));
+  const at = all.findIndex(t => t.join() === trio().join());
+  state.trio = all[(at + 1) % all.length];
+}
+
+window.addEventListener('keydown', e => {
+  const k = e.key;
+  if ('1234'.includes(k)) { state.demo = +k; state.mode = 'demo'; }
+  else if (k === 'r') state.responsive = !state.responsive;
+  else if (k === 'c') state.mode = state.mode === 'colours' ? 'demo' : 'colours';
+  else if (k === 'b') state.bg++;
+  else if (k === 't') nextTrio();
+  else if (k === 'h') { state.hud = !state.hud; hud(); return; }
+  else if (k !== ' ') return;
+  restart();
+});
+
+// Remote control: apply state.json whenever it changes; a new rev reloads the page.
+let last = null;
+async function poll() {
+  try {
+    const text = await (await fetch('state.json?' + Date.now(), { cache: 'no-store' })).text();
+    if (text !== last) {
+      const next = JSON.parse(text);
+      if (last !== null && next.rev !== state.rev) { location.reload(); return; }
+      last = text;
+      Object.assign(state, next);
+      restart();
+    }
+  } catch (e) { /* no server or bad JSON: keys only */ }
+  setTimeout(poll, 500);
+}
+
+restart();
+poll();
+</script>
+</body>
+</html>
