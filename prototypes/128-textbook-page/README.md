@@ -37,14 +37,19 @@ Before the rig (2026-11-01): fitting one marker's 4 corners with a full homograp
 
 ## On the Pi
 
+`pi.sh put` copies one path at a time. The `start-*.sh` helpers run on the Pi and detach, so they outlive the SSH call.
+
 ```sh
-./pi.sh 'mkdir -p snap-128' && ./pi.sh put 'pages.json table.html sheets.js tags.js p5.min.js vision.py geometry.py' snap-128/
-./pi.sh 'cd snap-128 && nohup python3 -m http.server 8128 --bind 127.0.0.1 >/dev/null 2>&1 &'
-# Chromium fullscreen on http://localhost:8128/table.html, then:
-./pi.sh 'cd snap-128 && ~/marker46/venv/bin/python vision.py --label rig-1'
+./pi.sh 'mkdir -p snap-128'
+for f in pages.json table.html sheets.js minis.js tags.js p5.min.js vision.py geometry.py start-*.sh; do ./pi.sh put $f snap-128/; done
+./pi.sh 'bash ~/snap-128/start-http.sh'      # web server on :8128
+./pi.sh 'bash ~/snap-128/start-chrome.sh'    # Chromium kiosk on the projector (no keyring prompt)
+./pi.sh 'bash ~/snap-128/start-vision.sh rig --aspect 1.5 --table-mm 792 --rule inview'
 ```
 
-`vision.py` flags: `--res full|half`, `--rule sticky|inview` (which page is current), `--fit similarity|homography`, `--grace` (s a page stays in view after its last read), `--aspect` (projector width / height).
+`vision.py` flags: `--res full|half`, `--rule sticky|inview` (which page is current), `--fit similarity|homography`, `--grace` (s a page stays in view after its last read), `--aspect` (the work area's width / height; the projector's 16:9 spills past the table, so `table.html` keeps to the left `aspect` of the image), `--table-mm` (the work area's depth in mm: fixes a page's size, so its marker only sets where it lies; 0 = from the marker), `--smooth` / `--jump` / `--hold` (average readings into a still page; jump when a corner moves past `--jump` mm; only move what's projected once the average moves past `--hold` mm).
+
+Calibration fits the projected tags' **centres** (glare grows every projected tag ~4%), spreads them to 8 cm from the work area's edges (`calib.inset`), and fits one radial lens term `k1` with the camera-to-projector homography; detections are undistorted with it.
 
 `control.json` steers both without a keyboard (bump `rev` to reload `table.html`):
 
@@ -56,3 +61,19 @@ Before the rig (2026-11-01): fitting one marker's 4 corners with a full homograp
 - `calibrate`: bump it, and the projector shows 12 tags for a moment while `vision.py` lines up camera and projector (`calib.json`).
 - `snap`: bump it to save the frame with the markers and page outlines drawn on it, in `runs/`.
 - `view.margin`: mm the cut-out reaches past the paper. `outline` draws the predicted paper edge in red. `lit` lights the whole table white except the cut-outs, to see how well a cut-out sits on its paper.
+
+## On the rig (2026-11-01)
+
+Rig: Pi 5, 64 MP camera at 4624x3472, Optoma 1080p, work area 120 x 80 cm (measured 79.2 cm deep from page `1b`). Marker search ~0.75 s a frame with a page in view.
+
+- **Line-up:** 0.8 mm mean, 1.3 mm worst across the whole work area, after fitting tag centres, spreading the tags to the edges and the lens term (it started at 1.8 / 4.4 mm).
+- **Size from one marker is unreliable:** pages read 3–4% too small or too large (8–10 mm at the far edge). Fixing the page's size from the known table depth (`--table-mm`) leaves only position and angle to fit.
+- **Placement** (page `0`, measured by eye and ruler against the projected red outline): flat middle 2–3 mm, table corner ~3 mm, skewed 2–3 mm, at the table edge 2–3 mm, lifted 2–5 cm ~8 mm, held 10–20 cm up 10–15 mm (lifted pages are off the calibrated plane). The marker read in every frame even when held; the longest gap was 2 frames, inside the 1 s grace.
+- **Jitter:** one marker's angle wobbles ~1°; averaging with a 2 mm hold moves the cut-out about once every 7–8 s on a still page.
+- **One marker or two:** page `1` 2–3 mm, page `1b` ~2 mm. One marker, bottom-right (the top-left is stapled), is enough.
+- **Turning pages:** the next page's bottom-right marker is the first thing uncovered, so the switch takes ~0.5 s. A hand covering a page past the grace makes it "arrive" again, so with two pages in view the newest-arrival rule can tie. `inview` chosen: no page, no virtual cards.
+- **Reading:** virtual cards beside the page read fine. In `lit` mode the paper looks dark against the bright table; keep the area around a page dim.
+- **Unknown IDs:** 4 single-frame false reads in 5,423 frames; never two frames running.
+
+Photos (camera frames; the orange outline is `vision.py`'s estimate drawn on the frame, not the projected line): `results/rig-1-normal-page0.jpg` … `results/rig-7-calibration.jpg`.
+

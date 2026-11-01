@@ -94,7 +94,7 @@ def main():
     ap.add_argument("--lens", type=float, help="dioptres; default: autofocus once at start")
     ap.add_argument("--aspect", type=float, default=16 / 9, help="projector width / height")
     ap.add_argument("--grace", type=float, default=1.0, help="s a page stays 'in view' after its last read")
-    ap.add_argument("--rule", choices=["sticky", "inview"], default="sticky",
+    ap.add_argument("--rule", choices=["sticky", "inview"], default="inview",
                     help="sticky: the current page stays until another page arrives; inview: none when no page is seen")
     ap.add_argument("--fit", choices=["similarity", "homography"], default="similarity")
     ap.add_argument("--smooth", type=float, default=0.25,
