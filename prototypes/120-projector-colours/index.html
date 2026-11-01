@@ -148,7 +148,7 @@ function tester(p) {
     const bg = BACKGROUNDS[state.bg % BACKGROUNDS.length];
     p.background(bg);
     p.noStroke();
-    const colours = [...FIXED, ...CANDIDATES];
+    const colours = state.colours || [...FIXED, ...CANDIDATES];
     const cols = 6, rows = Math.ceil(colours.length / cols);
     const w = p.width / cols, h = p.height / rows;
     p.randomSeed(1);
@@ -161,7 +161,7 @@ function tester(p) {
       p.fill(bg === 'white' ? 120 : 150);
       p.textFont('monospace');
       p.textSize(Math.min(18, h / 6));
-      p.text((i < FIXED.length ? '* ' : '') + name, cx + 15, cy + h - 14);
+      p.text((!state.colours && i < FIXED.length ? '* ' : '') + name, cx + 15, cy + h - 14);
     });
   };
 }
