@@ -63,21 +63,6 @@
         "Build a <b>second</b> [call(p5.rect)] row under the first, with different numbers."
       ],
       "happened": "Make sure everyone at the table can put a finger on the card that decides how far <b>down</b> a rectangle sits."
-    },
-    {
-      "key": "1b",
-      "name": "1. Put something on it (two markers)",
-      "markers": {
-        "2002": [
-          10,
-          10
-        ],
-        "2003": [
-          187,
-          274
-        ]
-      },
-      "same_as": "1"
     }
   ]
 }

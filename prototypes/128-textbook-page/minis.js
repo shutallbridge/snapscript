@@ -1,12 +1,12 @@
 // PROTOTYPE (#128), throwaway: mini cards, the sibling of sheets.js's real card faces, for cards named in
-// running text. Same look (white marker zone, stripe, tint, label, whiteboard) and the same colours and parsing
+// running text. Same look (white marker zone with a grey dot, stripe, tint, label, whiteboard) and the same colours and parsing
 // from sheets.js, but its own sizes: tall enough to read inline, and only as long as its text.
 // Needs sheets.js (window.LIBRARY) loaded first.
 
 const MINI = {
   h: 6,          // mm, card height
   mz: 4.6,       // marker zone width
-  mk: 3.2,       // stand-in marker (far below the 8 mm a camera can read)
+  dot: 1.8,      // grey dot standing in for the marker (no real or fake marker on a page)
   stripe: 0.5,
   pad: 1.3,      // around the main area
   gap: 1.1,      // between a word and the whiteboard
@@ -22,16 +22,6 @@ function miniWidth(str, size, font) {  // mm, at size mm
   if (!str) return 0;
   miniCtx.font = `${font === 'hand' ? 400 : 500} 100px ${font === 'hand' ? MINI.handFont : MONO}`;
   return miniCtx.measureText(str).width / 100 * size;
-}
-
-function miniMarker(x, y, seed) {  // sheets.js's stand-in, at MINI.mk
-  let s = seed * 9301 + 49297; const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280), c = MINI.mk / 9;
-  let out = '';
-  for (let i = 0; i < 9; i++) for (let j = 0; j < 9; j++) {
-    const ring = Math.min(i, j, 8 - i, 8 - j);
-    if (ring === 2 || (ring !== 1 && r() < 0.5)) out += `<rect x="${x + j * c}" y="${y + i * c}" width="${c + 0.01}" height="${c + 0.01}" fill="#000"/>`;
-  }
-  return out;
 }
 
 // one mini card as an inline SVG, sized in em so it scales with the text around it
@@ -63,7 +53,7 @@ function miniCard(card, emPerMm) {
   }
 
   const g = `<rect width="${M.mz}" height="${M.h}" fill="#fff"/><rect x="${M.mz}" width="${w - M.mz}" height="${M.h}" fill="${bg}"/>` +
-    `<rect x="${M.mz}" width="${M.stripe}" height="${M.h}" fill="${stripe}"/>` + miniMarker((M.mz - M.mk) / 2, mid - M.mk / 2, hash(side.text)) + body +
+    `<rect x="${M.mz}" width="${M.stripe}" height="${M.h}" fill="${stripe}"/>` + `<circle cx="${M.mz / 2}" cy="${mid}" r="${M.dot / 2}" fill="#a1a1aa"/>` + body +
     `<rect width="${w}" height="${M.h}" fill="none" stroke="#a1a1aa" stroke-width=".2"/>`;
   return `<svg class="mini" xmlns="${NS}" viewBox="-.1 -.1 ${w + .2} ${M.h + .2}" style="width:${(w + .2) * emPerMm}em;height:${(M.h + .2) * emPerMm}em">${g}</svg>`;
 }

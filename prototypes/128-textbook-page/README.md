@@ -15,7 +15,7 @@ Two Session B beats ("0. Get a canvas", "1. Put something on it") as A4 pages, e
 | `gen_tags.py` | writes `tags.js`, the real marker bits (pages 2000–2009, line-up tags 2100–2111) |
 | `pi.sh` | run commands on the Pi / copy files, over password SSH (`PI_PASS=… ./pi.sh 'cmd'`) |
 
-Pages: `0` (marker 2000), `1` (marker 2001), `1b` (same as `1`, markers 2002 top-left and 2003 bottom-right, for the one-or-two-markers check).
+Pages: `0` (marker 2000), `1` (marker 2001), each with one marker at the bottom-right. Page `1b` (markers 2002 top-left and 2003 bottom-right) was used for the one-or-two-markers check on the rig and has since been dropped.
 
 ## Print
 
