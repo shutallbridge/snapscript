@@ -6,9 +6,9 @@ Programs are written with physical cards. Each card is a block, and cards snap t
 
 A camera and a projector are mounted directly above a table, looking down at the cards. The camera reads the arrangement of the cards to determine the program. The projector displays the running sketch on the other side of the table, lights up cards to show errors, and projects virtual blocks that show where cards should be placed.
 
-The language reference, `REFERENCE.md`, is the full spec of the language and its text notation. This README covers what Snapscript is for and the physical system that runs it.
+The language reference, `REFERENCE.md`, is the full definition of the language and its text notation. This README covers what Snapscript is for and the physical system that runs it.
 
-Conventions for this file and the reference: concise, shown through examples, with no history and no rationale. Decisions and the reasoning behind them live in `docs/adr/`. Unsettled points are marked **TBD**.
+This file follows the reference's conventions: it describes the system as it is, concisely and through examples, with no history, no rationale and no distinction between built and unbuilt. Decisions and the reasoning behind them live in `docs/adr/`. Unsettled points are marked **TBD**.
 
 ## Goals
 

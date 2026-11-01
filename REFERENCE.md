@@ -13,7 +13,7 @@ Conventions:
 
 ## 1. Introduction
 
-Snapscript is a block-based language written with cards. A program is written by snapping cards together on a table, or as text in a `.snap` file, and both mean the same.
+Snapscript is a block-based language written with cards. A program is made by snapping cards together on a table, and the text notation writes it down, as in a `.snap` file.
 
 ### 1.1. Notation
 
@@ -31,7 +31,7 @@ Every slot of a card uses the same bracket. A printed card and the same card han
 
 ```
 [call(p5.circle)]    printed on a card as: circle
-[call{p5.circle}]    handwritten with a marker
+[call{p5.circle}]    handwritten with a pen
 ```
 
 Indentation reproduces the indentation on the table. One indent is two spaces.
