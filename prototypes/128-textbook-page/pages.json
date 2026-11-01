@@ -1,41 +1,81 @@
 {
-  "_": "PROTOTYPE (#128), throwaway. The pages, shared by pages.html (print), vision.py (where a page lies) and table.html (what to project). Marker positions are the top-left corner of the printed 9x9 marker, in mm from the paper's top-left corner.",
-  "paper": [210, 297],
+  "_": "PROTOTYPE (#128), throwaway. The pages, shared by pages.html (print), vision.py (where a page lies) and table.html (what to project). Marker positions are the top-left corner of the printed 9x9 marker, in mm from the paper's top-left corner. In text, card notation like [call(p5.rect)] is drawn as a small card.",
+  "paper": [
+    210,
+    297
+  ],
   "marker": 13,
-  "calib": { "ids": [2100, 2101, 2102, 2103, 2104, 2105, 2106, 2107, 2108, 2109, 2110, 2111], "cols": 4, "rows": 3, "size": 0.14 },
+  "calib": {
+    "ids": [
+      2100,
+      2101,
+      2102,
+      2103,
+      2104,
+      2105,
+      2106,
+      2107,
+      2108,
+      2109,
+      2110,
+      2111
+    ],
+    "cols": 4,
+    "rows": 3,
+    "size": 0.14
+  },
   "pages": [
     {
       "key": "0",
       "name": "0. Get a canvas",
-      "markers": { "2000": [10, 10] },
-      "intro": "<p>Two cards make a canvas and paint it. <b>createCanvas</b> takes two numbers: the width and the height, in pixels. <b>background</b> takes one colour card.</p><p>Everything in <b>setup</b> goes in a column under the <b>define setup</b> card.</p>",
+      "markers": {
+        "2000": [
+          10,
+          10
+        ]
+      },
+      "intro": "<p>Two cards make a canvas and paint it. [call(p5.createCanvas)] takes two numbers: the width and the height, in pixels. [call(p5.background)] takes one colour card.</p><p>Everything in setup goes in a column under the [define{setup}] card.</p>",
       "program": "[define{setup}]\n[call(p5.createCanvas)][num{500}][num{500}]\n[call(p5.background)][color(mediumblue)]",
       "see": "a blue square in the canvas space.",
       "try": [
-        "Make the canvas a different shape. Try 500 and 200, then 200 and 500. Which of the two numbers is the width?",
-        "Swap the <b>mediumblue</b> card for a different colour card.",
-        "Take the <b>background</b> row off the table and watch the canvas. Put it back."
+        "Make the canvas a different shape. Try [num{500}][num{200}], then [num{200}][num{500}]. Which of the two numbers is the width?",
+        "Swap the [color(mediumblue)] card for a different colour card.",
+        "Take the [call(p5.background)] row off the table and watch the canvas. Put it back."
       ],
-      "happened": "A card like <b>createCanvas</b> <b>calls a function</b>: it runs a named piece of behaviour that somebody else wrote. The cards to its right are its <b>arguments</b>, the information the function needs to do its job."
+      "happened": "A card like [call(p5.createCanvas)] <b>calls a function</b>: it runs a named piece of behaviour that somebody else wrote. The cards to its right are its <b>arguments</b>, the information the function needs to do its job."
     },
     {
       "key": "1",
       "name": "1. Put something on it",
-      "markers": { "2001": [10, 10] },
-      "intro": "<p><b>rect</b> draws a rectangle. It takes four numbers, and the order they sit in tells the function which is which: <code>rect&nbsp;&nbsp;x&nbsp;&nbsp;y&nbsp;&nbsp;width&nbsp;&nbsp;height</code>.</p><p><b>x</b> is how far across from the left edge. <b>y</b> is how far <b>down</b> from the top edge: a bigger y is lower, not higher. The x and y are the rectangle's <b>top-left corner</b>, not its middle.</p>",
+      "markers": {
+        "2001": [
+          10,
+          10
+        ]
+      },
+      "intro": "<p>[call(p5.rect)] draws a rectangle. It takes four numbers, and the order they sit in tells the function which is which: <code>rect&nbsp;&nbsp;x&nbsp;&nbsp;y&nbsp;&nbsp;width&nbsp;&nbsp;height</code>.</p><p><b>x</b> is how far across from the left edge. <b>y</b> is how far <b>down</b> from the top edge: a bigger y is lower, not higher. The x and y are the rectangle's <b>top-left corner</b>, not its middle.</p>",
       "program": "[define{setup}]\n[call(p5.createCanvas)][num{500}][num{500}]\n[call(p5.background)][color(mediumblue)]\n[call(p5.rect)][num{300}][num{300}][num{60}][num{40}]",
       "see": "a small white rectangle, below and to the right of the middle.",
       "try": [
-        "Change the first two numbers of <b>rect</b> to 0 and 0. Where does it go?",
-        "Change them to 250 and 250. Is the rectangle in the middle? If not, why not?",
-        "Build a <b>second</b> rect row under the first, with different numbers."
+        "Change the first two numbers of [call(p5.rect)] to [num{0}][num{0}]. Where does it go?",
+        "Change them to [num{250}][num{250}]. Is the rectangle in the middle? If not, why not?",
+        "Build a <b>second</b> [call(p5.rect)] row under the first, with different numbers."
       ],
       "happened": "Make sure everyone at the table can put a finger on the card that decides how far <b>down</b> a rectangle sits."
     },
     {
       "key": "1b",
       "name": "1. Put something on it (two markers)",
-      "markers": { "2002": [10, 10], "2003": [187, 274] },
+      "markers": {
+        "2002": [
+          10,
+          10
+        ],
+        "2003": [
+          187,
+          274
+        ]
+      },
       "same_as": "1"
     }
   ]

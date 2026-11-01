@@ -8,7 +8,7 @@
 <title>PROTOTYPE #128: textbook pages</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500&family=Geist:wght@400;600&family=Caveat:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500&family=Geist:wght@400;600&family=Kalam:wght@400&display=swap" rel="stylesheet">
 <style>
   @page { size: 210mm 297mm; margin: 0; }
   * { box-sizing: border-box; }
@@ -22,6 +22,7 @@
   p { margin: 0 0 2.5mm; }
   code { font: 9.5pt Geist Mono, monospace; background: #f4f4f5; padding: 0 1mm; }
   ul { margin: 0; padding-left: 5mm; } li { margin-bottom: 1.5mm; }
+  .mini { display: inline-block; height: 1.5em; vertical-align: -0.42em; margin: 0 .3mm; }
   .callout { background: #fbeadf; border-radius: 2mm; padding: 4mm 5mm; margin: 2mm 0 4mm; font-size: 11pt; }
   .see { border-left: 1.2mm solid #a1a1aa; padding: 1mm 0 1mm 3mm; margin: 4mm 0; }
   .foot { position: absolute; left: 30mm; right: 30mm; bottom: 10mm; font: 7pt Geist Mono, monospace; color: #a1a1aa; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -31,9 +32,19 @@
 </head>
 <body>
 <div id="out"></div>
+<script>window.LIBRARY = true; window.HAND_FONT = 'Kalam, cursive';</script>
+<script src="sheets.js"></script>
+<script>probe.style.top = "0";  // sheets.js's off-screen text probe, else it adds a blank last page</script>
 <script src="tags.js"></script>
 <script>
-const NS = 'http://www.w3.org/2000/svg', $ = id => document.getElementById(id);
+// card notation in the text, like [call(p5.rect)], drawn as a small card at its real length
+const mini = card => {
+  const side = parseCard(card), L = minLength(side, settings()), w = L * U;
+  return `<svg class="mini" xmlns="${NS}" viewBox="-.4 -.4 ${w + .8} ${H + .8}" style="width:${(w + .8) / (H + .8) * 1.5}em">` +
+    `${face(side, L, settings(), true)}<rect width="${w}" height="${H}" fill="none" stroke="#a1a1aa" stroke-width=".6"/></svg>`;
+};
+const minis = html => html.replace(/(\[[^\[\]]*\])+/g, run =>  // a run of cards stays on one line
+  `<span style="white-space:nowrap">${run.match(/\[[^\[\]]*\]/g).map(mini).join('')}</span>`);
 
 function tagSvg(id, size) {  // the real marker, one path, no seams
   const c = size / 9; let d = '';
@@ -52,14 +63,14 @@ async function main() {
     html += `<section class="page">${markers}<div class="body">
       <div class="kicker">SNAPSCRIPT · GETTING STARTED WITH P5 · PAGE ${c.key}</div>
       <h1>${c.name.replace(/ \(.*\)$/, '')}</h1>
-      ${c.intro}
+      ${minis(c.intro)}
       <h2>Lay the cards like this</h2>
       <div class="callout">✴️ See the virtual cards on the table</div>
       <div class="see"><b>You should see:</b> ${c.see}</div>
       <h2>Try these</h2>
-      <ul>${c.try.map(t => `<li>${t}</li>`).join('')}</ul>
+      <ul>${c.try.map(t => `<li>${minis(t)}</li>`).join('')}</ul>
       <h2>${c.key === '0' ? 'What just happened' : 'Before you turn the page'}</h2>
-      <p>${c.happened}</p>
+      <p>${minis(c.happened)}</p>
     </div>
     <div class="foot"><span>page "${page.key}" · marker${Object.keys(page.markers).length > 1 ? 's' : ''} ${Object.entries(page.markers).map(([id, [x, y]]) => `${id} at ${x},${y} mm`).join(', ')} · ${book.marker} mm</span>
       <svg viewBox="0 0 52 7" style="width:52mm;height:7mm"><path d="M1 6H51${Array.from({ length: 11 }, (_, i) => `M${1 + 5 * i} 6V${i % 2 ? 4.5 : 3.5}`).join('')}" stroke="#a1a1aa" stroke-width=".25"/><text x="1" y="2.4" font-size="2.2" fill="#a1a1aa" font-family="sans-serif">50 mm: check the print scale</text></svg></div>
@@ -67,7 +78,7 @@ async function main() {
   }
   $('out').innerHTML = html;
 }
-Promise.all([document.fonts.load('500 12px "Geist Mono"'), document.fonts.load('12px Geist')]).then(main, main);
+Promise.all([document.fonts.load('500 12px "Geist Mono"'), document.fonts.load('12px Geist'), document.fonts.load('12px Kalam')]).then(main, main);
 </script>
 </body>
 </html>

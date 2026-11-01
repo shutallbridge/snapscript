@@ -1,12 +1,13 @@
 // PROTOTYPE (#128), throwaway: copied from #101's sheets.js (prototype/101-card-sheets). Only change: with
-// window.LIBRARY set, it draws nothing itself, so pages.html and table.html can use face() and minLength().
+// window.LIBRARY set, it draws nothing itself, so pages.html and table.html can use face() and minLength(),
+// and window.HAND_FONT replaces the handwriting font.
 // ---- sizes (mm) ------------------------------------------------------------------------------
 const U = 30, H = 30, MK = 13, MZ = 17;  // U, card height, marker, white marker zone
 const STRIPE = 1.5;     // the stripe where the tint starts (Figma had 2)
 const TAB_END = 8, TAB_SIDE = 5;  // paper tabs: left/right 8 mm, top/bottom 5 mm (Shu's tests); they tuck under the face and are the bleed
 const LETTER = 5.5;     // mm per handwritten letter, rough, from the rig test
 const MONO = '"Geist Mono", ui-monospace, Menlo, monospace';
-const HAND = 'Caveat, "Bradley Hand", cursive';
+const HAND = window.HAND_FONT || 'Caveat, "Bradley Hand", cursive';  // #128: pages.html sets Kalam
 const PT = 25.4 / 72;
 
 // ---- Tailwind v4 (theme.css, tailwindcss 4.1): 300, 500, 900, 950 -----------------------------------
