@@ -17,7 +17,7 @@ SPEC_CARDS = {
     "get.get": [
         "[get(p5.frameCount)]", "[get(pi)]", "[get(x)]", "[get(y)]", "[get{app}]", "[get{a}]", "[get{b}]", "[get{c}]", "[get{count}]",
         "[get{done}]", "[get{empty}]", "[get{helper}]", "[get{i}]", "[get{message}]", "[get{name}]", "[get{n}]",
-        "[get{p5}]", "[get{p5.framecount}]", "[get{ready}]", "[get{scores}]", "[get{score}]", "[get{shapes.unit}]", "[get{shapes}]", "[get{s}]",
+        "[get{p5.framecount}]", "[get{p5}]", "[get{ready}]", "[get{scores}]", "[get{score}]", "[get{shapes.unit}]", "[get{shapes}]", "[get{s}]",
         "[get{title}]", "[get{user}]", "[get{width}]", "[get{x}]", "[get{y}]", "[root]",
     ],
     "define.define": [
