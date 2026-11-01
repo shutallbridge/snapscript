@@ -1,0 +1,81 @@
+<!doctype html>
+<!-- PROTOTYPE (#128), throwaway. Textbook pages on A4, each with a real tagStandard41h12 page marker.
+     Serve the folder (python3 -m http.server) and print at 100%, margins "none", background graphics on. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PROTOTYPE #128: textbook pages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500&family=Geist:wght@400;600&family=Caveat:wght@500&display=swap" rel="stylesheet">
+<style>
+  @page { size: 210mm 297mm; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ccc; font: 10.5pt/1.45 Geist, system-ui, sans-serif; color: #18181b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { position: relative; width: 210mm; height: 297mm; background: #fff; margin: 10mm auto; overflow: hidden; break-after: page; }
+  .marker { position: absolute; }
+  .body { position: absolute; left: 30mm; right: 14mm; top: 10mm; bottom: 26mm; }
+  .kicker { font: 8pt Geist Mono, monospace; color: #71717a; letter-spacing: .02em; }
+  h1 { font-size: 22pt; line-height: 1.1; margin: 1.5mm 0 6mm; font-weight: 600; }
+  h2 { font-size: 11pt; margin: 6mm 0 2mm; font-weight: 600; }
+  p { margin: 0 0 2.5mm; }
+  code { font: 9.5pt Geist Mono, monospace; background: #f4f4f5; padding: 0 1mm; }
+  ul { margin: 0; padding-left: 5mm; } li { margin-bottom: 1.5mm; }
+  .snippet { margin: 2mm 0 2mm -16mm; }
+  .see { border-left: 1.2mm solid #a1a1aa; padding: 1mm 0 1mm 3mm; margin: 4mm 0; }
+  .foot { position: absolute; left: 30mm; right: 30mm; bottom: 10mm; font: 7pt Geist Mono, monospace; color: #a1a1aa; display: flex; justify-content: space-between; align-items: flex-end; }
+  .page:last-child { break-after: auto; }
+  @media print { body { background: none; } .page { margin: 0; } }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script>window.LIBRARY = true;</script>
+<script src="sheets.js"></script>
+<script src="tags.js"></script>
+<script>
+const SNIPPET_W = 186;  // mm the snippet picture may take (it starts left of the text column, under the marker)
+
+function tagSvg(id, size) {  // the real marker, one path, no seams
+  const c = size / 9; let d = '';
+  TAGS[id].forEach((row, y) => [...row].forEach((b, x) => { if (b === '1') d += `M${x * c} ${y * c}h${c}v${c}h${-c}z`; }));
+  return `<svg xmlns="${NS}" viewBox="0 0 ${size} ${size}" style="width:${size}mm;height:${size}mm;display:block" shape-rendering="crispEdges"><path d="${d}" fill="#000"/></svg>`;
+}
+
+function snippet(program) {
+  const t = tableSvg({ strips: [program] }, settings(), true), s = Math.min(0.5, SNIPPET_W / t.w);
+  return { html: `<svg xmlns="${NS}" viewBox="-1 -1 ${t.w + 2} ${t.h + 2}" style="display:block;width:${(t.w + 2) * s}mm;height:${(t.h + 2) * s}mm">${t.inner}</svg>`, scale: s };
+}
+
+async function main() {
+  const book = await (await fetch('pages.json', { cache: 'no-store' })).json();
+  const byKey = Object.fromEntries(book.pages.map(p => [p.key, p]));
+  let html = '';
+  for (const page of book.pages) {
+    const c = page.same_as ? { ...byKey[page.same_as], ...page } : page;
+    const snip = snippet(c.program);
+    const markers = Object.entries(page.markers).map(([id, [x, y]]) =>
+      `<div class="marker" style="left:${x}mm;top:${y}mm">${tagSvg(id, book.marker)}</div>`).join('');
+    html += `<section class="page">${markers}<div class="body">
+      <div class="kicker">SNAPSCRIPT · GETTING STARTED WITH P5 · PAGE ${c.key}</div>
+      <h1>${c.name.replace(/ \(.*\)$/, '')}</h1>
+      ${c.intro}
+      <h2>Lay the cards like this</h2>
+      <p>The outlines are already in the coding space on the table: lay each card over its outline.</p>
+      <div class="snippet">${snip.html}</div>
+      <div class="see"><b>You should see:</b> ${c.see}</div>
+      <h2>Try these</h2>
+      <ul>${c.try.map(t => `<li>${t}</li>`).join('')}</ul>
+      <h2>${c.key === '0' ? 'What just happened' : 'Before you turn the page'}</h2>
+      <p>${c.happened}</p>
+    </div>
+    <div class="foot"><span>page "${page.key}" · marker${Object.keys(page.markers).length > 1 ? 's' : ''} ${Object.entries(page.markers).map(([id, [x, y]]) => `${id} at ${x},${y} mm`).join(', ')} · ${book.marker} mm · cards at ${Math.round(snip.scale * 100)}%</span>
+      <svg viewBox="0 0 52 7" style="width:52mm;height:7mm"><path d="M1 6H51${Array.from({ length: 11 }, (_, i) => `M${1 + 5 * i} 6V${i % 2 ? 4.5 : 3.5}`).join('')}" stroke="#a1a1aa" stroke-width=".25"/><text x="1" y="2.4" font-size="2.2" fill="#a1a1aa" font-family="sans-serif">50 mm: check the print scale</text></svg></div>
+    </section>`;
+  }
+  $('out').innerHTML = html;
+}
+Promise.all([document.fonts.load('500 12px "Geist Mono"'), document.fonts.load('500 12px Caveat'), document.fonts.load('12px Geist')]).then(main, main);
+</script>
+</body>
+</html>
