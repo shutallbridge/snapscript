@@ -27,6 +27,8 @@ let book = null, state = { mode: 'run', pages: [] }, view = { margin: 10, outlin
 let pxPerMm = +localStorage.pxPerMm || 0;  // learnt from a page lying on the table; kept across reloads
 const base = document.getElementById('base'), over = document.getElementById('over');
 const VW = () => innerWidth, VH = () => innerHeight;  // (sheets.js has its own H: the card height, 30 mm)
+// the work area: the left part of the image, vision.py --aspect wide (the projector spills past the table's right edge)
+const AW = () => Math.min(VW(), (state.aspect || VW() / VH()) * VH());
 const toPx = ([x, y]) => [x * VH(), y * VH()];  // projector space (units of height) -> px
 
 function size() { for (const c of [base, over]) { c.width = VW(); c.height = VH(); } }
@@ -37,10 +39,10 @@ const scene = () => (state.current || '').startsWith('1') ? 'rect' : state.curre
 new p5(p => {
   p.setup = () => { p.createCanvas(10, 10).parent('sketch'); };
   p.draw = () => {
-    const s = Math.min(VW() / 2 - 80, VH() - 120);
+    const s = Math.min(AW() / 2 - 80, VH() - 120);
     if (p.width !== Math.round(s)) p.resizeCanvas(Math.round(s), Math.round(s));
     const el = document.getElementById('sketch');
-    el.style.left = (VW() * 0.75 - s / 2) + 'px'; el.style.top = (VH() / 2 - s / 2) + 'px';
+    el.style.left = (AW() * 0.75 - s / 2) + 'px'; el.style.top = (VH() / 2 - s / 2) + 'px';
     p.scale(s / 500);
     if (scene() === 'none') { p.background(18); return; }
     p.background('mediumblue');
@@ -87,11 +89,12 @@ function drawBase() {
   const g = base.getContext('2d');
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, VW(), VH());
   if (state.mode === 'calibrate') return;
-  g.fillStyle = view.lit ? '#fff' : '#000'; g.fillRect(0, 0, VW(), VH());
+  g.fillStyle = '#000'; g.fillRect(0, 0, VW(), VH());
+  if (view.lit) { g.fillStyle = '#fff'; g.fillRect(0, 0, AW(), VH()); }
   if (view.lit) return;
-  g.strokeStyle = '#3f3f46'; g.lineWidth = 2; g.beginPath(); g.moveTo(VW() / 2, 20); g.lineTo(VW() / 2, VH() - 20); g.stroke();
+  g.strokeStyle = '#3f3f46'; g.lineWidth = 2; g.beginPath(); g.moveTo(AW() / 2, 20); g.lineTo(AW() / 2, VH() - 20); g.stroke();
   g.fillStyle = '#52525b'; g.font = '500 18px "Geist Mono"';
-  g.fillText('coding space', 20, VH() - 20); g.fillText('canvas space', VW() / 2 + 20, VH() - 20);
+  g.fillText('coding space', 20, VH() - 20); g.fillText('canvas space', AW() / 2 + 20, VH() - 20);
   drawCards(g);
 }
 
@@ -122,7 +125,7 @@ function drawOver() {
 }
 
 function drawCalib(g) {
-  const c = book.calib, aspect = VW() / VH();
+  const c = book.calib, aspect = AW() / VH();
   g.fillStyle = '#000'; g.fillRect(0, 0, VW(), VH());
   c.ids.forEach((id, i) => {
     const col = i % c.cols, row = (i / c.cols) | 0, s = c.size * VH(), cell = s / 9;

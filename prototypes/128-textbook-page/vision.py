@@ -121,8 +121,9 @@ def main():
                 found = {d.tag_id: d.corners for d in det.detect(gray) if d.tag_id in calib_ids}
                 if len(found) >= 4:
                     break
-            src = np.concatenate([found[t] for t in found]) if found else np.zeros((0, 2))
-            dst = np.concatenate([want[t] for t in found]) if found else np.zeros((0, 2))
+            # fit tag centres, not corners: projector glare grows every projected tag ~4% about its centre on the rig
+            src = np.array([found[t].mean(0) for t in found]) if found else np.zeros((0, 2))
+            dst = np.array([want[t].mean(0) for t in found]) if found else np.zeros((0, 2))
             if len(found) >= 4:
                 to_proj = fit_homography(src, dst)
                 err = np.linalg.norm(apply(to_proj, src) - dst, axis=1) * 1000
