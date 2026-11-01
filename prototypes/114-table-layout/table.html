@@ -287,6 +287,8 @@ function drawOver(L) {
   const g = over.getContext('2d'), u = UPX();
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, VW(), VH());
   if (state.mode === 'calibrate') return drawCalib(g);
+  // stacking, bottom to top: windows (base canvas, sketch) < corners < textbook pages < settings menu (its own element)
+  updateCorners(L); drawCorners(g, L);
   for (const page of state.pages || []) {  // every page in view: black out the paper, its margin and a dim area around it
     const pts = page.corners.map(toPx), path = q => { g.beginPath(); q.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); };
     // grow the paper by (reach - radius) with sharp corners, then stroke that with round joins of the radius:
@@ -302,7 +304,6 @@ function drawOver(L) {
     if (!counts) { g.beginPath(); g.moveTo(x - r * 0.7, y - r * 0.7); g.lineTo(x + r * 0.7, y + r * 0.7); g.stroke(); }
     text(g, String(c.id), x + r + 4, y - r, counts ? '#22c55e' : '#71717a', 12);
   }
-  updateCorners(L); drawCorners(g, L);
   if (canvasPx() > L.canvas.w || L.sketch.y + canvasPx() > VH()) {
     text(g, `sketch doesn't fit: ${(canvasPx() / mm()).toFixed(0)} mm wide, canvas space ${(L.canvas.w / mm()).toFixed(0)} mm`, L.canvas.x + 0.5 * u, 1.1 * u, '#ef4444');
   }
