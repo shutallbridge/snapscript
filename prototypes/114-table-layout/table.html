@@ -45,6 +45,7 @@
 // Units: the app works in its own px, with 1U (30 mm) = 50 px, whatever the projector's real resolution. The sketch,
 // table text and sizes are all in these px; real cards are drawn at true size in mm.
 const PX_PER_U = 50;
+const CORNER_U = 3.5;  // a corner's dotted quarter circle: its radius in U (fixed, not a setting)
 const CORNERS = ['tl', 'tr', 'bl', 'br'], CORNER_NAME = { tl: 'top-left', tr: 'top-right', bl: 'bottom-left', br: 'bottom-right' };
 const cap = t => t[0].toUpperCase() + t.slice(1);
 // The menu is for whoever runs the table (a facilitator), in two levels: a section, then its settings.
@@ -55,8 +56,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['full', 'Canvas full screen', [false, true]],
     ['centre', 'Centre the sketch', [true, false]]]],
   ['Corners', [
-    ...CORNERS.map(c => ['corner_' + c, cap(CORNER_NAME[c]), ['none', 'help']]),
-    ['cornerU', 'Circle radius', [2.5, 3, 3.25, 3.5, 3.75, 4, 5], 'U']]],
+    ...CORNERS.map(c => ['corner_' + c, cap(CORNER_NAME[c]), ['none', 'help']])]],
   ['Look', [
     ['textPx', 'Text size', [12, 14, 16, 18, 20, 24, 28, 32], ' px'],
     ['bg', 'Coding space brightness', [0, 6, 12, 20, 32, 48]]]],
@@ -76,7 +76,7 @@ const DEBUG = ['Debug', [
   ['test', 'Highlight test', [false, true]],
   ['cardU', 'Card length when unknown', [2, 3, 4, 5, 6], 'U']]];
 const OPTS = [...SECTIONS, DEBUG].flatMap(([, opts]) => opts);
-const DEFAULTS = { split: 50, cornerU: 3.5, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
+const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 792 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114d || '{}') };
 const save = () => { localStorage.cfg114d = JSON.stringify(cfg); };
@@ -158,7 +158,7 @@ function layout() {
   const code = { x: 0, y: 0, w: codeW, h: H }, canvas = cfg.full ? { x: 0, y: 0, w: W, h: H } : { x: codeW, y: 0, w: W - codeW, h: H };
   const sketch = cfg.centre ? { x: canvas.x + (canvas.w - sw) / 2, y: canvas.y + (canvas.h - sh) / 2, w: sw, h: sh }
     : { x: canvas.x, y: canvas.y, w: sw, h: sh };
-  const R = cfg.cornerU * UPX();
+  const R = CORNER_U * UPX();
   const corners = { tl: [0, 0], tr: [W, 0], bl: [0, H], br: [W, H] };
   return { W, H, code, canvas, sketch, R, corners };
 }
