@@ -1,8 +1,9 @@
 <!doctype html>
-<!-- PROTOTYPE (#114), throwaway. What the projector shows: three layouts of the table, switched from a hidden
-     settings menu (press , on the handheld keyboard). Each splits the work area into a coding space and a canvas
-     space, draws the sketch at a fixed size, places a help spot, and cuts every textbook page in view out of the
-     light with a dim area around it. Reads state.json (from vision.py) and control.json (over SSH; see README.md).
+<!-- PROTOTYPE (#114), throwaway. What the projector shows: the table as two windows, the coding space (left) and
+     the canvas space (right), resized from a hidden settings menu (press , on the handheld keyboard) or with ←→.
+     The sketch is drawn at a fixed size (1U = 50 px). Each of the four corners can be given an action; a card held in
+     one counts down, then triggers it (help, bottom-right: the card's doc comment). Every textbook page in view is cut
+     out of the light with a dim area around it. Reads state.json (from vision.py) and control.json (over SSH; see README.md).
      Works without vision.py too (on a laptop): pages and card markers are then just absent. -->
 <html lang="en">
 <head>
@@ -36,32 +37,32 @@
 <script src="tags.js"></script>
 <script>
 // ======================= settings (the hidden menu) =======================
-const VARIANTS = { A: 'halves', B: 'hug the canvas', C: 'framed window' };
+// Units: the app works in its own px, with 1U (30 mm) = 50 px, whatever the projector's real resolution. The sketch,
+// table text and sizes are all in these px; real cards are drawn at true size in mm.
+const PX_PER_U = 50;
+const CORNERS = ['tl', 'tr', 'bl', 'br'], CORNER_NAME = { tl: 'top-left', tr: 'top-right', bl: 'bottom-left', br: 'bottom-right' };
 const OPTS = [  // key, label, choices
-  ['variant', 'layout', Object.keys(VARIANTS)],
-  ['side', 'coding space on', ['left', 'right']],
-  ['split', 'coding space width %', [40, 45, 50, 55, 60, 65, 70]],
-  ['pxPerU', 'sketch px per 1U (30 mm)', ['native', 10, 15, 20, 25, 30, 40]],
-  ['canvas', 'canvas size (sketch px)', [200, 300, 400, 500, 600]],
-  ['textPx', 'table text size (px)', [12, 14, 16, 18, 20, 24, 28]],
-  ['sketchText', 'sketch text sample (16 px)', [false, true]],
+  ['split', 'coding space width %', [30, 35, 40, 45, 50, 55, 60, 65, 70]],
+  ['dwell', 'corner countdown (s)', [0.5, 1, 1.5, 2, 2.5, 3]],
+  ['cornerU', 'corner size (U radius)', [2, 3, 4, 5, 6]],
+  ...CORNERS.map(c => ['corner_' + c, CORNER_NAME[c] + ' corner', ['none', 'help']]),
+  ['fake', 'pretend a card is in a corner', ['off', ...CORNERS]],
+  ['canvas', 'canvas size (px)', [200, 300, 400, 500, 600]],
+  ['textPx', 'table text size (px)', [12, 14, 16, 18, 20, 24, 28, 32]],
   ['bg', 'coding space brightness', [0, 6, 12, 20, 32, 48]],
   ['margin', 'page cut-out margin (mm)', [0, 5, 10, 15]],
   ['halo', 'dim area around a page (mm)', [0, 20, 40, 60, 100]],
-  ['helpAt', 'help spot (layout A)', ['bottom', 'top']],
   ['program', 'mock program', [true, false]],
-  ['fakeHelp', 'pretend a card is on the help spot', [false, true]],
   ['test', 'highlight test', [false, true]],
   ['marks', 'show marker reads', [true, false]],
   ['outline', 'page outline (red)', [false, true]],
   ['hud', 'status line', [true, false]],
   ['tableMm', 'work area depth (mm)', [700, 750, 780, 792, 800, 850, 900]],
 ];
-const DEFAULTS = { variant: 'A', side: 'left', split: 50, pxPerU: 'native', canvas: 500, textPx: 16, sketchText: false, bg: 12,
-  margin: 10, halo: 40, helpAt: 'bottom', program: true, fakeHelp: false, test: false, marks: true, outline: false, hud: true, tableMm: 792 };
-let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114 || '{}') };
-const urlV = new URLSearchParams(location.search).get('variant'); if (VARIANTS[urlV]) cfg.variant = urlV;
-const save = () => { localStorage.cfg114 = JSON.stringify(cfg); history.replaceState(null, '', '?variant=' + cfg.variant); };
+const DEFAULTS = { split: 50, dwell: 1.5, cornerU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'none', corner_br: 'help', fake: 'off',
+  canvas: 500, textPx: 16, bg: 12, margin: 10, halo: 40, program: true, test: false, marks: true, outline: false, hud: true, tableMm: 792 };
+let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114b || '{}') };
+const save = () => { localStorage.cfg114b = JSON.stringify(cfg); };
 
 let menuOpen = false, menuRow = 0;
 const menu = document.getElementById('menu'), toast = document.getElementById('toast');
@@ -70,13 +71,13 @@ function showMenu() {
   if (!menuOpen) return;
   menu.innerHTML = '<div class="head">settings · ↑↓ choose · ←→ change · , or Esc to close · 0 resets</div>' +
     OPTS.map(([k, label], i) => `<div class="row${i === menuRow ? ' on' : ''}"><span>${label}</span><span class="v">${
-      k === 'variant' ? cfg[k] + ' · ' + VARIANTS[cfg[k]] : cfg[k] === true ? 'on' : cfg[k] === false ? 'off' : cfg[k]}</span></div>`).join('');
+      cfg[k] === true ? 'on' : cfg[k] === false ? 'off' : cfg[k]}</span></div>`).join('');
   const r = menu.getBoundingClientRect();
   menu.style.left = (AW() / 2 - r.width / 2) + 'px'; menu.style.top = (VH() / 2 - r.height / 2) + 'px';
 }
 function step(key, d) {
   const ch = OPTS.find(o => o[0] === key)[2], i = ch.indexOf(cfg[key]);
-  cfg[key] = ch[((i < 0 ? 0 : i) + d + ch.length) % ch.length]; save();
+  cfg[key] = ch[Math.max(0, Math.min(ch.length - 1, (i < 0 ? 0 : i) + d))]; save();
 }
 let toastT = 0;
 function say(msg) { toast.textContent = msg; toast.style.display = 'block'; toast.style.left = '20px'; toast.style.top = (VH() - 60) + 'px'; clearTimeout(toastT); toastT = setTimeout(() => toast.style.display = 'none', 1500); }
@@ -90,63 +91,52 @@ addEventListener('keydown', e => {
     else if (e.key === '0') { cfg = { ...DEFAULTS }; save(); }
     showMenu(); return e.preventDefault();
   }
-  // menu closed: ←→ flip layouts, so variants can be compared without opening the menu
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { step('variant', e.key === 'ArrowLeft' ? -1 : 1); say(`layout ${cfg.variant} · ${VARIANTS[cfg.variant]}`); }
+  // menu closed: ←→ resize the two windows
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { step('split', e.key === 'ArrowLeft' ? -1 : 1); say(`coding space ${cfg.split}%`); }
 });
 
 // ======================= geometry =======================
-let book = null, state = { mode: 'run', pages: [], cards: [] }, view = {};
+let book = null, state = { mode: 'run', pages: [], cards: [] };
 const base = document.getElementById('base'), over = document.getElementById('over');
 const VW = () => innerWidth, VH = () => innerHeight;
 const AW = () => Math.min(VW(), (state.aspect || 1.5) * VH());  // work area: the left part of the image (the 16:9 image spills past the table)
 const mm = () => VH() / cfg.tableMm;                              // projector px per mm on the table
 const UPX = () => 30 * mm();                                        // projector px per U
-const toPx = ([x, y]) => [x * VH(), y * VH()];                     // projector space (units of height) -> px
+const S = () => UPX() / PX_PER_U;                                   // projector px per app px
+const toPx = ([x, y]) => [x * VH(), y * VH()];                     // projector space (units of height) -> projector px
 function size() { for (const c of [base, over]) { c.width = VW(); c.height = VH(); } }
 addEventListener('resize', size); size();
+const canvasPx = () => cfg.canvas * S();  // how wide the sketch is on the table, in projector px
 
-const sketchPerU = () => cfg.pxPerU === 'native' ? UPX() : cfg.pxPerU;
-const sketchScale = () => UPX() / sketchPerU();        // projector px per sketch px
-const canvasPx = () => cfg.canvas * sketchScale();      // how wide the sketch is on the table, in projector px
-
-// Each layout returns its rectangles in projector px: code, canvas (space), sketch (where the sketch goes),
-// help (the spot), doc (where its doc comment goes: x, y, w, and which way it grows).
+// Two windows side by side, coding space on the left, resized by cfg.split. The sketch is centred in the canvas space.
 function layout() {
-  const W = AW(), H = VH(), u = UPX(), cw = canvasPx(), L = cfg.side === 'left';
-  const split = (codeW) => {
-    const code = { x: L ? 0 : W - codeW, y: 0, w: codeW, h: H };
-    const canvas = { x: L ? codeW : 0, y: 0, w: W - codeW, h: H };
-    return { code, canvas };
-  };
-  const outer = (r, w) => L ? r.x + r.w - w - u : r.x + u;    // x of a box of width w at the table's outer edge of r
-  const inner = (r, w) => L ? r.x + u : r.x + r.w - w - u;
-  if (cfg.variant === 'A') {  // halves: a fixed split, sketch centred in its half, help spot in the coding space's outer corner
-    const { code, canvas } = split(W * cfg.split / 100);
-    const sketch = { x: canvas.x + (canvas.w - cw) / 2, y: (H - cw) / 2, w: cw, h: cw };
-    const hw = 6 * u, hh = 2 * u, hx = L ? code.x + u : code.x + code.w - hw - u;
-    const hy = cfg.helpAt === 'bottom' ? H - hh - u : u;
-    return { code, canvas, sketch, help: { x: hx, y: hy, w: hw, h: hh }, doc: { x: hx, y: cfg.helpAt === 'bottom' ? hy - 0.4 * u : hy + hh + 0.4 * u, w: 10 * u, up: cfg.helpAt === 'bottom' } };
-  }
-  if (cfg.variant === 'B') {  // hug the canvas: the canvas space is just the sketch plus 1U, at the table's outer edge; help spot under it
-    const csW = Math.min(W * 0.75, Math.max(cw, 7 * u) + 2 * u);
-    const { code, canvas } = split(W - csW);
-    const sketch = { x: canvas.x + (canvas.w - cw) / 2, y: u, w: cw, h: cw };
-    const hw = 6 * u, hh = 2 * u, hy = Math.min(H - hh - u, sketch.y + cw + 1.6 * u);
-    const help = { x: inner(canvas, hw), y: hy, w: hw, h: hh };
-    return { code, canvas, sketch, help, status: { x: sketch.x, y: sketch.y + cw + 0.6 * u }, doc: { x: help.x, y: hy + hh + 0.4 * u, w: canvas.w - 2 * u, up: false } };
-  }
-  // C, framed window: an IDE preview pane with a title bar, and a help panel below it in the canvas space
-  const { code, canvas } = split(W * cfg.split / 100);
-  const fw = Math.max(cw, 10 * u), sketch = { x: canvas.x + (canvas.w - cw) / 2, y: 2 * u, w: cw, h: cw };
-  const frame = { x: canvas.x + (canvas.w - fw) / 2 - 0.3 * u, y: u, w: fw + 0.6 * u, h: cw + 1.3 * u };
-  const panel = { x: frame.x, y: frame.y + frame.h + 0.6 * u, w: frame.w, h: Math.max(3 * u, H - (frame.y + frame.h + 0.6 * u) - u) };
-  const help = { x: panel.x + 0.5 * u, y: panel.y + 0.9 * u, w: 6 * u, h: 2 * u };
-  return { code, canvas, sketch, frame, panel, help, doc: { x: help.x + help.w + 0.5 * u, y: help.y, w: panel.w - help.w - 1.5 * u, up: false } };
+  const W = AW(), H = VH(), cw = canvasPx(), codeW = Math.round(W * cfg.split / 100);
+  const code = { x: 0, y: 0, w: codeW, h: H }, canvas = { x: codeW, y: 0, w: W - codeW, h: H };
+  const sketch = { x: canvas.x + (canvas.w - cw) / 2, y: (H - cw) / 2, w: cw, h: cw };
+  const R = cfg.cornerU * UPX();
+  const corners = { tl: [0, 0], tr: [W, 0], bl: [0, H], br: [W, H] };
+  return { W, H, code, canvas, sketch, R, corners };
 }
 const inside = (r, [x, y]) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
 
-// ======================= the sketch: a fixed-size canvas, scaled from sketch px to the table =======================
-let sketchW = 0;
+// ======================= corners: a card (later a hand) held in a corner triggers it after a countdown =======================
+// A card counts as present while vision has seen it in the last PRESENT_S (vision.py takes ~0.8 s a frame).
+const PRESENT_S = 1.0, lastSeen = {};  // corner -> {since, seen, fired}
+const cornerState = {};
+function updateCorners(L) {
+  const now = performance.now() / 1000;
+  for (const c of CORNERS) {
+    const [cx, cy] = L.corners[c];
+    const card = (state.cards || []).find(k => { const [x, y] = toPx(k.c); return Math.hypot(x - cx, y - cy) <= L.R; });
+    const here = cfg['corner_' + c] !== 'none' && (cfg.fake === c || card);
+    const st = cornerState[c] || (cornerState[c] = { since: null, seen: 0, card: null, fired: false });
+    if (here) { if (st.since === null) { st.since = now; st.fired = false; } st.seen = now; st.card = card || null; }
+    else if (st.since !== null && now - st.seen > PRESENT_S) { st.since = null; st.fired = false; st.card = null; }  // moved away: cancel
+    if (st.since !== null && now - st.since >= cfg.dwell) st.fired = true;
+  }
+}
+
+// ======================= the sketch: a fixed-size canvas in app px, scaled to the table =======================
 new p5(p => {
   const conf = [];
   p.setup = () => { p.createCanvas(10, 10).parent('sketch'); p.pixelDensity(1); };
@@ -155,20 +145,19 @@ new p5(p => {
       p.resizeCanvas(cfg.canvas, cfg.canvas); conf.length = 0;
       for (let i = 0; i < 120; i++) conf.push([p.random(p.width), p.random(p.height), p.random(10, 30), ['gold', 'hotpink', 'aquamarine', 'white'][i % 4]]);
     }
-    const L = layout(), s = sketchScale(), el = document.getElementById('sketch'), clip = document.getElementById('clip');
+    const L = layout(), el = document.getElementById('sketch'), clip = document.getElementById('clip');
     Object.assign(clip.style, { left: L.canvas.x + 'px', top: '0px', width: L.canvas.w + 'px', height: VH() + 'px' });
-    el.style.left = (L.sketch.x - L.canvas.x) + 'px'; el.style.top = L.sketch.y + 'px'; el.style.transform = `scale(${s})`;
+    el.style.left = (L.sketch.x - L.canvas.x) + 'px'; el.style.top = L.sketch.y + 'px'; el.style.transform = `scale(${S()})`;
     clip.style.visibility = state.mode === 'calibrate' ? 'hidden' : 'visible';
     p.background('mediumblue'); p.noStroke();
     for (const c of conf) { p.fill(c[3]); p.circle((c[0] + p.frameCount * 0.3) % p.width, c[1], c[2]); }  // demo 3 style drift
-    if (cfg.sketchText) { p.fill(255); p.textSize(16); p.textFont('Geist Mono'); p.text('textSize(16): hello, table', 12, 28); }
   };
 });
 
 // ======================= drawing helpers =======================
 const font = (px, fam = '"Geist Mono"') => `500 ${px}px ${fam}`;
-function text(g, str, x, y, col = '#d4d4d8', px = cfg.textPx) { g.fillStyle = col; g.font = font(px); g.textBaseline = 'middle'; g.fillText(str, x, y); return g.measureText(str).width; }
-function wrap(g, str, maxW, px) { g.font = font(px); const out = []; let line = '';
+function text(g, str, x, y, col = '#d4d4d8', px = cfg.textPx) { g.fillStyle = col; g.font = font(px * S()); g.textBaseline = 'middle'; g.fillText(str, x, y); return g.measureText(str).width; }
+function wrap(g, str, maxW, px) { g.font = font(px * S()); const out = []; let line = '';
   for (const w of str.split(' ')) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; }
   return [...out, line]; }
 
@@ -206,30 +195,16 @@ const PRINTS = { 2: () => 'hello', 6: () => 'x = ' + (Math.floor(performance.now
 
 const DOC = { title: 'circle(x, y, d)', body: 'Draws a circle. x and y are where its centre goes, and d is how wide it is, in pixels.' };
 
-// ======================= base layer: spaces, chrome, program, help =======================
+// ======================= base layer: the two windows, the program, the highlight test =======================
 function drawBase(L) {
   const g = base.getContext('2d'), u = UPX();
   g.setTransform(1, 0, 0, 1, 0, 0); g.setLineDash([]); g.fillStyle = '#000'; g.fillRect(0, 0, VW(), VH());
   if (state.mode === 'calibrate') return;
-  const bg = `rgb(${cfg.bg},${cfg.bg},${cfg.bg})`;
-  g.fillStyle = bg; g.fillRect(L.code.x, L.code.y, L.code.w, L.code.h);
-  // the boundary: a card counts when its marker is on the coding space's side of this line
-  const bx = cfg.side === 'left' ? L.code.x + L.code.w : L.code.x;
-  g.strokeStyle = '#3f3f46'; g.lineWidth = 2; g.beginPath(); g.moveTo(bx, 0.5 * u); g.lineTo(bx, VH() - 0.5 * u); g.stroke();
-
-  if (cfg.variant === 'C') {  // a 1U dot grid in the coding space, the IDE window and the help panel
-    g.fillStyle = '#3f3f46';
-    for (let x = L.code.x + u; x < L.code.x + L.code.w; x += u) for (let y = u; y < VH(); y += u) g.fillRect(x - 1, y - 1, 2, 2);
-    g.strokeStyle = '#52525b'; g.lineWidth = 2; g.strokeRect(L.frame.x, L.frame.y, L.frame.w, L.frame.h);
-    g.fillStyle = '#27272a'; g.fillRect(L.frame.x, L.frame.y, L.frame.w, 0.7 * u);
-    text(g, `sketch · running · ${cfg.canvas}×${cfg.canvas}`, L.frame.x + 0.3 * u, L.frame.y + 0.35 * u, '#a1a1aa');
-    g.strokeStyle = '#52525b'; g.strokeRect(L.panel.x, L.panel.y, L.panel.w, L.panel.h);
-    text(g, 'help', L.panel.x + 0.5 * u, L.panel.y + 0.45 * u, '#a1a1aa');
-  } else {
-    text(g, 'coding space', L.code.x + 0.5 * u, VH() - 0.5 * u, '#52525b');
-    text(g, 'canvas space', L.canvas.x + 0.5 * u, VH() - 0.5 * u, '#52525b');
-  }
-  if (L.status) text(g, `running · 60 fps · ${cfg.canvas}×${cfg.canvas}`, L.status.x, L.status.y, '#a1a1aa');
+  g.fillStyle = `rgb(${cfg.bg},${cfg.bg},${cfg.bg})`; g.fillRect(L.code.x, L.code.y, L.code.w, L.code.h);
+  // the boundary between the windows: a card counts when its marker is on the coding space's side of it
+  g.strokeStyle = '#3f3f46'; g.lineWidth = 2; g.beginPath(); g.moveTo(L.code.w, 0.5 * u); g.lineTo(L.code.w, VH() - 0.5 * u); g.stroke();
+  text(g, 'coding space', L.code.x + 0.5 * u, VH() - 0.5 * u, '#52525b');
+  text(g, 'canvas space', L.canvas.x + 0.5 * u, VH() - 0.5 * u, '#52525b');
 
   // the program: the current page's virtual cards (placeholders), else the mock program with inline print output
   const prog = state.current && program(state.current);
@@ -247,17 +222,36 @@ function drawBase(L) {
       g.strokeStyle = '#ef4444'; g.lineWidth = w * mm(); g.strokeRect(x, y, 4 * u, u);
       text(g, `${w} mm · bg ${cfg.bg}`, x + 4.4 * u, y + u / 2, '#ef4444'); });
   }
+}
 
-  // the help spot: an outlined slot; a card whose marker is in it shows its doc comment
-  const on = cfg.fakeHelp || (state.cards || []).some(c => inside(L.help, toPx(c.c)));
-  g.setLineDash([8, 6]); g.strokeStyle = on ? '#a1a1aa' : '#52525b'; g.lineWidth = 2; g.strokeRect(L.help.x, L.help.y, L.help.w, L.help.h); g.setLineDash([]);
-  if (!on) text(g, '? put a card here', L.help.x + 0.4 * u, L.help.y + L.help.h / 2, '#71717a');
-  else {
-    const id = (state.cards || []).find(c => inside(L.help, toPx(c.c)));
-    const lines = [DOC.title + (id ? ` · card ${id.id}` : ''), ...wrap(g, DOC.body, L.doc.w, cfg.textPx)], lh = cfg.textPx * 1.4;
-    lines.forEach((ln, i) => { const y = L.doc.up ? L.doc.y - (lines.length - 1 - i) * lh - lh / 2 : L.doc.y + i * lh + lh / 2;
-      text(g, ln, L.doc.x, y, i ? '#d4d4d8' : '#fff'); });
+// A corner: idle, a faint quarter ring. Counting down, a circle with a white border and black fill, and a white
+// circle growing inside it until it fills it. Triggered, the ring stays and the corner does its thing (help: the doc comment).
+function drawCorners(g, L) {
+  const now = performance.now() / 1000;
+  g.save(); g.beginPath(); g.rect(0, 0, L.W, L.H); g.clip();
+  for (const c of CORNERS) {
+    const what = cfg['corner_' + c]; if (what === 'none') continue;
+    const [cx, cy] = L.corners[c], st = cornerState[c] || {}, R = L.R;
+    if (st.since == null) {
+      g.strokeStyle = '#3f3f46'; g.lineWidth = 2; g.setLineDash([6, 6]); g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]);
+      continue;
+    }
+    const t = Math.min(1, (now - st.since) / cfg.dwell);
+    g.fillStyle = '#000'; g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.fill();
+    if (!st.fired) { g.fillStyle = '#fff'; g.beginPath(); g.arc(cx, cy, R * t, 0, 2 * Math.PI); g.fill(); }
+    g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.stroke();
+    if (st.fired && what === 'help') drawDoc(g, L, c, st.card);
   }
+  g.restore();
+}
+function drawDoc(g, L, c, card) {  // the doc comment beside the corner, on a black box so it reads over the sketch
+  const u = UPX(), w = 9 * u, lh = cfg.textPx * S() * 1.4, pad = 0.4 * u;
+  const lines = [DOC.title + (card ? ` · card ${card.id}` : ''), ...wrap(g, DOC.body, w - 2 * pad, cfg.textPx)];
+  const h = lines.length * lh + 2 * pad, [cx, cy] = L.corners[c];
+  const x = c[1] === 'r' ? cx - L.R - 0.5 * u - w : cx + L.R + 0.5 * u;
+  const y = c[0] === 'b' ? cy - h - 0.5 * u : cy + 0.5 * u;
+  g.fillStyle = '#000'; g.fillRect(x, y, w, h); g.strokeStyle = '#52525b'; g.lineWidth = 2; g.strokeRect(x, y, w, h);
+  lines.forEach((ln, i) => text(g, ln, x + pad, y + pad + i * lh + lh / 2, i ? '#d4d4d8' : '#fff'));
 }
 function program(key) {
   const page = book && book.pages.find(q => q.key === key);
@@ -282,16 +276,14 @@ function drawOver(L) {
     g.strokeStyle = counts ? '#22c55e' : '#71717a'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, r, 0, 2 * Math.PI); g.stroke();
     if (!counts) { g.beginPath(); g.moveTo(x - r * 0.7, y - r * 0.7); g.lineTo(x + r * 0.7, y + r * 0.7); g.stroke(); }
   }
-  if (cfg.sketchText) {  // what 16 sketch px of text comes to on the table
-    text(g, `16 sketch px = ${(16 * sketchScale() / mm()).toFixed(1)} mm`, L.sketch.x, L.sketch.y + L.sketch.h + 0.4 * u, '#a1a1aa');
-  }
+  updateCorners(L); drawCorners(g, L);
   if (canvasPx() > L.canvas.w || L.sketch.y + canvasPx() > VH()) {
     text(g, `sketch doesn't fit: ${(canvasPx() / mm()).toFixed(0)} mm wide, canvas space ${(L.canvas.w / mm()).toFixed(0)} mm`, L.canvas.x + 0.5 * u, 1.1 * u, '#ef4444');
   }
   if (cfg.hud) {
     const cur = state.current && book && book.pages.find(q => q.key === state.current);
-    text(g, `${cfg.variant} ${VARIANTS[cfg.variant]} · 1U = ${u.toFixed(1)} px · sketch ${sketchPerU().toFixed(0)} px/U → ${cfg.canvas} px = ${(canvasPx() / mm()).toFixed(0)} mm · ` +
-      `text ${cfg.textPx} px = ${(cfg.textPx / mm()).toFixed(1)} mm · page ${cur ? cur.name : '-'} · cards ${(state.cards || []).length}` +
+    text(g, `1U = ${PX_PER_U} px (${u.toFixed(1)} projector px) · split ${cfg.split}% · canvas ${cfg.canvas} px = ${(cfg.canvas / PX_PER_U).toFixed(1)}U = ${(canvasPx() / mm()).toFixed(0)} mm · ` +
+      `text ${cfg.textPx} px = ${(cfg.textPx * S() / mm()).toFixed(1)} mm · countdown ${cfg.dwell} s · page ${cur ? cur.name : '-'} · cards ${(state.cards || []).length}` +
       (state.calibrated === false ? ' · NOT CALIBRATED' : '') + (state.t ? '' : ' · no vision'), 0.5 * u, 0.4 * u, '#71717a', 14);
   }
 }
@@ -316,7 +308,7 @@ async function poll(file, apply, ms) {
   try { book = await (await fetch('pages.json', { cache: 'no-store' })).json(); } catch (e) { book = null; }
   let rev = null, applied = null;
   poll('state.json', s => { state = s; }, 150);
-  // control.json (over SSH) can still set anything the menu can: {"rev": n, "cfg": {"variant": "B", ...}}
+  // control.json (over SSH) can still set anything the menu can: {"rev": n, "cfg": {"split": 60, ...}}
   poll('control.json', c => { if (rev !== null && c.rev !== rev) location.reload(); rev = c.rev; const j = JSON.stringify(c.cfg || null); if (c.cfg && j !== applied) { Object.assign(cfg, c.cfg); save(); } applied = j; }, 500);
   const frame = () => { const L = layout(); drawBase(L); drawOver(L); requestAnimationFrame(frame); };
   document.fonts.ready.then(frame);
