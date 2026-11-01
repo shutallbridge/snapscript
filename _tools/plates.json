@@ -1,0 +1,434 @@
+[
+  {
+    "plate": "S1-frames-01",
+    "stage": 1,
+    "part_type": "frames",
+    "folder": "stage-1/S1-frames-01",
+    "part_count": 6,
+    "contents": "00-simple_head-4u ×6"
+  },
+  {
+    "plate": "S1-frames-02",
+    "stage": 1,
+    "part_type": "frames",
+    "folder": "stage-1/S1-frames-02",
+    "part_count": 6,
+    "contents": "01-get-4u ×6"
+  },
+  {
+    "plate": "S1-frames-03",
+    "stage": 1,
+    "part_type": "frames",
+    "folder": "stage-1/S1-frames-03",
+    "part_count": 6,
+    "contents": "01-get-4u ×1, 02-define-4u ×1, 03-call-4u ×1, 08-literal-4u ×3"
+  },
+  {
+    "plate": "S1-frames-04",
+    "stage": 1,
+    "part_type": "frames",
+    "folder": "stage-1/S1-frames-04",
+    "part_count": 6,
+    "contents": "08-literal-4u ×6"
+  },
+  {
+    "plate": "S1-frames-05",
+    "stage": 1,
+    "part_type": "frames",
+    "folder": "stage-1/S1-frames-05",
+    "part_count": 6,
+    "contents": "08-literal-4u ×6"
+  },
+  {
+    "plate": "S1-frames-06",
+    "stage": 1,
+    "part_type": "frames",
+    "folder": "stage-1/S1-frames-06",
+    "part_count": 6,
+    "contents": "08-literal-4u ×2, 10-color-4u ×4"
+  },
+  {
+    "plate": "S1-frames-07",
+    "stage": 1,
+    "part_type": "frames",
+    "folder": "stage-1/S1-frames-07",
+    "part_count": 8,
+    "contents": "12-block_head-4u ×1, 01-get-3u ×1, 03-call-3u ×2, 01-get-2u ×4"
+  },
+  {
+    "plate": "S1-frames-08",
+    "stage": 1,
+    "part_type": "frames",
+    "folder": "stage-1/S1-frames-08",
+    "part_count": 12,
+    "contents": "01-get-2u ×2, 03-call-2u ×10"
+  },
+  {
+    "plate": "S1-frames-09",
+    "stage": 1,
+    "part_type": "frames",
+    "folder": "stage-1/S1-frames-09",
+    "part_count": 9,
+    "contents": "03-call-2u ×3, 12-block_head-2u ×3, 13-dedent-2u ×3"
+  },
+  {
+    "plate": "S1-cores-01",
+    "stage": 1,
+    "part_type": "cores",
+    "folder": "stage-1/S1-cores-01",
+    "part_count": 6,
+    "contents": "core-4u ×6"
+  },
+  {
+    "plate": "S1-cores-02",
+    "stage": 1,
+    "part_type": "cores",
+    "folder": "stage-1/S1-cores-02",
+    "part_count": 6,
+    "contents": "core-4u ×6"
+  },
+  {
+    "plate": "S1-cores-03",
+    "stage": 1,
+    "part_type": "cores",
+    "folder": "stage-1/S1-cores-03",
+    "part_count": 6,
+    "contents": "core-4u ×6"
+  },
+  {
+    "plate": "S1-cores-04",
+    "stage": 1,
+    "part_type": "cores",
+    "folder": "stage-1/S1-cores-04",
+    "part_count": 6,
+    "contents": "core-4u ×6"
+  },
+  {
+    "plate": "S1-cores-05",
+    "stage": 1,
+    "part_type": "cores",
+    "folder": "stage-1/S1-cores-05",
+    "part_count": 6,
+    "contents": "core-4u ×6"
+  },
+  {
+    "plate": "S1-cores-06",
+    "stage": 1,
+    "part_type": "cores",
+    "folder": "stage-1/S1-cores-06",
+    "part_count": 6,
+    "contents": "core-4u ×6"
+  },
+  {
+    "plate": "S1-cores-07",
+    "stage": 1,
+    "part_type": "cores",
+    "folder": "stage-1/S1-cores-07",
+    "part_count": 8,
+    "contents": "core-4u ×1, core-3u ×3, core-2u ×4"
+  },
+  {
+    "plate": "S1-cores-08",
+    "stage": 1,
+    "part_type": "cores",
+    "folder": "stage-1/S1-cores-08",
+    "part_count": 12,
+    "contents": "core-2u ×12"
+  },
+  {
+    "plate": "S1-cores-09",
+    "stage": 1,
+    "part_type": "cores",
+    "folder": "stage-1/S1-cores-09",
+    "part_count": 9,
+    "contents": "core-2u ×9"
+  },
+  {
+    "plate": "S1-front-faces-01",
+    "stage": 1,
+    "part_type": "front-faces",
+    "folder": "stage-1/S1-front-faces-01",
+    "part_count": 6,
+    "contents": "front-face-4u ×6"
+  },
+  {
+    "plate": "S1-front-faces-02",
+    "stage": 1,
+    "part_type": "front-faces",
+    "folder": "stage-1/S1-front-faces-02",
+    "part_count": 6,
+    "contents": "front-face-4u ×6"
+  },
+  {
+    "plate": "S1-front-faces-03",
+    "stage": 1,
+    "part_type": "front-faces",
+    "folder": "stage-1/S1-front-faces-03",
+    "part_count": 6,
+    "contents": "front-face-4u ×6"
+  },
+  {
+    "plate": "S1-front-faces-04",
+    "stage": 1,
+    "part_type": "front-faces",
+    "folder": "stage-1/S1-front-faces-04",
+    "part_count": 6,
+    "contents": "front-face-4u ×6"
+  },
+  {
+    "plate": "S1-front-faces-05",
+    "stage": 1,
+    "part_type": "front-faces",
+    "folder": "stage-1/S1-front-faces-05",
+    "part_count": 6,
+    "contents": "front-face-4u ×6"
+  },
+  {
+    "plate": "S1-front-faces-06",
+    "stage": 1,
+    "part_type": "front-faces",
+    "folder": "stage-1/S1-front-faces-06",
+    "part_count": 6,
+    "contents": "front-face-4u ×6"
+  },
+  {
+    "plate": "S1-front-faces-07",
+    "stage": 1,
+    "part_type": "front-faces",
+    "folder": "stage-1/S1-front-faces-07",
+    "part_count": 8,
+    "contents": "front-face-4u ×1, front-face-3u ×3, front-face-2u ×4"
+  },
+  {
+    "plate": "S1-front-faces-08",
+    "stage": 1,
+    "part_type": "front-faces",
+    "folder": "stage-1/S1-front-faces-08",
+    "part_count": 12,
+    "contents": "front-face-2u ×12"
+  },
+  {
+    "plate": "S1-front-faces-09",
+    "stage": 1,
+    "part_type": "front-faces",
+    "folder": "stage-1/S1-front-faces-09",
+    "part_count": 9,
+    "contents": "front-face-2u ×9"
+  },
+  {
+    "plate": "S1-back-faces-01",
+    "stage": 1,
+    "part_type": "back-faces",
+    "folder": "stage-1/S1-back-faces-01",
+    "part_count": 6,
+    "contents": "back-face-4u ×6"
+  },
+  {
+    "plate": "S1-back-faces-02",
+    "stage": 1,
+    "part_type": "back-faces",
+    "folder": "stage-1/S1-back-faces-02",
+    "part_count": 6,
+    "contents": "back-face-4u ×6"
+  },
+  {
+    "plate": "S1-back-faces-03",
+    "stage": 1,
+    "part_type": "back-faces",
+    "folder": "stage-1/S1-back-faces-03",
+    "part_count": 6,
+    "contents": "back-face-4u ×6"
+  },
+  {
+    "plate": "S1-back-faces-04",
+    "stage": 1,
+    "part_type": "back-faces",
+    "folder": "stage-1/S1-back-faces-04",
+    "part_count": 3,
+    "contents": "back-face-4u ×3"
+  },
+  {
+    "plate": "S2-frames-01",
+    "stage": 2,
+    "part_type": "frames",
+    "folder": "stage-2/S2-frames-01",
+    "part_count": 6,
+    "contents": "01-get-4u ×3, 10-color-4u ×2, 12-block_head-4u ×1"
+  },
+  {
+    "plate": "S2-frames-02",
+    "stage": 2,
+    "part_type": "frames",
+    "folder": "stage-2/S2-frames-02",
+    "part_count": 10,
+    "contents": "01-get-3u ×2, 02-define-3u ×1, 03-call-2u ×4, 15-operator-2u ×3"
+  },
+  {
+    "plate": "S2-frames-03",
+    "stage": 2,
+    "part_type": "frames",
+    "folder": "stage-2/S2-frames-03",
+    "part_count": 4,
+    "contents": "15-operator-2u ×4"
+  },
+  {
+    "plate": "S2-cores-01",
+    "stage": 2,
+    "part_type": "cores",
+    "folder": "stage-2/S2-cores-01",
+    "part_count": 6,
+    "contents": "core-4u ×6"
+  },
+  {
+    "plate": "S2-cores-02",
+    "stage": 2,
+    "part_type": "cores",
+    "folder": "stage-2/S2-cores-02",
+    "part_count": 10,
+    "contents": "core-3u ×3, core-2u ×7"
+  },
+  {
+    "plate": "S2-cores-03",
+    "stage": 2,
+    "part_type": "cores",
+    "folder": "stage-2/S2-cores-03",
+    "part_count": 4,
+    "contents": "core-2u ×4"
+  },
+  {
+    "plate": "S2-front-faces-01",
+    "stage": 2,
+    "part_type": "front-faces",
+    "folder": "stage-2/S2-front-faces-01",
+    "part_count": 6,
+    "contents": "front-face-4u ×6"
+  },
+  {
+    "plate": "S2-front-faces-02",
+    "stage": 2,
+    "part_type": "front-faces",
+    "folder": "stage-2/S2-front-faces-02",
+    "part_count": 10,
+    "contents": "front-face-3u ×3, front-face-2u ×7"
+  },
+  {
+    "plate": "S2-front-faces-03",
+    "stage": 2,
+    "part_type": "front-faces",
+    "folder": "stage-2/S2-front-faces-03",
+    "part_count": 4,
+    "contents": "front-face-2u ×4"
+  },
+  {
+    "plate": "S2-back-faces-01",
+    "stage": 2,
+    "part_type": "back-faces",
+    "folder": "stage-2/S2-back-faces-01",
+    "part_count": 9,
+    "contents": "back-face-4u ×2, back-face-2u ×7"
+  },
+  {
+    "plate": "S3-frames-01",
+    "stage": 3,
+    "part_type": "frames",
+    "folder": "stage-3/S3-frames-01",
+    "part_count": 5,
+    "contents": "22-global-5u ×4, 01-get-4u ×1"
+  },
+  {
+    "plate": "S3-frames-02",
+    "stage": 3,
+    "part_type": "frames",
+    "folder": "stage-3/S3-frames-02",
+    "part_count": 6,
+    "contents": "01-get-4u ×6"
+  },
+  {
+    "plate": "S3-frames-03",
+    "stage": 3,
+    "part_type": "frames",
+    "folder": "stage-3/S3-frames-03",
+    "part_count": 8,
+    "contents": "01-get-4u ×3, 03-call-2u ×5"
+  },
+  {
+    "plate": "S3-frames-04",
+    "stage": 3,
+    "part_type": "frames",
+    "folder": "stage-3/S3-frames-04",
+    "part_count": 9,
+    "contents": "03-call-2u ×5, 12-block_head-2u ×1, 13-dedent-2u ×1, 15-operator-2u ×1, 24-else-2u ×1"
+  },
+  {
+    "plate": "S3-cores-01",
+    "stage": 3,
+    "part_type": "cores",
+    "folder": "stage-3/S3-cores-01",
+    "part_count": 5,
+    "contents": "core-5u ×4, core-4u ×1"
+  },
+  {
+    "plate": "S3-cores-02",
+    "stage": 3,
+    "part_type": "cores",
+    "folder": "stage-3/S3-cores-02",
+    "part_count": 6,
+    "contents": "core-4u ×6"
+  },
+  {
+    "plate": "S3-cores-03",
+    "stage": 3,
+    "part_type": "cores",
+    "folder": "stage-3/S3-cores-03",
+    "part_count": 8,
+    "contents": "core-4u ×3, core-2u ×5"
+  },
+  {
+    "plate": "S3-cores-04",
+    "stage": 3,
+    "part_type": "cores",
+    "folder": "stage-3/S3-cores-04",
+    "part_count": 9,
+    "contents": "core-2u ×9"
+  },
+  {
+    "plate": "S3-front-faces-01",
+    "stage": 3,
+    "part_type": "front-faces",
+    "folder": "stage-3/S3-front-faces-01",
+    "part_count": 5,
+    "contents": "front-face-5u ×4, front-face-4u ×1"
+  },
+  {
+    "plate": "S3-front-faces-02",
+    "stage": 3,
+    "part_type": "front-faces",
+    "folder": "stage-3/S3-front-faces-02",
+    "part_count": 6,
+    "contents": "front-face-4u ×6"
+  },
+  {
+    "plate": "S3-front-faces-03",
+    "stage": 3,
+    "part_type": "front-faces",
+    "folder": "stage-3/S3-front-faces-03",
+    "part_count": 8,
+    "contents": "front-face-4u ×3, front-face-2u ×5"
+  },
+  {
+    "plate": "S3-front-faces-04",
+    "stage": 3,
+    "part_type": "front-faces",
+    "folder": "stage-3/S3-front-faces-04",
+    "part_count": 9,
+    "contents": "front-face-2u ×9"
+  },
+  {
+    "plate": "S3-back-faces-01",
+    "stage": 3,
+    "part_type": "back-faces",
+    "folder": "stage-3/S3-back-faces-01",
+    "part_count": 1,
+    "contents": "back-face-2u ×1"
+  }
+]

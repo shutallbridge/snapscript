@@ -1,0 +1,35 @@
+{
+  "1": {
+    "00-simple_head-4u": 6,
+    "01-get-2u": 6,
+    "01-get-3u": 1,
+    "01-get-4u": 7,
+    "02-define-4u": 1,
+    "03-call-2u": 13,
+    "03-call-3u": 2,
+    "03-call-4u": 1,
+    "08-literal-4u": 17,
+    "10-color-4u": 4,
+    "12-block_head-2u": 3,
+    "12-block_head-4u": 1,
+    "13-dedent-2u": 3
+  },
+  "2": {
+    "01-get-3u": 2,
+    "01-get-4u": 3,
+    "02-define-3u": 1,
+    "03-call-2u": 4,
+    "10-color-4u": 2,
+    "12-block_head-4u": 1,
+    "15-operator-2u": 7
+  },
+  "3": {
+    "01-get-4u": 10,
+    "03-call-2u": 10,
+    "12-block_head-2u": 1,
+    "13-dedent-2u": 1,
+    "15-operator-2u": 1,
+    "22-global-5u": 4,
+    "24-else-2u": 1
+  }
+}
