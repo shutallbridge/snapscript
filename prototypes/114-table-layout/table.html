@@ -252,8 +252,9 @@ function drawDoc(g, L, c, card) {  // the doc comment beside the corner, on a bl
   const u = UPX(), w = 9 * u, lh = cfg.textPx * S() * 1.4, pad = 0.4 * u;
   const lines = [DOC.title + (card ? ` · card ${card.id}` : ''), ...wrap(g, DOC.body, w - 2 * pad, cfg.textPx)];
   const h = lines.length * lh + 2 * pad, [cx, cy] = L.corners[c];
-  const xs = card ? cardOutline(card).map(q => q[0]) : [cx];
-  const x = c[1] === 'r' ? Math.min(cx - L.R, ...xs) - 0.5 * u - w : Math.max(cx + L.R, ...xs) + 0.5 * u;
+  // clear of the circle by 0.5U, and of the card (its outline from the marker's angle and the card's length) by 1U
+  const xs = card ? cardOutline(card).map(q => q[0]) : [];
+  const x = c[1] === 'r' ? Math.min(cx - L.R - 0.5 * u, ...xs.map(v => v - u)) - w : Math.max(cx + L.R + 0.5 * u, ...xs.map(v => v + u));
   const y = c[0] === 'b' ? cy - h - 0.5 * u : cy + 0.5 * u;
   g.fillStyle = '#000'; g.fillRect(x, y, w, h); g.strokeStyle = '#52525b'; g.lineWidth = 2; g.strokeRect(x, y, w, h);
   lines.forEach((ln, i) => text(g, ln, x + pad, y + pad + i * lh + lh / 2, i ? '#d4d4d8' : '#fff'));
@@ -280,8 +281,6 @@ function drawOver(L) {
     const [x, y] = toPx(c.c), r = 11 * mm(), counts = inside(L.code, [x, y]);
     g.strokeStyle = counts ? '#22c55e' : '#71717a'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, r, 0, 2 * Math.PI); g.stroke();
     if (!counts) { g.beginPath(); g.moveTo(x - r * 0.7, y - r * 0.7); g.lineTo(x + r * 0.7, y + r * 0.7); g.stroke(); }
-    const o = cardOutline(c);  // where the card is taken to lie (for the doc box), thin and dashed
-    g.setLineDash([4, 6]); g.lineWidth = 1; g.beginPath(); o.forEach(([px, py], i) => i ? g.lineTo(px, py) : g.moveTo(px, py)); g.closePath(); g.stroke(); g.setLineDash([]);
     text(g, String(c.id), x + r + 4, y - r, counts ? '#22c55e' : '#71717a', 12);
   }
   updateCorners(L); drawCorners(g, L);
