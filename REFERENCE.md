@@ -1,35 +1,21 @@
-# Snapscript — Overview Spec
+# Snapscript Language Reference
 
-# About this file
+## About this file
 
-A single-document description of what Snapscript is: the language, its text notation, and the physical system that runs it.
+The language reference: it defines the Snapscript language and its text notation. A language version locks it. What Snapscript is, and the physical system that runs it, are in `README.md`.
 
 Conventions:
 
 - Concise, and shows behavior through examples rather than describing it.
-- Describes the system as it is, with no history and no distinction between built and unbuilt.
+- Describes the language as it is, with no history and no distinction between built and unbuilt.
 - Carries no rationale. Decisions and the reasoning behind them live in `docs/adr/`.
 - Unsettled points are marked **TBD**.
 
-# Overview
+## 1. Introduction
 
-Snapscript is a table-top block-based programming language and the programming system built around it. It is designed for writing p5.js-like sketches that draw on a canvas to produce drawings and digital art.
+Snapscript is a block-based language written with cards. A program is written by snapping cards together on a table, or as text in a `.snap` file, and both mean the same.
 
-Programs are written with physical cards. Each card is a block, and cards snap to one another with magnets to form the program.
-
-A camera and a projector are mounted directly above a table, looking down at the cards. The camera reads the arrangement of the cards to determine the program. The projector displays the running sketch on the other side of the table, lights up cards to show errors, and projects virtual blocks that show where cards should be placed.
-
-# Goals
-
-Programming is usually a single-player activity in front of a computer. Snapscript moves it onto a table that people sit around together, so writing a program becomes something a group does with their hands, in the same space, at the same time.
-
-# Guiding Principles
-
-- Block-based and approachable syntax like Scratch.
-- Concepts and semantics are easily transferable to Python.
-- Where possible, syntax is physically enforced to naturally encourage valid syntax.
-
-# Notation
+### 1.1. Notation
 
 Every card is written as `[…]`, in the order the cards appear on the table.
 
@@ -71,16 +57,22 @@ A doc comment is a `/** */` comment just before a declaration. It is projected a
 
 A doc comment anywhere else stands alone. Tags other than `@param` and `@returns` are for the system, and do not change the program.
 
+A library offers printed cards with `@card` tags in its doc comments. A `@card` above a declaration offers that declaration's card; a `@card` followed by a card offers that card.
+
 ```
+/**
+ * Draws a circle.
+ * @card
+ */
+[extern(circle)][required(x)][required(y)][required(d)]     offers [call(p5.circle)]
+
 /**
  * Runs once, before the first draw.
  * @card [define(setup)]
  */
 ```
 
-# The Language
-
-## A first sketch
+### 1.2. A first sketch
 
 ```
 [import(snapscript-p5)as(p5)]
@@ -95,7 +87,7 @@ A doc comment anywhere else stands alone. Tags other than `@param` and `@returns
 [call(p5.circle)][get{x}][get{y}][num{5}]
 ```
 
-## Cards
+## 2. Cards
 
 | Form         | Examples                                                                                                                                              |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -129,7 +121,7 @@ A **leaf** card holds a value and takes nothing:
 
 Every other card has one or more **value slots**.
 
-### Handwriting
+### 2.1. Handwriting
 
 Gaps in handwriting are ignored. `_` is a space, and a `[str{…}]` cannot hold a literal `_`. Text in `()` follows the same rules, so a card means the same printed or handwritten.
 
@@ -169,9 +161,17 @@ The text keeps each name as it was written. A message about a declaration uses t
 
 By convention, names are camelCase: `frameCount`, `drawCircle`. In Python, case counts (`score` and `Score` are two names), and names are snake_case (`frame_count`).
 
-## Data model
+### 2.2. Lines and strips
 
-### Objects
+Statement cards connect top and bottom to form a vertical flow; value cards connect left and right to form a line.
+
+Each function is a free-standing strip that can be moved around the table.
+
+A statement card's top magnet mates into a chain descending from a `[define]` or an `[on(…)]`, so an unconnected statement is inert.
+
+## 3. Data model
+
+### 3.1. Objects
 
 Every value is an object. An object has a type, an identity, and behavior from its type. Values are never copied; a name holds a reference.
 
@@ -198,7 +198,7 @@ Behavior comes from the type, never from a store.
 [get{scores}][call(append)][num{40}]     append comes from list
 ```
 
-### Types
+### 3.2. Types
 
 | Type     | Written as                      |
 | -------- | ------------------------------- |
@@ -220,7 +220,7 @@ The card decides the type. `[color(…)]` takes a CSS color name.
 [color(notacolor)]                           SyntaxError
 ```
 
-### Lists
+### 3.3. Lists
 
 ```
 [set{scores}to][call(list)][num{10}][num{20}][num{30}]
@@ -256,7 +256,7 @@ A list has no attributes.
 [get{scores}][setProp{label}to][str{round_one}]     AttributeError
 ```
 
-### Dicts
+### 3.4. Dicts
 
 `[call(dict)]` makes an empty dict. `[setProp{…}to]` and `[getProp{…}]` act on the attributes of the value to their left. Only a `dict` and a module have attributes.
 
@@ -281,9 +281,9 @@ Attributes chain.
 
 Dicts are not iterable.
 
-## Execution model
+## 4. Execution model
 
-### Structure of a program
+### 4.1. Structure of a program
 
 Five cards stand alone. Every other card snaps beneath a `[define{…}]` or an `[on(…)]`.
 
@@ -310,7 +310,7 @@ Two top-level declarations with the same name in one file are an error, except `
 [define{p5}]                SyntaxError, both
 ```
 
-### Naming and binding
+### 4.2. Naming and binding
 
 A bare name resolves where the cards are written: in the local scope, then among the top-level declarations of the file, then among the builtins.
 
@@ -391,7 +391,7 @@ A global starts with one literal card, or an empty list or dict. Anything worked
 [global{r}][call(random)]                 SyntaxError
 ```
 
-### Errors
+### 4.3. Errors
 
 Every error has a **kind**, named as in Python, and a **stage**: when it is found. An error is an object whose type is its kind. Nothing in a program creates or catches one.
 
@@ -457,7 +457,7 @@ A runtime error stops the program. The canvas keeps what was drawn, and every `[
 
 Every file follows these rules, a module's text file as much as the table.
 
-## Modules
+## 5. Modules
 
 A module is an object. `[import(…)as(…)]` loads a module and binds its object to a name. It names an installed package, or a path that starts with `./` or `../`; nothing else resolves. A package's name loads the package's module.
 
@@ -528,9 +528,9 @@ Repeating is a module's work: an `[extern(…)]` takes `[root]` and calls its fu
 [call(run)][root]
 ```
 
-## Expressions
+## 6. Expressions
 
-### Value slots
+### 6.1. Value slots
 
 A card with slots grabs values to its right until the end of the line, or until the `[)]` that closes the group it is in. An operator card extends the expression in progress and does not end the grab.
 
@@ -556,7 +556,7 @@ A group ends every grab inside it:
 
 Grabbing more values than a card accepts is an error. A **variadic** slot accepts any number of values; `[call(list)]` and `[call(print)]` have one.
 
-### Attributes and calls
+### 6.2. Attributes and calls
 
 A card placed directly after a value acts on that value and is not itself grabbed as a value. `[getProp{…}]` reads an attribute, `[call(…)]` calls.
 
@@ -581,7 +581,7 @@ A function held in a dict is called from a name.
 [call{f}]
 ```
 
-### Operators and precedence
+### 6.3. Operators and precedence
 
 ```
 *  /  %          binds tightest
@@ -642,7 +642,7 @@ A second comparison operator in the same expression, outside a group, is a `Synt
 [not][get{a}][and][get{b}]            (not a) and b
 ```
 
-### Grouping
+### 6.4. Grouping
 
 `[(]` and `[)]` make what is between them one value.
 
@@ -659,7 +659,7 @@ A group holds exactly one value.
 [(][)]                          SyntaxError
 ```
 
-## Simple statements
+## 7. Simple statements
 
 ```
 [set{width}to][num{500}]                       width = 500
@@ -667,7 +667,7 @@ A group holds exactly one value.
 [call(p5.circle)][num{10}][num{10}][num{5}]    circle(10, 10, 5)
 ```
 
-## Compound statements
+## 8. Compound statements
 
 A block's body is indented. The bottom magnet of `[repeat]`, `[for{x}in]`, `[if]`, `[elif]` and `[else]` is inset, so the card that snaps below lands indented. `[dedent]` closes the block, in the column of the block's head.
 
@@ -702,7 +702,7 @@ A block's body may be empty. A block with no `[dedent]` closes at the end of its
 [call(print)][str{done}]                IndentationError: no [dedent]; the block closes here anyway
 ```
 
-### `[if]`, `[elif]` and `[else]`
+### 8.1. `[if]`, `[elif]` and `[else]`
 
 `[if]` runs its body when its value counts as true. It takes one value.
 
@@ -744,7 +744,7 @@ An `[elif]` or `[else]` after a `[dedent]` or after a `[repeat]` or `[for{…}in
 [elif][get{b}]                          SyntaxError: [elif] after [else]
 ```
 
-### Loops
+### 8.2. Loops
 
 `[repeat]` runs its body a number of times. It takes one value, a whole number.
 
@@ -765,7 +765,7 @@ An `[elif]` or `[else]` after a `[dedent]` or after a `[repeat]` or `[for{…}in
 [dedent]
 ```
 
-### Functions
+### 8.3. Functions
 
 `[define{…}]` does not indent its body, and can only appear at the top level. Its body runs to the next top-level declaration. It is hoisted, so its position on the table carries no meaning.
 
@@ -822,7 +822,7 @@ In a text file, a doc comment can give the types of a function's parameters and 
 
 A parameter or result with no type can be any type. The result of a `[define{…}]` with no type comes from its `[return]`s.
 
-## Builtins
+## 9. Builtins
 
 Builtins are used without a namespace. `pi` is a value; every other builtin is a function. These are all of them:
 
@@ -880,46 +880,3 @@ Every angle is in degrees, in the builtins and in every library.
 ```
 [call(sin)][num{30}]                    0.5
 ```
-
-# The Physical System
-
-Cards snap to one another with magnets. Statement cards connect top and bottom to form a vertical flow; value cards connect left and right to form a line.
-
-Each function is a free-standing strip that can be moved around the table.
-
-A statement card's top magnet mates into a chain descending from a `[define]` or an `[on(…)]`, so an unconnected statement is inert.
-
-A card with two sides turns over top-to-bottom: its top and bottom edges change places. Where the magnets sit on each card: **TBD**.
-
-A camera above the table reads the card arrangement. A projector opposite displays the running sketch and draws on the cards.
-
-A library offers printed cards with `@card` tags in its doc comments. A `@card` above a declaration offers that declaration's card; a `@card` followed by a card offers that card.
-
-```
-/**
- * Draws a circle.
- * @card
- */
-[extern(circle)][required(x)][required(y)][required(d)]     offers [call(p5.circle)]
-
-/**
- * Runs once, before the first draw.
- * @card [define(setup)]
- */
-```
-
-When the camera is not sure what a card's handwriting says, the card has a **read error**. Its line is skipped, like a line with a structure or check error. A read error belongs to the physical system, not the language: it has no kind and no stage.
-
-Lengths on the table are measured in U. Every card is 1U tall and a whole number of U long. Every card is at least 2U long. Most cards need it for their written text: a handwritten name such as `[define{drawCircle}]`, or a reserved word such as `[repeat]`. Each side of a card also holds a marker, a printed pattern that the camera reads to learn which side it is, where it lies and how it is turned. Cards with one symbol, such as `[(]`, `[)]` and `[+]`, are 2U long too: a sketch at real size showed that a 1U card is too small even for them.
-
-# Feedback
-
-Initial direction:
-
-- Errors light up the cards responsible, with a message in plain words and the kind beside it: "circle needs 3 numbers but got 1 · TypeError".
-- Errors other than runtime errors show as soon as the cards are placed, whether or not the program is running.
-- Skipped lines look skipped. An error that comes from a skipped line points to it.
-- Cards that are not part of the program are dimmed.
-- The grouping the system inferred is outlined in light, including operator precedence and how far each card grabbed.
-- Virtual blocks show where cards can be placed, and where a missing value or `[dedent]` goes.
-- Picking up a card projects its doc comment.
