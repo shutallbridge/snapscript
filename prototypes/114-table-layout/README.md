@@ -2,30 +2,23 @@
 
 Throwaway, for [Prototype the table's layout: coding space, canvas space, help spot, page cut-outs](https://github.com/shutallbridge/snapscript/issues/114). Built on the textbook page prototype (`prototype/128-textbook-page`): `vision.py`, `geometry.py`, `tags.js`, `pages.json`, `sheets.js` and the helper scripts are copied from it.
 
-`table.html` is what the projector shows. It has three layouts, all split left/right into a **coding space** and a **canvas space**:
+`table.html` is what the projector shows: the table as two **windows**, the **coding space** (left) and the **canvas space** (right).
 
-| Layout | What |
-|---|---|
-| **A · halves** | A fixed split (width set in the menu). The sketch is centred in the canvas space. The help spot is in the coding space's outer corner, with its doc comment above or below it. |
-| **B · hug the canvas** | The canvas space is just the sketch plus 1U, at the table's outer edge, and the coding space gets the rest. A status line and the help spot sit under the sketch. |
-| **C · framed window** | Like an IDE's preview pane: the sketch in a window with a title bar, and a help panel under it in the canvas space. A 1U dot grid in the coding space. |
-
-In all three:
-
-- The sketch is drawn at a **fixed size** (`canvas size`, in sketch px), scaled by `sketch px per 1U`. `native` means one sketch pixel per projector pixel (about 41 px per U on the rig). If the sketch doesn't fit, a red line says so.
-- A **mock program** in the coding space prints inline, to the right of the printing card, like Quokka.js (`→ hello`, `→ x = 87`). When a textbook page is current, its cards replace the mock as plain dashed placeholders. Their real look is [card feedback](https://github.com/shutallbridge/snapscript/issues/129)'s.
-- Every textbook page in view is cut out, plus a margin and a **dim area** around it.
-- **Card markers** that `vision.py` sees get a ring. Green means the card counts (marker in the coding space). Grey and crossed out means it's ignored (marker in the canvas space).
-- A card whose marker lies on the **help spot** shows a sample doc comment (circle's, for any card, with the card's marker id).
-- **Highlight test**: four 4U slots outlined in red at 0.5, 1, 2 and 3 mm. Lay real cards in them and step through `coding space brightness`.
+- **Resizing the windows:** the split is 50/50 by default. Change it in the menu, or with `←→` when the menu is closed. The coding space is always on the left for now.
+- **Units:** the app works in its own px, with **1U = 50 px**, whatever the projector's real resolution. On the rig, 1U is about 41 projector px. A 500 px canvas is 10U, which is 300 mm. 16 px text is about 9.6 mm. Real cards are drawn at true size in mm.
+- **The sketch** is a fixed-size canvas (`canvas size`), centred in the canvas space. If it doesn't fit, a red line says so.
+- **Corners:** each of the four corners can be given an action in the menu. Only `help` exists, and it's on the bottom-left corner. A corner is a dotted quarter circle (3.5U radius) with a title in its centre ("Card Help"). A card whose marker is inside the circle triggers it **at once**, with no countdown. It stays triggered until the card has been gone for 1 s, since `vision.py` takes about 0.85 s a frame.
+- **The help doc box** sits along the bottom, beside the corner. It clears the circle by 0.5U and the card by 1U. The card's outline is worked out from its marker's centre and angle and the card's length. There is no marker-to-card table yet, so the length is `card length when unknown` (4U by default), or `CARD_LEN` in `table.html`.
+- **The mock program** prints inline, to the right of the printing card, like Quokka.js. When a textbook page is current, its cards replace the mock as plain dashed placeholders. Their real look belongs to [card feedback](https://github.com/shutallbridge/snapscript/issues/129).
+- **Textbook pages** in view are cut out, plus a margin and a **dim area** around each page.
+- **Card markers** get a ring and their ID. Green means the card counts (marker in the coding space). Grey and crossed out means it's ignored.
+- **Highlight test:** four 4U slots outlined in red at 0.5, 1, 2 and 3 mm, to look at against `coding space brightness`.
 
 ## Settings
 
-Press `,` on the keyboard for the hidden menu: `↑↓` choose a setting, `←→` change it, `,` or `Esc` to close, `0` to reset. With the menu closed, `←→` flip between layouts. Settings are kept in the browser (`localStorage`) across reloads. `?variant=A|B|C` in the URL works too.
+Press `,` on the keyboard for the hidden menu: `↑↓` choose a setting, `←→` change it, `,` or `Esc` to close, `0` to reset. Settings are kept in the browser (`localStorage`). `pretend a card is in a corner` triggers a corner without a card.
 
-Over SSH, without a keyboard, `control.json` can set anything the menu can: `{"rev": 1, "cfg": {"variant": "B", "side": "right"}}`. Bump `rev` to reload the page.
-
-The status line shows the numbers to judge sizes by: 1U in projector px, how big the sketch comes out in mm, and the table text size in mm.
+Over SSH, without a keyboard, `control.json` can set anything the menu can: `{"rev": 1, "cfg": {"split": 60, "cardU": 3}}`. Changing `rev` reloads the page, but only once the page has already read a `control.json`.
 
 ## On a laptop
 
@@ -33,7 +26,7 @@ The status line shows the numbers to judge sizes by: 1U in projector px, how big
 python3 -m http.server 8114   # then open http://localhost:8114/table.html
 ```
 
-Without `vision.py` there are no pages and no card markers. Turn on `pretend a card is on the help spot` to see the doc comment.
+Without `vision.py` there are no pages and no card markers. Turn on `pretend a card is in a corner` to see the doc comment.
 
 ## On the Pi
 
@@ -48,4 +41,4 @@ for f in pages.json table.html sheets.js tags.js p5.min.js vision.py geometry.py
 ./pi.sh 'bash ~/snap-114/start-vision.sh rig --aspect 1.5 --table-mm 792 --rule inview'
 ```
 
-`vision.py` is the textbook page prototype's, plus a `cards` list in `state.json`: every marker that isn't a page or calibration tag, with its centre in projector space.
+`vision.py` is the textbook page prototype's, plus a `cards` list in `state.json`: every marker that isn't a page or calibration tag, with its centre (`c`) and angle (`a`, radians, along the marker's bottom edge) in projector space.
