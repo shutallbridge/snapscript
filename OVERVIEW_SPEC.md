@@ -841,6 +841,7 @@ Builtins are used without a namespace. `pi` is a value; every other builtin is a
 [call(sin)][num{90}]                    1
 [call(cos)][num{180}]                   -1
 [call(random)]                          a num from 0 to 1
+[call(random)][num{500}]                a num from 0 to 500
 [call(random)][num{0}][num{500}]        a num from 0 to 500
 [get(pi)]                               3.14159…
 ```
@@ -869,10 +870,12 @@ Builtins are used without a namespace. `pi` is a value; every other builtin is a
 [call(sqrt)][num{-1}]                   ValueError
 ```
 
-`random` is declared twice, as `fill` is: with no values, and with two.
+`random` is declared three times, as `fill` is declared twice: with no values, with one, and with two. No values is the same as 0 and 1, and one value is the same as 0 and that value. The first end can come out and the second never does, so `[call(random)][num{500}]` never gives 500. The ends can be any nums, whole or not, in either order, and the result is not rounded.
 
 ```
-[call(random)][num{5}]                  TypeError: random takes 0 or 2 values
+[call(random)][num{2.5}]                a num from 0 to 2.5
+[call(random)][num{-5}]                 a num from 0 down to -5
+[call(random)][num{500}][num{0}]        a num from 500 down to 0
 ```
 
 Every angle is in degrees, in the builtins and in every library.
