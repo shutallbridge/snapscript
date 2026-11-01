@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from magnets import assembly_page
+from magnets import assembly_page, check
 
 FULL_SEARCH = Path(__file__).parent / "fixtures" / "full_search.yaml"
 EXAMPLE = resources.files("magnets") / "data" / "arrangements" / "example.yaml"
@@ -99,7 +99,7 @@ def test_classes_and_max_length_limit_the_frames_as_they_limit_bases():
         (cls, n) for cls in ("simple_head", "get", "literal") for n in range(2, 7)
     ]
     # The page still knows every class, built or not.
-    assert len(page.classes) == 23
+    assert set(page.classes) == {side.split(".")[0] for side in check({}).sides}
     assert (page.classes["literal"].id, page.classes["literal"].min_length) == (8, 2)
 
 

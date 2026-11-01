@@ -17,12 +17,12 @@ SPEC_CARDS = {
     "get.get": [
         "[get(p5.frameCount)]", "[get(pi)]", "[get(x)]", "[get(y)]", "[get{app}]", "[get{a}]", "[get{b}]", "[get{c}]", "[get{count}]",
         "[get{done}]", "[get{empty}]", "[get{helper}]", "[get{i}]", "[get{message}]", "[get{name}]", "[get{n}]",
-        "[get{p5}]", "[get{ready}]", "[get{scores}]", "[get{score}]", "[get{shapes.unit}]", "[get{shapes}]", "[get{s}]",
+        "[get{p5}]", "[get{p5.framecount}]", "[get{ready}]", "[get{scores}]", "[get{score}]", "[get{shapes.unit}]", "[get{shapes}]", "[get{s}]",
         "[get{title}]", "[get{user}]", "[get{width}]", "[get{x}]", "[get{y}]", "[root]",
     ],
     "define.define": [
         "[define(setup)]", "[define(star)]", "[define{a}]", "[define{blob}]", "[define{b}]", "[define{dot}]",
-        "[define{double}]", "[define{drawCircle}]", "[define{draw}]", "[define{foo}]", "[define{f}]", "[define{greet}]",
+        "[define{double}]", "[define{drawCircle}]", "[define{draw}]", "[define{drawcircle}]", "[define{foo}]", "[define{f}]", "[define{greet}]",
         "[define{g}]", "[define{helper}]", "[define{h}]", "[define{p5}]", "[define{print}]", "[define{setup}]",
         "[define{show}]", "[define{…}]",
     ],
@@ -31,7 +31,7 @@ SPEC_CARDS = {
         "[call(len)]", "[call(list)]", "[call(max)]", "[call(min)]", "[call(p5.background)]", "[call(p5.circle)]",
         "[call(p5.createCanvas)]", "[call(pop)]", "[call(print)]", "[call(random)]", "[call(range)]", "[call(round)]",
         "[call(run)]", "[call(setAt)]", "[call(sin)]", "[call(sqrt)]", "[call(…)]", "[call{b}]", "[call{double}]",
-        "[call{foo}]", "[call{f}]", "[call{greet}]", "[call{g}]", "[call{helper}]", "[call{h}]", "[call{p5.circel}]",
+        "[call{drawcircle}]", "[call{foo}]", "[call{f}]", "[call{greet}]", "[call{g}]", "[call{helper}]", "[call{h}]", "[call{p5.circel}]",
         "[call{p5.circle}]", "[call{random}]", "[call{shapes.star}]", "[call{star}]",
     ],
     "set_prop.set_prop": [
@@ -45,7 +45,7 @@ SPEC_CARDS = {
         "[required(angle)]", "[required(b)]", "[required(c)]", "[required(color)]", "[required(d)]", "[required(g)]",
         "[required(height)]", "[required(program)]", "[required(r)]", "[required(width)]", "[required(x)]",
         "[required(x1)]", "[required(x2)]", "[required(y)]", "[required(y1)]", "[required(y2)]",
-        "[required{message}]", "[required{n}]", "[required{ready}]",
+        "[required{d}]", "[required{message}]", "[required{n}]", "[required{ready}]", "[required{x}]", "[required{y}]",
     ],
     "optional.optional": [
         "[optional{size}]", "[optional{suffix}]", "[optional{title}]",
