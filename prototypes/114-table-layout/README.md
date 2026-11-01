@@ -18,7 +18,7 @@ Throwaway, for [Prototype the table's layout: coding space, canvas space, help s
 
 ## Settings
 
-The menu is for whoever runs the table (a facilitator). Press `,` to open it. It has two levels: first the sections (**Windows**, **Corners**, **Look**, **Textbook pages**, **Rig**), then one section's settings. `↑↓` choose, `Enter` (or `→`) opens a section, `←→` change a setting, `Esc` goes back and then closes, `0` resets the open section, and `,` closes from anywhere. Settings are kept in the browser (`localStorage`).
+The menu is for whoever runs the table (a facilitator). Press `,` to open it. It has two levels: first the sections (**Windows**, **Corners**, **Look**, **Textbook pages**, **Rig**), then one section's settings. `↑↓` choose, `Enter` (or `→`) opens a section, `←→` change a setting, `Esc` goes back and then closes, and `,` closes from anywhere. **Reset all settings**, at the bottom of the sections, resets everything after a second `Enter`. Settings are kept in the browser (`localStorage`).
 
 Debug settings are kept out of that menu, behind `.`: marker reads, the red page outline, the status line, `pretend a card is in a corner`, the mock program, the highlight test and the card length when unknown.
 

@@ -17,10 +17,12 @@
   #sketch { position: absolute; transform-origin: 0 0; }
   #sketch canvas { position: static; display: block; }
   #menu { position: fixed; display: none; background: #18181b; color: #e4e4e7; font: 500 18px "Geist Mono", monospace;
-    border: 2px solid #52525b; border-radius: 10px; padding: 16px 18px 12px; min-width: 460px; }
+    border: 2px solid #52525b; padding: 16px 18px 12px; min-width: 460px; }
   #menu .title { font-size: 22px; color: #fff; padding: 0 8px 10px; }
   #menu .crumb { color: #71717a; }
-  #menu .row { display: flex; justify-content: space-between; gap: 30px; padding: 4px 8px; border-radius: 4px; color: #d4d4d8; }
+  #menu .row { display: flex; justify-content: space-between; gap: 30px; padding: 4px 8px; color: #d4d4d8; }
+  #menu .reset { margin-top: 10px; border-top: 1px solid #3f3f46; padding-top: 10px; color: #a1a1aa; }
+  #menu .reset.on { color: #fff; }
   #menu .row.on { background: #3f3f46; color: #fff; }
   #menu .v::before { content: '‹ '; color: #71717a; } #menu .v::after { content: ' ›'; color: #71717a; }
   #menu .go::after { content: '›'; color: #71717a; }
@@ -44,34 +46,35 @@
 // table text and sizes are all in these px; real cards are drawn at true size in mm.
 const PX_PER_U = 50;
 const CORNERS = ['tl', 'tr', 'bl', 'br'], CORNER_NAME = { tl: 'top-left', tr: 'top-right', bl: 'bottom-left', br: 'bottom-right' };
+const cap = t => t[0].toUpperCase() + t.slice(1);
 // The menu is for whoever runs the table (a facilitator), in two levels: a section, then its settings.
 // Debug settings are kept out of it, behind their own key ('.').
 const SECTIONS = [  // name, [key, label, choices, unit]
   ['Windows', [
-    ['split', 'coding space width', [30, 35, 40, 45, 50, 55, 60, 65, 70], '%'],
-    ['full', 'canvas full screen', [false, true]],
-    ['centre', 'centre the sketch', [true, false]]]],
+    ['split', 'Coding space width', [30, 35, 40, 45, 50, 55, 60, 65, 70], '%'],
+    ['full', 'Canvas full screen', [false, true]],
+    ['centre', 'Centre the sketch', [true, false]]]],
   ['Corners', [
-    ...CORNERS.map(c => ['corner_' + c, CORNER_NAME[c], ['none', 'help']]),
-    ['cornerU', 'size', [2.5, 3, 3.25, 3.5, 3.75, 4, 5], 'U']]],
+    ...CORNERS.map(c => ['corner_' + c, cap(CORNER_NAME[c]), ['none', 'help']]),
+    ['cornerU', 'Size', [2.5, 3, 3.25, 3.5, 3.75, 4, 5], 'U']]],
   ['Look', [
-    ['textPx', 'text size', [12, 14, 16, 18, 20, 24, 28, 32], ' px'],
-    ['bg', 'coding space brightness', [0, 6, 12, 20, 32, 48]]]],
+    ['textPx', 'Text size', [12, 14, 16, 18, 20, 24, 28, 32], ' px'],
+    ['bg', 'Coding space brightness', [0, 6, 12, 20, 32, 48]]]],
   ['Textbook pages', [
-    ['margin', 'margin', [0, 2, 3, 5, 10, 15], ' mm'],
-    ['halo', 'dim area', [0, 2, 5, 10, 20, 40, 60, 100], ' mm'],
-    ['radius', 'corner radius', [0, 2, 3, 5, 10], ' mm']]],
+    ['margin', 'Margin', [0, 2, 3, 5, 10, 15], ' mm'],
+    ['halo', 'Dim area', [0, 2, 5, 10, 20, 40, 60, 100], ' mm'],
+    ['radius', 'Corner radius', [0, 2, 3, 5, 10], ' mm']]],
   ['Rig', [
-    ['tableMm', 'work area depth', [700, 750, 780, 792, 800, 850, 900], ' mm']]],
+    ['tableMm', 'Work area depth', [700, 750, 780, 792, 800, 850, 900], ' mm']]],
 ];
 const DEBUG = ['Debug', [
-  ['marks', 'show marker reads', [true, false]],
-  ['outline', 'page outline (red)', [true, false]],
-  ['hud', 'status line', [true, false]],
-  ['fake', 'pretend a card is in a corner', ['off', ...CORNERS]],
-  ['program', 'mock program', [true, false]],
-  ['test', 'highlight test', [false, true]],
-  ['cardU', 'card length when unknown', [2, 3, 4, 5, 6], 'U']]];
+  ['marks', 'Show marker reads', [true, false]],
+  ['outline', 'Page outline (red)', [true, false]],
+  ['hud', 'Status line', [true, false]],
+  ['fake', 'Pretend a card is in a corner', ['off', ...CORNERS]],
+  ['program', 'Mock program', [true, false]],
+  ['test', 'Highlight test', [false, true]],
+  ['cardU', 'Card length when unknown', [2, 3, 4, 5, 6], 'U']]];
 const OPTS = [...SECTIONS, DEBUG].flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cornerU: 3.5, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 792 };
@@ -81,7 +84,7 @@ const save = () => { localStorage.cfg114d = JSON.stringify(cfg); };
 // menu: null (closed) | {section: null, row} (the list of sections) | {section: [name, opts], row} (one section's settings)
 let menu = null;
 const menuEl = document.getElementById('menu'), toast = document.getElementById('toast');
-const valueText = ([, , ch, unit = ''], v) => v === true ? 'on' : v === false ? 'off' : CORNER_NAME[v] || v + unit;
+const valueText = ([, , ch, unit = ''], v) => v === true ? 'On' : v === false ? 'Off' : typeof v === 'string' ? cap(CORNER_NAME[v] || v) : v + unit;
 function showMenu() {
   menuEl.style.display = menu ? 'block' : 'none';
   if (!menu) return;
@@ -90,9 +93,10 @@ function showMenu() {
   menuEl.innerHTML = sec
     ? `<div class="title">${menu.debug ? '' : '<span class="crumb">Settings ›</span> '}${sec[0]}</div>` +
       sec[1].map((o, i) => row(o[1], i, valueText(o, cfg[o[0]]))).join('') +
-      `<div class="keys">↑↓ choose · ←→ change · Esc ${menu.debug ? 'close' : 'back'} · 0 resets ${sec[0]}</div>`
+      `<div class="keys">↑↓ Choose · ←→ Change · Esc ${menu.debug ? 'Close' : 'Back'}</div>`
     : `<div class="title">Settings</div>` + SECTIONS.map(([name], i) => row(name, i)).join('') +
-      `<div class="keys">↑↓ choose · Enter open · Esc close</div>`;
+      `<div class="row reset${menu.row === SECTIONS.length ? ' on' : ''}"><span>${menu.confirm ? 'Press Enter again to reset everything' : 'Reset all settings'}</span></div>` +
+      `<div class="keys">↑↓ Choose · Enter Open · Esc Close</div>`;
   const r = menuEl.getBoundingClientRect();
   menuEl.style.left = (AW() / 2 - r.width / 2) + 'px'; menuEl.style.top = (VH() / 2 - r.height / 2) + 'px';
 }
@@ -106,16 +110,21 @@ addEventListener('keydown', e => {
   if (e.key === ',') { menu = menu ? null : { section: null, row: 0 }; showMenu(); return e.preventDefault(); }
   if (e.key === '.') { menu = menu ? null : { section: DEBUG, row: 0, debug: true }; showMenu(); return e.preventDefault(); }
   if (menu) {
-    const sec = menu.section, n = sec ? sec[1].length : SECTIONS.length;
+    const sec = menu.section, n = sec ? sec[1].length : SECTIONS.length + 1;  // + the reset row
+    if (e.key !== 'Enter') menu.confirm = false;
     if (e.key === 'ArrowUp') menu.row = (menu.row + n - 1) % n;
     else if (e.key === 'ArrowDown') menu.row = (menu.row + 1) % n;
     else if (!sec) {  // the list of sections
-      if (e.key === 'Enter' || e.key === 'ArrowRight') menu = { section: SECTIONS[menu.row], row: 0, from: menu.row };
+      if (menu.row === SECTIONS.length) {  // reset all settings: Enter, then Enter again to confirm
+        if (e.key === 'Enter' && menu.confirm) { cfg = { ...DEFAULTS }; save(); menu.confirm = false; }
+        else if (e.key === 'Enter') menu.confirm = true;
+        else if (e.key === 'Escape') menu = null;
+      }
+      else if (e.key === 'Enter' || e.key === 'ArrowRight') menu = { section: SECTIONS[menu.row], row: 0, from: menu.row };
       else if (e.key === 'Escape') menu = null;
     } else {          // one section's settings
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') step(sec[1][menu.row][0], e.key === 'ArrowLeft' ? -1 : 1);
       else if (e.key === 'Escape' || e.key === 'Backspace') menu = menu.debug ? null : { section: null, row: menu.from };
-      else if (e.key === '0') { for (const [k] of sec[1]) cfg[k] = DEFAULTS[k]; save(); }
     }
     showMenu(); return e.preventDefault();
   }
