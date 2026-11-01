@@ -18,9 +18,9 @@ Throwaway, for [Prototype the table's layout: coding space, canvas space, help s
 
 ## Settings
 
-The menu is for whoever runs the table (a facilitator). Press `,` to open it. It has two levels: first the sections (**Windows**, **Corners**, **Textbook pages**, **Appearance**, **Rig**), then one section's settings. `↑↓` choose, `Enter` (or `→`) opens a section, `←→` change a setting, `Esc` goes back and then closes, and `,` closes from anywhere. **Reset all settings**, at the bottom of the sections, resets everything after a second `Enter`. Settings are kept in the browser (`localStorage`).
+The menu is for whoever runs the table (a facilitator). Press `,` to open it. It has two levels: first the sections (**Windows**, **Corners**, **Textbook pages**, **Appearance**, **Rig**, **Debug**), then one section's settings. `↑↓` choose, `Enter` (or `→`) opens a section, `←→` change a setting, `Esc` goes back and then closes, and `,` closes from anywhere. **Reset all settings**, at the bottom of the sections, resets everything after a second `Enter`. Settings are kept in the browser (`localStorage`).
 
-Debug settings are kept out of that menu, behind `.`: marker reads, the red page outline, the status line, `pretend a card is in a corner`, the mock program, the highlight test and the card length when unknown.
+The last section, **Debug**, holds the prototype's debugging switches: marker reads, the red page outline, the status line, `pretend a card is in a corner`, the mock program, the highlight test and the card length when unknown.
 
 Over SSH, without a keyboard, `control.json` can set anything the menu can: `{"rev": 1, "cfg": {"split": 60, "cardU": 3}}`. Changing `rev` reloads the page, but only once the page has already read a `control.json`.
 
@@ -30,7 +30,7 @@ Over SSH, without a keyboard, `control.json` can set anything the menu can: `{"r
 python3 -m http.server 8114   # then open http://localhost:8114/table.html
 ```
 
-Without `vision.py` there are no pages and no card markers. Turn on `pretend a card is in a corner` (in the debug menu, `.`) to see the doc comment.
+Without `vision.py` there are no pages and no card markers. Turn on `pretend a card is in a corner` (under Debug) to see the doc comment.
 
 ## On the Pi
 

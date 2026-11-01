@@ -49,7 +49,6 @@ const CORNER_U = 3.5;  // a corner's dotted quarter circle: its radius in U (fix
 const CORNERS = ['tl', 'tr', 'bl', 'br'], CORNER_NAME = { tl: 'top-left', tr: 'top-right', bl: 'bottom-left', br: 'bottom-right' };
 const cap = t => t[0].toUpperCase() + t.slice(1);
 // The menu is for whoever runs the table (a facilitator), in two levels: a section, then its settings.
-// Debug settings are kept out of it, behind their own key ('.').
 const SECTIONS = [  // name, [key, label, choices, unit]
   ['Windows', [
     ['split', 'Coding space width', [30, 35, 40, 45, 50, 55, 60, 65, 70], '%'],
@@ -66,16 +65,16 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['bg', 'Coding space brightness', [0, 6, 12, 20, 32, 48]]]],
   ['Rig', [
     ['tableMm', 'Work area depth', [700, 750, 780, 792, 800, 850, 900], ' mm']]],
+  ['Debug', [
+    ['marks', 'Show marker reads', [true, false]],
+    ['outline', 'Page outline (red)', [true, false]],
+    ['hud', 'Status line', [true, false]],
+    ['fake', 'Pretend a card is in a corner', ['off', ...CORNERS]],
+    ['program', 'Mock program', [true, false]],
+    ['test', 'Highlight test', [false, true]],
+    ['cardU', 'Card length when unknown', [2, 3, 4, 5, 6], 'U']]],
 ];
-const DEBUG = ['Debug', [
-  ['marks', 'Show marker reads', [true, false]],
-  ['outline', 'Page outline (red)', [true, false]],
-  ['hud', 'Status line', [true, false]],
-  ['fake', 'Pretend a card is in a corner', ['off', ...CORNERS]],
-  ['program', 'Mock program', [true, false]],
-  ['test', 'Highlight test', [false, true]],
-  ['cardU', 'Card length when unknown', [2, 3, 4, 5, 6], 'U']]];
-const OPTS = [...SECTIONS, DEBUG].flatMap(([, opts]) => opts);
+const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 792 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114d || '{}') };
@@ -91,9 +90,9 @@ function showMenu() {
   const sec = menu.section, row = (html, i, value = '') =>
     `<div class="row${i === menu.row ? ' on' : ''}"><span>${html}</span><span class="${value ? 'v' : 'go'}">${value}</span></div>`;
   menuEl.innerHTML = sec
-    ? `<div class="title">${menu.debug ? '' : '<span class="crumb">Settings ›</span> '}${sec[0]}</div>` +
+    ? `<div class="title"><span class="crumb">Settings ›</span> ${sec[0]}</div>` +
       sec[1].map((o, i) => row(o[1], i, valueText(o, cfg[o[0]]))).join('') +
-      `<div class="keys">↑↓ Choose · ←→ Change · Esc ${menu.debug ? 'Close' : 'Back'}</div>`
+      `<div class="keys">↑↓ Choose · ←→ Change · Esc Back</div>`
     : `<div class="title">Settings</div>` + SECTIONS.map(([name], i) => row(name, i)).join('') +
       `<div class="row reset${menu.row === SECTIONS.length ? ' on' : ''}"><span>${menu.confirm ? 'Press Enter again to reset everything' : 'Reset all settings'}</span></div>` +
       `<div class="keys">↑↓ Choose · Enter Open · Esc Close</div>`;
@@ -108,7 +107,6 @@ let toastT = 0;
 function say(msg) { toast.textContent = msg; toast.style.display = 'block'; toast.style.left = '20px'; toast.style.top = (VH() - 60) + 'px'; clearTimeout(toastT); toastT = setTimeout(() => toast.style.display = 'none', 1500); }
 addEventListener('keydown', e => {
   if (e.key === ',') { menu = menu ? null : { section: null, row: 0 }; showMenu(); return e.preventDefault(); }
-  if (e.key === '.') { menu = menu ? null : { section: DEBUG, row: 0, debug: true }; showMenu(); return e.preventDefault(); }
   if (menu) {
     const sec = menu.section, n = sec ? sec[1].length : SECTIONS.length + 1;  // + the reset row
     if (e.key !== 'Enter') menu.confirm = false;
@@ -124,7 +122,7 @@ addEventListener('keydown', e => {
       else if (e.key === 'Escape') menu = null;
     } else {          // one section's settings
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') step(sec[1][menu.row][0], e.key === 'ArrowLeft' ? -1 : 1);
-      else if (e.key === 'Escape' || e.key === 'Backspace') menu = menu.debug ? null : { section: null, row: menu.from };
+      else if (e.key === 'Escape' || e.key === 'Backspace') menu = { section: null, row: menu.from };
     }
     showMenu(); return e.preventDefault();
   }
