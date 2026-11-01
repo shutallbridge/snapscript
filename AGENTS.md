@@ -2,7 +2,7 @@
 
 ## Project spec
 
-`OVERVIEW_SPEC.md` is the source of truth for what Snapscript is: the language, its text notation, and the physical system. Read it before working on anything. Unsettled points are marked **TBD**; don't invent answers to them, raise them instead.
+`REFERENCE.md` (the language reference) is the source of truth for the language and its text notation. `README.md` is the source of truth for what Snapscript is for, its guiding principles, and the physical system. Read both before working on anything. Unsettled points are marked **TBD**; don't invent answers to them, raise them instead.
 
 ## Agent skills
 

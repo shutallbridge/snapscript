@@ -7,7 +7,7 @@ import pytest
 
 from magnets import ProgramError, check, check_program
 
-# Every card text in OVERVIEW_SPEC.md, by the class side it belongs to.
+# Every card text in REFERENCE.md and README.md, by the class side it belongs to.
 SPEC_CARDS = {
     "simple_head.head": [
         "[return]", "[set{a}to]", "[set{b}to]", "[set{count}to]", "[set{empty}to]", "[set{frame Count}to]",
@@ -94,7 +94,7 @@ SPEC_CARDS = {
 # Bracketed text in the spec that is prose shorthand, not a card.
 PROSE = {"[…]", "[define]"}
 
-SPEC = Path(__file__).parents[2] / "OVERVIEW_SPEC.md"
+SPECS = [Path(__file__).parents[2] / name for name in ("REFERENCE.md", "README.md")]
 
 
 def sides_of(cards):
@@ -105,7 +105,7 @@ def sides_of(cards):
 
 def test_the_list_holds_every_card_in_the_spec():
     # When the spec gains a card, add it to SPEC_CARDS.
-    found = set(re.findall(r"\[[^\[\]]*\]", SPEC.read_text(encoding="utf-8"))) - PROSE
+    found = {card for spec in SPECS for card in re.findall(r"\[[^\[\]]*\]", spec.read_text(encoding="utf-8"))} - PROSE
     listed = [card for cards in SPEC_CARDS.values() for card in cards]
     assert sorted(listed) == sorted(found)
 

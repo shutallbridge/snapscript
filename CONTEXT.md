@@ -263,6 +263,10 @@ An arrangement given to the search to keep. The search keeps every edge it menti
 
 ## Releases
 
+**Language reference**:
+The document that defines the language and its text notation. A language version locks it.
+_Avoid_: spec, overview spec
+
 **Language version**:
 One release of Snapscript: its language, its card classes and one magnet arrangement, found by the search when the release is made and then fixed. An instructor prints every base from one version.
 _Avoid_: release (on its own), arrangement version
