@@ -31,7 +31,7 @@ const CANDIDATES = [
   'red', 'crimson', 'tomato', 'orange', 'yellow', 'limegreen', 'green', 'teal',
   'deepskyblue', 'royalblue', 'blue', 'purple', 'violet', 'pink', 'brown', 'gray',
 ];
-const BACKGROUNDS = ['midnightblue', 'black', 'white'];
+const BACKGROUNDS = ['mediumblue', 'black', 'white'];
 // Candidates for the dark background of demos 1, 2 and 4.
 const BG_CANDIDATES = [
   'midnightblue', 'navy', 'darkblue', 'mediumblue', 'blue', 'indigo',
@@ -62,7 +62,7 @@ const DEMOS = {
       p.noStroke();
       for (const colour of trio()) {        // the same 5 lines, once per colour
         p.fill(colour);
-        for (let k = 0; k < 30; k++) {
+        for (let k = 0; k < (state.count ?? 200); k++) {
           const x = R ? p.random(p.width) : p.random(500);
           const y = R ? p.random(p.height) : p.random(500);
           p.rect(x, y, 10, 16);
@@ -78,7 +78,7 @@ const DEMOS = {
       p.noStroke();
       for (const c of trio()) {
         p.fill(c);
-        for (let k = 0; k < 30; k++) {
+        for (let k = 0; k < (state.count ?? 200); k++) {
           const x = R ? p.random(p.width) : p.random(500);
           const y = R ? p.random(p.height) : p.random(500);
           p.rect(x, y, 10, 16);
@@ -111,7 +111,7 @@ const DEMOS = {
   // 4. Animated confetti
   4: (p, R) => {
     const xs = [], ys = [], fills = [];
-    const length = 30;                      // confetti per colour
+    const length = state.count ?? 200;      // confetti per colour
     p.setup = () => {
       if (R) p.createCanvas(p.windowWidth, p.windowHeight); else p.createCanvas(500, 500);
       p.noStroke();
