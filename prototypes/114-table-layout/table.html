@@ -57,13 +57,13 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['centre', 'Centre the sketch', [true, false]]]],
   ['Corners', [
     ...CORNERS.map(c => ['corner_' + c, cap(CORNER_NAME[c]), ['none', 'help']])]],
-  ['Look', [
-    ['textPx', 'Text size', [12, 14, 16, 18, 20, 24, 28, 32], ' px'],
-    ['bg', 'Coding space brightness', [0, 6, 12, 20, 32, 48]]]],
   ['Textbook pages', [
     ['margin', 'Margin', [0, 2, 3, 5, 10, 15], ' mm'],
     ['halo', 'Dim area', [0, 2, 5, 10, 20, 40, 60, 100], ' mm'],
     ['radius', 'Corner radius', [0, 2, 3, 5, 10], ' mm']]],
+  ['Appearance', [
+    ['textPx', 'Text size', [12, 14, 16, 18, 20, 24, 28, 32], ' px'],
+    ['bg', 'Coding space brightness', [0, 6, 12, 20, 32, 48]]]],
   ['Rig', [
     ['tableMm', 'Work area depth', [700, 750, 780, 792, 800, 850, 900], ' mm']]],
 ];
