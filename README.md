@@ -26,7 +26,9 @@ Cards snap to one another with magnets. A card with two sides turns over top-to-
 
 A camera above the table reads the card arrangement. A projector opposite displays the running sketch and draws on the cards.
 
-When the camera is not sure what a card's handwriting says, the card has a **read error**. Its line is skipped, like a line with a structure or check error. A read error belongs to the physical system, not the language: it has no kind and no stage.
+When the handwriting reader gives back no text for a card with writing on it, the card has a **read error**. Its line is skipped, like a line with a structure or check error. A read error belongs to the physical system, not the language: it has no kind and no stage. A read that breaks its card's rule, such as `[num{4o}]`, is not a read error: it goes into the program as read and is a `SyntaxError`, and the card shows what was read on its whiteboard.
+
+A card the table can't write as text is an **unknown card**: its marker is not in the table's lockfile, or the program does not import its library. The card is lit and its line is skipped.
 
 A handwritten card's text arrives a moment after the card is laid. While it is **not read yet**, the program keeps running as it was, for up to about 5 s; then its line is skipped until the text arrives. When the table cannot reach the handwriting reader, a card that needs reading has a **connection error** and its line is skipped at once. Like a read error, both belong to the physical system.
 

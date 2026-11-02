@@ -153,7 +153,7 @@ Every other card has one or more **value slots**.
 
 ### 2.1. Handwriting
 
-Gaps in handwriting are ignored. `_` is a space, and a `[str{…}]` cannot hold a literal `_`. Text in `()` follows the same rules, so a card means the same printed or handwritten.
+Gaps in handwriting are ignored. `_` is a space, and a `[str{…}]` cannot hold a literal `_`. Handwriting cannot hold brackets: `{`, `}`, `[`, `]`, `(` and `)` are left out of what is read. Text in `()` follows the same rules, so a card means the same printed or handwritten.
 
 ```
 [str{hello_world}]      "hello world"
