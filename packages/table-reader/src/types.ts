@@ -1,0 +1,162 @@
+// The table reader's inputs and outputs.
+
+/** One handwritten card's reading, as the vision service sends it. */
+export interface Handwriting {
+  state: "not read yet" | "reading" | "blank" | "read error" | "connection error" | "read";
+  text?: string;
+}
+
+/** One track in a table state: `x` and `y` are the marker's centre in table mm, `angle` in degrees. */
+export interface TableCard {
+  track: number;
+  marker: number;
+  x: number;
+  y: number;
+  angle: number;
+  hw?: Handwriting;
+}
+
+/** A table state from the vision service. */
+export interface TableState {
+  type: "state";
+  seq: number;
+  t: number;
+  mm_per_projector_height: number;
+  cards: TableCard[];
+}
+
+/** A rectangle in table mm, from its top-left corner. */
+export interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** A corner: a quarter circle about a table corner at (x, y), in table mm. */
+export interface Corner {
+  name: string;
+  x: number;
+  y: number;
+  radius: number;
+}
+
+/** The windows and corners, in table mm. */
+export interface Layout {
+  codingSpace: Rect;
+  canvasSpace: Rect;
+  corners: Corner[];
+}
+
+/**
+ * A card the language version gives a marker: its notation, with `{}` where its handwriting goes
+ * (`[set{}to]`, `[num{}]`), or as printed (`[repeat]`, `[color(gold)]`), and its length in U.
+ */
+export interface LanguageMarker {
+  card: string;
+  length: number;
+}
+
+/** Marker ID → the card it names, from the language version. */
+export type LanguageMarkers = ReadonlyMap<number, LanguageMarker>;
+
+/** A library card in the lockfile, such as `1293 = call snapscript-p5.circle`, with its length in U. */
+export interface LibraryCardEntry {
+  kind: "library";
+  card: string;
+  package: string;
+  name: string;
+  length: number;
+}
+
+/** A textbook page in the lockfile, such as `1900 = page snapscript-p5-getting-started/confetti 3`. */
+export interface PageEntry {
+  kind: "page";
+  textbook: string;
+  volume: string;
+  page: number;
+}
+
+/**
+ * Marker ID → library card or page, from the project's lockfile. This is the loaded shape: the file
+ * format belongs to #157, and a loader fills this later.
+ */
+export type Lockfile = ReadonlyMap<number, LibraryCardEntry | PageEntry>;
+
+/** The reader's thresholds: the prototypes' measured starting values, for the rig to tune. */
+export interface ReaderSettings {
+  /** 1U, in mm. */
+  unitMm: number;
+  /** The marker's centre from its card's top-left corner, along the card and down it, in mm. */
+  markerAlongMm: number;
+  markerDownMm: number;
+  /** Two cards whose angles differ by this much or more never join, nor link line to line. */
+  maxAngleDeg: number;
+  /** A new join: the gap along the line within [joinMakeAlongMinMm, joinMakeAlongMaxMm], sideways within joinMakeAcrossMm. */
+  joinMakeAlongMinMm: number;
+  joinMakeAlongMaxMm: number;
+  joinMakeAcrossMm: number;
+  /** A join already made is kept while along stays within [joinKeepAlongMinMm, joinKeepAlongMaxMm] and sideways within joinKeepAcrossMm. */
+  joinKeepAlongMinMm: number;
+  joinKeepAlongMaxMm: number;
+  joinKeepAcrossMm: number;
+  /** A line head's link to the line head above it: made within lineMakeMm of its spot, kept up to lineKeepMm. */
+  lineMakeMm: number;
+  lineKeepMm: number;
+}
+
+/** What the reader carries from one step to the next. */
+export interface ReaderState {
+  /** Joins made, as `left>right` track pairs. */
+  joins: ReadonlySet<string>;
+  /** Line-to-line links made, as `above>below` track pairs. */
+  links: ReadonlySet<string>;
+  /** The buffer's version and the text it had. */
+  version: number;
+  text: string;
+}
+
+/** A card's place in the buffer: line number from 1, and columns from 0, end exclusive. */
+export interface Span {
+  line: number;
+  start: number;
+  end: number;
+}
+
+export interface CardSpan {
+  track: number;
+  span: Span;
+}
+
+export interface LineCards {
+  line: number;
+  tracks: number[];
+}
+
+/** Which buffer text each card and line stands for, for one buffer version. */
+export interface CardMap {
+  version: number;
+  cards: CardSpan[];
+  lines: LineCards[];
+}
+
+export interface StepOutput {
+  version: number;
+  text: string;
+  map: CardMap;
+}
+
+export interface StepInput {
+  table: TableState;
+  layout: Layout;
+  lockfile: Lockfile;
+  languageMarkers: LanguageMarkers;
+  /** Guide sources (pages' program text and value guides): taken by the step, used once places land (#168). */
+  guideSources?: unknown;
+  settings?: Partial<ReaderSettings>;
+}
+
+export interface StepResult {
+  state: ReaderState;
+  output: StepOutput;
+}
