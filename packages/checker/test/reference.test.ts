@@ -1,10 +1,11 @@
 // Every REFERENCE.md example marked with a structure-stage error kind, through
 // check(text, skippedLines). Examples are wrapped in a strip where the
 // reference shows a bare line, since only lines below a [define] are checked.
+// The type-related check-stage examples are in types.test.ts.
 import { describe, expect, test } from "vitest";
-// Only structure-stage errors are compared: the names some examples use are
-// set nowhere, which the check stage reports (names.test.ts).
-import { structureErrorsOf as errorsOf, lines, python, valueOf } from "./helpers.ts";
+// NameErrors are left out: the names some examples use are set nowhere,
+// which names.test.ts covers. Every other error is compared.
+import { errorsButNamesOf as errorsOf, lines, python, valueOf } from "./helpers.ts";
 
 const inDefine = (...body: string[]): string => lines("[define{f}]", ...body);
 

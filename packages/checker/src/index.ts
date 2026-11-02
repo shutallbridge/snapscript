@@ -1,5 +1,6 @@
 import { parse, type Program, type Span, type StructureError } from "@snapscript/parser";
 import { checkNames, skippedLinesOf } from "./names.ts";
+import { checkTypes } from "./types.ts";
 
 export type * from "@snapscript/parser";
 
@@ -37,10 +38,22 @@ export function check(text: string, skippedLines: readonly SkippedLine[] = []): 
   const parsed = parse(text, lines);
   const structureErrors: CheckError[] = parsed.errors.map((e) => ({ ...e, followsFrom: null, suggestion: null }));
   const absent = new Set([...lines, ...structureErrors.map((e) => e.line)]);
-  const names = checkNames(parsed.program, absent);
-  const errors = [...structureErrors, ...names.errors].sort(
+  // A line with an error counts as absent, which can change what other lines
+  // find, so names and types are checked again until the lines found settle.
+  let typeFailed = new Set<number>();
+  let names = checkNames(parsed.program, absent);
+  let types = checkTypes(parsed.program, new Set([...absent, ...names.failed]));
+  for (let pass = 0; pass < 10 && !sameLines(types.failed, typeFailed); pass += 1) {
+    typeFailed = types.failed;
+    names = checkNames(parsed.program, new Set([...absent, ...typeFailed]));
+    types = checkTypes(parsed.program, new Set([...absent, ...names.failed]), typeFailed);
+  }
+  const errors = [...structureErrors, ...names.errors, ...types.errors].sort(
     (a, b) => a.line - b.line || (a.spans[0]?.start ?? 0) - (b.spans[0]?.start ?? 0),
   );
-  const program = { ...parsed.program, skippedLines: skippedLinesOf(parsed.program, new Set([...absent, ...names.failed])) };
+  const failed = new Set([...absent, ...names.failed, ...types.failed]);
+  const program = { ...parsed.program, skippedLines: skippedLinesOf(parsed.program, failed) };
   return { errors, program };
 }
+
+const sameLines = (a: ReadonlySet<number>, b: ReadonlySet<number>): boolean => a.size === b.size && [...a].every((l) => b.has(l));
