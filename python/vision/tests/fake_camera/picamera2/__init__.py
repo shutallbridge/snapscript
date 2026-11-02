@@ -10,7 +10,7 @@ import os
 import time
 
 import numpy as np
-from snapscript_vision.markers import load as load_markers
+from snapscript_vision.markers import parse, read
 from snapscript_vision.world import render
 
 
@@ -34,7 +34,7 @@ class _Request:
 class Picamera2:
     def __init__(self):
         self.world = os.environ["FAKE_CAMERA_WORLD"]
-        self.markers = load_markers(os.environ["FAKE_CAMERA_MARKERS"])
+        self.markers = parse(read(os.environ["FAKE_CAMERA_MARKERS"]))
         self.log = os.environ["FAKE_CAMERA_LOG"]
         self.ctl = {"AeEnable": True, "LensPosition": 1.0}
         self.started = False
