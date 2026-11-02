@@ -70,6 +70,8 @@ const SECTIONS = [  // name, [key, label, choices, unit]
   ['Virtual cards', [  // #129
     ['vlook', 'Look', ['ghost', 'outline', 'footprint']],
     ['vdim', 'Stand-in brightness', [25, 35, 45, 60, 75, 100], '%'],
+    ['vhand', 'Guide handwriting', ['dotted', 'solid']],
+    ['vdot', 'Guide handwriting dots', [2, 3, 4, 5], ' px apart'],
     ['vprog', 'Virtual program (demo 1)', [true, false]],
     ['vargs', 'Virtual arguments', [false, true]],
     ['vmatch', 'A real card replaces it when', ['same card', 'same kind']],
@@ -88,7 +90,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 45, vprog: true, vargs: false, vmatch: 'same card', vtol: 10, vgap: 1 };
+  vlook: 'ghost', vdim: 100, vhand: 'dotted', vdot: 3, vprog: true, vargs: false, vmatch: 'same card', vtol: 10, vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -140,6 +142,7 @@ addEventListener('keydown', e => {
   }
   // #129: 1 2 3 switch the virtual cards' look
   const LOOKS = ['ghost', 'outline', 'footprint'];
+  if (e.key === 'h') { cfg.vhand = cfg.vhand === 'dotted' ? 'solid' : 'dotted'; save(); say(`guide handwriting: ${cfg.vhand}`); return; }
   if (LOOKS[+e.key - 1]) { cfg.vlook = LOOKS[+e.key - 1]; save(); say(`${e.key}: ${cfg.vlook === 'ghost' ? 'stand-in' : 'guide, ' + cfg.vlook}`); return; }
   // menu closed: ←→ resize the two windows
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { step('split', e.key === 'ArrowLeft' ? -1 : 1); say(`coding space ${cfg.split}%`); }
@@ -300,10 +303,28 @@ function occupant(v, cards) {
 }
 const replaces = (c, v) => cfg.vmatch === 'same kind' ? kindOf(c.text) === kindOf(v.text) : c.text === v.text;
 
+// Text made of dots, for a guide card's handwriting: drawn solid off screen at projector px, then kept only where a
+// grid of dots is (cfg.vdot px apart). g is in mm; x, y as fillText with textBaseline middle.
+function dottedText(g, str, fontMm, x, y, colour) {
+  const k = mm(), c = document.createElement('canvas'), cx = c.getContext('2d');
+  cx.font = fontMm; const w = cx.measureText(str).width;
+  c.width = Math.ceil((w + 4) * k); c.height = Math.ceil(26 * k);
+  cx.scale(k, k); cx.font = fontMm; cx.textBaseline = 'middle'; cx.fillStyle = colour; cx.fillText(str, 2, 13);
+  const d = cfg.vdot, m = document.createElement('canvas'); m.width = m.height = d;
+  const mx = m.getContext('2d'); mx.fillStyle = '#000'; mx.beginPath(); mx.arc(d / 2, d / 2, d * 0.36, 0, 2 * Math.PI); mx.fill();
+  cx.setTransform(1, 0, 0, 1, 0, 0); cx.globalCompositeOperation = 'destination-in'; cx.fillStyle = cx.createPattern(m, 'repeat'); cx.fillRect(0, 0, c.width, c.height);
+  g.drawImage(c, x - 2, y - 13, c.width / k, c.height / k);
+}
 function drawVirtual(g, v) {
   const k = mm(), side = v.side, L = lenOf(side), w = L * U, look = cfg.vlook;
   g.save(); g.translate(v.m[0], v.m[1]); g.rotate(v.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);  // now in mm, card's top-left at 0,0
-  const f = fsz(CARD_S), x0 = labelX(CARD_S), label = side.k === 'hw' ? side.word : side.k === 'icon' ? '↵' : side.label;
+  const f = fsz(CARD_S), x0 = labelX(CARD_S), label = side.k === 'hw' ? side.word : side.k === 'icon' ? '' : side.label;
+  const icon = col => {  // [dedent]'s lucide corner-down-left, as on the printed card
+    if (side.k !== 'icon') return;
+    const z = CARD_S.iconSize, sc = z / 24; g.save(); g.translate((MZ + STRIPE + w) / 2 - z / 2, H / 2 - z / 2); g.scale(sc, sc);
+    g.strokeStyle = col; g.lineWidth = CARD_S.iconStroke / sc; g.lineCap = g.lineJoin = 'round'; g.setLineDash([]);
+    g.stroke(new Path2D('M20 4v7a4 4 0 0 1-4 4H4')); g.stroke(new Path2D('m9 10-5 5 5 5')); g.restore();
+  };
   const wbX = x0 + measure(side.word || '', f) + CARD_S.gap, wbW = (side.after ? w - CARD_S.margin - measure(side.after, f) - CARD_S.gap : w - CARD_S.margin) - wbX;
   const value = side.sample || side.label;  // a handwritten value, or a colour's name
   g.textBaseline = 'middle';
@@ -316,17 +337,25 @@ function drawVirtual(g, v) {
     g.globalAlpha = 0.9;
     g.fillStyle = side.k === 'color' && !side.label ? '#d4d4d8' : side.c.text; g.font = font(f); g.fillText(side.k === 'hw' ? side.word : label || v.hint || '', x0, H / 2);
     if (side.after) g.fillText(side.after, w - CARD_S.margin - measure(side.after, f), H / 2);
-    if (side.k === 'hw') { g.fillStyle = side.sample ? '#1d3f8f' : '#71717a'; g.font = side.sample ? `400 17px Kalam` : font(11); g.fillText(side.sample || v.hint || '', wbX + 2.5, H / 2 + (side.sample ? 1 : 0)); }
+    icon(side.c.text);
+    if (side.k === 'hw') { g.fillStyle = side.sample ? '#000' : '#71717a'; g.font = side.sample ? `400 17px Kalam` : font(11); g.fillText(side.sample || v.hint || '', wbX + 2.5, H / 2 + (side.sample ? 1 : 0)); }
     g.globalAlpha = 1; g.fillStyle = '#3f3f46'; g.beginPath(); g.arc(MZ / 2, H / 2, 2.5, 0, 2 * Math.PI); g.fill();
     g.restore(); return;
-  } else if (look === 'outline') {
+  } else if (look === 'outline') {  // a guide card: dotted edges, the label solid, the value dotted or solid (cfg.vhand)
     const col = side.k === 'color' ? (side.label ? side.c.bg : '#a1a1aa') : side.c.stripe;
-    g.strokeStyle = col; g.lineWidth = 0.8; g.strokeRect(0.4, 0.4, w - 0.8, H - 0.8);
-    g.beginPath(); g.moveTo(MZ, 0); g.lineTo(MZ, H); g.stroke();
-    if (side.k === 'hw') { g.lineWidth = 0.4; g.strokeRect(wbX, CARD_S.wbPad, wbW, H - 2 * CARD_S.wbPad); }
-    g.fillStyle = col; g.font = font(f); g.fillText((side.k === 'hw' ? side.word : label) || v.hint || '', x0, H / 2);
+    g.strokeStyle = col; g.lineCap = 'round'; g.lineWidth = 1; g.setLineDash([0, 2.4]);
+    g.strokeRect(0.5, 0.5, w - 1, H - 1);
+    g.beginPath(); g.moveTo(MZ, 0.5); g.lineTo(MZ, H - 0.5); g.stroke();
+    if (side.k === 'hw') { g.lineWidth = 0.7; g.strokeRect(wbX, CARD_S.wbPad, wbW, H - 2 * CARD_S.wbPad); }
+    g.setLineDash([]); g.lineCap = 'butt';
+    if (side.k === 'color' && side.label) { g.fillStyle = side.c.bg; g.fillRect(MZ, 0, 3, H); }  // the colour as a solid bar: a dark colour's name can't show on a dark table
+    g.fillStyle = side.k === 'color' ? '#e4e4e7' : col; g.font = font(f); g.fillText((side.k === 'hw' ? side.word : label) || v.hint || '', x0, H / 2);
     if (side.after) g.fillText(side.after, w - CARD_S.margin - measure(side.after, f), H / 2);
-    if (side.k === 'hw') { g.font = side.sample ? `400 17px Kalam` : font(11); g.fillStyle = side.sample ? '#e4e4e7' : '#a1a1aa'; g.fillText(side.sample || v.hint || '', wbX + 2.5, H / 2); }
+    icon(col);
+    if (side.k === 'hw' && side.sample) {
+      if (cfg.vhand === 'dotted') dottedText(g, side.sample, '400 17px Kalam', wbX + 2.5, H / 2 + 1, '#e4e4e7');
+      else { g.font = '400 17px Kalam'; g.fillStyle = '#e4e4e7'; g.fillText(side.sample, wbX + 2.5, H / 2 + 1); }
+    } else if (side.k === 'hw') { g.font = font(11); g.fillStyle = '#a1a1aa'; g.fillText(v.hint || '', wbX + 2.5, H / 2); }
   } else {  // footprint
     g.strokeStyle = '#a1a1aa'; g.lineWidth = 0.6; g.setLineDash([2.5, 2]); g.strokeRect(0.3, 0.3, w - 0.6, H - 0.6); g.setLineDash([]);
     g.fillStyle = '#a1a1aa'; g.font = font(f * 0.6); g.textAlign = 'center';
