@@ -129,6 +129,10 @@ The folder a program lives in on the table's computer: a `package.json` that lis
 **Entry module**:
 The one `.snap` file a package names in its `package.json` (`"snapscript": "main.snap"`). A project's entry module is the table program: its hidden `[import]`s give library cards their names. Other `.snap` files are reached only by importing them.
 
+**Kit**:
+The cards made for a project: each card and how many sheets of it, matching the bases printed for it. A card whose bases exist but which the project has no marker for is left out, and its bases stay bare.
+_Avoid_: set, deck
+
 ## Errors
 
 **Error kind**:
@@ -396,7 +400,7 @@ _Avoid_: calibration (that makes it), homography
 Making the line-up from the settings menu: clear the table while the projector shows markers, lay the ruler page, then check the outlines it draws. It also fixes the camera's exposure for the room. It is redone by hand whenever the projection looks off; a stand moved as a whole needs nothing.
 
 **Ruler page**:
-A sheet the instructor tool prints with two markers a known distance apart. Laid flat during calibration, it gives the table its real size in mm.
+An A4 page printed with two of the table's own markers a known distance apart, and a 50 mm bar to check the print's scale. Laid flat during calibration, it gives the table its real size in mm.
 
 ## Textbooks
 
