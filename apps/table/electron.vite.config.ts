@@ -1,11 +1,12 @@
 // The table app's Electron build (#181 "The table app"): the main process, the two views'
-// preloads, and their renderers. `pnpm table` builds it into out/ and starts it.
+// preloads, and their renderers. `pnpm table` builds it into out/ and starts it. The main build
+// also holds `pnpm print`'s script (#200).
 import { resolve } from "node:path";
 import { defineConfig } from "electron-vite";
 
 export default defineConfig({
   main: {
-    build: { rollupOptions: { input: { index: resolve(import.meta.dirname, "src/main/index.ts") } } },
+    build: { rollupOptions: { input: { index: resolve(import.meta.dirname, "src/main/index.ts"), print: resolve(import.meta.dirname, "src/print/main.ts") } } },
   },
   preload: {
     build: {

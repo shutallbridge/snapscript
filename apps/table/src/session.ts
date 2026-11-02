@@ -18,10 +18,13 @@ import {
   type UnknownCard,
   type VirtualCard,
 } from "@snapscript/table-reader";
+import { createCalibration, type CalibrationResult, type CalibrationView, type VisionCommand } from "./calibration.ts";
+import { createMenu, type MenuView } from "./menu.ts";
 import { feedback, type Feedback } from "./feedback.ts";
 import { createGuides, labelOf, type PageCut, type VirtualFace } from "./guides.ts";
 import { createHelpCorner, type HelpBox } from "./help.ts";
 import type { Project } from "./project.ts";
+import { defaultTableSettings, type TableSettings } from "./settings.ts";
 
 /** What the session needs of a loaded project. */
 export type SessionProject = Pick<Project, "entry" | "loader" | "lockfile" | "languageMarkers" | "cards" | "pages">;
@@ -43,6 +46,10 @@ export interface SessionOptions {
   project: SessionProject;
   layout: Layout;
   settings?: Partial<SessionSettings>;
+  /** The settings menu's settings, as kept in their file. */
+  tableSettings?: TableSettings;
+  /** The projector picture's width over its height, for calibration's markers. */
+  projectorAspect?: number;
 }
 
 /**
@@ -64,7 +71,11 @@ export type SessionEvent =
   /** The clock: the host sends one at `wakeAt`, if not sooner. */
   | { type: "tick"; now: number }
   /** The windows changed (resized, or the table's size in mm came with a state): the last state is read again with them. */
-  | { type: "layout"; now: number; layout: Layout };
+  | { type: "layout"; now: number; layout: Layout }
+  /** A key on the facilitator's keyboard, by its `KeyboardEvent.key` (",", "ArrowUp", "Enter", "Escape" …). */
+  | { type: "key"; now: number; key: string }
+  /** What the vision service said that isn't a table state: a calibration step's result. */
+  | { type: "vision"; now: number; message: CalibrationResult };
 
 /**
  * What the sketch view is told to do. Runs are numbered from 1. A run starts hidden; `show` swaps
@@ -82,6 +93,10 @@ export type SketchCommand =
 /** What an event gives. */
 export interface SessionOutput {
   sketch: SketchCommand[];
+  /** The settings, when the menu changed them: the host keeps them in their file and lays the windows out again. */
+  settings: TableSettings | null;
+  /** Commands to the vision service: calibration's steps. */
+  vision: VisionCommand[];
 }
 
 /** A card on the table: a real card by its track, or a stand-in by its id. */
@@ -114,6 +129,11 @@ export interface Scene {
   pages: PageCut[];
   /** The top status bar's messages. */
   status: string[];
+  /** The settings menu, while it's open: drawn above everything. */
+  menu: MenuView | null;
+  /** Calibration's step, while it runs: drawn over everything, the sketch included. */
+  calibration: CalibrationView | null;
+  settings: TableSettings;
   /** The help corner's box, while a card lies there and for 1 s after. */
   help: HelpBox | null;
   /** The card feedback's look: lit cards, gutters, badges, the error bar and print output (#195). */
@@ -193,6 +213,16 @@ export function createSession(options: SessionOptions): Session {
   let last: { state: TableState; offset: number } | null = null;
   /** When the reader wants that, on the app's clock. */
   let readerWake: number | null = null;
+  let tableSettings = options.tableSettings ?? defaultTableSettings;
+  const menu = createMenu();
+  const calibration = createCalibration(options.projectorAspect ?? 16 / 9);
+  /** The newest table state: calibration's check view outlines its cards, and it's read once calibration ends. */
+  let latest: TableState | null = null;
+  /** A card's length when the project knows it: calibration outlines only those. */
+  const knownLengthOf = (marker: number): number | undefined => {
+    const entry = project.lockfile.get(marker);
+    return project.languageMarkers.get(marker)?.length ?? (entry?.kind === "library" ? entry.length : undefined);
+  };
   const help = createHelpCorner(project);
   const guides = createGuides(project);
 
@@ -305,16 +335,39 @@ export function createSession(options: SessionOptions): Session {
   return {
     handle(event: SessionEvent): SessionOutput {
       const sketch: SketchCommand[] = [];
+      let changed: TableSettings | null = null;
+      let vision: VisionCommand[] = [];
+      const calibrating = calibration.active;
       onClock(event.now, sketch);
       help.tick(event.now);
-      if (event.type === "table") onTable(event.state, event.now, sketch);
+      // While calibrating, the table is cleared and laid for calibration: the program is left as it was.
+      if (event.type === "table") {
+        latest = event.state;
+        if (!calibrating) onTable(event.state, event.now, sketch);
+      }
       else if (event.type === "sketch") onSketch(event.message, event.now, sketch);
       else if (event.type === "layout") {
         layout = event.layout;
-        if (last) onTable(last.state, event.now, sketch);
+        if (last && !calibrating) onTable(last.state, event.now, sketch);
       }
-      else if (last && Math.min(readerWake ?? Infinity, guides.wakeAt ?? Infinity) <= event.now) onTable(last.state, event.now, sketch);
-      return { sketch };
+      else if (event.type === "key") {
+        if (calibrating) vision = calibration.key(event.key);
+        else {
+          const r = menu.key(event.key, tableSettings);
+          if (r?.settings) tableSettings = changed = r.settings;
+          if (r?.action === "calibrate") {
+            menu.close();
+            calibration.start();
+          }
+        }
+      }
+      else if (event.type === "vision") vision = calibration.result(event.message, event.now);
+      else {
+        vision = calibration.tick(event.now);
+        if (!calibrating && last && Math.min(readerWake ?? Infinity, guides.wakeAt ?? Infinity) <= event.now) onTable(last.state, event.now, sketch);
+      }
+      if (calibrating && !calibration.active && latest) onTable(latest, event.now, sketch);
+      return { sketch, settings: changed, vision };
     },
     get scene(): Scene {
       const errors = [...checkErrors, ...tableErrors, ...(newest?.error ? [newest.error] : []), ...(frozenRun ? [frozenRun.error] : [])];
@@ -327,15 +380,19 @@ export function createSession(options: SessionOptions): Session {
         virtual: guides.virtual,
         pages: guides.pages,
         status: guides.status,
+        menu: menu.view(tableSettings),
+        calibration: calibration.view(layout, latest?.cards ?? [], knownLengthOf),
+        settings: tableSettings,
         help: help.box,
         feedback: feedback({ state: last?.state ?? null, map: buffer.map, lengthOf, stripHeads, detached, skippedLines, errors, prints }),
       };
     },
     get wakeAt(): number | null {
       const times = [
-        readerWake ?? Infinity,
+        calibration.active ? Infinity : (readerWake ?? Infinity),
+        calibration.wakeAt ?? Infinity,
         help.wakeAt ?? Infinity,
-        guides.wakeAt ?? Infinity,
+        calibration.active ? Infinity : (guides.wakeAt ?? Infinity),
         ...stopping.map((s) => s.killAt),
         ...[shown, next].map((r) => r?.frozenAt ?? Infinity),
       ];

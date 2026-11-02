@@ -6,6 +6,7 @@
 // SNAPSCRIPT_VISION=off (don't start the service: connect to one already running),
 // SNAPSCRIPT_VISION_PORT (8115), SNAPSCRIPT_VISION_SOURCE (camera), SNAPSCRIPT_VISION_READER (the
 // service's default), SNAPSCRIPT_LINEUP (the service's line-up file; ~/.local/state/snapscript/lineup.json),
+// SNAPSCRIPT_SETTINGS (the settings menu's file; ~/.local/state/snapscript/settings.json),
 // SNAPSCRIPT_SMOKE (a folder: write what the views show there, then quit).
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync } from "node:fs";
@@ -15,9 +16,11 @@ import { dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, ipcMain, MessageChannelMain, protocol, screen, WebContentsView, type MessagePortMain } from "electron";
 import type { TableState } from "@snapscript/table-reader";
+import type { CalibrationResult } from "../calibration.ts";
 import { tableGeometry, type TableGeometry } from "../layout.ts";
 import { loadProject } from "../project.ts";
 import { createSession, type Session, type SessionEvent, type SketchCommand, type SketchMessage } from "../session.ts";
+import { loadSettings, saveSettings, type TableSettings } from "../settings.ts";
 import type { SketchViewCommand } from "../sketch/host.ts";
 import { connectVision, markersMessage, visionCommand, type VisionLink } from "../vision.ts";
 
@@ -28,6 +31,7 @@ const env = process.env;
 const projectDir = resolve(env.SNAPSCRIPT_PROJECT ?? join(repo, "projects/confetti"));
 const port = Number(env.SNAPSCRIPT_VISION_PORT ?? 8115);
 const smoke = env.SNAPSCRIPT_SMOKE ? resolve(env.SNAPSCRIPT_SMOKE) : null;
+const settingsFile = resolve(env.SNAPSCRIPT_SETTINGS ?? join(homedir(), ".local/state/snapscript/settings.json"));
 /** The table's depth until the first table state says: the rig's, roughly. */
 const START_MM_PER_PROJECTOR_HEIGHT = 781;
 
@@ -68,6 +72,7 @@ let win: BrowserWindow;
 let tableView: WebContentsView;
 let sketchView: SketchView;
 let geometry: TableGeometry;
+let settings: TableSettings;
 let session: Session;
 let vision: VisionLink | null = null;
 let service: ChildProcess | null = null;
@@ -90,6 +95,7 @@ function makeSketchView(): SketchView {
   void view.webContents.loadURL("snapscript://sketch/sketch/index.html");
   const sent = loaded.then(() => {
     view.webContents.setZoomFactor(geometry.zoom);
+    view.webContents.send("sketch at", settings.sketchAt);
     view.webContents.postMessage("watchdog", null, [port2]);
   });
   view.webContents.on("render-process-gone", (_, details) => log("sketch process gone:", details.reason));
@@ -150,11 +156,38 @@ function handle(event: SessionEvent): void {
   if (errors !== lastErrors) log("errors:", errors);
   lastErrors = errors;
   tableView.webContents.send("scene", scene);
+  for (const command of out.vision) {
+    log("vision:", JSON.stringify(command));
+    vision?.send(command);
+  }
+  if (out.settings) setSettings(out.settings);
 }
 let lastErrors = "[]";
 
+/** The menu changed the settings: keep them, and lay the windows and the sketch out again. */
+function setSettings(next: TableSettings): void {
+  const relaid = next.splitPercent !== settings.splitPercent || next.fullScreen !== settings.fullScreen;
+  const moved = next.sketchAt !== settings.sketchAt;
+  settings = next;
+  try {
+    saveSettings(settingsFile, settings);
+  } catch (e) {
+    log("the settings weren't kept:", (e as Error).message);
+  }
+  if (moved) void sketchView.sent.then(() => sketchView.view.webContents.send("sketch at", settings.sketchAt));
+  if (relaid) {
+    setGeometry(geometry.workArea.height);
+    handle({ type: "layout", now: now(), layout: geometry.layout });
+  }
+}
+
+function geometryFor(mmPerProjectorHeight: number): TableGeometry {
+  const { splitPercent, fullScreen } = settings;
+  return tableGeometry(screen.getPrimaryDisplay().bounds, mmPerProjectorHeight, { splitPercent, fullScreen });
+}
+
 function setGeometry(mmPerProjectorHeight: number): void {
-  geometry = tableGeometry(screen.getPrimaryDisplay().bounds, mmPerProjectorHeight);
+  geometry = geometryFor(mmPerProjectorHeight);
   sketchView.view.setBounds(geometry.canvasPx);
   void sketchView.sent.then(() => sketchView.view.webContents.setZoomFactor(geometry.zoom));
   tableView.webContents.send("geometry", geometry);
@@ -162,6 +195,10 @@ function setGeometry(mmPerProjectorHeight: number): void {
 
 function onVision(message: unknown): void {
   const m = message as { type?: string };
+  if (m.type === "calibration") {
+    log("vision:", JSON.stringify(m).slice(0, 200));
+    return handle({ type: "vision", now: now(), message: m as CalibrationResult });
+  }
   if (m.type !== "state") return log("vision:", JSON.stringify(m).slice(0, 200));
   const state = m as TableState;
   if (state.mm_per_projector_height !== geometry.workArea.height) {
@@ -206,7 +243,8 @@ app.whenReady().then(() => {
   const project = loadProject(projectDir);
   log("opened", projectDir);
   const display = screen.getPrimaryDisplay();
-  geometry = tableGeometry(display.bounds, START_MM_PER_PROJECTOR_HEIGHT);
+  settings = loadSettings(settingsFile);
+  geometry = geometryFor(START_MM_PER_PROJECTOR_HEIGHT);
   win = new BrowserWindow({
     ...display.bounds,
     fullscreen: process.platform === "linux",
@@ -221,7 +259,12 @@ app.whenReady().then(() => {
   win.contentView.addChildView(tableView);
   tableView.setBounds({ x: 0, y: 0, ...display.size });
   sketchView = makeSketchView();
-  session = createSession({ project, layout: geometry.layout });
+  session = createSession({
+    project,
+    layout: geometry.layout,
+    tableSettings: settings,
+    projectorAspect: display.bounds.width / display.bounds.height,
+  });
 
   ipcMain.on("sketch", (event, message: SketchMessage) => {
     if (event.sender === sketchView.view.webContents) handle({ type: "sketch", now: now(), message });
@@ -231,10 +274,14 @@ app.whenReady().then(() => {
     if (input.control && input.key.toLowerCase() === "q") {
       event.preventDefault();
       app.quit();
+    } else if (input.type === "keyDown" && !input.control && !input.alt && !input.meta) {
+      // The settings menu and calibration: the session takes every other key.
+      event.preventDefault();
+      handle({ type: "key", now: now(), key: input.key });
     }
   });
   tableView.webContents.once("did-finish-load", () => {
-    // Keys go to the table view: Ctrl+Q here, the settings menu later (#199).
+    // Keys go to the table view: Ctrl+Q here, and the settings menu's to the session.
     tableView.webContents.focus();
     tableView.webContents.send("geometry", geometry);
     startVision();

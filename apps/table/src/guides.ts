@@ -43,7 +43,7 @@ export interface PageCut {
  * A printed page (#128, `pnpm print`): A4, its 13 mm marker's top-left at [187, 274] mm, so the
  * marker's centre (where the camera puts the page) is 193.5 mm along and 280.5 mm down it.
  */
-export const PAGE_MM = { width: 210, height: 297, markerX: 187 + 6.5, markerY: 274 + 6.5 };
+export const PAGE_MM: { width: number; height: number; markerX: number; markerY: number } = { width: 210, height: 297, markerX: 193.5, markerY: 280.5 };
 
 /** The guides' timing: the decided starting values (#129), for the rig to tune. */
 export interface GuidesSettings {
@@ -77,10 +77,9 @@ function valueCard(value: ExpectedValue): string {
   }
 }
 
-/** A form's guides: its values, and for a slot that takes any number, one more than are laid. */
+/** A form's guides: its values, and a slot that takes any number while nothing is laid in it. */
 function guidesOf(form: ExpectedOverload, laid: number): ExpectedValue[] {
-  if (!form.variadic) return form.values;
-  return [...form.values, ...Array<ExpectedValue>(Math.max(0, laid - form.values.length) + 1).fill(form.variadic)];
+  return form.variadic && laid <= form.values.length ? [...form.values, form.variadic] : form.values;
 }
 
 const fits = (form: ExpectedOverload, laid: number): boolean =>

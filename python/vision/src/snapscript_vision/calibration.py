@@ -21,11 +21,13 @@ fit leaves the markers, in mm at the old line-up's size until step 2 measures it
 
     -> {"type": "calibrate", "step": "ruler"}
     <- {"type": "calibration", "step": "ruler", "ok": true, "mm_per_projector_height": 781.0,
-        "exposure": {"ms": 48.0, "gain": 1.0}, "paper": 148, "error_mm": {"mean": 0.8, "max": 1.4}}
+        "exposure": {"ms": 48.0, "gain": 1.0}, "paper": 148, "error_mm": {"mean": 0.8, "max": 1.4},
+        "ruler_page": {"x": 585.2, "y": 390.6, "angle": 0.8}}
 
 Step 2, the ruler page lies flat. The camera's exposure is fixed so the page's paper comes out at
 `paper_grey`, and the real size comes from its two markers, a known distance apart. From here on, table states
-use the new line-up, so the table app can draw its check outlines.
+use the new line-up, so the table app can draw its check outlines. `ruler_page` is where the page lies by the new
+line-up: the centre between its two markers in table mm, and the angle from the first to the second in degrees.
 
     -> {"type": "calibrate", "step": "save"}      or      {"type": "calibrate", "step": "keep"}
     <- {"type": "calibration", "step": "save", "ok": true}
@@ -188,8 +190,12 @@ class Calibration:
         self.pending = Lineup(p.k1, p.H, mm_per_ph, p.image_size, exposure)
         self.live, self.sized = self.pending, True  # the check view: table states use the new line-up
         self.room()
+        a_mm, b_mm = a * mm_per_ph, b * mm_per_ph
+        mid, d = (a_mm + b_mm) / 2, b_mm - a_mm
         out = {"ok": True, "mm_per_projector_height": round(mm_per_ph, 2), "paper": round(paper),
-               "error_mm": stats(self.fit_err * mm_per_ph)}
+               "error_mm": stats(self.fit_err * mm_per_ph),
+               "ruler_page": {"x": round(float(mid[0]), 2), "y": round(float(mid[1]), 2),
+                              "angle": round(float(np.degrees(np.arctan2(d[1], d[0]))), 2)}}
         if exposure:
             out["exposure"] = {"ms": exposure[0], "gain": exposure[1]}
         return out
