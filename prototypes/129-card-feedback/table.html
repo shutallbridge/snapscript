@@ -84,7 +84,6 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['vargs', 'Virtual arguments', [false, true]],
     ['vmatch', 'A real card replaces it when', ['same card', 'same kind']],
     ['vtol', 'Within', [5, 10, 15, 20, 30], ' mm'],
-    ['vwrong', 'Wrong card in a guide\'s place, red', [20, 30, 40, 50, 60, 80], '%'],
     ['vgap', 'Gap between lines', [0, 1, 2, 4], ' mm']]],
   ['Debug', [
     ['marks', 'Show marker reads', [true, false]],
@@ -153,6 +152,7 @@ addEventListener('keydown', e => {
   const LOOKS = ['ghost', 'outline', 'footprint'];
   if (e.key === 'b') { const B = [0, 5, 10, 15, 20, 30, 40]; cfg.vfill = B[(B.indexOf(cfg.vfill) + 1) % B.length]; save(); say(`guide background: ${cfg.vfill ? cfg.vfill + '%' : 'off'}`); return; }  // off, 5, 10, 15, 20, 30, 40 %
   if (e.key === 'e') { const E = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75]; cfg.vedge = E[(E.indexOf(cfg.vedge) + 1) % E.length]; save(); say(`guide edge: ${cfg.vedge ? cfg.vedge + ' mm' : 'none'}`); return; }  // none to 1.75 mm
+  if (e.key === 'r') { const R = [20, 30, 40, 50, 60, 80]; cfg.vwrong = R[(R.indexOf(cfg.vwrong) + 1) % R.length]; save(); say(`wrong card red: ${cfg.vwrong}%`); return; }  // prototyping only, not a setting
   if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
   if (e.key === 'm') { const M = [0, 0.5, 1, 1.5, 2]; cfg.vsEdge = M[(M.indexOf(cfg.vsEdge) + 1) % M.length]; save(); say(`stand-in marker zone edge: ${cfg.vsEdge ? cfg.vsEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'w') { cfg.vwb = !cfg.vwb; save(); say(`guide whiteboard edge: ${cfg.vwb ? 'on' : 'off'}`); return; }
