@@ -2,132 +2,28 @@
 // sketch process, which never loads the parser or the checker. The host (the
 // sketch process, or a test's Node host) gives it the native modules and an
 // output sink, and reads the text position it keeps.
-import { builtins, countOf, describeCounts, methods, operators, type Count, type ErrorKind, type Operator, type Signature, type Takes, type Type } from "@snapscript/core";
+import { describeCounts, operators, type Count, type ErrorKind, type Operator } from "@snapscript/core";
+import { builtinValues, listMethods } from "./builtins.ts";
+import { isSnapscriptError, LibraryError, RecursionError, SnapscriptError, type RunError } from "./errors.ts";
+import { article, Color, Dict, equal, isList, Module, show, SnapFunction, truthy, typeName, type Span, type Value } from "./values.ts";
 
-/** A stretch of the entry program's text, as offsets. */
-export interface Span {
-  start: number;
-  end: number;
-}
-
-/** A `[color(…)]` value: a CSS color name. */
-export class Color {
-  constructor(readonly name: string) {}
-  toString(): string {
-    return this.name;
-  }
-}
-
-/** An attribute: the name as first written, and its value. */
-interface Attribute {
-  text: string;
-  value: Value;
-}
-
-/** A `[call(dict)]` value: attributes, by name key. */
-export class Dict {
-  readonly attributes: Map<string, Attribute> = new Map();
-}
-
-/** A module object: its top-level declarations, by name key. */
-export class Module {
-  readonly attributes: Map<string, Attribute> = new Map();
-  readonly handlers: Map<string, () => Value> = new Map();
-  constructor(
-    /** The loader's id for the module, `null` for the entry program. */
-    readonly id: string | null,
-    readonly name: string,
-    /** How a library error names it, `null` for the entry program. */
-    readonly library: string | null,
-    /** Its place in load order: positions in it are its index and a span. */
-    readonly index: number,
-  ) {}
-}
-
-/** A function value: a `[define{…}]`, an `[extern(…)]` or a builtin. */
-export class SnapFunction {
-  constructor(
-    readonly name: string,
-    /** How many values each way to call it takes. */
-    readonly counts: readonly Count[],
-    readonly impl: (...args: Value[]) => Value,
-  ) {}
-
-  /** Whether it takes `n` values. */
-  takes(n: number): boolean {
-    return this.counts.some((c) => (c.variadic ? n >= c.params : n === c.params));
-  }
-}
-
-/** Every value a program can hold. A list is a JS array, `none` is `null`. */
-export type Value = number | string | boolean | null | Color | Value[] | Dict | SnapFunction | Module;
-
-/** An error the program meets while running: one of the reference's kinds. */
-export class SnapscriptError extends Error {
-  constructor(
-    readonly kind: ErrorKind,
-    message: string,
-  ) {
-    super(message);
-    this.name = kind;
-  }
-}
-
-/** One kind's class: `new ValueError(message)`. */
-export type ErrorOfKind = new (message: string) => SnapscriptError;
-
-/** A class for one kind, for native modules to throw: `throw new ValueError("…")`. */
-const errorOfKind = (kind: ErrorKind): ErrorOfKind =>
-  class extends SnapscriptError {
-    constructor(message: string) {
-      super(kind, message);
-    }
-  };
-
-export const SyntaxError: ErrorOfKind = errorOfKind("SyntaxError");
-export const IndentationError: ErrorOfKind = errorOfKind("IndentationError");
-export const NameError: ErrorOfKind = errorOfKind("NameError");
-export const TypeError: ErrorOfKind = errorOfKind("TypeError");
-export const AttributeError: ErrorOfKind = errorOfKind("AttributeError");
-export const ImportError: ErrorOfKind = errorOfKind("ImportError");
-export const IndexError: ErrorOfKind = errorOfKind("IndexError");
-export const ValueError: ErrorOfKind = errorOfKind("ValueError");
-export const ZeroDivisionError: ErrorOfKind = errorOfKind("ZeroDivisionError");
-export const RecursionError: ErrorOfKind = errorOfKind("RecursionError");
-
-/** Each kind in core's table, and its class. */
-export const errorKinds: Readonly<Record<ErrorKind, ErrorOfKind>> = {
-  SyntaxError,
-  IndentationError,
-  NameError,
-  TypeError,
+export { Color, Dict, Module, show, SnapFunction, type Span, type Value } from "./values.ts";
+export {
   AttributeError,
+  errorKinds,
   ImportError,
+  IndentationError,
   IndexError,
+  NameError,
+  RecursionError,
+  SnapscriptError,
+  SyntaxError,
+  TypeError,
   ValueError,
   ZeroDivisionError,
-  RecursionError,
-};
-
-/** Marks a runtime error, so one thrown by another copy of this library still counts. */
-const errorBrand = Symbol.for("@snapscript/runtime.error");
-Object.defineProperty(SnapscriptError.prototype, errorBrand, { value: true });
-
-const isSnapscriptError = (e: unknown): e is SnapscriptError =>
-  e instanceof SnapscriptError || (typeof e === "object" && e !== null && (e as Record<symbol, unknown>)[errorBrand] === true);
-
-/** A library's own code broke: its message names the library and the function. */
-class LibraryError extends Error {}
-
-/** What reaches the host when a run stops on an error. */
-export interface RunError {
-  /** A runtime error has a kind; anything else a native module throws is a library error. */
-  type: "runtime" | "library";
-  kind: ErrorKind | null;
-  message: string;
-  /** The card on the table that led there. */
-  span: Span | null;
-}
+  type ErrorOfKind,
+  type RunError,
+} from "./errors.ts";
 
 /** What a native module's functions get, to reach back into the program. */
 export interface NativeContext {
@@ -173,27 +69,6 @@ export interface Host {
 /** A local not set yet, and an optional parameter not supplied. */
 const UNSET: unique symbol = Symbol("unset");
 const MISSING: unique symbol = Symbol("missing");
-
-const isList = (v: unknown): v is Value[] => Array.isArray(v);
-
-/** A value as `print` shows it (REFERENCE.md §9). */
-export function show(value: Value, nested = false, seen: Set<object> = new Set()): string {
-  if (value === null) return "none";
-  if (typeof value === "string") return nested ? JSON.stringify(value) : value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  if (value instanceof Color) return value.name;
-  if (value instanceof SnapFunction) return `<function ${value.name}>`;
-  if (value instanceof Module) return `<module ${value.name}>`;
-  if (seen.has(value)) return isList(value) ? "[...]" : "{...}";
-  seen.add(value);
-  const text = isList(value)
-    ? `[${value.map((v) => show(v, true, seen)).join(", ")}]`
-    : `{${[...value.attributes.values()].map((a) => `${a.text}: ${show(a.value, true, seen)}`).join(", ")}}`;
-  seen.delete(value);
-  return text;
-}
-
-const truthy = (v: Value): boolean => !(v === null || v === false || v === 0 || v === "" || (isList(v) && v.length === 0));
 
 /** What a function value given the wrong number of values says, as the checker says it of a function it knows. */
 const takesMessage = (fn: SnapFunction): string => `${fn.name} takes ${describeCounts(fn.counts)}`;
@@ -533,190 +408,6 @@ const RECURSION_LIMIT = 1000;
 
 /** Each error a run meets, and the card it was at. */
 const blamed = new WeakMap<object, Span | null>();
-
-function typeName(v: Value): Type {
-  if (v === null) return "none";
-  if (isList(v)) return "list";
-  if (v instanceof Color) return "color";
-  if (v instanceof Dict) return "dict";
-  if (v instanceof Module) return "module";
-  if (v instanceof SnapFunction) return "function";
-  return typeof v === "number" ? "num" : typeof v === "string" ? "str" : "bool";
-}
-
-/** `a num`, `none`: a type as messages name it. */
-const article = (type: Type): string => (type === "none" ? "none" : `a ${type}`);
-
-/**
- * `[==]` (§6.3): numbers, strings, bools and colors by value, lists by their
- * items, dicts by their attributes, functions and modules by identity. Values
- * of different types are not equal.
- */
-function equal(a: Value, b: Value, seen: Map<object, object> = new Map()): boolean {
-  if (a === b) return true;
-  if (typeName(a) !== typeName(b)) return false;
-  if (a instanceof Color) return a.name.toLowerCase() === (b as Color).name.toLowerCase();
-  if (!isList(a) && !(a instanceof Dict)) return false;
-  // A list that holds itself is equal where the comparison comes back round.
-  if (seen.get(a) === b) return true;
-  seen.set(a, b as object);
-  if (isList(a)) {
-    const other = b as Value[];
-    return a.length === other.length && a.every((item, i) => equal(item, other[i]!, seen));
-  }
-  const other = (b as Dict).attributes;
-  if (a.attributes.size !== other.size) return false;
-  return [...a.attributes].every(([key, { value }]) => other.has(key) && equal(value, other.get(key)!.value, seen));
-}
-
-/** What a function's values must be, said as the checker says it: `a num`, `a list or a str`, `nums`. */
-function describeTakes(overloads: readonly Signature[], takes: Takes): string {
-  const text = (t: Takes): string => (t === "any" ? "any value" : t.map(article).join(" or "));
-  const params = overloads.flatMap((s) => [...s.params, ...(s.variadic ? [s.variadic] : [])]);
-  const many = overloads.some((s) => s.params.length > 1 || s.variadic !== null);
-  const same = params.every((p) => text(p.takes) === text(takes));
-  return many && same && takes !== "any" && takes.length === 1 && takes[0] !== "none" ? `${takes[0]}s` : text(takes);
-}
-
-/**
- * A builtin or a method: checks its values against core's table, as the
- * checker does for the values whose types it knows, then runs it.
- */
-function checked(name: string, overloads: readonly Signature[], impl: (...args: Value[]) => Value): SnapFunction {
-  return new SnapFunction(name, overloads.map(countOf), (...args) => {
-    const signature = overloads.find((s) => s.params.length === args.length || (s.variadic !== null && args.length >= s.params.length))!;
-    args.forEach((arg, i) => {
-      const takes = (signature.params[i] ?? signature.variadic)!.takes;
-      if (takes !== "any" && !takes.includes(typeName(arg))) {
-        throw new SnapscriptError("TypeError", `${name} takes ${describeTakes(overloads, takes)}, not ${article(typeName(arg))}`);
-      }
-    });
-    return impl(...args);
-  });
-}
-
-/** A list position (§3.3): a whole number, a negative one counting from the end. */
-function position(list: Value[], name: string, i: Value): number {
-  const at = i as number;
-  if (!Number.isInteger(at)) throw new SnapscriptError("ValueError", `${name} takes a whole number, not ${show(at)}`);
-  const index = at < 0 ? list.length + at : at;
-  if (index < 0 || index >= list.length) {
-    throw new SnapscriptError("IndexError", `${name} position ${show(at)} is outside a list of ${list.length} item${list.length === 1 ? "" : "s"}`);
-  }
-  return index;
-}
-
-const listImpls: Readonly<Record<string, (list: Value[], ...args: Value[]) => Value>> = {
-  getAt: (list, i) => list[position(list, "getAt", i!)]!,
-  setAt: (list, i, item) => {
-    list[position(list, "setAt", i!)] = item!;
-    return null;
-  },
-  append: (list, item) => {
-    list.push(item!);
-    return null;
-  },
-  pop: (list) => {
-    if (list.length === 0) throw new SnapscriptError("IndexError", "pop from an empty list");
-    return list.pop()!;
-  },
-};
-
-/** A list's methods (§3.3), by name key: each makes the method of one list. */
-const listMethods = new Map(
-  Object.entries(methods.list!).map(([name, overloads]) => [
-    name.toLowerCase(),
-    (list: Value[]) => checked(name, overloads, (...args) => listImpls[name]!(list, ...args)),
-  ]),
-);
-
-const radians = (degrees: number): number => (degrees * Math.PI) / 180;
-
-/** The sines that are whole or a half, exact, by the angle in degrees from 0 up to 360. */
-const exactSines: ReadonlyMap<number, number> = new Map([
-  [0, 0],
-  [30, 0.5],
-  [90, 1],
-  [150, 0.5],
-  [180, 0],
-  [210, -0.5],
-  [270, -1],
-  [330, -0.5],
-]);
-
-/** The sine of an angle in degrees (ADR 0007): `[call(sin)][num{30}]` is 0.5, not 0.49999999999999994. */
-function sine(degrees: number): number {
-  const angle = ((degrees % 360) + 360) % 360;
-  return exactSines.get(angle) ?? Math.sin(radians(angle));
-}
-
-/** The smallest or the largest of a builtin's values, or of one list's items. */
-function extreme(name: string, values: Value[], larger: boolean): Value {
-  const all = values.length === 1 && isList(values[0]) ? values[0] : values;
-  if (all.length === 0) {
-    throw new SnapscriptError("ValueError", values.length === 0 ? `${name} takes at least one value` : `${name} of an empty list`);
-  }
-  const first = typeName(all[0]!);
-  for (const v of all) {
-    const type = typeName(v);
-    if (type !== first || (type !== "num" && type !== "str")) {
-      throw new SnapscriptError("TypeError", `${name} can't compare ${article(first)} and ${article(type)}`);
-    }
-  }
-  let best = all[0] as number | string;
-  for (const v of all as (number | string)[]) if (larger ? v > best : v < best) best = v;
-  return best;
-}
-
-const whole = (name: string, values: Value[]): void => {
-  for (const v of values) if (!Number.isInteger(v)) throw new SnapscriptError("ValueError", `${name} takes whole numbers, not ${show(v)}`);
-};
-
-/** The builtins' values (REFERENCE.md §9), by name key. Each takes what core's table says. */
-function builtinValues(print: (line: string) => void): Map<string, Value> {
-  const impls: Record<string, (...args: Value[]) => Value> = {
-    print: (...values) => {
-      print(values.map((v) => show(v)).join(" "));
-      return null;
-    },
-    range: (...a) => {
-      whole("range", a);
-      const [start, stop, step] = (a.length === 1 ? [0, a[0], 1] : [a[0], a[1], a[2] ?? 1]) as number[];
-      if (step === 0) throw new SnapscriptError("ValueError", "range's step can't be 0");
-      const out: number[] = [];
-      for (let i = start!; step! > 0 ? i < stop! : i > stop!; i += step!) out.push(i);
-      return out;
-    },
-    len: (v) => (v as string | Value[]).length,
-    list: (...items) => items,
-    dict: () => new Dict(),
-    abs: (x) => Math.abs(x as number),
-    min: (...a) => extreme("min", a, false),
-    max: (...a) => extreme("max", a, true),
-    // A half rounds away from zero (ADR 0007), where Python rounds it to even.
-    round: (x) => Math.sign(x as number) * Math.round(Math.abs(x as number)) || 0,
-    sqrt: (x) => {
-      if ((x as number) < 0) throw new SnapscriptError("ValueError", `sqrt takes a num not below 0, not ${show(x)}`);
-      return Math.sqrt(x as number);
-    },
-    sin: (x) => sine(x as number),
-    cos: (x) => sine((x as number) + 90),
-    // No values is 0 to 1, one is 0 to it: the first end can come out, the second never does.
-    random: (...a) => {
-      const [start, end] = (a.length === 0 ? [0, 1] : a.length === 1 ? [0, a[0]] : a) as number[];
-      return start! + Math.random() * (end! - start!);
-    },
-  };
-  const values = new Map<string, Value>();
-  for (const b of builtins) {
-    if (b.type !== "function") {
-      if (b.name === "pi") values.set("pi", Math.PI);
-      continue;
-    }
-    values.set(b.name.toLowerCase(), checked(b.name, b.overloads, impls[b.name]!));
-  }
-  return values;
-}
 
 /** A run the host started. */
 export interface Run {
