@@ -97,21 +97,22 @@ function drawMain() {
 
 // ======================= #132: settings menu, calibration, check view =======================
 const DRIFT_WARN = 3;  // mm the corner tags may move before the status bar says so
+const rulerSeen = {};
 let mode = 'run', frame = {}, res = {}, prep = null, calErr = null, menuAt = 0;
-const set = { check: false, corners: true, drift: 'warn', planes: 'two', scale: 'typed' };
+const set = { check: true, corners: true, drift: 'warn', planes: 'two', scale: 'typed' };
 const PH = ([x, y]) => [x * geo.H, y * geo.H];  // projector heights -> px
 const CAL_CARDS = new Set(RIG.cal_cards);
 
-function tagAt(id, cx, cy, s, ang = 0, border = 1.4) {  // a projected marker, centre (cx, cy) px, side s px
+function tagAt(id, cx, cy, s, ang = 0, border = 1.4, white = '#fff') {  // a projected marker, centre (cx, cy) px, side s px
   g.save(); g.translate(cx, cy); g.rotate(ang * Math.PI / 180);
-  g.fillStyle = '#fff'; g.fillRect(-s * border / 2, -s * border / 2, s * border, s * border);
+  g.fillStyle = white; g.fillRect(-s * border / 2, -s * border / 2, s * border, s * border);
   g.fillStyle = '#000'; const c = s / 9;
   TAGS[id].forEach((r, y) => [...r].forEach((b, x) => { if (b === '1') g.fillRect(-s / 2 + x * c, -s / 2 + y * c, c + 0.5, c + 0.5); }));
   g.restore();
 }
 function cornerTags() {
   const d = RIG.drift, a = RIG.aspect, e = d.inset;
-  [[e, e], [a - e, e], [e, 1 - e], [a - e, 1 - e]].forEach((p, i) => { const [x, y] = PH(p); tagAt(d.ids[i], x, y, d.size * geo.H); });
+  [[e, e], [a - e, e], [e, 1 - e], [a - e, 1 - e]].forEach((p, i) => { const [x, y] = PH(p); tagAt(d.ids[i], x, y, d.size * geo.H, 0, 1.4, `rgb(${Array(3).fill(Math.round(255 * (d.level ?? 1))).join(',')})`); });
 }
 function text(lines, x, y, size = 9, col = '#e5e7eb') {  // mm
   g.font = `${size * k}px sans-serif`; g.textAlign = 'left'; g.textBaseline = 'top';
@@ -130,12 +131,19 @@ function checkView() {
   for (const c of (light && light.cards) || []) poly(box(c.tl, c.u, c.v, 17, c.L), '#22d3ee');
   // calibration cards (4U) and the ruler page, from frame.cal
   const cal = frame.cal || {};
-  for (const [id, [x, y, a]] of Object.entries(cal)) {
+  // calibration cards: cyan from one edge of the marker, this frame (as the tracker does); green from all 4 corners,
+  // averaged over the last 8 frames (about a second)
+  for (const [id, [x, y, a, xs, ys, af]] of Object.entries(cal)) {
     if (!CAL_CARDS.has(+id)) continue;
-    const [u, v] = uvOf(a), tl = at([x, y], u, v, -8.5, -15);
+    let [u, v] = uvOf(a), tl = at([x, y], u, v, -8.5, -15);
     poly(box(tl, u, v, 17, 120), '#22d3ee');
+    [u, v] = uvOf(af); tl = at([xs, ys], u, v, -8.5, -15);
+    poly(box(tl, u, v, 17, 120), '#4ade80', 0.8, [2, 2]);
   }
-  const r = RIG.ruler, m0 = cal[r.ids[0]], m1 = cal[r.ids[1]];
+  // the ruler page holds its last place for a second when a marker is missed
+  for (const id of RIG.ruler.ids) if (cal[id]) rulerSeen[id] = { at: Date.now(), v: cal[id] };
+  const r = RIG.ruler, fresh = id => rulerSeen[id] && Date.now() - rulerSeen[id].at < 1000;
+  const m0 = fresh(r.ids[0]) && rulerSeen[r.ids[0]].v.slice(3), m1 = fresh(r.ids[1]) && rulerSeen[r.ids[1]].v.slice(3);
   if (m0 && m1) {  // the page's corners from its two markers: angle from the line between them, its length from the line-up
     const d = [m1[0] - m0[0], m1[1] - m0[1]], len = Math.hypot(...d), u = [d[0] / len, d[1] / len], v = [-u[1], u[0]];
     const [W, Hh] = r.page_mm, [cx, cy] = r.centres_mm[0], tl = at([m0[0], m0[1]], u, v, -cx, -cy);

@@ -175,6 +175,7 @@ def main():
     ap.add_argument("--card-fit", choices=["homography", "plane+height"], default="homography",
                     help="#132: the card-height line-up's own homography (8+ face tags), or the table's with a 4-number fix")
     ap.add_argument("--drift", choices=["off", "warn", "fix"], default="warn")
+    ap.add_argument("--drift-fit", choices=["homography", "similarity"], default="homography")
     ap.add_argument("--planes", choices=["two", "table"], default="two")
     # track.py's rules, as decided
     ap.add_argument("--gate", type=float, default=40)
@@ -209,7 +210,7 @@ def main():
     a = ap.parse_args()
 
     lu = Lineup(a.calib, a.calib_fallback)
-    lu.drift_mode, lu.planes, lineup.lu_fit = a.drift, a.planes, a.card_fit
+    lu.drift_mode, lu.planes, lineup.lu_fit, lineup.drift_fit = a.drift, a.planes, a.card_fit, a.drift_fit
     hub = Hub(a.port)
     runs = HERE / "runs"
     runs.mkdir(exist_ok=True)
@@ -261,6 +262,7 @@ def main():
             Image.fromarray(gray).resize((SIZE[0] // 4, SIZE[1] // 4)).save(runs / f"calib-{c['cmd']}-{time.strftime('%H%M%S')}.jpg")
 
     tracks, next_id, last_sent, seq, prev_t = [], 0, None, 0, None
+    cal_hist = {}  # #132: calibration card / ruler marker -> its last 8 readings
     while True:
         while not hub.cmds.empty():
             calib_cmd(hub.cmds.get())
@@ -277,13 +279,16 @@ def main():
         search = time.perf_counter() - t0
 
         lu.see_drift(dets)
-        seen, margins, cal = {}, {}, {}
+        seen, margins, raw_cal = {}, {}, {}
         for d in dets:
             if d.tag_id in CAL_CARDS or d.tag_id in RULER["ids"]:  # #132: for the app's boxes and check view
                 q = lu.mm(d.corners, "card" if d.tag_id in CAL_CARDS else "table")
                 if q is not None:
-                    cal[int(d.tag_id)] = [round(float(q.mean(0)[0]), 1), round(float(q.mean(0)[1]), 1),
-                                          round(float(np.degrees(np.arctan2(q[1][1] - q[0][1], q[1][0] - q[0][0]))), 2)]
+                    # two angles: one edge of the marker (what the tracker uses), and all 4 corners fitted at once
+                    edge = float(np.degrees(np.arctan2(q[1][1] - q[0][1], q[1][0] - q[0][0])))
+                    m = fit_similarity(track.MK_MM, q)
+                    fit = float(np.degrees(np.arctan2(m[1, 0], m[0, 0])))
+                    raw_cal[int(d.tag_id)] = [float(q.mean(0)[0]), float(q.mean(0)[1]), edge, fit]
             if d.tag_id not in CARDS:
                 continue
             q = lu.mm(d.corners, "card")  # #132: table mm, at the cards' height
@@ -292,6 +297,16 @@ def main():
             seen[d.tag_id] = (q.mean(0), float(np.degrees(np.arctan2(q[1][1] - q[0][1], q[1][0] - q[0][0]))), d.corners)
             margins[d.tag_id] = round(float(d.decision_margin), 1)
 
+        cal = {}
+        for tid, r in raw_cal.items():  # #132: [x, y, edge angle this frame, x, y, fitted angle averaged over 8 frames]
+            h = cal_hist.setdefault(tid, [])
+            h.append(r); del h[:-8]
+            hh = np.array(h)
+            fit = float(np.degrees(np.angle(np.exp(1j * np.radians(hh[:, 3])).mean())))
+            cal[tid] = [round(r[0], 1), round(r[1], 1), round(r[2], 2), round(float(hh[:, 0].mean()), 1), round(float(hh[:, 1].mean()), 1), round(fit, 2)]
+        for tid in list(cal_hist):
+            if tid not in raw_cal:
+                cal_hist.pop(tid)
         # match to tracks of the same marker, nearest first, within the gate
         pairs = sorted((float(np.linalg.norm(c - tr["c"])), mid, i) for mid, (c, _, _) in seen.items()
                        for i, tr in enumerate(tracks) if tr["mid"] == mid and np.linalg.norm(c - tr["c"]) <= a.gate)
@@ -439,7 +454,7 @@ def main():
         rec = {"t_cap": round(t_cap, 3), "exp_ms": round(meta.get("ExposureTime", 0) / 1000, 2), "gain": round(meta.get("AnalogueGain", 0), 2), "age_s": round(age, 3), "search_s": round(search, 3), "hw_s": round(hw_s, 3),
                "loop_s": round(time.time() - now + age, 3), "markers": len(dets), "cards": len(cards),
                "sent": seq if changed else None, **({"state": cards} if changed else {}),
-               "seen": sorted(int(m) for m in seen),
+               "seen": sorted(int(m) for m in seen), "cal": cal,
                "raw": {int(m): [round(float(c[0]), 2), round(float(c[1]), 2), round(ang, 2)] for m, (c, ang, _) in seen.items()},
                "dm": margins, "faced": faced, "missed_look": empties,
                "paper": {int(tr["mid"]): round(tr["paper"], 3) for tr in tracks if tr.get("paper") is not None}}

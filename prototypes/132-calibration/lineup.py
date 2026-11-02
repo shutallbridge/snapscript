@@ -139,7 +139,9 @@ class Lineup:
         self.drift_hist = (self.drift_hist + [(src, dst)])[-10:]
         S = np.concatenate([a for a, _ in self.drift_hist]); D = np.concatenate([b for _, b in self.drift_hist])
         self.drift_mm = round(float(np.linalg.norm(S - D, axis=1).mean() * self.scale), 2)
-        if len(ids) >= 2:
+        if len(ids) >= 4 and drift_fit == "homography":  # a tilted camera: perspective changes too
+            m = fit_homography(S, D)
+        elif len(ids) >= 2:
             m = fit_similarity(S, D)
         else:
             m = np.eye(3); m[:2, 2] = (D - S).mean(0)
@@ -363,3 +365,4 @@ def step_card(lu, cam, drawn):
 
 
 lu_fit = "homography"  # vision.py --card-fit
+drift_fit = "homography"  # vision.py --drift-fit: homography (4 corner tags) or similarity
