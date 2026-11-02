@@ -469,7 +469,7 @@ function drawMessage(g, e, L, blockers) {
   const fits = q => q.every(([x, y]) => inside(L.code, [x, y])) && !blockers.some(b => overlaps(q, b));
   // below may also shift left along the card (floating-ui's shift), up to the message's own width; the last shift is tried first
   const tries = p => p === 'below' ? [...(last && last.p === p ? [last.dx] : []), ...Array.from({ length: Math.ceil(tw / 5) + 1 }, (_, i) => -5 * i)] : [0];
-  let place = order[0], dx = 0;
+  let place = cfg.msgAt === 'auto' ? PLACES[0] : order[0], dx = 0;  // if nothing fits: right, even if it spills
   found: for (const p of order) for (const d of tries(p)) {
     const [at, x, y] = spot[p];
     if (fits(quad(at, x + d, y, tw, th))) { place = p; dx = d; break found; }
