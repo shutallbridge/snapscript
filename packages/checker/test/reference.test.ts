@@ -2,7 +2,9 @@
 // check(text, skippedLines). Examples are wrapped in a strip where the
 // reference shows a bare line, since only lines below a [define] are checked.
 import { describe, expect, test } from "vitest";
-import { errorsOf, lines, python, valueOf } from "./helpers.ts";
+// Only structure-stage errors are compared: the names some examples use are
+// set nowhere, which the check stage reports (names.test.ts).
+import { structureErrorsOf as errorsOf, lines, python, valueOf } from "./helpers.ts";
 
 const inDefine = (...body: string[]): string => lines("[define{f}]", ...body);
 

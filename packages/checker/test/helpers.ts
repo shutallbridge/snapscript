@@ -8,6 +8,13 @@ export function errorsOf(text: string, skipped: SkippedLine[] = []): Pick<CheckE
   return check(text, skipped).errors.map(({ kind, line, message }) => ({ kind, line, message }));
 }
 
+/** The kind, line and message of each structure-stage error, leaving out what the check stage finds. */
+export function structureErrorsOf(text: string, skipped: SkippedLine[] = []): Pick<CheckError, "kind" | "line" | "message">[] {
+  return check(text, skipped)
+    .errors.filter((e) => e.stage === "structure")
+    .map(({ kind, line, message }) => ({ kind, line, message }));
+}
+
 /** The body of the program's first strip. */
 export function bodyOf(text: string): Statement[] {
   const { program } = check(text, []);
