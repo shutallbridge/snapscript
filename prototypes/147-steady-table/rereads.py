@@ -1,7 +1,7 @@
 """PROTOTYPE (#115): over the last N s of the newest vision log, how many handwritten cards went read -> reading
 (a re-read; with nothing moving, all false), plus marker misses and the image brightness settings."""
 import glob, json, os, sys, time
-f = max(glob.glob(os.path.expanduser("~/snap-115/runs/vision-*.jsonl")), key=os.path.getmtime)
+f = max(glob.glob(os.path.expanduser("~/snap-147/runs/vision-*.jsonl")), key=os.path.getmtime)
 rows = [json.loads(l) for l in open(f)]
 rows = [r for r in rows if r["t_cap"] > time.time() - float(sys.argv[1])]
 prev, rereads, who = {}, 0, {}

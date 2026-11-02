@@ -1,4 +1,14 @@
-"""PROTOTYPE (#115), throwaway: the walking skeleton's vision service. Runs on the Pi, pinned to 2 cores.
+"""PROTOTYPE (#147, from #115), throwaway: the walking skeleton's vision service, with the steady table's rules.
+
+#147 flags (defaults keep #105/#115's rules):
+- lifted: --near outline finds neighbours by card outline (--near-gap-mm apart) instead of marker centre (--near-mm);
+  --miss-ok N lets a neighbour miss N frames in a row and still count as seen all along; --alone-s: how long a card
+  with no neighbour waits (default --hold)
+- re-read: --change-hold N: a crop must differ from the read one for N calm cycles in a row before it is read again;
+  --light-tol: skip judging a rewrite while the paper's brightness is this far (share) off what it was at the read
+  (the table app lighting the card); --keep-text: a card read again keeps its last text while the read runs
+- every frame's raw poses go into the log ("raw"), for gaps.py
+ Runs on the Pi, pinned to 2 cores.
 
 Loops: grab a 16 MP frame, find markers (2 threads, quad_decimate 2, as the card tracking prototype decided), follow
 each card as a track (track.py's rules, live), and send a **table state** over TCP (one JSON line) only when a card
@@ -29,6 +39,33 @@ from pupil_apriltags import Detector
 from geometry import apply
 import track
 from track import CARDS, diff, ink, layout, similarity
+from cardlen import LEN, length_u
+
+def outline(c, ang, mid):
+    """A card's 4 corners in table mm, from its marker centre and angle (marker centre 8.5, 15 mm from top-left)."""
+    a = np.radians(ang)
+    u, v = np.array([np.cos(a), np.sin(a)]), np.array([-np.sin(a), np.cos(a)])
+    L = (LEN.get(mid) or length_u(CARDS[mid])) * 30
+    tl = np.asarray(c) - 8.5 * u - 15 * v
+    return np.array([tl, tl + L * u, tl + L * u + 30 * v, tl + 30 * v])
+
+
+def seg_dist(p, a, b):
+    ab = b - a
+    t = np.clip(np.dot(p - a, ab) / max(np.dot(ab, ab), 1e-9), 0, 1)
+    return float(np.linalg.norm(p - (a + t * ab)))
+
+
+def inside(p, q):
+    s = [np.cross(q[(i + 1) % 4] - q[i], p - q[i]) for i in range(4)]
+    return all(x >= 0 for x in s) or all(x <= 0 for x in s)
+
+
+def outline_gap(q1, q2):
+    """mm between two card outlines (0 if they overlap)."""
+    if any(inside(p, q2) for p in q1) or any(inside(p, q1) for p in q2):
+        return 0.0
+    return min(seg_dist(p, b[i], b[(i + 1) % 4]) for a, b in ((q1, q2), (q2, q1)) for p in a for i in range(4))
 
 HERE = Path(__file__).parent
 SIZE = (4624, 3472)
@@ -113,6 +150,13 @@ def main():
     ap.add_argument("--paper-hi", type=float, default=1.5)
     ap.add_argument("--read-s", type=float, default=1.5, help="mocked cloud read time")
     ap.add_argument("--exposure-ms", type=float, help="fixed exposure (with gain 1); default: auto")
+    ap.add_argument("--near", choices=["centre", "outline"], default="centre")
+    ap.add_argument("--near-gap-mm", type=float, default=15.0, help="--near outline: outlines this close are neighbours")
+    ap.add_argument("--miss-ok", type=int, default=0, help="frames in a row a neighbour may miss and still count as seen")
+    ap.add_argument("--alone-s", type=float, help="s a card with no neighbour waits before it goes (default --hold)")
+    ap.add_argument("--change-hold", type=int, default=1, help="calm cycles in a row a crop must differ from the read one")
+    ap.add_argument("--light-tol", type=float, help="share the paper may differ from its brightness at the read before a rewrite isn't judged")
+    ap.add_argument("--keep-text", action="store_true", help="a card read again keeps its last text while the read runs")
     ap.add_argument("--flush", action="store_true", help="wait for a frame exposed after the loop asks (fresher, waits up to a frame)")
     a = ap.parse_args()
 
@@ -172,7 +216,7 @@ def main():
             if np.linalg.norm(c - tr["c"]) < a.still:  # still: average in
                 c = tr["c"] + a.smooth * (c - tr["c"])
                 ang = tr["a"] + a.smooth * wrap(ang - tr["a"])
-            tr.update(c=c, a=ang, corners=corners, last=now, streak=tr["streak"] + 1)
+            tr.update(c=c, a=ang, corners=corners, last=now, streak=tr["streak"] + 1, missed=0)
         for mid, (c, ang, corners) in seen.items():
             if mid in used_m:
                 continue
@@ -180,18 +224,25 @@ def main():
             if hidden:  # seen elsewhere while its track is covered: moved
                 i = min(hidden, key=lambda i: np.linalg.norm(c - tracks[i]["c"]))
                 used_t.add(i)
-                tracks[i].update(c=c, a=ang, corners=corners, last=now, streak=1)
+                tracks[i].update(c=c, a=ang, corners=corners, last=now, streak=1, missed=0, run=now)
             else:
                 tracks.append({"track": next_id, "mid": mid, "c": c, "a": ang, "corners": corners, "pose": (c, ang),
                                "first": now, "first_cap": t_cap, "last": now, "streak": 1, "live": False, "since": now,
+                               "missed": 0, "run": now, "changed": 0,
                                "hw": None if layout(CARDS[mid]) is None else {"state": "not read yet"},
                                "prev": None, "calm": 0, "read_crop": None, "due": None})
                 next_id += 1
+        for tr in tracks:
+            if tr["last"] == now and tr.get("run") is None:
+                tr["run"] = now
         cycle = (t_cap - prev_t) if prev_t else 0.13
         prev_t = t_cap
         for tr in tracks:
             if tr["last"] != now:
                 tr["streak"], tr["calm"] = 0, 0
+                tr["missed"] = tr.get("missed", 0) + 1
+                if tr["missed"] > a.miss_ok:
+                    tr["run"] = None  # its seen run is broken
             if not tr["live"] and tr["streak"] >= a.confirm:
                 tr["live"], tr["pose"] = True, (tr["c"], tr["a"])
             if tr["live"] and tr["last"] == now:
@@ -211,8 +262,15 @@ def main():
             others = [o for o in tracks if o is not tr]
             if any(o["mid"] != tr["mid"] and o["last"] == now and np.linalg.norm(o["c"] - c) < a.replace_mm for o in others):
                 return True
-            near = [o for o in others if o["live"] and np.linalg.norm(o["pose"][0] - c) < a.near_mm]
-            return out >= a.gone and bool(near) and all(o["last"] == now and o["streak"] * cycle >= a.gone for o in near)
+            if a.near == "outline":
+                q = outline(c, tr["pose"][1], tr["mid"])
+                near = [o for o in others if o["live"] and outline_gap(q, outline(o["pose"][0], o["pose"][1], o["mid"])) < a.near_gap_mm]
+            else:
+                near = [o for o in others if o["live"] and np.linalg.norm(o["pose"][0] - c) < a.near_mm]
+            if not near:
+                return out >= (a.alone_s if a.alone_s is not None else a.hold)
+            # each neighbour seen (allowing --miss-ok missed frames) for --gone, and seen this frame or within the allowance
+            return out >= a.gone and all(o["missed"] <= a.miss_ok and o.get("run") is not None and now - o["run"] >= a.gone for o in near)
 
         tracks = [tr for tr in tracks if not gone(tr)]
 
@@ -227,18 +285,26 @@ def main():
             if tr["last"] != now:
                 continue
             c, paper = crop(gray, tr["corners"], layout(CARDS[tr["mid"]])[1])
+            tr["paper"] = paper
             moved = diff(c, tr["prev"]) if tr["prev"] is not None else 9
             tr["calm"] = tr["calm"] + 1 if moved < a.steady_thr and a.paper_lo <= paper <= a.paper_hi else 0
             tr["prev"] = c
             if tr["calm"] < a.steady:
                 continue
-            if tr["read_crop"] is None or diff(c, tr["read_crop"]) > a.change_thr:
-                tr["read_crop"] = c
+            if tr["read_crop"] is not None:
+                lit = a.light_tol is not None and abs(paper / max(tr["read_paper"], 1e-6) - 1) > a.light_tol
+                tr["changed"] = tr["changed"] + 1 if diff(c, tr["read_crop"]) > a.change_thr and not lit else 0
+            if tr["read_crop"] is None or tr["changed"] >= a.change_hold:
+                tr["read_crop"], tr["read_paper"], tr["changed"] = c, paper, 0
+                text = hw.get("text")
                 if ink(c) < a.ink_thr:
                     hw.clear(), hw.update(state="blank")
                 else:
                     hw.clear(), hw.update(state="reading")
+                    if a.keep_text and text is not None:
+                        hw["text"] = text
                     tr["due"] = now + a.read_s
+                tr["rereads"] = tr.get("rereads", 0) + 1
         hw_s = time.perf_counter() - t1
 
         cards = [{"track": tr["track"], "marker": int(tr["mid"]), "x": round(float(tr["pose"][0][0]), 1),
@@ -254,7 +320,9 @@ def main():
         rec = {"t_cap": round(t_cap, 3), "exp_ms": round(meta.get("ExposureTime", 0) / 1000, 2), "gain": round(meta.get("AnalogueGain", 0), 2), "age_s": round(age, 3), "search_s": round(search, 3), "hw_s": round(hw_s, 3),
                "loop_s": round(time.time() - now + age, 3), "markers": len(dets), "cards": len(cards),
                "sent": seq if changed else None, **({"state": cards} if changed else {}),
-               "seen": sorted(int(m) for m in seen)}
+               "seen": sorted(int(m) for m in seen),
+               "raw": {int(m): [round(float(c[0]), 2), round(float(c[1]), 2), round(ang, 2)] for m, (c, ang, _) in seen.items()},
+               "paper": {int(tr["mid"]): round(tr["paper"], 3) for tr in tracks if tr.get("paper") is not None}}
         log.write(json.dumps(rec) + "\n")
         log.flush()
         hub.send({"type": "frame", **rec})

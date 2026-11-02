@@ -4,7 +4,7 @@ Per table state: frame exposed -> sent (vision), -> checked, -> lighting drawn, 
 Per card that came onto the table: its first sighting -> the state that counted it -> lit/drawn. The wait between
 the card landing and the first frame that saw it (0 to one cycle) is not in the logs; half a cycle is its mean."""
 import glob, json, os, statistics as S
-R = os.path.expanduser("~/snap-115/runs/")
+R = os.path.expanduser("~/snap-147/runs/")
 lat = {}
 for f in glob.glob(R + "latency-*.jsonl"):
     for l in open(f):

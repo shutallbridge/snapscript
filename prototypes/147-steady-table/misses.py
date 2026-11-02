@@ -1,6 +1,6 @@
 """PROTOTYPE (#115): share of frames each marker was missed in, over the last N s of the newest vision log."""
 import glob, json, os, sys, time
-f = max(glob.glob(os.path.expanduser("~/snap-115/runs/vision-*.jsonl")), key=os.path.getmtime)
+f = max(glob.glob(os.path.expanduser("~/snap-147/runs/vision-*.jsonl")), key=os.path.getmtime)
 rows = [json.loads(l) for l in open(f)]
 rows = [r for r in rows if r["t_cap"] > time.time() - float(sys.argv[1])]
 allm = set().union(*[r["seen"] for r in rows])

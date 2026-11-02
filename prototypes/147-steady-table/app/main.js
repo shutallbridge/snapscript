@@ -12,12 +12,17 @@ const { app, BrowserWindow, WebContentsView, ipcMain, screen } = require('electr
 const net = require('net'), fs = require('fs'), path = require('path');
 const snap = require('./snap.js');
 
-const NOTES = JSON.parse(fs.readFileSync(path.join(__dirname, '../cards.json'), 'utf8')).cards;
+const CARDS_JSON = JSON.parse(fs.readFileSync(path.join(__dirname, '../cards.json'), 'utf8')), NOTES = CARDS_JSON.cards;
+snap.setLen(CARDS_JSON.len || {});
 const TABLE_MM = 790, ASPECT = 1.5, SPLIT = 0.5, SKETCH_PX = 500, U_PX = 50;  // app px: 1U = 50 px
 const runs = path.join(__dirname, '../runs');
 fs.mkdirSync(runs, { recursive: true });
 const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
 const latLog = fs.createWriteStream(path.join(runs, `latency-${stamp}.jsonl`), { flags: 'a' });
+// #147: every read's joins (along/across/corner per candidate pair) and what the table view showed
+const gapLog = fs.createWriteStream(path.join(runs, `gaps-${stamp}.jsonl`), { flags: 'a' });
+gapLog.write(JSON.stringify({ join: snap.JOIN, keep_text: !!process.env.KEEP_TEXT }) + '\n');
+let prevJoins = new Set();
 const now = () => Date.now() / 1000;
 
 const WAIT_S = 5;
@@ -38,7 +43,8 @@ process.on('uncaughtException', e => fs.appendFileSync(path.join(runs, 'app-erro
 
 function onState(st) {
   const r = { seq: st.seq, t_cap: st.t_cap, t_sent: st.t_sent, t_recv: now(), cards: st.cards.length };
-  const rd = snap.read(st, NOTES, { split: geo.splitMm });
+  const rd = snap.read(st, NOTES, { split: geo.splitMm, prevJoins });
+  prevJoins = rd.joined;
   r.t_read = now();
   const ck = snap.check(rd.text, rd.unread);
   r.t_check = now();
@@ -76,6 +82,8 @@ function onState(st) {
     global.capture && global.capture(st.seq);
   }
   r.errors = ck.errors.map(e => `${e.kind} line ${e.line}`);
+  gapLog.write(JSON.stringify({ seq: st.seq, t_cap: st.t_cap, gaps: rd.gaps.map(g => ({ ...g, along: +g.along.toFixed(1), across: +g.across.toFixed(1), corner: +g.corner.toFixed(1) })),
+    detached: rd.detached.length, unread: rd.unread, errors: r.errors, light: lightKey }) + '\n');
   pending.set(st.seq, r);
   win.webContents.send('state', light, { frame: lastFrame, fps, text });
 }

@@ -20,7 +20,7 @@ def procs():
             st = open(p + "/stat").read().rsplit(")", 1)[1].split()
         except OSError:
             continue
-        k = "vision" if "vision.py --port" in cmd else "app" if "snap-115" in cmd and "electron" in cmd else None
+        k = "vision" if "vision.py --port" in cmd else "app" if "snap-147" in cmd and "electron" in cmd else None
         if k:
             tot[k] += int(st[11]) + int(st[12])
     return tot
@@ -30,8 +30,8 @@ def gpu():
             _, ts, _, rt = l.split(); return int(ts), int(rt)
 def vc(*a):
     return subprocess.run(["vcgencmd", *a], capture_output=True, text=True).stdout.strip()
-os.makedirs(os.path.expanduser("~/snap-115/runs"), exist_ok=True)
-log = open(os.path.expanduser(f"~/snap-115/runs/sysmon-{label}-{time.strftime('%Y%m%d-%H%M%S')}.jsonl"), "a")
+os.makedirs(os.path.expanduser("~/snap-147/runs"), exist_ok=True)
+log = open(os.path.expanduser(f"~/snap-147/runs/sysmon-{label}-{time.strftime('%Y%m%d-%H%M%S')}.jsonl"), "a")
 c0, p0, g0, t0 = cores(), procs(), gpu(), time.time()
 end, rows = t0 + secs, []
 while time.time() < end:

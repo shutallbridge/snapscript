@@ -18,23 +18,56 @@ function lengthU(note) {
 }
 
 // ---- table reader ----------------------------------------------------------------------------------------------
+let LEN = {};  // marker ID -> length U, where a real card's length is known (cards.json "len")
 function geometry(c, notes) {
   const note = notes[c.marker], a = c.angle * Math.PI / 180, u = [Math.cos(a), Math.sin(a)], v = [-u[1], u[0]];
-  const L = lengthU(note) * U, tl = [c.x - MARK[0] * u[0] - MARK[1] * v[0], c.y - MARK[0] * u[1] - MARK[1] * v[1]];
+  const L = (LEN[c.marker] || lengthU(note)) * U, tl = [c.x - MARK[0] * u[0] - MARK[1] * v[0], c.y - MARK[0] * u[1] - MARK[1] * v[1]];
   return { ...c, note, L, u, v, tl, end: [tl[0] + L * u[0], tl[1] + L * u[1]] };
 }
 const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
 const angDiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
 
-function read(state, notes, { split }) {
+// #147: how far card n lies from sitting flush at card c's end. corner: #111's distance from c's end to n's top-left.
+// along/across: n's marker against where it would be if flush (c's marker + c's length along the line), split along
+// the line and across it. how 'own' takes the line from c's angle alone (one 13 mm marker, whose angle error swings
+// across a long card); 'mean' from the two markers' angles averaged.
+function gap(c, n, how = 'own') {
+  const a = how === 'mean' ? c.angle + ((n.angle - c.angle + 540) % 360 - 180) / 2 : c.angle;
+  const u = [Math.cos(a * Math.PI / 180), Math.sin(a * Math.PI / 180)], v = [-u[1], u[0]];
+  const d = [n.x - c.x, n.y - c.y];
+  return { along: d[0] * u[0] + d[1] * u[1] - c.L, across: d[0] * v[0] + d[1] * v[1], corner: dist(c.end, n.tl) };
+}
+
+// #147 join rules (JOIN env, all mm): mode 'corner' = #111's end-to-corner distance (make = break = 10 mm unless
+// set); mode 'axis' = along and across judged apart: along in [-overlap, make], |across| <= across. A join already
+// made (by track ids, from the last read) is kept until it passes the break limits.
+const JOIN = { mode: 'corner', make: 10, brk: 10, across: 6, acrossBrk: 9, overlap: 8, how: 'own', ang: 15,
+  ...JSON.parse(process.env.JOIN || '{}') };
+
+function joins(c, n, held) {
+  const g = gap(c, n, JOIN.how);
+  if (angDiff(n.angle, c.angle) >= JOIN.ang) return { ...g, ok: false };
+  const lim = held ? JOIN.brk : JOIN.make;
+  if (JOIN.mode === 'corner') return { ...g, ok: g.corner < lim };
+  const across = held ? JOIN.acrossBrk : JOIN.across;
+  return { ...g, ok: g.along >= -JOIN.overlap && g.along <= lim && Math.abs(g.across) <= across };
+}
+
+function read(state, notes, { split, prevJoins = new Set() }) {
   const cards = state.cards.filter(c => notes[c.marker] && c.x < split).map(c => geometry(c, notes));
   const near = (p, cand, tol = 10) => cand.filter(o => dist(p, o.tl) < tol).sort((a, b) => dist(p, a.tl) - dist(p, b.tl))[0];
-  // each card measured against its neighbour: 10 mm, 15°
-  const right = new Map(), hasLeft = new Set();
+  // each card measured against its neighbour (#111: 10 mm, 15°; #147: JOIN), nearest candidate first
+  const right = new Map(), hasLeft = new Set(), gaps = [];
   for (const c of cards) {
-    const n = near(c.end, cards.filter(o => o !== c && angDiff(o.angle, c.angle) < 15));
-    if (n && !hasLeft.has(n)) { right.set(c, n); hasLeft.add(n); }
+    const cand = cards.filter(o => o !== c && dist(c.end, o.tl) < 40)
+      .map(o => ({ o, held: prevJoins.has(`${c.track}>${o.track}`) }))
+      .map(x => ({ ...x, j: joins(c, x.o, x.held) }))
+      .sort((a, b) => a.j.corner - b.j.corner);
+    for (const x of cand) gaps.push({ a: c.track, b: x.o.track, an: c.note, bn: x.o.note, ...x.j, held: x.held });
+    const n = cand.find(x => x.j.ok && !hasLeft.has(x.o));
+    if (n) { right.set(c, n.o); hasLeft.add(n.o); }
   }
+  const joined = new Set([...right].map(([c, n]) => `${c.track}>${n.track}`));
   const lineOf = head => { const l = [head]; let c = head; while (right.has(c)) l.push(c = right.get(c)); return l; };
   const heads = cards.filter(c => !hasLeft.has(c));
   const below = h => {  // the head of the line under this one: one row down, indent 0 or ±1U
@@ -58,13 +91,15 @@ function read(state, notes, { split }) {
   const text = lines.map((l, i) => {
     const t = l.cards.map(c => {
       if (!c.hw) return c.note;
-      if (c.hw.state !== 'read') { unread.push(i + 1); return c.note.replace(/\{[^}]*\}/, '{}'); }
+      // #147 (KEEP_TEXT): a card being read again keeps its last text until the new read returns
+      const keep = process.env.KEEP_TEXT && c.hw.text !== undefined;
+      if (c.hw.state !== 'read' && !keep) { unread.push(i + 1); return c.note.replace(/\{[^}]*\}/, '{}'); }
       return c.note.replace(/\{[^}]*\}/, `{${c.hw.text}}`);
     }).join('');
     return '  '.repeat(l.col) + t;
   }).join('\n');
   const detached = heads.filter(h => !used.has(h)).map(lineOf);
-  return { text, lines, unread: [...new Set(unread)], detached };
+  return { text, lines, unread: [...new Set(unread)], detached, joined, gaps };
 }
 
 // ---- checker ---------------------------------------------------------------------------------------------------
@@ -190,4 +225,4 @@ function compile(program) {
   return (vars.size ? `let ${[...vars].join(', ')};\n` : '') + js.join('\n');
 }
 
-module.exports = { read, check, compile, lengthU };
+module.exports = { read, check, compile, lengthU, JOIN, setLen: l => { LEN = l; } };
