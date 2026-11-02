@@ -1,0 +1,33 @@
+[project]
+name = "snapscript-vision"
+version = "0.1.0"
+description = "Snapscript's vision service: camera frames to steady table states over local TCP"
+readme = "README.md"
+authors = [
+    { name = "Shu Takahashi", email = "7193372+shutallbridge@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "pillow>=11.0",
+    "pupil-apriltags>=1.0.4",
+]
+
+[project.scripts]
+snapscript-vision = "snapscript_vision.service:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "snapscript_vision"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]

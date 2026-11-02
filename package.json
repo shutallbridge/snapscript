@@ -1,0 +1,14 @@
+{
+  "name": "snapscript",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "vitest": "catalog:",
+    "yaml": "catalog:"
+  }
+}

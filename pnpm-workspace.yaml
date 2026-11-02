@@ -1,0 +1,14 @@
+packages:
+  - packages/*
+
+catalog:
+  "@types/node": ^24.19.2
+  tsdown: ^0.23.4
+  typescript: ^7.0.2
+  vitest: ^5.1.0
+  yaml: ^2.9.1
+
+minimumReleaseAgeExclude:
+  - '@vitest/mocker@5.1.0'
+  - '@vitest/spy@5.1.0'
+  - vitest@5.1.0
