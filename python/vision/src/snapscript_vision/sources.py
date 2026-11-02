@@ -9,8 +9,9 @@
 
   Each card is placed by its marker's centre in table mm and its angle in degrees. The drawn camera sees table mm
   (x, y) at pixel ((x, y) - origin_mm) * px_per_mm. A card with `"smudged": true` has a smudge on its marker's
-  corner, so the camera misses the marker while the card looks the same. `{"hand": [x, y]}` in a frame is a hand
-  lying flat, its palm centred at (x, y) table mm. Things are drawn in order, later ones on top.
+  corner, so the camera misses the marker while the card looks the same. A card may have
+  `"ink": [[x0, y0, x1, y1], ...]`, strokes written on its sheet (rectangles in sheet mm). `{"hand": [x, y]}` in a
+  frame is a hand lying flat, its palm centred at (x, y) table mm. Things are drawn in order, later ones on top.
 - **Recording**: frames recorded on the rig, in the card tracking prototype's format (#105): PATH.json holds
   {"w", "h", "t": [one time stamp per frame]} and PATH.y the frames' grey planes back to back.
 
@@ -128,6 +129,8 @@ def _draw_sheet(img, ppm, origin, card, markers):
         bits[2, 2] = True  # a dark smudge on the marker's inner ring, at its corner: no quad there
     black = np.zeros(sx.shape, bool)
     black[in_tag] = bits[cy[in_tag], cx[in_tag]]
+    for rx0, ry0, rx1, ry1 in card.get("ink", []):
+        black |= (sx >= rx0) & (sx < rx1) & (sy >= ry0) & (sy < ry1)
     grey[black] = INK_GREY
     cover = on.mean(axis=(2, 3))
     paper = np.where(on, grey, 0).sum(axis=(2, 3)) / (k * k)

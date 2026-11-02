@@ -57,6 +57,18 @@ class Lineup:
     def to_mm(self, px):
         return apply(self.H, self.undistort(px)) * self.mm_per_ph
 
+    def to_px(self, mm):
+        """Table mm -> camera px: the homography undone, then the lens term put back (a few fixed-point steps)."""
+        q = apply(np.linalg.inv(self.H), np.asarray(mm, float) / self.mm_per_ph)
+        if not self.k1:
+            return q
+        ctr = np.array(self.image_size, float) / 2
+        px = q.copy()
+        for _ in range(8):
+            r = (px - ctr) / np.hypot(*ctr)
+            px = ctr + (q - ctr) / (1 + self.k1 * (r ** 2).sum(-1, keepdims=True))
+        return px
+
 
 def fit_similarity(src, dst):
     """Least-squares rotation, one scale and a shift taking src to dst (Umeyama), as a 3x3 matrix."""

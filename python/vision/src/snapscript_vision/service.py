@@ -1,20 +1,24 @@
 """The vision service: frames -> markers -> tracks -> table states, sent over local TCP as JSON lines.
 
     python -m snapscript_vision --source drawn:SCENE.json|recording:PATH --lineup LINEUP.json \
-        --markers MARKERS.json [--settings SETTINGS.json] [--port 8115]
+        --markers MARKERS.json [--reader openrouter|fake:FAKE.json] [--settings SETTINGS.json] [--port 8115]
 
 It prints `listening on 127.0.0.1:PORT` once the socket is open, starts on its frames when the first client
 connects, and exits when its frames run out.
 
-A table state is sent only when a card counts, goes, or moves past the dead band. It lists every card:
+A table state is sent only when a card counts, goes, moves past the dead band, or changes handwriting state. It
+lists every card:
 
     {"type": "state", "seq": 42, "t": 1793598123.41, "mm_per_projector_height": 781.0,
-     "cards": [{"track": 3, "marker": 1001, "x": 300.0, "y": 210.5, "angle": 0.4},
+     "cards": [{"track": 17, "marker": 1027, "x": 412.3, "y": 288.1, "angle": -1.2,
+                "hw": {"state": "read", "text": "400"}},
+               {"track": 3, "marker": 1001, "x": 300.0, "y": 210.5, "angle": 0.4},
                {"track": 5, "marker": 2000, "x": 120.0, "y": 80.0, "angle": 0.0}],
      "page": 5}
 
 `x` and `y` are the marker's centre in table mm, and `angle` is in degrees (ADR 0007). `t` is the frame's time.
-A page is followed like a card, so it is in `cards` too; `page` is the track of the newest page in view, or null.
+`hw` is only on handwritten cards (see `handwriting.py` for its states; `text` comes with `read`, and with
+`reading` while a card is read again). A page is followed like a card, so it is in `cards` too; `page` is the track of the newest page in view, or null.
 A marker the service doesn't know is sent like a card (the table reader makes it an unknown card). The ruler
 page's markers are for calibration and aren't sent.
 """
@@ -25,8 +29,9 @@ import sys
 from pupil_apriltags import Detector
 
 from . import markers as markers_mod
-from . import sources
+from . import readers, sources
 from .geometry import Lineup, marker_pose
+from .handwriting import Handwriting
 from .hub import Hub
 from .settings import Settings
 from .tracker import Sighting, Tracker
@@ -43,15 +48,18 @@ def sightings(dets, lineup: Lineup, known):
     return out
 
 
-def card_json(tr):
+def card_json(tr, hw):
     c, a = tr.pose
-    return {"track": tr.id, "marker": tr.marker, "x": round(float(c[0]), 1), "y": round(float(c[1]), 1),
-            "angle": round(float(a), 1)}
+    out = {"track": tr.id, "marker": tr.marker, "x": round(float(c[0]), 1), "y": round(float(c[1]), 1),
+           "angle": round(float(a), 1)}
+    if (h := hw.json(tr)) is not None:
+        out["hw"] = h
+    return out
 
 
-def table_state(live, known):
+def table_state(live, known, hw):
     """Every track that counts, pages and markers the service doesn't know included, and the current page."""
-    cards = [card_json(tr) for tr in live]
+    cards = [card_json(tr, hw) for tr in live]
     pages = [tr for tr in live if known.get(tr.marker) is not None and known[tr.marker].kind == "page"]
     page = max(pages, key=lambda tr: (tr.counted_at, tr.id), default=None)
     return cards, (page.id if page else None)
@@ -65,6 +73,7 @@ def run(args):
     det = Detector(families=settings.tag_family, nthreads=settings.threads,
                    quad_decimate=settings.quad_decimate, refine_edges=1)
     tracker = Tracker(settings, lambda marker: sources.sheet(marker, known))
+    hw = Handwriting(settings, readers.make(args.reader, settings), lineup, known)
     hub = Hub(args.port)
     print(f"snapscript-vision: listening on {hub.host}:{hub.port}", flush=True)
     hub.first.wait()
@@ -72,7 +81,8 @@ def run(args):
     seq, last = 0, ([], None)  # an empty table: nothing to send until something counts
     for t, grey in frames:
         live = tracker.step(t, sightings(det.detect(grey), lineup, known), grey)
-        cards, page = table_state(live, known)
+        hw.step(t, grey, live)
+        cards, page = table_state(live, known, hw)
         if (cards, page) != last:
             last = (cards, page)
             seq += 1
@@ -86,6 +96,8 @@ def main(argv=None):
     ap.add_argument("--source", required=True, help="drawn:SCENE.json or recording:PATH")
     ap.add_argument("--lineup", required=True, help="the line-up file")
     ap.add_argument("--markers", required=True, help="the marker data file")
+    ap.add_argument("--reader", default="openrouter",
+                    help="the handwriting reader: openrouter (key in OPENROUTER_API_KEY) or fake:FAKE.json")
     ap.add_argument("--settings", help="a JSON file of named settings to change")
     ap.add_argument("--port", type=int, default=8115, help="TCP port on 127.0.0.1 (0: any free one)")
     run(ap.parse_args(argv))
