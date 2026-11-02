@@ -8,16 +8,16 @@ from vision_harness import Card, run_drawn, run_service, states, write_lineup, w
 def test_with_no_markers_file_the_service_waits_for_the_markers_message(tmp_path):
     # the drawn frames run out in well under a second: had the service started on them, they'd have come early
     early = []
-    sent = run_drawn(tmp_path, [[Card(1001, 150, 120)]] * 3, markers="socket", send_markers_after_s=1.5, early=early)
+    sent = run_drawn(tmp_path, [[Card(400, 150, 120)]] * 3, markers="socket", send_markers_after_s=1.5, early=early)
 
     assert early == []
     assert [m["seq"] for m in states(sent)] == [1]
-    assert [c["marker"] for c in states(sent)[0]["cards"]] == [1001]
+    assert [c["marker"] for c in states(sent)[0]["cards"]] == [400]
 
 
 def test_the_markers_message_and_the_file_give_the_same_table_states(tmp_path):
     # a page, a ruler marker and a handwritten card: each kind of marker in the data acts the same either way
-    frames = [[Card(2000, 120, 160), Card(2080, 330, 60), Card(1027, 250, 230, ink=written("4"))]] * 30
+    frames = [[Card(403, 120, 160), Card(312, 330, 60), Card(65, 250, 230, ink=written("4"))]] * 30
     (tmp_path / "file").mkdir()
     (tmp_path / "socket").mkdir()
     by_file = run_drawn(tmp_path / "file", frames, markers="file")
@@ -34,7 +34,7 @@ def test_a_recording_waits_for_the_markers_message_too(tmp_path):
     sent = states(run_service(tmp_path, f"recording:{base}", markers="socket", send_markers_after_s=1.0, early=early))
 
     assert early == []
-    assert [[c["marker"] for c in m["cards"]] for m in sent] == [[1001]]
+    assert [[c["marker"] for c in m["cards"]] for m in sent] == [[400]]
 
 
 def test_calibration_takes_the_tables_own_markers_from_the_message(tmp_path):
