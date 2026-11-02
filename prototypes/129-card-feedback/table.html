@@ -401,12 +401,12 @@ function virtualArgs(cards) {
   for (const c of cards) {
     const m = /^\[call\((?:p5\.)?(\w+)\)\]$/.exec(c.text), sig = m && SIG[m[1]];
     if (!sig) continue;
-    let end = c, endLen = lenOf(sideOf(c.text));
+    let end = c, endLen = CARD_LEN[c.id] || lenOf(sideOf(c.text));
     for (const [hint, text] of sig) {
       const d = [Math.cos(end.a), Math.sin(end.a)], reach = endLen * U * k;  // marker to marker: the end card's length
       const slot = { text, side: sideOf(text), hint, a: end.a, m: [end.m[0] + d[0] * reach, end.m[1] + d[1] * reach] };
       const filled = occupant(slot, cards);
-      if (filled) { end = filled; endLen = lenOf(sideOf(filled.text)); continue; }
+      if (filled) { end = filled; endLen = CARD_LEN[filled.id] || lenOf(sideOf(filled.text)); continue; }
       out.push(slot);
       end = slot; endLen = lenOf(slot.side);
     }
@@ -415,7 +415,7 @@ function virtualArgs(cards) {
 }
 // A wrong card in a guide's place: its face lit red (cfg.vwrong %) with a red edge (cfg.vwrongEdge mm at cfg.vwrongEdgeA %), not its marker zone, so the camera still reads it.
 function drawWrong(g, c) {
-  const k = mm(), w = lenOf(sideOf(c.text)) * U;
+  const k = mm(), w = (CARD_LEN[c.id] || lenOf(sideOf(c.text))) * U;
   g.save(); g.translate(c.m[0], c.m[1]); g.rotate(c.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);
   g.globalAlpha = cfg.vwrong / 100; g.fillStyle = '#ff0000'; g.fillRect(MZ, 0, w - MZ, H);
   const e = cfg.vwrongEdge;  // the red edge, inside the face's outline
@@ -578,8 +578,8 @@ async function poll(file, apply, ms) {
 (async () => {
   try { book = await (await fetch('pages.json', { cache: 'no-store' })).json(); } catch (e) { book = null; }
   try {  // #129: the paper test cards' lengths, from their card notation
-    const { cards } = await (await fetch('cards.json', { cache: 'no-store' })).json();
-    for (const [id, text] of Object.entries(cards)) { const s = parseCard(text); if (s.sample === '…') s.sample = ''; CARD_LEN[id] = minLength(s, CARD_S); CARD_TEXT[id] = text; }
+    const { cards, len = {} } = await (await fetch('cards.json', { cache: 'no-store' })).json();  // len: a real card longer than its label needs
+    for (const [id, text] of Object.entries(cards)) { const s = parseCard(text); if (s.sample === '…') s.sample = ''; CARD_LEN[id] = len[id] || minLength(s, CARD_S); CARD_TEXT[id] = text; }
   } catch (e) { /* no cards.json */ }
   let rev = null, applied = null;
   poll('state.json', s => { state = s; }, 150);

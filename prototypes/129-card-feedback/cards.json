@@ -1,5 +1,5 @@
 {
- "_": "PROTOTYPE (#129), throwaway. Paper test cards: marker ID -> card notation. The first 23 are demo program 1's first block, then [call(p5.circle)] and its values, then blanks. {…} = blank whiteboard.",
+ "_": "PROTOTYPE (#129), throwaway. Paper test cards: marker ID -> card notation. The first 23 are demo program 1's first block, then [call(p5.circle)] and its values, then blanks. {…} = blank whiteboard. ID 0 is the 3D-printed 3U [call(p5.circle)] on its base; len gives its length.",
  "cards": {
   "1000": "[define{setup}]",
   "1001": "[call(p5.createCanvas)]",
@@ -30,6 +30,10 @@
   "1026": "[num{100}]",
   "1027": "[num{…}]",
   "1028": "[num{…}]",
-  "1029": "[str{…}]"
+  "1029": "[str{…}]",
+  "0": "[call(p5.circle)]"
+ },
+ "len": {
+  "0": 3
  }
 }
