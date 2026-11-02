@@ -1,0 +1,5 @@
+{
+  "name": "fixture-two-programs",
+  "private": true,
+  "volumes": ["broken.md"]
+}

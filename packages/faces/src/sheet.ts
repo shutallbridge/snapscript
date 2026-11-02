@@ -44,6 +44,7 @@ export type Side =
 
 const OPERATORS = new Set(["+", "-", "*", "/", "%", "<", ">", "<=", ">=", "==", "!=", "and", "or", "not", "(", ")"]);
 
+/** What a card's sheet says: its kind and printed label, from its card notation. */
 export function sideOf(card: string): Side {
   const inner = card.slice(1, -1);
   const handwritten = inner.match(/^([^{}()]*)\{([^{}]*)\}(.*)$/);

@@ -1,0 +1,24 @@
+{
+  "name": "@snapscript/table",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lock": "pnpm --filter \"@snapscript/table^...\" build && node src/lock.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@snapscript/checker": "workspace:*",
+    "@snapscript/core": "workspace:*",
+    "@snapscript/faces": "workspace:*",
+    "@snapscript/parser": "workspace:*",
+    "@snapscript/table-reader": "workspace:*",
+    "@types/mdast": "^4.0.4",
+    "mdast-util-from-markdown": "^2.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
