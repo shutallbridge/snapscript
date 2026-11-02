@@ -144,10 +144,20 @@ export interface CardMap {
   lines: LineCards[];
 }
 
+/** A line of cards that isn't part of the program: its tracks left to right, and what it would read. */
+export interface DetachedLine {
+  tracks: number[];
+  text: string;
+}
+
 export interface StepOutput {
   version: number;
   text: string;
   map: CardMap;
+  /** The strip heads recognised on the table, by track, in buffer order. */
+  stripHeads: number[];
+  /** Lines of cards that join no strip, such as the loser of two cards that could fill one place. */
+  detached: DetachedLine[];
   /** The buffer changed, but only in `@table` tags: a strip moved, and the sketch needn't restart. */
   placementOnly: boolean;
 }

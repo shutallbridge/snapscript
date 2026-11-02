@@ -1,5 +1,6 @@
 import type {
   CardSpan,
+  DetachedLine,
   Layout,
   LineCards,
   ReaderSettings,
@@ -224,6 +225,16 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
     }
   }
   const text = textLines.join("\n");
+
+  // Detached lines: every line whose head no strip reached, top to bottom, then left to right. They
+  // stay out of the buffer.
+  const detached: DetachedLine[] = heads
+    .filter((h) => !used.has(h))
+    .sort((a, b) => a.tl[1] - b.tl[1] || a.tl[0] - b.tl[0])
+    .map((h) => {
+      const line = lineFrom(h);
+      return { tracks: line.map((c) => c.track), text: line.map((c) => c.notation).join("") };
+    });
   const version = text === prev.text ? prev.version : prev.version + 1;
   const placementOnly = text !== prev.text && withoutTableTags(text) === withoutTableTags(prev.text);
 
@@ -232,6 +243,10 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
 
   return {
     state: { entryText: prev.entryText, joins, links, strips: stripHeads.map((h) => h.track), version, text },
-    output: { version, text, map: { version, cards: spans, lines: lineCards }, placementOnly },
+    output: { version, text, map: { version, cards: spans, lines: lineCards },
+      stripHeads: stripHeads.map((h) => h.track),
+      detached,
+      placementOnly,
+    },
   };
 }

@@ -58,6 +58,73 @@ describe("moving a whole strip", () => {
   });
 });
 
+describe("strip heads", () => {
+  test("the output lists the recognised strip heads, in buffer order", () => {
+    const r = run(
+      table(card(1, 1000, 50, 300, { text: "draw" }), card(2, 1011, 50, 300 + U, { text: "x" })),
+      table(
+        card(1, 1000, 50, 300, { text: "draw" }),
+        card(2, 1011, 50, 300 + U, { text: "x" }),
+        card(3, 1030, 50, 50),
+      ),
+    );
+    expect(r.last.stripHeads).toEqual([1, 3]);
+  });
+});
+
+describe("detached lines", () => {
+  const setup = card(1, 1000, 50, 50, { text: "setup" });
+
+  test("cards that join no strip come back as detached lines, grouped into lines, and stay out of the buffer", () => {
+    const out = run(
+      table(
+        setup,
+        card(2, 1011, 200, 300, { text: "x" }),
+        card(3, 1024, 200 + 4 * U, 300, { text: "1" }),
+        card(4, 1018, 200, 400, { text: "y" }),
+      ),
+    ).last;
+    expect(code(out.text)).toBe("[define{setup}]");
+    expect(out.detached).toEqual([
+      { tracks: [2, 3], text: "[set{x}to][num{1}]" },
+      { tracks: [4], text: "[get{y}]" },
+    ]);
+  });
+
+  test("of two cards that could fill one place in a line, the nearer wins and the other is detached", () => {
+    const out = run(
+      table(
+        setup,
+        card(2, 1011, 50, 50 + U, { text: "x" }),
+        card(3, 1024, 50 + 4 * U + 6, 50 + U, { text: "1" }),
+        card(4, 1025, 50 + 4 * U + 2, 50 + U + 3, { text: "2" }),
+      ),
+    ).last;
+    expect(code(out.text)).toBe("[define{setup}]\n[set{x}to][num{2}]");
+    expect(out.detached).toEqual([{ tracks: [3], text: "[num{1}]" }]);
+  });
+
+  test("of two lines that could sit below one line head, the nearer wins and the other is detached", () => {
+    const out = run(
+      table(
+        setup,
+        card(2, 1011, 50 + 7, 50 + U, { text: "x" }),
+        card(3, 1018, 50 + 1, 50 + U + 2, { text: "y" }),
+      ),
+    ).last;
+    expect(code(out.text)).toBe("[define{setup}]\n[get{y}]");
+    expect(out.detached).toEqual([{ tracks: [2], text: "[set{x}to]" }]);
+  });
+
+  test("a whole line under a detached line head is detached with it", () => {
+    const out = run(
+      table(card(2, 1009, 200, 300), card(3, 1011, 200 + U, 300 + U, { text: "x" }), card(4, 1022, 200, 300 + 2 * U)),
+    ).last;
+    expect(out.text).toBe("");
+    expect(out.detached.map((l) => l.tracks)).toEqual([[2], [3], [4]]);
+  });
+});
+
 describe("strip order", () => {
   const setup = (y: number, track = 1) => card(track, 1000, 50, y, { text: "setup" });
   const draw = (y: number) => card(2, 1000, 200, y, { text: "draw" });
