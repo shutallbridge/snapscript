@@ -49,7 +49,9 @@ export type SessionEvent =
   | { type: "table"; now: number; state: TableState }
   | { type: "sketch"; now: number; message: SketchMessage }
   /** The clock: the host sends one at `wakeAt`, if not sooner. */
-  | { type: "tick"; now: number };
+  | { type: "tick"; now: number }
+  /** The windows changed (resized, or the table's size in mm came with a state): the last state is read again with them. */
+  | { type: "layout"; now: number; layout: Layout };
 
 /**
  * What the sketch view is told to do. Runs are numbered from 1. A run starts hidden; `show` swaps
@@ -130,7 +132,8 @@ function cardsAt(buffer: Buffer, spans: readonly Span[]): CardRef[] {
 }
 
 export function createSession(options: SessionOptions): Session {
-  const { project, layout } = options;
+  const { project } = options;
+  let layout = options.layout;
   const settings: SessionSettings = { ...defaultSessionSettings, ...options.settings };
   let reader: ReaderState = initialState(project.entry.text);
   let runs = 0;
@@ -216,6 +219,10 @@ export function createSession(options: SessionOptions): Session {
       onClock(event.now, sketch);
       if (event.type === "table") onTable(event.state, event.now, sketch);
       else if (event.type === "sketch") onSketch(event.message, event.now, sketch);
+      else if (event.type === "layout") {
+        layout = event.layout;
+        if (last) onTable(last.state, event.now, sketch);
+      }
       else if (last && readerWake !== null && readerWake <= event.now) onTable(last.state, event.now, sketch);
       return { sketch };
     },

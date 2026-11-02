@@ -50,6 +50,8 @@ interface Seen {
   errors: Omit<RunError, "span">[];
   frames: number;
   p5: RecordingP5 | undefined;
+  /** Stops the run from outside, as the table does before replacing it. */
+  stop: () => void;
 }
 
 /** Checks, compiles and runs program text that imports snapscript-p5, then plays `frames` frames. */
@@ -60,10 +62,10 @@ function runSketch(text: string, frames = 0): Seen {
       source === "snapscript-p5" ? { id: p5Snap, text: readFileSync(p5Snap, "utf8") } : disk.load(source, from),
   };
   const result = check(text, [], { loader, id: `${library}main.snap` });
-  const seen: Seen = { checkErrors: result.errors.map(({ kind, line, message }) => ({ kind, line, message })), errors: [], frames: 0, p5: undefined };
+  const seen: Seen = { checkErrors: result.errors.map(({ kind, line, message }) => ({ kind, line, message })), errors: [], frames: 0, p5: undefined, stop: () => {} };
   RecordingP5.made = [];
   p5Native.mount(RecordingP5 as unknown as P5Constructor, container);
-  run(compile(result.program), {
+  const handle = run(compile(result.program), {
     natives: (id) => (id === p5Snap ? (p5Native as NativeModule) : null),
     output: {
       print: () => {},
@@ -73,6 +75,7 @@ function runSketch(text: string, frames = 0): Seen {
       },
     },
   });
+  seen.stop = () => handle.stop();
   seen.p5 = RecordingP5.made[0];
   seen.p5?.play(frames);
   return seen;
@@ -179,6 +182,28 @@ describe("drawing", () => {
     expect(calls.filter((c) => c[0] === "createCanvas")).toHaveLength(1);
     expect(calls.filter((c) => c[0] === "fill").map((c) => c[1])).toEqual(["gold", "hotpink", "aquamarine"]);
     expect(calls.findIndex((c) => c[0] === "fill" && c[1] === "hotpink")).toBe(3 + 1 + 200);
+  });
+});
+
+describe("stopping", () => {
+  const drawing = lines("[import(snapscript-p5)as(p5)]", "", "[define(draw)]", "[call(p5.circle)][num{1}][num{2}][num{3}]");
+
+  test("a run stopped from outside stops p5's loop, so draw isn't called again", () => {
+    const seen = runSketch(drawing, 1);
+    seen.stop();
+    expect(seen.p5?.calls).toEqual([["circle", 1, 2, 3], ["noLoop"]]);
+  });
+
+  test("a run that stops on an error stops p5's loop", () => {
+    const seen = runSketch(lines("[import(snapscript-p5)as(p5)]", "", "[define(draw)]", "[call(print)][num{1}][/][num{0}]"), 2);
+    expect(seen.errors.map((e) => e.kind)).toEqual(["ZeroDivisionError"]);
+    expect(seen.p5?.calls).toEqual([["noLoop"]]);
+  });
+
+  test("stopping before p5 has made its instance does nothing", () => {
+    const seen = runSketch(lines("[import(snapscript-p5)as(p5)]"));
+    RecordingP5.made = [];
+    expect(() => seen.stop()).not.toThrow();
   });
 });
 

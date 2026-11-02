@@ -6,7 +6,8 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "lock": "pnpm --filter @snapscript/table lock"
+    "lock": "pnpm --filter @snapscript/table lock",
+    "table": "pnpm --filter @snapscript/table table"
   },
   "devDependencies": {
     "vitest": "catalog:",
