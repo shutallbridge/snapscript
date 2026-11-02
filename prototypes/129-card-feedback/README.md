@@ -12,7 +12,7 @@ Throwaway, for [Prototype card feedback: error lighting, skipped lines, read-bac
   - `k` extra look on a skipped or detached line (off by default; the gutter's crossed dot says it): none, wash, hatch, strike, outline
   - `v` overloads, with no value laid yet: take turns every 1 s, 2 s, or first only. Once a value is laid, the guides settle on the overload that fits it. Mocked: `random` (1 or 2 values), `fill` (colour, or r g b), `rect` (4 or 5)
   - `h` read-back (what the reader saw, in cyan, on the whiteboard): over the handwriting, top-right corner, along the bottom. A blank whiteboard is a mocked read error
-  - `i` a missing `[dedent]`: margin (guide left of the line, caret at the gap), bar (a bar where it goes), both
+  - `i` a missing `[dedent]`: none (chosen: just the error), margin (guide left of the line, caret at the gap), bar (a bar where it goes), both
   - `d` detached cards (not under a `[define]` or `[on]`): the skipped look, or no look
 - Error lighting is mocked, not checked: a wrong kind in a `circle`/`createCanvas`/… argument's place is a `TypeError`, a `[set{x}to]` with nothing after it is a `SyntaxError`, and a `[get{x}]` of a skipped `x` is a `NameError` naming the skipped line's badge.
 - Each line has a **gutter** on its left: a status dot (green: a recognised strip head; grey crossed out: skipped or detached), then each error's badge, all one size (12 mm), 6 mm clear of the line. Messages are only in the bottom bar. Nothing goes right of a line.

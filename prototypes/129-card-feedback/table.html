@@ -100,7 +100,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'none', gutter: true, gutGap: 6, readBack: true, rbLook: 'over', dotMm: 12, detLook: 'skipped', ovSec: 1, dedLook: 'bar', barTop: 'status', barBottom: 'errors', vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'none', gutter: true, gutGap: 6, readBack: true, rbLook: 'over', dotMm: 12, detLook: 'skipped', ovSec: 1, dedLook: 'none', barTop: 'status', barBottom: 'errors', vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -637,10 +637,11 @@ function structure(cards) {
 // there; a spec change for the map to pick up). The block closes above it. The [dedent] goes
 // in the head's column on that line's row, which is where the line's first card already is, so its guide can't go there
 // (nothing may cover a card's marker). cfg.dedLook (key i):
+//   none    no guide: the error (gutter badge, bottom bar) is enough. Chosen: with the line skipped, no [dedent] is implied
 //   margin  the guide card in the margin left of the line, with a caret at the gap above the line
 //   bar     only a white bar along the top of the line's row, as long as a [dedent], where it goes
 //   both    the margin guide and the bar
-const DED_LOOKS = ['margin', 'bar', 'both'], BLOCK = /^\[(repeat|if|elif|else|for\{)/;
+const DED_LOOKS = ['none', 'margin', 'bar', 'both'], BLOCK = /^\[(repeat|if|elif|else|for\{)/;
 function missingDedents(st) {
   const k = mm(), out = [];
   for (const root of st.roots) {
@@ -675,7 +676,7 @@ function drawDedentGuide(g, d) {  // d.line's frame: x = 0 is the line's first c
 }
 function dedentQuads(d) {  // what the guide covers, as blockers for messages
   const dl = lenOf(sideOf('[dedent]'));
-  return cfg.dedLook === 'bar' ? [] : [quad(d.line, d.shift * U - (d.i + 1) * (dl * U + 0.5 * U), 0, dl * U, H)];
+  return cfg.dedLook === 'bar' || cfg.dedLook === 'none' ? [] : [quad(d.line, d.shift * U - (d.i + 1) * (dl * U + 0.5 * U), 0, dl * U, H)];
 }
 let structStat = '';
 function drawVirtualCards(g, L) {
@@ -703,7 +704,7 @@ function drawVirtualCards(g, L) {
     if (cfg.readBack) for (const c of cards) drawReadBack(g, c);
     const ded = missingDedents(st);
     for (const d of ded) {
-      drawDedentGuide(g, d);
+      if (cfg.dedLook !== 'none') drawDedentGuide(g, d);
       const name = /^\[(\w+)/.exec(d.head.text)[1], l = st.lines.get(d.line), last = l.at(-1);
       lineEnds.set(d.line, { m: last.m, a: last.a, len: CARD_LEN[last.id] || lenOf(sideOf(last.text)) });
       argErrors.push({ card: d.line, call: d.line, kind: 'IndentationError', msg: `no [dedent] for ${name} above`,
