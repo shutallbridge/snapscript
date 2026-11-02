@@ -77,8 +77,8 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 792 };
-let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg114d || '{}') };
-const save = () => { localStorage.cfg114d = JSON.stringify(cfg); };
+let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
+const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
 // menu: null (closed) | {section: null, row} (the list of sections) | {section: [name, opts], row} (one section's settings)
 let menu = null;
@@ -346,6 +346,8 @@ function drawOver(L) {
     g.strokeStyle = counts ? '#22c55e' : '#71717a'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, r, 0, 2 * Math.PI); g.stroke();
     if (!counts) { g.beginPath(); g.moveTo(x - r * 0.7, y - r * 0.7); g.lineTo(x + r * 0.7, y + r * 0.7); g.stroke(); }
     text(g, String(c.id), x + r + 4, y - r, counts ? '#22c55e' : '#71717a', 12);
+    g.beginPath(); cardOutline(c).forEach(([px, py], i) => i ? g.lineTo(px, py) : g.moveTo(px, py)); g.closePath();  // #129: the card's predicted edge, to check the line-up
+    g.strokeStyle = '#22d3ee'; g.lineWidth = 1; g.stroke();
   }
   const [sw, sh] = sketchSize();
   if (L.sketch.x < L.canvas.x || L.sketch.y < L.canvas.y || L.sketch.x + L.sketch.w > L.canvas.x + L.canvas.w + 1 || L.sketch.y + L.sketch.h > L.canvas.y + L.canvas.h + 1) {

@@ -1,3 +1,12 @@
+# Prototype: card feedback
+
+Throwaway, for [Prototype card feedback: error lighting, skipped lines, read-back, virtual cards](https://github.com/shutallbridge/snapscript/issues/129). Built on the table layout prototype (`prototype/114-table-layout`); its README follows below.
+
+- `cards.json`: paper test cards, marker ID 1000–1029 → card notation. `print-cards.html` prints them at true size with real markers (`results/paper-cards.pdf`). `gen_tags.py` adds their markers to `tags.js`.
+- `Show marker reads` also draws each card's predicted edge in cyan, to check the line-up with a real card.
+
+---
+
 # Prototype: the table's layout
 
 Throwaway, for [Prototype the table's layout: coding space, canvas space, help spot, page cut-outs](https://github.com/shutallbridge/snapscript/issues/114). Built on the textbook page prototype (`prototype/128-textbook-page`): `vision.py`, `geometry.py`, `tags.js`, `pages.json`, `sheets.js` and the helper scripts are copied from it.
@@ -27,22 +36,22 @@ Over SSH, without a keyboard, `control.json` can set anything the menu can: `{"r
 ## On a laptop
 
 ```sh
-python3 -m http.server 8114   # then open http://localhost:8114/table.html
+python3 -m http.server 8129   # then open http://localhost:8129/table.html
 ```
 
 Without `vision.py` there are no pages and no card markers. Turn on `pretend a card is in a corner` (under Debug) to see the doc comment.
 
 ## On the Pi
 
-As in the textbook page prototype, but in `~/snap-114` on port 8114:
+As in the textbook page prototype, but in `~/snap-129` on port 8129:
 
 ```sh
-./pi.sh 'mkdir -p snap-114'
-for f in pages.json table.html sheets.js tags.js p5.min.js vision.py geometry.py start-*.sh; do ./pi.sh put $f snap-114/; done
-./pi.sh 'cp ~/snap-128/calib.json ~/snap-114/'   # reuse the line-up, if the stand hasn't moved
-./pi.sh 'bash ~/snap-114/start-http.sh'
-./pi.sh 'bash ~/snap-114/start-chrome.sh'
-./pi.sh 'bash ~/snap-114/start-vision.sh rig --aspect 1.5 --table-mm 792 --rule inview'
+./pi.sh 'mkdir -p snap-129'
+for f in pages.json table.html sheets.js tags.js p5.min.js vision.py geometry.py start-*.sh; do ./pi.sh put $f snap-129/; done
+./pi.sh 'cp ~/snap-128/calib.json ~/snap-129/'   # reuse the line-up, if the stand hasn't moved
+./pi.sh 'bash ~/snap-129/start-http.sh'
+./pi.sh 'bash ~/snap-129/start-chrome.sh'
+./pi.sh 'bash ~/snap-129/start-vision.sh rig --aspect 1.5 --table-mm 792 --rule inview'
 ```
 
 `vision.py` is the textbook page prototype's, plus a `cards` list in `state.json`: every marker that isn't a page or calibration tag, with its centre (`c`) and angle (`a`, radians, along the marker's bottom edge) in projector space.
