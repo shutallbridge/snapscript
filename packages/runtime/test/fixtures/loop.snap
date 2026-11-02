@@ -1,0 +1,8 @@
+// A made-up library that calls back into the program, as snapscript-p5's run does.
+[global(count)][num(0)]
+
+[extern(run)][required(program)]
+[extern(bump)]
+
+[on(load)]
+[call(run)][root]

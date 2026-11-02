@@ -21,6 +21,19 @@ export interface CheckedProgram extends Program {
    * a line the table couldn't read, and the lines their skips take with them.
    */
   skippedLines: number[];
+  /**
+   * The module each import line that counts loads, in text order. Only
+   * filled when the check has a loader. The runtime's compiler takes these.
+   */
+  modules: CheckedModule[];
+}
+
+/** A module an import line loads: its id from the loader, and its checked program. */
+export interface CheckedModule {
+  /** The import line (1-based). */
+  line: number;
+  id: string;
+  program: CheckedProgram;
 }
 
 /** One way to call a function: the names of its values in order, and of a slot that takes any number. */
@@ -96,7 +109,13 @@ function checkText(text: string, skippedLines: readonly SkippedLine[], modules: 
     (a, b) => a.line - b.line || (a.spans[0]?.start ?? 0) - (b.spans[0]?.start ?? 0),
   );
   const failed = new Set([...absent, ...names.failed, ...types.failed]);
-  const program = { ...parsed.program, skippedLines: skippedLinesOf(parsed.program, failed) };
+  const skipped = skippedLinesOf(parsed.program, failed);
+  const imported: CheckedModule[] = [];
+  for (const [d, info] of loaded.modules) {
+    if (info && !skipped.includes(d.line)) imported.push({ line: d.line, id: info.id, program: info.program });
+  }
+  imported.sort((a, b) => a.line - b.line);
+  const program = { ...parsed.program, skippedLines: skipped, modules: imported };
   const expectedValues = types.expects.sort((a, b) => a.card.start - b.card.start).map((e) => expected(text, e));
   return { result: { errors, program, expectedValues }, imports: loaded.modules };
 }
@@ -124,7 +143,7 @@ function moduleInfo(id: string, { result, imports }: Checked): ModuleInfo {
         break;
     }
   }
-  return { id, attributes };
+  return { id, attributes, program: result.program };
 }
 
 function expected(text: string, { card, name, overloads }: CallExpects): ExpectedValues {
