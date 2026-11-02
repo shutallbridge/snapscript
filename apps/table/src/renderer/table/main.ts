@@ -5,6 +5,7 @@
 import type { TableGeometry } from "../../layout.ts";
 import type { TableBridge } from "../../preload/table.ts";
 import type { Scene } from "../../session.ts";
+import { drawHelp } from "./help.ts";
 
 declare const table: TableBridge;
 
@@ -61,6 +62,9 @@ function draw(): void {
     g.stroke();
   }
   g.restore();
+
+  // The help box, beside the help corner.
+  if (scene?.help) drawHelp(g, scene.help, px);
 }
 
 table.onGeometry((g) => {
@@ -69,5 +73,6 @@ table.onGeometry((g) => {
 });
 table.onScene((s) => {
   scene = s;
+  draw();
 });
 addEventListener("resize", draw);
