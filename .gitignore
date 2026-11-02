@@ -1,2 +1,5 @@
 node_modules/
 dist/
+
+# Built beside p5.snap from src/p5.ts.
+libraries/p5/p5.js
