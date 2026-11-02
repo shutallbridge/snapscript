@@ -98,7 +98,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 40, vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 40, vwrongEdge: 0, vwrongEdgeA: 100, vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -152,7 +152,9 @@ addEventListener('keydown', e => {
   const LOOKS = ['ghost', 'outline', 'footprint'];
   if (e.key === 'b') { const B = [0, 5, 10, 15, 20, 30, 40]; cfg.vfill = B[(B.indexOf(cfg.vfill) + 1) % B.length]; save(); say(`guide background: ${cfg.vfill ? cfg.vfill + '%' : 'off'}`); return; }  // off, 5, 10, 15, 20, 30, 40 %
   if (e.key === 'e') { const E = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75]; cfg.vedge = E[(E.indexOf(cfg.vedge) + 1) % E.length]; save(); say(`guide edge: ${cfg.vedge ? cfg.vedge + ' mm' : 'none'}`); return; }  // none to 1.75 mm
-  if (e.key === 'r') { const R = [20, 30, 40, 50, 60, 80]; cfg.vwrong = R[(R.indexOf(cfg.vwrong) + 1) % R.length]; save(); say(`wrong card red: ${cfg.vwrong}%`); return; }  // prototyping only, not a setting
+  if (e.key === 'r') { const R = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vwrong = R[(R.indexOf(cfg.vwrong) + 1) % R.length]; save(); say(`wrong card red fill: ${cfg.vwrong}%`); return; }  // prototyping only, not a setting
+  if (e.key === 't') { const T = [0, 0.5, 1, 1.5, 2, 3]; cfg.vwrongEdge = T[(T.indexOf(cfg.vwrongEdge) + 1) % T.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdge ? cfg.vwrongEdge + ' mm' : 'none'}`); return; }
+  if (e.key === 'o') { const O = [20, 40, 60, 80, 100]; cfg.vwrongEdgeA = O[(O.indexOf(cfg.vwrongEdgeA) + 1) % O.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdgeA}%`); return; }
   if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
   if (e.key === 'm') { const M = [0, 0.5, 1, 1.5, 2]; cfg.vsEdge = M[(M.indexOf(cfg.vsEdge) + 1) % M.length]; save(); say(`stand-in marker zone edge: ${cfg.vsEdge ? cfg.vsEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'w') { cfg.vwb = !cfg.vwb; save(); say(`guide whiteboard edge: ${cfg.vwb ? 'on' : 'off'}`); return; }
@@ -411,11 +413,13 @@ function virtualArgs(cards) {
   }
   return out;
 }
-// A wrong card in a guide's place: its face lit red (cfg.vwrong %), not its marker zone, so the camera still reads it.
+// A wrong card in a guide's place: its face lit red (cfg.vwrong %) with a red edge (cfg.vwrongEdge mm at cfg.vwrongEdgeA %), not its marker zone, so the camera still reads it.
 function drawWrong(g, c) {
   const k = mm(), w = lenOf(sideOf(c.text)) * U;
   g.save(); g.translate(c.m[0], c.m[1]); g.rotate(c.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);
   g.globalAlpha = cfg.vwrong / 100; g.fillStyle = '#ff0000'; g.fillRect(MZ, 0, w - MZ, H);
+  const e = cfg.vwrongEdge;  // the red edge, inside the face's outline
+  if (e) { g.globalAlpha = cfg.vwrongEdgeA / 100; g.strokeStyle = '#ff0000'; g.lineWidth = e; g.setLineDash([]); g.strokeRect(MZ + e / 2, e / 2, w - MZ - e, H - e); }
   g.restore();
 }
 function drawVirtualCards(g, L) {
