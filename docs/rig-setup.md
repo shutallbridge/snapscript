@@ -67,6 +67,7 @@ ssh rig 'mkdir -p ~/.local/state/snapscript && cd ~/snapscript/python && \
 
 - Handwriting is read in the cloud by default (`--reader openrouter`), which needs `OPENROUTER_API_KEY` in the service's environment. Keep the key out of the repo. `--reader fake:FAKE.json` runs without it.
 - `--source camera` focuses once at start. `camera:lens=3.75` holds a known focus (in dioptres) instead.
+- `--markers MARKERS.json` gives the marker data by hand. Without it the service waits for the table app's `markers` message (see `service.py`) before it reads any frames.
 - `--lineup` is the service's own file. Calibration writes it there, and it stays across restarts. Until the first calibration is saved, positions are in camera pixels.
 - Run `.venv/bin/python` directly, not `uv run`. `uv run` would sync first, and without `--python` that sync replaces the venv.
 - To check the pinning while it runs: `ssh rig 'taskset -cp $(pgrep -f snapscript_vision)'` should say `0,1`.

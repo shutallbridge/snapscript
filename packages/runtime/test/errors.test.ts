@@ -65,6 +65,23 @@ describe("runtime errors", () => {
       { text: "main stopped", at: { line: 8, card: "[call(print)]" } },
     ]);
   });
+
+  test("a ZeroDivisionError stops the run and runs [on(stop)]", async () => {
+    const seen = await runProgram(
+      lines(
+        "[on(load)]",
+        "[call(print)][num{1}][/][num{0}]",
+        "[call(print)][str{after}]",
+        "",
+        "[on(stop)]",
+        "[call(print)][str{stopped}]",
+      ),
+    );
+    expect(seen.errors).toEqual([
+      { type: "runtime", kind: "ZeroDivisionError", message: expect.any(String), at: { line: 2, card: "[/]" } },
+    ]);
+    expect(seen.prints).toEqual([{ text: "stopped", at: { line: 6, card: "[call(print)]" } }]);
+  });
 });
 
 describe("stopping", () => {

@@ -1,6 +1,5 @@
 // Text → cards: reading a program text's strips back into the cards they are made of.
 
-import { SHEET } from "./sheet.ts";
 
 /** Where a strip's `@table` tag puts it. */
 export type TablePlace = { x: number; y: number; turn: number } | "auto" | "hidden";
@@ -116,33 +115,4 @@ export function textStrips(text: string): TextStrip[] {
   codeLines(lines, code);
 
   return strips.map(({ first, last, ...s }) => ({ ...s, verbatim: lines.slice(first, last + 1).join("\n") }));
-}
-
-const LONG_HANDWRITTEN = new Set(["define", "global", "getProp", "setProp"]);
-
-/** What a printed card's label says: function cards print only the name. */
-function label(card: string): string {
-  const inner = card.slice(1, -1);
-  const slots = [...inner.matchAll(/([^()]*)\(([^()]*)\)/g)];
-  if (!slots.length) return inner;
-  const [, keyword, value] = slots[0];
-  if (keyword === "call" || keyword === "get") return value.slice(value.lastIndexOf(".") + 1);
-  if (keyword === "bool") return value;
-  return slots.flatMap(([, k, v]) => [k, v]).filter(Boolean).join(" ");
-}
-
-/**
- * A card's shortest length in U, by the card sheet's letters-per-length rule (#101): a printed card
- * the shortest length whose room holds its label, never under 2U. Handwritten cards are at least 4U
- * ([define{…}], [global{…}], [getProp{…}] and [setProp{…}to] 5U), and color cards 4U. A length is
- * fixed when the card is printed, so it follows the sheet as printed, not a unitMm the rig tunes.
- */
-export function shortestLength(card: string): number {
-  const keyword = card.slice(1).match(/^[^({]*/)![0];
-  if (card.includes("{")) return LONG_HANDWRITTEN.has(keyword) ? SHEET.longHandwritten : SHEET.handwritten;
-  if (keyword === "color") return SHEET.color;
-  const letters = label(card).length;
-  let length = SHEET.minPrinted;
-  while (Math.floor((length * SHEET.unitMm - SHEET.chromeMm) / SHEET.letterMm) < letters) length += 1;
-  return length;
 }

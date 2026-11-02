@@ -10,6 +10,7 @@ import re
 import socket
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -130,15 +131,20 @@ def reader_calls(d: Path):
     return [json.loads(l) for l in p.read_text().splitlines()] if p.exists() else []
 
 
-def run_service(d: Path, source: str, settings=None, lineup=None, reader=None, env=None, timeout=120):
+def run_service(d: Path, source: str, settings=None, lineup=None, reader=None, env=None, markers="file",
+                send_markers_after_s=0.0, early=None, timeout=120):
     """Start the service on a free port, read every JSON line it sends until its frames run out, and return them.
 
     `reader`: the fake reader's answers (see write_fake_reader), or a `--reader` spec. By default a fake reader
-    answers "500" after 2 s."""
+    answers "500" after 2 s. `markers`: "file" gives the marker data as `--markers`; "socket" sends it as the
+    table app does, in a `markers` message once connected (after `send_markers_after_s`); what the service sends
+    before that goes in the list `early`, if given."""
     if not isinstance(reader, str):
         reader = f"fake:{write_fake_reader(d, reader or [{'text': '500', 'after_s': 2.0}])}"
     args = [sys.executable, "-m", "snapscript_vision", "--source", source, "--port", "0", "--reader", reader,
-            "--markers", str(write_markers(d)), "--lineup", str(lineup or write_lineup(d))]
+            "--lineup", str(lineup or write_lineup(d))]
+    if markers == "file":
+        args += ["--markers", str(write_markers(d))]
     if settings is not None:
         sp = d / "settings.json"
         sp.write_text(json.dumps(settings))
@@ -152,6 +158,22 @@ def run_service(d: Path, source: str, settings=None, lineup=None, reader=None, e
             raise AssertionError(f"service didn't start: {line!r} {proc.stderr.read()}")
         with socket.create_connection(("127.0.0.1", int(m.group(1))), timeout=timeout) as s:
             buf = b""
+            if markers == "socket":
+                end = time.monotonic() + send_markers_after_s
+                while (left := end - time.monotonic()) > 0:
+                    s.settimeout(left)
+                    try:
+                        chunk = s.recv(65536)
+                    except TimeoutError:
+                        break
+                    if not chunk:
+                        break
+                    buf += chunk
+                if early is not None:
+                    early += [json.loads(l) for l in buf.decode().splitlines() if l.strip()]
+                buf = b""
+                s.settimeout(timeout)
+                s.sendall((json.dumps({"type": "markers", **MARKERS}) + "\n").encode())
             while chunk := s.recv(65536):
                 buf += chunk
         proc.wait(timeout=timeout)
