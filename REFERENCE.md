@@ -411,6 +411,13 @@ Every error has a **kind**, named as in Python, and a **stage**: when it is foun
 [get{scores}][call(getAt)][num{9}]            IndexError, when scores has 3 items
 ```
 
+A `NameError` suggests the closest name visible at its line, chosen as Python chooses it, when one is close enough.
+
+```
+[set{score}to][num{0}]
+[call(print)][get{scare}]                     NameError: scare is not defined. Did you mean score?
+```
+
 The checker looks at names and types, never at values, and reports only what would certainly fail. A value it knows nothing about, such as a parameter with no type or an attribute of a dict, can be any type, and its errors are found at run time.
 
 ```

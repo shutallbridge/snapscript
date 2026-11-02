@@ -28,6 +28,8 @@ A camera above the table reads the card arrangement. A projector opposite displa
 
 When the camera is not sure what a card's handwriting says, the card has a **read error**. Its line is skipped, like a line with a structure or check error. A read error belongs to the physical system, not the language: it has no kind and no stage.
 
+A handwritten card's text arrives a moment after the card is laid. While it is **not read yet**, the program keeps running as it was, for up to about 5 s; then its line is skipped until the text arrives. When the table cannot reach the handwriting reader, a card that needs reading has a **connection error** and its line is skipped at once. Like a read error, both belong to the physical system.
+
 Lengths on the table are measured in U. Every card is 1U tall and a whole number of U long. Every card is at least 2U long. Most cards need it for their written text: a handwritten name such as `[define{drawCircle}]`, or a reserved word such as `[repeat]`. Each side of a card also holds a marker, a printed pattern that the camera reads to learn which side it is, where it lies and how it is turned. Cards with one symbol, such as `[(]`, `[)]` and `[+]`, are 2U long too: a sketch at real size showed that a 1U card is too small even for them.
 
 ## Feedback

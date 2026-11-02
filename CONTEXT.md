@@ -130,18 +130,26 @@ When an error is found: **structure** (cards that cannot form a program), **chec
 _Avoid_: layer (a layer is a level of a magnet pocket), phase
 
 **Table error**:
-An error that belongs to the table, not the language: a read error or a mismatch. It has no kind and no stage, a text file never has one, and it never goes into a `.snap` file. The table shows it like any other error.
+An error that belongs to the table, not the language: a read error, a connection error or a mismatch. It has no kind and no stage, a text file never has one, and it never goes into a `.snap` file. The table shows it like any other error.
 
 **Read error**:
 A table error: the camera is not sure what a card's handwriting says. The card's line is skipped.
 _Avoid_: OCR error
+
+**Connection error**:
+A table error: a card's handwriting cannot be read because the table cannot reach the handwriting reader. The card's line is skipped at once, and the card is read as soon as the reader can be reached again.
+_Avoid_: offline error, network error
+
+**Not read yet**:
+A handwritten card whose text has not arrived. It is not an error: the program keeps running as it was until the text arrives, for up to about 5 s, and then its line is skipped until it does. A rewritten card is not read yet again.
+_Avoid_: pending, loading
 
 **Mismatch**:
 A table error: a real card lies in a guide card's place but is not the card the guide asks for, such as `[color(gold)]` where a textbook page's guide shows `[num{500}]`. The card still counts and runs.
 _Avoid_: wrong card
 
 **Skipped line**:
-A line left out of a run because it has a structure or check error, or holds a card with a read error. Its gutter marks it, and the rest of its function runs. Skipping a block head skips its body, and in a chain, every later block of the chain too; skipping a `[define{…}]` header skips its strip.
+A line left out of a run because it has a structure or check error, or holds a card with a read error, a connection error, or one still not read yet after the wait. Its gutter marks it, and the rest of its function runs. Skipping a block head skips its body, and in a chain, every later block of the chain too; skipping a `[define{…}]` header skips its strip.
 _Avoid_: ignored line, disabled line
 
 **Follow-on error**:
@@ -321,13 +329,13 @@ A virtual card that is part of the program: it counts in the buffer and runs, su
 A virtual card that only suggests: a textbook page's cards, or the values a call card expects after it. The right card laid in its place replaces it; any other card still counts, as a mismatch.
 
 **Gutter**:
-The space left of a line's first card where the table marks the line: a green dot on a strip's head, a crossed-out grey dot on a skipped or detached line, and a numbered badge (E1, E2, …) for each error. Nothing is drawn right of a line, where the next card would be laid.
+The space left of a line's first card where the table marks the line: a green dot on a strip's head, a crossed-out grey dot on a skipped or detached line, a white spinner on a line whose card is not read yet, a yellow `!` dot on a line skipped for a connection error, and a numbered badge (E1, E2, …) for each error. Nothing is drawn right of a line, where the next card would be laid.
 
 **Status bar**:
 A bar of text along the top or bottom edge of the table. The errors bar holds each error's full message beside its badge.
 
 **Read-back**:
-What the handwriting reader saw, drawn on the card's whiteboard. A debug view, also shown on a card with a `NameError`.
+What the handwriting reader saw, drawn on the card's whiteboard. It shows for a moment after each new read, always as a debug view, and on a card with a `NameError` and the cards that define the name it suggests.
 
 **Window**:
 A region of the table that owns the markers in it and what is drawn there. A card belongs to the window its marker is in, even if its tail reaches into the next one.
