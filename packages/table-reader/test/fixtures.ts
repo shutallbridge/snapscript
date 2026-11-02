@@ -3,6 +3,7 @@
 // [call(p5.circle)] and so on. Lengths follow the card sheet rule (#101): handwritten cards at least 4U,
 // [define{…}] 5U.
 import type {
+  GuideSources,
   Layout,
   LanguageMarkers,
   Lockfile,
@@ -27,6 +28,7 @@ export const languageMarkers: LanguageMarkers = new Map([
   [1030, { card: "[on(load)]", length: 3 }],
   [1031, { card: "[global{}]", length: 5 }],
   [1032, { card: "[if]", length: 2 }],
+  [1040, { card: "[color(gold)]", length: 4 }],
 ]);
 
 export const lockfile: Lockfile = new Map([
@@ -106,3 +108,38 @@ export function code(text: string): string {
 export function textOf(...tables: TableState[]): string {
   return code(run(...tables).last.text);
 }
+
+/** Where a virtual card's marker sits when its top-left corner lies at (x, y), turned `angle`. */
+export function at(x: number, y: number, angle = 0): { x: number; y: number; angle: number } {
+  const c = card(0, 0, x, y, { angle });
+  return { x: c.x, y: c.y, angle };
+}
+
+/**
+ * Steps through table states laid at the given times (in s), from an entry text, with guide sources
+ * (or a function giving them from the state before each step).
+ */
+export function play(
+  entry: string,
+  moments: { t: number; cards: TableCard[] }[],
+  guideSources?: GuideSources | ((prev: ReaderState) => GuideSources),
+): { outputs: StepOutput[]; last: StepOutput; state: ReaderState } {
+  let state = initialState(entry);
+  const outputs: StepOutput[] = [];
+  for (const m of moments) {
+    const sources = typeof guideSources === "function" ? guideSources(state) : guideSources;
+    const r = step(state, {
+      table: { ...table(...m.cards), t: m.t },
+      layout,
+      lockfile,
+      languageMarkers,
+      guideSources: sources,
+    });
+    state = r.state;
+    outputs.push(r.output);
+  }
+  return { outputs, last: outputs[outputs.length - 1], state };
+}
+
+/** The ids of the virtual cards an output draws. */
+export const ids = (out: StepOutput): string[] => out.virtualCards.map((v) => v.id);

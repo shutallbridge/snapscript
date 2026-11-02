@@ -1,7 +1,6 @@
 // What the reader keeps from the project's entry text: its hidden lines, and the names they import.
 
-/** A line whose first card is an `[import]` or an `[extern]`: always `@table hidden`. */
-const HIDDEN = /^\s*\[(import|extern)[({]/;
+import { HIDDEN } from "./program.ts";
 
 /**
  * The entry text's `[import]` and `[extern]` lines, each with the comment lines just above it,
