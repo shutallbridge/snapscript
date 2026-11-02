@@ -1,14 +1,19 @@
 import type {
   CardSpan,
   DetachedLine,
+  Handwriting,
   Layout,
   LineCards,
   ReaderSettings,
   ReaderState,
+  SkippedLine,
+  SkipReason,
   StepInput,
   StepResult,
   TableCard,
+  UnknownCard,
 } from "./types.ts";
+import { hiddenLines, importedNames } from "./entry.ts";
 
 /** The prototypes' measured starting values (#147, #111). */
 export const defaultSettings: ReaderSettings = {
@@ -26,7 +31,7 @@ export const defaultSettings: ReaderSettings = {
   lineKeepMm: 15,
 };
 
-/** The reader's state before the first step, starting from the project's entry text. */
+/** The reader before any table state, starting from the project's entry text (there's no prelude). */
 export function initialState(entryText = ""): ReaderState {
   return { entryText, joins: new Set(), links: new Set(), strips: [], version: 0, text: entryText };
 }
@@ -43,13 +48,18 @@ interface Placed {
   v: Vec;
   /** Its top-left corner. */
   tl: Vec;
-  lengthMm: number;
+  lengthMm: number | undefined;
   notation: string;
   standsAlone: boolean;
+  skip?: SkipReason;
+  unknown?: UnknownCard;
 }
 
 /** `[define{…}]`, `[on(…)]` and `[global{…}]` start a strip. (`[import]` and `[extern]` are never on the table.) */
 const STANDS_ALONE = /^\[(define|on|global)[{(]/;
+
+/** Handwriting can't hold brackets, so they're dropped from a read (#111). */
+const BRACKETS = /[{}[\]()]/g;
 
 const pairKey = (a: number, b: number): string => `${a}>${b}`;
 const hypot = (p: Vec, q: Vec): number => Math.hypot(p[0] - q[0], p[1] - q[1]);
@@ -66,19 +76,76 @@ function counts(c: TableCard, layout: Layout): boolean {
   return !layout.corners.some((k) => Math.hypot(c.x - k.x, c.y - k.y) < k.radius);
 }
 
-/** What a card writes as, and its length in U, or undefined for a marker that isn't a card. */
-function cardOf(c: TableCard, input: StepInput): { notation: string; length: number } | undefined {
+/**
+ * What a card writes as and its length in U (unknown for a marker the table doesn't know), why its
+ * line is skipped, if it is, and what makes it an unknown card, if it is one.
+ */
+interface CardText {
+  notation: string;
+  length?: number;
+  skip?: SkipReason;
+  unknown?: { package?: string };
+}
+
+/** A handwritten card's text, and why its line is skipped when it has none (#111). */
+function handwriting(hw: Handwriting | undefined): { text: string; skip?: SkipReason } {
+  switch (hw?.state) {
+    case "read":
+      return { text: (hw.text ?? "").replace(BRACKETS, "") };
+    case "reading":
+      // A card being read again keeps its old text until the new read arrives.
+      return hw.text === undefined ? { text: "", skip: "not read yet" } : { text: hw.text.replace(BRACKETS, "") };
+    case "blank":
+      return { text: "" };
+    case "read error":
+    case "connection error":
+      return { text: "", skip: hw.state };
+    default:
+      return { text: "", skip: "not read yet" };
+  }
+}
+
+/**
+ * What a card writes as, or undefined for a marker that isn't a card (a page). `imports` maps each
+ * imported package to its local name.
+ */
+function cardOf(c: TableCard, input: StepInput, imports: ReadonlyMap<string, string>): CardText | undefined {
   const lang = input.languageMarkers.get(c.marker);
   if (lang) {
-    return { notation: lang.card.replace("{}", `{${c.hw?.text ?? ""}}`), length: lang.length };
+    if (!lang.card.includes("{}")) return { notation: lang.card, length: lang.length };
+    const hw = handwriting(c.hw);
+    return { notation: lang.card.replace("{}", `{${hw.text}}`), length: lang.length, skip: hw.skip };
   }
   const entry = input.lockfile.get(c.marker);
-  if (entry?.kind === "library") {
-    // The library's local name comes from the program's imports (#167). Until then the package
-    // name stands in for it.
-    return { notation: `[${entry.card}(${entry.package}.${entry.name})]`, length: entry.length };
+  if (entry?.kind === "page") return undefined;
+  if (!entry) {
+    // The table can't write it as text, nor knows its length.
+    return { notation: "", skip: "unknown card", unknown: {} };
   }
-  return undefined;
+  const local = imports.get(entry.package);
+  if (local === undefined) {
+    // Its kind is known, so it still takes its place in the line's structure (a [define{}] still
+    // starts a strip), with empty braces.
+    return {
+      notation: `[${entry.card}{}]`,
+      length: entry.length,
+      skip: "unknown card",
+      unknown: { package: entry.package },
+    };
+  }
+  // A library's [define(setup)] names the program's own function, so it takes no namespace.
+  const name = entry.card === "define" ? entry.name : `${local}.${entry.name}`;
+  return { notation: `[${entry.card}(${name})]`, length: entry.length };
+}
+
+/**
+ * A line with several unread cards is skipped for the reason that lasts longest: an unknown card
+ * stays until the program changes, and a card not read yet only until its read arrives.
+ */
+const SKIP_ORDER: readonly SkipReason[] = ["unknown card", "read error", "connection error", "not read yet"];
+
+function skipReason(cards: readonly Placed[]): SkipReason | undefined {
+  return SKIP_ORDER.find((r) => cards.some((c) => c.skip === r));
 }
 
 /** Where a strip lies: its first card's top-left corner from the coding space's top-left, and its turn. */
@@ -99,10 +166,11 @@ const withoutTableTags = (text: string): string =>
 export function step(prev: ReaderState, input: StepInput): StepResult {
   const s: ReaderSettings = { ...defaultSettings, ...input.settings };
 
+  const imports = importedNames(hiddenLines(prev.entryText));
   const cards: Placed[] = [];
   for (const c of input.table.cards) {
     if (!counts(c, input.layout)) continue;
-    const k = cardOf(c, input);
+    const k = cardOf(c, input, imports);
     if (!k) continue;
     const u = unit(c.angle);
     const v: Vec = [-u[1], u[0]];
@@ -117,8 +185,10 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
         c.x - s.markerAlongMm * u[0] - s.markerDownMm * v[0],
         c.y - s.markerAlongMm * u[1] - s.markerDownMm * v[1],
       ],
-      lengthMm: k.length * s.unitMm,
+      lengthMm: k.length === undefined ? undefined : k.length * s.unitMm,
       notation: k.notation,
+      skip: k.skip,
+      unknown: k.unknown && { track: c.track, marker: c.marker, ...k.unknown },
       standsAlone: STANDS_ALONE.test(k.notation),
     });
   }
@@ -127,7 +197,8 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
   const candidates: { left: Placed; right: Placed; held: boolean; distance: number }[] = [];
   for (const left of cards) {
     for (const right of cards) {
-      if (right === left || right.standsAlone) continue;
+      // Nothing joins after a card of unknown length.
+      if (right === left || right.standsAlone || left.lengthMm === undefined) continue;
       const turn = angleDiff(left.angle, right.angle);
       if (Math.abs(turn) >= s.maxAngleDeg) continue;
       const u = unit(left.angle + turn / 2);
@@ -205,11 +276,13 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
     strips.push(lines);
   }
 
-  // The buffer: the starting text's strips as written, then the table's strips one after another, with
-  // a blank line between and two spaces per U of indent.
+  // The buffer: the entry text as written (its hidden lines and its strips, in their order), then the
+  // table's strips one after another, with a blank line between and two spaces per U of indent.
   const textLines: string[] = prev.entryText ? prev.entryText.split("\n") : [];
   const spans: CardSpan[] = [];
   const lineCards: LineCards[] = [];
+  const skippedLines: SkippedLine[] = [];
+  const unknownCards: UnknownCard[] = [];
   for (const lines of strips) {
     if (textLines.length) textLines.push("");
     textLines.push(tableTag(lines[0].cards[0], input.layout));
@@ -219,9 +292,12 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
       for (const c of l.cards) {
         spans.push({ track: c.track, span: { line: lineNo, start: t.length, end: t.length + c.notation.length } });
         t += c.notation;
+        if (c.unknown) unknownCards.push(c.unknown);
       }
       textLines.push(t);
       lineCards.push({ line: lineNo, tracks: l.cards.map((c) => c.track) });
+      const reason = skipReason(l.cards);
+      if (reason) skippedLines.push({ line: lineNo, reason });
     }
   }
   const text = textLines.join("\n");
@@ -243,10 +319,15 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
 
   return {
     state: { entryText: prev.entryText, joins, links, strips: stripHeads.map((h) => h.track), version, text },
-    output: { version, text, map: { version, cards: spans, lines: lineCards },
+    output: {
+      version,
+      text,
+      map: { version, cards: spans, lines: lineCards },
       stripHeads: stripHeads.map((h) => h.track),
       detached,
       placementOnly,
+      skippedLines,
+      unknownCards,
     },
   };
 }

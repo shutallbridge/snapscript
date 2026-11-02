@@ -107,7 +107,11 @@ export interface ReaderSettings {
 
 /** What the reader carries from one step to the next. */
 export interface ReaderState {
-  /** The project's entry text the reader started from. Its strips come first in the buffer, in their order. */
+  /**
+   * The project's entry text the reader started from, kept in front of the buffer exactly as written:
+   * its hidden `[import]` and `[extern]` lines, and its strips in their order. Library cards take
+   * their local names from its imports.
+   */
   entryText: string;
   /** Joins made, as `left>right` track pairs. */
   joins: ReadonlySet<string>;
@@ -150,6 +154,26 @@ export interface DetachedLine {
   text: string;
 }
 
+/** Why the reader skipped a line: the camera's reason, for the table app's gutter and the 5 s wait. */
+export type SkipReason = "not read yet" | "read error" | "connection error" | "unknown card";
+
+/** A line the reader wrote with empty braces, for `check(text, skippedLines)`. */
+export interface SkippedLine {
+  line: number;
+  reason: SkipReason;
+}
+
+/**
+ * A card in the buffer the table can't write as text: its marker isn't in the lockfile, or the
+ * program doesn't import its library, named in `package` ("This program doesn't import
+ * snapscript-sound").
+ */
+export interface UnknownCard {
+  track: number;
+  marker: number;
+  package?: string;
+}
+
 export interface StepOutput {
   version: number;
   text: string;
@@ -160,6 +184,8 @@ export interface StepOutput {
   detached: DetachedLine[];
   /** The buffer changed, but only in `@table` tags: a strip moved, and the sketch needn't restart. */
   placementOnly: boolean;
+  skippedLines: SkippedLine[];
+  unknownCards: UnknownCard[];
 }
 
 export interface StepInput {
