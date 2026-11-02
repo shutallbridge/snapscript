@@ -137,6 +137,9 @@ addEventListener('keydown', e => {
     }
     showMenu(); return e.preventDefault();
   }
+  // #129: 1 2 3 switch the virtual cards' look
+  const LOOKS = ['ghost', 'outline', 'footprint'];
+  if (LOOKS[+e.key - 1]) { cfg.vlook = LOOKS[+e.key - 1]; save(); say(`${e.key}: ${cfg.vlook}`); return; }
   // menu closed: ←→ resize the two windows
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { step('split', e.key === 'ArrowLeft' ? -1 : 1); say(`coding space ${cfg.split}%`); }
 });
