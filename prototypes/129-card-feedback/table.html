@@ -100,7 +100,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'hatch', detLook: 'skipped', ovSec: 1, barTop: 'status', barBottom: 'errors', vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'hatch', detLook: 'skipped', ovSec: 1, dedLook: 'both', barTop: 'status', barBottom: 'errors', vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -159,6 +159,7 @@ addEventListener('keydown', e => {
   if (e.key === 'o') { const O = [20, 40, 60, 80, 100]; cfg.vwrongEdgeA = O[(O.indexOf(cfg.vwrongEdgeA) + 1) % O.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdgeA}%`); return; }
   if (e.key === 'p') { const P = ['auto', 'right', 'left']; cfg.msgAt = P[(P.indexOf(cfg.msgAt) + 1) % P.length]; save(); say(`error message: ${cfg.msgAt}`); return; }
   if (e.key === 'v') { cfg.ovSec = [0, 1, 2][([0, 1, 2].indexOf(cfg.ovSec) + 1) % 3]; save(); say(cfg.ovSec ? `overloads take turns every ${cfg.ovSec} s` : 'first overload only'); return; }
+  if (e.key === 'i') { cfg.dedLook = DED_LOOKS[(DED_LOOKS.indexOf(cfg.dedLook) + 1) % DED_LOOKS.length]; save(); say(`missing [dedent]: ${cfg.dedLook}`); return; }
   if (e.key === 'd') { cfg.detLook = cfg.detLook === 'skipped' ? 'none' : 'skipped'; save(); say(`detached cards: ${cfg.detLook === 'skipped' ? 'look skipped' : 'no look'}`); return; }
   if (e.key === 'k') { cfg.skipLook = SKIP_LOOKS[(SKIP_LOOKS.indexOf(cfg.skipLook) + 1) % SKIP_LOOKS.length]; save(); say(`skipped line: ${cfg.skipLook}`); return; }
   if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
@@ -585,9 +586,55 @@ function structure(cards) {
     else { const p = above(h); v = !!p && !seen.has(p) && (seen.add(h), inProgram(p, seen)); }
     memo.set(h, v); return v;
   };
-  const attached = new Set(), detached = [];
+  const attached = new Set(), detached = [], below = new Map();
   for (const [h, l] of lines) if (inProgram(h)) l.forEach(c => attached.add(c)); else detached.push(l);
-  return { attached, detached };
+  for (const h of heads) { const p = above(h); if (p && attached.has(h) && !below.has(p)) below.set(p, h); }
+  const roots = heads.filter(h => /^\[(define|on)\b/.test(h.text));
+  return { attached, detached, lines, below, roots };
+}
+// #129 a missing [dedent], mocked: down each strip, a line back in (or left of) an open block head's column, with no
+// [dedent] before it, is an IndentationError: the block closes there anyway (REFERENCE 8). Not skipped. The [dedent] goes
+// in the head's column on that line's row, which is where the line's first card already is, so its guide can't go there
+// (nothing may cover a card's marker). cfg.dedLook (key i):
+//   margin  the guide card in the margin left of the line, with a caret at the gap above the line
+//   bar     only a white bar along the top of the line's row, as long as a [dedent], where it goes
+//   both    the margin guide and the bar
+const DED_LOOKS = ['margin', 'bar', 'both'], BLOCK = /^\[(repeat|if|elif|else|for\{)/;
+function missingDedents(st) {
+  const k = mm(), out = [];
+  for (const root of st.roots) {
+    const col = h => Math.round(((h.m[0] - root.m[0]) * Math.cos(root.a) + (h.m[1] - root.m[1]) * Math.sin(root.a)) / k / U);
+    const open = [];  // the block heads still open, innermost last
+    for (let h = st.below.get(root), n = 0; h && n < 50; h = st.below.get(h), n++) {
+      const c = col(h);
+      if (/^\[dedent\]/.test(h.text)) { if (open.length && col(open.at(-1)) === c) open.pop(); continue; }  // a stray [dedent] isn't mocked
+      if (/^\[(elif|else)\]/.test(h.text) && open.length && col(open.at(-1)) === c) { open.pop(); open.push(h); continue; }
+      let i = 0;
+      while (open.length && c <= col(open.at(-1))) { const head = open.pop(); out.push({ line: h, head, shift: col(head) - c, i: i++ }); }
+      if (BLOCK.test(h.text)) open.push(h);
+    }
+  }
+  return out;
+}
+function drawDedentGuide(g, d) {  // d.line's frame: x = 0 is the line's first card's left end, y = 0 the top of its row
+  const k = mm(), dl = lenOf(sideOf('[dedent]')), d0 = [Math.cos(d.line.a), Math.sin(d.line.a)];
+  const at = x => [d.line.m[0] + d0[0] * x * k, d.line.m[1] + d0[1] * x * k];
+  const look = cfg.dedLook, x0 = d.shift * U;  // where the [dedent] goes, along the line
+  if (look !== 'bar') {  // the guide card, left of the line (inner blocks' [dedent]s nearer the line), and a caret pointing at the gap
+    const gx = x0 - (d.i + 1) * (dl * U + 0.5 * U);
+    drawVirtual(g, { text: '[dedent]', side: sideOf('[dedent]'), m: at(gx), a: d.line.a });
+    g.save(); g.translate(d.line.m[0], d.line.m[1]); g.rotate(d.line.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);
+    g.fillStyle = '#fff'; g.globalAlpha = 0.8; const tx = gx + dl * U + 3, ty = 0;
+    g.beginPath(); g.moveTo(tx, ty - 4); g.lineTo(tx + 6, ty); g.lineTo(tx, ty + 4); g.closePath(); g.fill(); g.restore();
+  }
+  if (look !== 'margin' && d.i === 0) {  // the bar: along the top of the line's row, in the gap between the rows, never on a marker
+    g.save(); g.translate(d.line.m[0], d.line.m[1]); g.rotate(d.line.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);
+    g.fillStyle = '#fff'; g.globalAlpha = 0.9; g.fillRect(x0 + MZ, -1, dl * U - MZ, 2); g.restore();
+  }
+}
+function dedentQuads(d) {  // what the guide covers, as blockers for messages
+  const dl = lenOf(sideOf('[dedent]'));
+  return cfg.dedLook === 'bar' ? [] : [quad(d.line, d.shift * U - (d.i + 1) * (dl * U + 0.5 * U), 0, dl * U, H)];
 }
 let structStat = '';
 function drawVirtualCards(g, L) {
@@ -602,18 +649,26 @@ function drawVirtualCards(g, L) {
     if (c) { drawWrong(g, c); wrong++; continue; }
     drawVirtual(g, v); shown++;
   }
-  const { attached, detached } = structure(cards);
+  const st = structure(cards), { attached, detached } = st;
   if (cfg.detLook === 'skipped') for (const l of detached) drawSkipped(g, l);  // the same look as a skipped line, no badge, no message
   structStat = `${attached.size} cards in the program, ${detached.length} detached lines`;
   if (cfg.vargs) for (const v of virtualArgs(cards, attached)) { drawVirtual(g, v); shown++; }
   if (cfg.vargs) {
     const shownArgs = virtualArgs(cards, attached);  // recomputed: the slots on show, as blockers for messages
-    const blockers = [...cards.map(c => quad(c, 0, 0, (CARD_LEN[c.id] || lenOf(sideOf(c.text))) * U, H)), ...shownArgs.map(v => quad(v, 0, 0, lenOf(v.side) * U, H))];
+    const ded = missingDedents(st);
+    for (const d of ded) {
+      drawDedentGuide(g, d);
+      const name = /^\[(\w+)/.exec(d.head.text)[1], l = st.lines.get(d.line), last = l.at(-1);
+      lineEnds.set(d.line, { m: last.m, a: last.a, len: CARD_LEN[last.id] || lenOf(sideOf(last.text)) });
+      argErrors.push({ card: d.line, call: d.line, kind: 'IndentationError', noSkip: true, msg: `no [dedent] for ${name} above`,
+        long: `${name} has no [dedent]. Its block closes here anyway.` });
+    }
+    const blockers = [...ded.flatMap(dedentQuads), ...cards.map(c => quad(c, 0, 0, (CARD_LEN[c.id] || lenOf(sideOf(c.text))) * U, H)), ...shownArgs.map(v => quad(v, 0, 0, lenOf(v.side) * U, H))];
     // numbered in program order: lines top to bottom (by their first card), then along each line
     const along = e => (e.card.m[0] - e.call.m[0]) * Math.cos(e.call.a) + (e.card.m[1] - e.call.m[1]) * Math.sin(e.call.a);
     argErrors.sort((a, b) => a.call.m[1] - b.call.m[1] || a.call.m[0] - b.call.m[0] || along(a) - along(b)).forEach((e, i) => e.id = 'E' + (i + 1));
     for (const e of argErrors) if (e.ref) [e.msg, e.long] = e.words(e.ref.id);
-    for (const call of new Set(argErrors.map(e => e.call))) drawSkipped(g, lineCards.get(call));  // a line with an error is skipped
+    for (const call of new Set(argErrors.filter(e => !e.noSkip).map(e => e.call))) drawSkipped(g, lineCards.get(call));  // a line with an error is skipped
     for (const e of argErrors) drawWrong(g, e.card);
     for (const call of new Set(argErrors.map(e => e.call))) drawMessages(g, argErrors.filter(e => e.call === call), L, blockers);
   }
