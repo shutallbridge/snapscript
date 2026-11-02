@@ -84,6 +84,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['vargs', 'Virtual arguments', [false, true]],
     ['vmatch', 'A real card replaces it when', ['same card', 'same kind']],
     ['vtol', 'Within', [5, 10, 15, 20, 30], ' mm'],
+    ['vwrong', 'Wrong card in a guide\'s place, red', [20, 30, 40, 50, 60, 80], '%'],
     ['vgap', 'Gap between lines', [0, 1, 2, 4], ' mm']]],
   ['Debug', [
     ['marks', 'Show marker reads', [true, false]],
@@ -98,7 +99,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 40, vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -410,16 +411,27 @@ function virtualArgs(cards) {
   }
   return out;
 }
+// A wrong card in a guide's place: its face lit red (cfg.vwrong %), not its marker zone, so the camera still reads it.
+function drawWrong(g, c) {
+  const k = mm(), w = lenOf(sideOf(c.text)) * U;
+  g.save(); g.translate(c.m[0], c.m[1]); g.rotate(c.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);
+  g.globalAlpha = cfg.vwrong / 100; g.fillStyle = '#ff0000'; g.fillRect(MZ, 0, w - MZ, H);
+  g.restore();
+}
 function drawVirtualCards(g, L) {
   const cards = realCards(L);
   let shown = 0, gone = 0;
+  // A real card in a stand-in's place always replaces it (it's an edit; language errors report the rest). In a guide's
+  // place, the right card replaces the guide, and a wrong one still counts but is lit red: a table error, not a language one.
+  let wrong = 0;
   if (cfg.vprog) for (const v of virtualProgram(L)) {
     const c = occupant(v, cards);
-    if (c && replaces(c, v)) { gone++; continue; }
+    if (c && (cfg.vlook === 'ghost' || replaces(c, v))) { gone++; continue; }
+    if (c) { drawWrong(g, c); wrong++; continue; }
     drawVirtual(g, v); shown++;
   }
   if (cfg.vargs) for (const v of virtualArgs(cards)) { drawVirtual(g, v); shown++; }
-  vstat = `virtual ${cfg.vlook}: ${shown} shown, ${gone} replaced`;
+  vstat = `virtual ${cfg.vlook}: ${shown} shown, ${gone} replaced, ${wrong} wrong`;
 }
 let vstat = '';
 
