@@ -2,8 +2,10 @@
 // faces, each line's gutter, print output right of its line, and the bottom status bar's errors.
 // It all goes on a layer of its own, with every card's marker zone cut out of it, so nothing it
 // draws covers a marker, a neighbour's included.
-import type { Feedback, Quad } from "../../feedback.ts";
+import type { Feedback } from "../../feedback.ts";
 import type { TableGeometry } from "../../layout.ts";
+import type { Quad } from "../../pose.ts";
+import { within } from "./within.ts";
 
 /** 1U, in mm. */
 const U = 30;
@@ -32,15 +34,6 @@ const BAR_SIDE = 4 * U;
 const FONT = (mm: number, weight = 500) => `${weight} ${mm}px "Geist Mono", monospace`;
 
 const layer = document.createElement("canvas");
-
-/** Draws in a quad's own frame: its top-left at (0, 0), along x. */
-function within(g: CanvasRenderingContext2D, q: Quad, draw: () => void): void {
-  g.save();
-  g.translate(q.x, q.y);
-  g.rotate((q.angle * Math.PI) / 180);
-  draw();
-  g.restore();
-}
 
 function badge(g: CanvasRenderingContext2D, label: string, x: number, cy: number, size: number): void {
   g.fillStyle = BADGE;

@@ -3,7 +3,7 @@
 // The session asks it whether a new run may start yet; the scene draws its read-back.
 import { whiteboardOf } from "@snapscript/faces";
 import type { CardMap, Handwriting, LanguageMarkers, SkippedLine, TableCard, TableState } from "@snapscript/table-reader";
-import type { Quad } from "./feedback.ts";
+import { onSheet, type Quad } from "./pose.ts";
 import type { CardRef, SceneError } from "./session.ts";
 
 /** The decided starting values (#181), in seconds, for the rig to tune. */
@@ -126,14 +126,5 @@ export function createHandwriting(languageMarkers: LanguageMarkers, settings?: P
 /** A card's whiteboard on the table, from its marker's centre and turn. */
 function whiteboardOn(c: TableCard, notation: string, length: number): Quad | null {
   const wb = whiteboardOf(notation, length);
-  if (!wb) return null;
-  const a = (c.angle * Math.PI) / 180;
-  const [u, v] = [
-    [Math.cos(a), Math.sin(a)],
-    [-Math.sin(a), Math.cos(a)],
-  ] as const;
-  // The face's top-left: half a marker zone back along the card and half its height up from the marker's centre.
-  const x0 = c.x - (17 / 2) * u[0] - (30 / 2) * v[0];
-  const y0 = c.y - (17 / 2) * u[1] - (30 / 2) * v[1];
-  return { x: x0 + wb.x * u[0] + wb.y * v[0], y: y0 + wb.x * u[1] + wb.y * v[1], angle: c.angle, width: wb.width, height: wb.height };
+  return wb && onSheet(c, wb.x, wb.width, wb.y, wb.height);
 }

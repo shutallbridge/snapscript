@@ -2,9 +2,10 @@
 // what it does in a box beside the corner, until it has been gone for about 1 s. Cards in a corner never
 // count for the program (the reader leaves them out), so laying one there restarts nothing.
 import { builtins } from "@snapscript/core";
-import { SHEET, sideOf } from "@snapscript/faces";
+import { sideOf } from "@snapscript/faces";
 import type { Layout, TableCard, TableState } from "@snapscript/table-reader";
 import { U_MM } from "./layout.ts";
+import { cardQuad, corners } from "./pose.ts";
 import type { Project } from "./project.ts";
 
 /** What the help corner needs of a loaded project. */
@@ -63,14 +64,7 @@ function contentOf(marker: number, project: HelpProject): (Content & { length: n
 }
 
 /** The x of the card's outline furthest right: from its marker's centre and angle and its length. */
-function reach(c: TableCard, length: number): number {
-  const a = (c.angle * Math.PI) / 180;
-  const u = [Math.cos(a), Math.sin(a)];
-  const v = [-u[1]!, u[0]!];
-  const along = [-SHEET.markerZoneMm / 2, length * SHEET.unitMm - SHEET.markerZoneMm / 2];
-  const down = [-SHEET.heightMm / 2, SHEET.heightMm / 2];
-  return Math.max(...along.flatMap((p) => down.map((q) => c.x + p * u[0]! + q * v[0]!)));
-}
+const reach = (c: TableCard, length: number): number => Math.max(...corners(cardQuad(c, length)).map(([x]) => x));
 
 export interface HelpCorner {
   /** A table state came, read with this layout. */
