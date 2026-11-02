@@ -37,6 +37,8 @@ export class Module {
     /** The loader's id for the module, `null` for the entry program. */
     readonly id: string | null,
     readonly name: string,
+    /** How a library error names it, `null` for the entry program. */
+    readonly library: string | null,
     /** Its place in load order: positions in it are its index and a span. */
     readonly index: number,
   ) {}
@@ -62,8 +64,55 @@ export class SnapscriptError extends Error {
     message: string,
   ) {
     super(message);
+    this.name = kind;
   }
 }
+
+/** One kind's class: `new ValueError(message)`. */
+export type ErrorOfKind = new (message: string) => SnapscriptError;
+
+/** A class for one kind, for native modules to throw: `throw new ValueError("…")`. */
+const errorOfKind = (kind: ErrorKind): ErrorOfKind =>
+  class extends SnapscriptError {
+    constructor(message: string) {
+      super(kind, message);
+    }
+  };
+
+export const SyntaxError: ErrorOfKind = errorOfKind("SyntaxError");
+export const IndentationError: ErrorOfKind = errorOfKind("IndentationError");
+export const NameError: ErrorOfKind = errorOfKind("NameError");
+export const TypeError: ErrorOfKind = errorOfKind("TypeError");
+export const AttributeError: ErrorOfKind = errorOfKind("AttributeError");
+export const ImportError: ErrorOfKind = errorOfKind("ImportError");
+export const IndexError: ErrorOfKind = errorOfKind("IndexError");
+export const ValueError: ErrorOfKind = errorOfKind("ValueError");
+export const ZeroDivisionError: ErrorOfKind = errorOfKind("ZeroDivisionError");
+export const RecursionError: ErrorOfKind = errorOfKind("RecursionError");
+
+/** Each kind in core's table, and its class. */
+export const errorKinds: Readonly<Record<ErrorKind, ErrorOfKind>> = {
+  SyntaxError,
+  IndentationError,
+  NameError,
+  TypeError,
+  AttributeError,
+  ImportError,
+  IndexError,
+  ValueError,
+  ZeroDivisionError,
+  RecursionError,
+};
+
+/** Marks a runtime error, so one thrown by another copy of this library still counts. */
+const errorBrand = Symbol.for("@snapscript/runtime.error");
+Object.defineProperty(SnapscriptError.prototype, errorBrand, { value: true });
+
+const isSnapscriptError = (e: unknown): e is SnapscriptError =>
+  e instanceof SnapscriptError || (typeof e === "object" && e !== null && (e as Record<symbol, unknown>)[errorBrand] === true);
+
+/** A library's own code broke: its message names the library and the function. */
+class LibraryError extends Error {}
 
 /** What reaches the host when a run stops on an error. */
 export interface RunError {
@@ -153,8 +202,13 @@ class Runtime {
   /** The entry program's module: `[root]`. */
   root: Module | null = null;
   private readonly builtins = new Map<string, Value>();
-  /** For each call in progress, the card on the table that led there. */
-  private readonly stack: (Span | null)[] = [];
+  /** Each call and handler in progress, innermost last. */
+  private readonly stack: Frame[] = [];
+  /** How many calls deep the run is. */
+  private depth = 0;
+  private state: "running" | "stopping" | "stopped" = "running";
+  /** Whether code that entered the program is running: an error in it stops the run there. */
+  private inside = false;
 
   constructor(private readonly host: Host) {
     this.builtins = builtinValues((line) => this.host.output.print({ text: line, span: this.here() }));
@@ -162,13 +216,13 @@ class Runtime {
 
   /** The entry program's card the run is at. */
   here(): Span | null {
-    return this.stack[this.stack.length - 1] ?? null;
+    return this.stack[this.stack.length - 1]?.card ?? null;
   }
 
-  module(id: string | null, name: string, entry: boolean): Module {
-    const m = new Module(id, name, this.modules.length);
+  module(id: string | null, name: string, library: string | null): Module {
+    const m = new Module(id, name, library, this.modules.length);
     this.modules.push(m);
-    if (entry) this.root = m;
+    if (id === null) this.root = m;
     return m;
   }
 
@@ -197,10 +251,23 @@ class Runtime {
     const found = m.attributes.get(key)?.value;
     const counts = found instanceof SnapFunction ? [...((found as ExternFunction).counts ?? []), params] : [params];
     const fn: ExternFunction = Object.assign(
-      new SnapFunction(text, (n) => counts.includes(n), (...args) => this.native(m, text)(this.context(m), ...args) ?? null),
+      new SnapFunction(text, (n) => counts.includes(n), (...args) => this.callNative(m, text, args)),
       { counts },
     );
     this.setAttr(m, key, text, fn);
+  }
+
+  /**
+   * Calls a native function. An error of a kind it throws is the program's;
+   * anything else is the library's own code breaking.
+   */
+  private callNative(m: Module, text: string, args: Value[]): Value {
+    try {
+      return this.native(m, text)(this.context(m), ...args) ?? null;
+    } catch (e) {
+      if (isSnapscriptError(e) || e instanceof LibraryError) throw e;
+      throw new LibraryError(`${m.library ?? m.name} broke inside ${text}: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   private native(m: Module, text: string): NativeFunction {
@@ -212,7 +279,7 @@ class Runtime {
 
   private context(m: Module): NativeContext {
     return {
-      call: (fn, ...args) => this.call(fn, args, m.index, 0, 0),
+      call: (fn, ...args) => this.entry(() => this.call(fn, args, m.index, 0, 0)),
       function: (module, name) => {
         const found = module instanceof Module ? module.attributes.get(name.toLowerCase())?.value : null;
         return found instanceof SnapFunction ? found : null;
@@ -229,7 +296,65 @@ class Runtime {
 
   /** Runs one event's handlers, an imported module's before the module importing it. */
   event(name: string): void {
-    for (const m of this.modules) m.handlers.get(name)?.();
+    for (const m of this.modules) this.handle(m, name);
+  }
+
+  /** Runs a module's handler for an event, if it has one, with no card on the table that led there. */
+  private handle(m: Module, event: string): void {
+    const handler = m.handlers.get(event);
+    if (!handler) return;
+    this.stack.push({ card: null, loop: null });
+    try {
+      handler();
+    } finally {
+      this.stack.pop();
+      this.mark();
+    }
+  }
+
+  /**
+   * Runs code that enters the program from outside it: the load, or a native
+   * module calling back later (a frame). An error there stops the run. Once
+   * stopped, the program runs no more.
+   */
+  entry(body: () => Value): Value {
+    if (this.state === "stopped") return null;
+    if (this.inside) return body();
+    this.inside = true;
+    try {
+      return body();
+    } catch (e) {
+      this.report(e);
+      this.stop();
+      return null;
+    } finally {
+      this.inside = false;
+    }
+  }
+
+  /** Stops the run, once: every `[on(stop)]` runs, an imported module's first, even after another one's error. */
+  stop(): void {
+    if (this.state !== "running") return;
+    this.state = "stopping";
+    const inside = this.inside;
+    this.inside = true;
+    for (const m of this.modules) {
+      try {
+        this.handle(m, "stop");
+      } catch (e) {
+        this.report(e);
+      }
+    }
+    this.inside = inside;
+    this.state = "stopped";
+  }
+
+  /** Gives the host an error, at the card the run was at when it broke. */
+  private report(e: unknown): void {
+    const span = (typeof e === "object" && e !== null && blamed.get(e)) || this.here();
+    const message = e instanceof Error ? e.message : String(e);
+    if (isSnapscriptError(e)) this.host.output.error({ type: "runtime", kind: e.kind, message, span });
+    else this.host.output.error({ type: "library", kind: null, message, span });
   }
 
   missing(source: string): never {
@@ -253,22 +378,34 @@ class Runtime {
 
   /** Enters a call at a card: one on the table is where the run is, one in a library keeps the table's card that led there. */
   private enter(module: number, start: number, end: number): void {
-    const span = module === this.root?.index ? { start, end } : this.here();
-    this.stack.push(span);
+    const card = module === this.root?.index ? { start, end } : this.here();
+    this.stack.push({ card, loop: null });
+    this.depth += 1;
     this.mark();
   }
 
   private leave(): void {
     this.stack.pop();
+    this.depth -= 1;
     this.mark();
   }
 
+  /** A loop of the entry program goes round again: the compiled code marks its head card, where a stuck run is stuck. */
+  loop(start: number, end: number): void {
+    const frame = this.stack[this.stack.length - 1];
+    if (!frame) return;
+    frame.loop = { start, end };
+    this.mark();
+  }
+
+  /** Writes where the run is for the host, which reads it from another thread while the run is stuck. */
   private mark(): void {
     const { position } = this.host;
-    const span = this.here();
     if (!position) return;
-    position[0] = span?.start ?? -1;
-    position[1] = span?.end ?? -1;
+    const frame = this.stack[this.stack.length - 1];
+    const span = frame?.loop ?? frame?.card ?? null;
+    Atomics.store(position, 0, span?.start ?? -1);
+    Atomics.store(position, 1, span?.end ?? -1);
   }
 
   call(fn: Value, args: Value[], module: number, start: number, end: number): Value {
@@ -276,6 +413,7 @@ class Runtime {
     if (!fn.takes(args.length)) this.fail("TypeError", takesMessage(fn), module, start, end);
     this.enter(module, start, end);
     try {
+      if (this.depth >= RECURSION_LIMIT) throw new RecursionError("maximum recursion depth exceeded");
       return fn.impl(...args);
     } catch (e) {
       // The card the run was at when it broke, kept before the calls unwind.
@@ -379,6 +517,18 @@ class Runtime {
     return v;
   }
 }
+
+/**
+ * A call or handler in progress: the card on the table that led there, and
+ * the entry program's loop it is in.
+ */
+interface Frame {
+  card: Span | null;
+  loop: Span | null;
+}
+
+/** How many calls deep a run can go, as in Python: the call that would make it this deep is a `RecursionError`. */
+const RECURSION_LIMIT = 1000;
 
 /** Each error a run meets, and the card it was at. */
 const blamed = new WeakMap<object, Span | null>();
@@ -570,19 +720,25 @@ function builtinValues(print: (line: string) => void): Map<string, Value> {
   return values;
 }
 
+/** A run the host started. */
+export interface Run {
+  /** Stops it: every `[on(stop)]` runs, unless it has stopped already. */
+  stop(): void;
+}
+
 /**
  * Runs compiled JS: loads every module, then runs the `[on(load)]` handlers,
  * an imported module's first. A run stops at the first error, which goes to
- * the host's output.
+ * the host's output, and then every `[on(stop)]` runs. A native module's
+ * calls back into the program after the load (its frames) run until then.
  */
-export function run(js: string, host: Host): void {
+export function run(js: string, host: Host): Run {
   const rt = new Runtime(host);
-  try {
+  if (host.position) host.position.fill(-1);
+  rt.entry(() => {
     new Function("rt", js)(rt);
     rt.event("load");
-  } catch (e) {
-    const span = (typeof e === "object" && e !== null && blamed.get(e)) || rt.here();
-    if (e instanceof SnapscriptError) host.output.error({ type: "runtime", kind: e.kind, message: e.message, span });
-    else host.output.error({ type: "library", kind: null, message: e instanceof Error ? e.message : String(e), span });
-  }
+    return null;
+  });
+  return { stop: () => rt.stop() };
 }
