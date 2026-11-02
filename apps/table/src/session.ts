@@ -16,11 +16,12 @@ import {
 } from "@snapscript/table-reader";
 import { createCalibration, type CalibrationResult, type CalibrationView, type VisionCommand } from "./calibration.ts";
 import { createMenu, type MenuView } from "./menu.ts";
+import { createHelpCorner, type HelpBox } from "./help.ts";
 import type { Project } from "./project.ts";
 import { defaultTableSettings, type TableSettings } from "./settings.ts";
 
 /** What the session needs of a loaded project. */
-export type SessionProject = Pick<Project, "entry" | "loader" | "lockfile" | "languageMarkers">;
+export type SessionProject = Pick<Project, "entry" | "loader" | "lockfile" | "languageMarkers" | "cards">;
 
 /** The session's timings, in seconds: the decided starting values (#181), for the rig to tune. */
 export interface SessionSettings {
@@ -113,6 +114,8 @@ export interface Scene {
   /** Calibration's step, while it runs: drawn over everything, the sketch included. */
   calibration: CalibrationView | null;
   settings: TableSettings;
+  /** The help corner's box, while a card lies there and for 1 s after. */
+  help: HelpBox | null;
 }
 
 export interface Session {
@@ -181,6 +184,7 @@ export function createSession(options: SessionOptions): Session {
     const entry = project.lockfile.get(marker);
     return project.languageMarkers.get(marker)?.length ?? (entry?.kind === "library" ? entry.length : undefined);
   };
+  const help = createHelpCorner(project);
 
   const stop = (run: Run, now: number, sketch: SketchCommand[]): void => {
     sketch.push({ type: "stop", run: run.id });
@@ -189,6 +193,7 @@ export function createSession(options: SessionOptions): Session {
 
   const onTable = (state: TableState, now: number, sketch: SketchCommand[]): void => {
     if (last?.state !== state) last = { state, offset: state.t - now };
+    help.see(state, layout, now);
     const r = step(reader, {
       table: state,
       layout,
@@ -249,6 +254,7 @@ export function createSession(options: SessionOptions): Session {
       let vision: VisionCommand[] = [];
       const calibrating = calibration.active;
       onClock(event.now, sketch);
+      help.tick(event.now);
       // While calibrating, the table is cleared and laid for calibration: the program is left as it was.
       if (event.type === "table") {
         latest = event.state;
@@ -287,12 +293,14 @@ export function createSession(options: SessionOptions): Session {
         menu: menu.view(tableSettings),
         calibration: calibration.view(layout, latest?.cards ?? [], lengthOf),
         settings: tableSettings,
+        help: help.box,
       };
     },
     get wakeAt(): number | null {
       const times = [
         calibration.active ? Infinity : (readerWake ?? Infinity),
         calibration.wakeAt ?? Infinity,
+        help.wakeAt ?? Infinity,
         ...stopping.map((s) => s.killAt),
         ...[shown, next].map((r) => r?.frozenAt ?? Infinity),
       ];
