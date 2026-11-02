@@ -8,6 +8,7 @@ import type { Scene } from "../../session.ts";
 import { drawCalibration } from "./calibration.ts";
 import { drawMenu } from "./menu.ts";
 import { drawFeedback } from "./feedback.ts";
+import { drawHandwriting } from "./handwriting.ts";
 import { drawHelp } from "./help.ts";
 
 declare const table: TableBridge;
@@ -75,11 +76,25 @@ function draw(): void {
   // The card feedback (#195).
   if (scene) drawFeedback(g, scene.feedback, geometry);
 
+  // Handwriting's read-back and status (#196). A waiting line's spinner turns, so draw again next frame.
+  if (scene) {
+    drawHandwriting(g, scene.handwriting, geometry);
+    if (scene.feedback.gutters.some((gt) => gt.dot === "waiting")) requestRedraw();
+  }
+
   // The help box, beside the help corner.
   if (scene?.help) drawHelp(g, scene.help, px);
 
   // The settings menu, above windows, corners and pages: draw it last.
   if (scene?.menu) drawMenu(g, geometry, scene.menu);
+}
+
+let redraw = 0;
+function requestRedraw(): void {
+  if (!redraw) redraw = requestAnimationFrame(() => {
+    redraw = 0;
+    draw();
+  });
 }
 
 table.onGeometry((g) => {

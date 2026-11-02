@@ -13,6 +13,7 @@ import {
   type DetachedLine,
   type Layout,
   type ReaderState,
+  type SkippedLine,
   type TableState,
   type UnknownCard,
   type VirtualCard,
@@ -20,6 +21,7 @@ import {
 import { createCalibration, type CalibrationResult, type CalibrationView, type VisionCommand } from "./calibration.ts";
 import { createMenu, type MenuView } from "./menu.ts";
 import { feedback, type Feedback } from "./feedback.ts";
+import { createHandwriting, type HandwritingView } from "./handwriting.ts";
 import { createHelpCorner, type HelpBox } from "./help.ts";
 import type { Project } from "./project.ts";
 import { defaultTableSettings, type TableSettings } from "./settings.ts";
@@ -33,11 +35,17 @@ export interface SessionSettings {
   stopGraceS: number;
   /** A run with no frame for this long (from its start, or its last frame) is frozen: the sketch process is killed. */
   frozenS: number;
+  /** A new run waits this long for a card not read yet, then starts with its line skipped. */
+  handwritingWaitS: number;
+  /** Read-back shows this long after each new read. */
+  readFlashS: number;
 }
 
 export const defaultSessionSettings: SessionSettings = {
   stopGraceS: 0.5,
   frozenS: 3,
+  handwritingWaitS: 5,
+  readFlashS: 3,
 };
 
 export interface SessionOptions {
@@ -109,6 +117,8 @@ export interface SceneError {
   cards: CardRef[];
   /** A follow-on error: the skipped line it comes from, and the name that line would have set. */
   followsFrom?: { line: number; name: string };
+  /** A `NameError`'s suggested name: the cards that define it. */
+  suggestion?: CardRef[];
 }
 
 /** What the table view draws. */
@@ -130,6 +140,8 @@ export interface Scene {
   help: HelpBox | null;
   /** The card feedback's look: lit cards, gutters, badges, the error bar and print output (#195). */
   feedback: Feedback;
+  /** Handwriting's read-back, and the no-internet status (#196). */
+  handwriting: HandwritingView;
 }
 
 export interface Session {
@@ -216,6 +228,15 @@ export function createSession(options: SessionOptions): Session {
     return project.languageMarkers.get(marker)?.length ?? (entry?.kind === "library" ? entry.length : undefined);
   };
   const help = createHelpCorner(project);
+  const handwriting = createHandwriting(project.languageMarkers, { waitS: settings.handwritingWaitS, flashS: settings.readFlashS });
+  /** The checked buffer a new run starts from, while it waits for handwriting. */
+  let pending: { program: ReturnType<typeof check>["program"]; buffer: Buffer } | null = null;
+  /** The cards the pending run waits for, and the lines they're on, which hide their follow-on errors meanwhile. */
+  let waitingTracks: number[] = [];
+  let waitingLines = new Set<number>();
+  let readerSkips: SkippedLine[] = [];
+  /** The newest event's time, for what the scene shows by the clock. */
+  let clock = 0;
 
   const stop = (run: Run, now: number, sketch: SketchCommand[]): void => {
     sketch.push({ type: "stop", run: run.id });
@@ -225,6 +246,7 @@ export function createSession(options: SessionOptions): Session {
   const onTable = (state: TableState, now: number, sketch: SketchCommand[]): void => {
     if (last?.state !== state) last = { state, offset: state.t - now };
     help.see(state, layout, now);
+    handwriting.see(state, now);
     const r = step(reader, {
       table: state,
       layout,
@@ -240,6 +262,9 @@ export function createSession(options: SessionOptions): Session {
     stripHeads = r.output.stripHeads;
     detached = r.output.detached;
     tableErrors = tableErrorsOf(state, r.output.unknownCards);
+    waitingTracks = handwriting.waitingTracks(r.output.map, r.output.skippedLines);
+    readerSkips = r.output.skippedLines;
+    waitingLines = new Set(r.output.skippedLines.filter((l) => l.reason === "not read yet").map((l) => l.line));
     if (!changed) return;
     const checked = check(r.output.text, r.output.skippedLines, { loader: project.loader, id: project.entry.id });
     skippedLines = checked.program.skippedLines;
@@ -247,15 +272,25 @@ export function createSession(options: SessionOptions): Session {
       const error: SceneError = { from: "check", kind: e.kind, message: e.message, cards: cardsAt(buffer, e.spans) };
       const name = e.spans[0] && buffer.text.slice(e.spans[0].start, e.spans[0].end);
       if (e.followsFrom !== null && name) error.followsFrom = { line: e.followsFrom, name };
+      if (e.suggestion) error.suggestion = cardsAt(buffer, e.suggestion.spans);
       return error;
     });
-    if (r.output.placementOnly) return;
+    // A run waiting for handwriting starts from the newest buffer, a slid strip's included.
+    if (r.output.placementOnly && !pending) return;
+    pending = { program: checked.program, buffer };
+  };
+
+  /** Starts the pending run once no card it waits for is still within its wait. */
+  const startIfReady = (now: number, sketch: SketchCommand[]): void => {
+    if (!pending || handwriting.readyAt(waitingTracks) > now) return;
+    const { program } = pending;
     if (next) stop(next, now, sketch);
     runs += 1;
-    next = newest = { id: runs, buffer, frozenAt: now + settings.frozenS, error: null, prints: new Map() };
+    next = newest = { id: runs, buffer: pending.buffer, frozenAt: now + settings.frozenS, error: null, prints: new Map() };
+    pending = null;
     frozen = false;
     frozenRun = null;
-    sketch.push({ type: "start", run: next.id, js: compile(checked.program), natives: nativeModulesOf(checked.program) });
+    sketch.push({ type: "start", run: next.id, js: compile(program), natives: nativeModulesOf(program) });
   };
 
   /** The read errors and unknown cards in the buffer: the table's own errors, each lighting its card. */
@@ -322,6 +357,7 @@ export function createSession(options: SessionOptions): Session {
       let changed: TableSettings | null = null;
       let vision: VisionCommand[] = [];
       const calibrating = calibration.active;
+      clock = event.now;
       onClock(event.now, sketch);
       help.tick(event.now);
       // While calibrating, the table is cleared and laid for calibration: the program is left as it was.
@@ -351,10 +387,13 @@ export function createSession(options: SessionOptions): Session {
         if (!calibrating && last && readerWake !== null && readerWake <= event.now) onTable(last.state, event.now, sketch);
       }
       if (calibrating && !calibration.active && latest) onTable(latest, event.now, sketch);
+      if (!calibration.active) startIfReady(event.now, sketch);
       return { sketch, settings: changed, vision };
     },
     get scene(): Scene {
-      const errors = [...checkErrors, ...tableErrors, ...(newest?.error ? [newest.error] : []), ...(frozenRun ? [frozenRun.error] : [])];
+      // A waiting line's follow-on errors stay hidden until it's read.
+      const shownCheckErrors = checkErrors.filter((e) => !(e.followsFrom && waitingLines.has(e.followsFrom.line)));
+      const errors = [...shownCheckErrors, ...tableErrors, ...(newest?.error ? [newest.error] : []), ...(frozenRun ? [frozenRun.error] : [])];
       const prints = shown ? [...shown.prints.values()].map((p) => ({ text: p.text, cards: cardsAt(shown!.buffer, [p.span]) })) : [];
       return {
         cards: buffer.map.cards.map(refOf),
@@ -365,7 +404,8 @@ export function createSession(options: SessionOptions): Session {
         calibration: calibration.view(layout, latest?.cards ?? [], knownLengthOf),
         settings: tableSettings,
         help: help.box,
-        feedback: feedback({ state: last?.state ?? null, map: buffer.map, lengthOf, stripHeads, detached, skippedLines, errors, prints }),
+        feedback: feedback({ state: last?.state ?? null, map: buffer.map, lengthOf, stripHeads, detached, skippedLines, readerSkips, errors, prints }),
+        handwriting: handwriting.view({ state: last?.state ?? null, map: buffer.map, errors, readBackAll: tableSettings.readBack, lengthOf, now: clock }),
       };
     },
     get wakeAt(): number | null {
@@ -373,6 +413,8 @@ export function createSession(options: SessionOptions): Session {
         calibration.active ? Infinity : (readerWake ?? Infinity),
         calibration.wakeAt ?? Infinity,
         help.wakeAt ?? Infinity,
+        pending ? handwriting.readyAt(waitingTracks) : Infinity,
+        handwriting.wakeAt(clock) ?? Infinity,
         ...stopping.map((s) => s.killAt),
         ...[shown, next].map((r) => r?.frozenAt ?? Infinity),
       ];
