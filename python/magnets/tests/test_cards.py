@@ -11,25 +11,25 @@ from magnets import ProgramError, check, check_program
 SPEC_CARDS = {
     "simple_head.head": [
         "[return]", "[set{a}to]", "[set{b}to]", "[set{count}to]", "[set{empty}to]", "[set{frame Count}to]",
-        "[set{frameCount}to]", "[set{framecount}to]", "[set{f}to]", "[set{helper}to]", "[set{n}to]", "[set{pi}to]", "[set{scores}to]",
+        "[set{frameCount}to]", "[set{framecount}to]", "[set{f}to]", "[set{helper}to]", "[set{n}to]", "[set{pi}to]", "[set{score}to]", "[set{scores}to]",
         "[set{user}to]", "[set{width}to]", "[set{x}to]", "[set{y}to]", "[set{}to]",
     ],
     "get.get": [
         "[get(p5.frameCount)]", "[get(pi)]", "[get(x)]", "[get(y)]", "[get{app}]", "[get{a}]", "[get{b}]", "[get{c}]", "[get{count}]",
         "[get{done}]", "[get{empty}]", "[get{helper}]", "[get{i}]", "[get{message}]", "[get{name}]", "[get{n}]",
-        "[get{p5.framecount}]", "[get{p5}]", "[get{ready}]", "[get{scores}]", "[get{score}]", "[get{shapes.unit}]", "[get{shapes}]", "[get{s}]",
+        "[get{p5.framecount}]", "[get{p5}]", "[get{ready}]", "[get{scores}]", "[get{score}]", "[get{shapes.unit}]", "[get{shapes}]", "[get{scare}]", "[get{s}]",
         "[get{title}]", "[get{user}]", "[get{width}]", "[get{x}]", "[get{y}]", "[root]",
     ],
     "define.define": [
         "[define(setup)]", "[define(star)]", "[define{a}]", "[define{blob}]", "[define{b}]", "[define{dot}]",
         "[define{double}]", "[define{drawCircle}]", "[define{draw}]", "[define{drawcircle}]", "[define{foo}]", "[define{f}]", "[define{greet}]",
-        "[define{g}]", "[define{helper}]", "[define{h}]", "[define{p5}]", "[define{print}]", "[define{setup}]",
+        "[define{g}]", "[define{helper}]", "[define{h}]", "[define{j}]", "[define{k}]", "[define{m}]", "[define{p5}]", "[define{print}]", "[define{setup}]",
         "[define{show}]", "[define{…}]",
     ],
     "call.call": [
         "[call(abs)]", "[call(append)]", "[call(circle)]", "[call(cos)]", "[call(dict)]", "[call(getAt)]",
         "[call(len)]", "[call(list)]", "[call(max)]", "[call(min)]", "[call(p5.background)]", "[call(p5.circle)]",
-        "[call(p5.createCanvas)]", "[call(pop)]", "[call(print)]", "[call(random)]", "[call(range)]", "[call(round)]",
+        "[call(p5.createCanvas)]", "[call(p5.fill)]", "[call(pop)]", "[call(print)]", "[call(random)]", "[call(range)]", "[call(round)]",
         "[call(run)]", "[call(setAt)]", "[call(sin)]", "[call(sqrt)]", "[call(…)]", "[call{b}]", "[call{double}]",
         "[call{drawcircle}]", "[call{foo}]", "[call{f}]", "[call{greet}]", "[call{g}]", "[call{helper}]", "[call{h}]", "[call{p5.circel}]",
         "[call{p5.circle}]", "[call{random}]", "[call{shapes.star}]", "[call{star}]",
@@ -51,7 +51,7 @@ SPEC_CARDS = {
         "[optional{size}]", "[optional{suffix}]", "[optional{title}]",
     ],
     "literal.num": [
-        "[num(0)]", "[num(5)]", "[num{-1}]", "[num{-2.5}]", "[num{-5}]", "[num{.5}]", "[num{0.5}]", "[num{0}]", "[num{1 000}]",
+        "[num(0)]", "[num(5)]", "[num{0.1}]", "[num{0.2}]", "[num{1000000000}]", "[num{250}]", "[num{4o}]", "[num{-1}]", "[num{-2.5}]", "[num{-5}]", "[num{.5}]", "[num{0.5}]", "[num{0}]", "[num{1 000}]",
         "[num{100}]", "[num{10}]", "[num{16}]", "[num{180}]", "[num{1e5}]", "[num{1}]", "[num{2.4}]", "[num{2.5}]", "[num{20}]", "[num{25}]", "[num{2}]",
         "[num{30}]", "[num{3}]", "[num{40}]", "[num{4}]", "[num{5.}]", "[num{500}]", "[num{5}]", "[num{90}]", "[num{9}]", "[num{}]",
         "[num{…}]",
@@ -60,11 +60,11 @@ SPEC_CARDS = {
         "[str{1}]", "[str{Ada}]", "[str{Mx}]", "[str{Welcome_user!}]", "[str{__hi}]", "[str{_}]", "[str{a}]",
         "[str{ab}]", "[str{anon}]", "[str{b}]", "[str{cd}]", "[str{close}]", "[str{done}]", "[str{hello world}]",
         "[str{hello_world}]", "[str{hello}]", "[str{hi}]", "[str{lose}]", "[str{neither}]", "[str{round_one}]",
-        "[str{score}]", "[str{wait}]", "[str{win}]", "[str{you_win}]", "[str{}]", "[str{…}]",
+        "[str{score}]", "[str{wait}]", "[str{win}]", "[str{you_win}]", "[str{not_a}]", "[str{y}]", "[str{}]", "[str{…}]",
     ],
     "bool.true": ["[bool(true)]"],
     "bool.false": ["[bool(false)]"],
-    "color.front": ["[color(midnightblue)]", "[color(notacolor)]", "[color(purple)]", "[color(…)]"],
+    "color.front": ["[color(gold)]", "[color(midnightblue)]", "[color(notacolor)]", "[color(purple)]", "[color(…)]"],
     "none.none": ["[none]"],
     "block_head.head": ["[for{i}in]", "[for{s}in]", "[for{x}in]", "[for{…}in]", "[if]", "[repeat]"],
     "elif.elif": ["[elif]"],
@@ -91,8 +91,8 @@ SPEC_CARDS = {
     ],
 }
 
-# Bracketed text in the spec that is prose shorthand, not a card.
-PROSE = {"[…]", "[define]"}
+# Bracketed text in the spec that is prose shorthand or printed output, not a card.
+PROSE = {"[…]", "[define]", "[call]", "[`, `]", '["a"]', '[1, 2, "a"]'}
 
 SPECS = [Path(__file__).parents[3] / name for name in ("REFERENCE.md", "README.md")]
 

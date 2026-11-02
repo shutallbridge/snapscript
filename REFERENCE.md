@@ -363,7 +363,7 @@ A bare name resolves where the cards are written: in the local scope, then among
 [set{count}to][num{0}]      a local, gone when setup returns
 
 [define{draw}]
-[call(print)][get{count}]   NameError: count is not defined
+[call(print)][get{count}]   NameError: count is not defined. Did you mean round?
 ```
 
 ```
@@ -394,7 +394,7 @@ Variables are function-scoped.
 [set{n}to][num{0}]
 
 [define{b}]
-[call(print)][get{n}]       NameError: n is not defined here
+[call(print)][get{n}]       NameError: n is not defined
 ```
 
 A name that a function sets anywhere is a local throughout that function.
@@ -945,7 +945,7 @@ Builtins are used without a namespace. `pi` is a value; every other builtin is a
 | a function, a module                             | `<function draw>`, `<module p5>` |
 
 ```
-[call(print)][num{1}][str{a}][call(list)][str{a}]       1 a ["a"]
+[call(print)][num{1}][str{a}][(][call(list)][str{a}][)]       1 a ["a"]
 ```
 
 Python shows `True` and `None`, with capitals.
