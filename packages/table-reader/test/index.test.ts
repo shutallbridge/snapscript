@@ -205,6 +205,29 @@ describe("windows and corners", () => {
   });
 });
 
+describe("the current page", () => {
+  test("is the table state's page track, with the page its marker names in the lockfile", () => {
+    // A page lies anywhere on the table, the canvas space too.
+    const t = { ...table(card(1, DEFINE, 50, 50, { text: "setup" }), card(7, PAGE, 500, 300)), page: 7 };
+    expect(run(t).last.page).toEqual({
+      track: 7,
+      textbook: "snapscript-p5-getting-started",
+      volume: "confetti",
+      page: 3,
+    });
+  });
+
+  test("is null when the vision service sends none, or a null one", () => {
+    expect(run(table(card(7, PAGE, 500, 300))).last.page).toBeNull();
+    expect(run({ ...table(card(7, PAGE, 500, 300)), page: null }).last.page).toBeNull();
+  });
+
+  test("is null when its track isn't a page the lockfile knows", () => {
+    expect(run({ ...table(card(1, DEFINE, 50, 50, { text: "setup" })), page: 1 }).last.page).toBeNull();
+    expect(run({ ...table(), page: 9 }).last.page).toBeNull();
+  });
+});
+
 describe("library cards", () => {
   test("take their length from the lockfile", () => {
     // CIRCLE is the 3U [call(p5.circle)]: a [num{…}] 3U along joins it, and one 4U along doesn't.

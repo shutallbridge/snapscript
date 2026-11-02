@@ -13,8 +13,14 @@ const p5 = lines(
   "[extern(background)][required(color)]",
   "[extern(noStroke)]",
   "[extern(rect)][required(x)][required(y)][required(w)][required(h)]",
+  "/**",
+  " * @param {num} x",
+  " * @param {num} y",
+  " * @param {num} d  its diameter",
+  " */",
   "[extern(circle)][required(x)][required(y)][required(d)]",
   "",
+  "/** @param {color} color */",
   "[extern(fill)][required(color)]",
   "[extern(fill)][required(r)][required(g)][required(b)]",
   "",
@@ -203,29 +209,47 @@ describe("§5 a module's attributes", () => {
 describe("each call card's expected values, by text position", () => {
   const at = (text: string, line: number, start: number, skipped: SkippedLine[] = []) =>
     check(text, skipped, { loader: memoryLoader({}) }).expectedValues.find((e) => e.at.line === line && e.at.start === start);
+  const names = (values: { name: string }[]) => values.map((v) => v.name);
+  const num = (name: string) => ({ name, type: "num" });
 
-  test("[call(p5.circle)] expects x, y and d", () => {
+  test("[call(p5.circle)] expects x, y and d, each a num as its doc comment declares", () => {
     expect(at(withP5("[call(p5.circle)][num{1}][num{2}][num{3}]"), 4, 0)).toEqual({
       span: { start: 46, end: 63 },
       at: { line: 4, start: 0, end: 17 },
       name: "circle",
-      overloads: [{ values: ["x", "y", "d"], variadic: null }],
+      overloads: [{ values: [num("x"), num("y"), num("d")], variadic: null }],
     });
   });
 
-  test("[call(p5.fill)] has both overloads, in the order declared", () => {
+  test("[call(p5.fill)] has both overloads, in the order declared: a value with no declared type has none", () => {
     expect(at(withP5("[set{c}to][call(p5.fill)][color(gold)]"), 4, 10)?.overloads).toEqual([
-      { values: ["color"], variadic: null },
-      { values: ["r", "g", "b"], variadic: null },
+      { values: [{ name: "color", type: "color" }], variadic: null },
+      { values: [{ name: "r", type: null }, { name: "g", type: null }, { name: "b", type: null }], variadic: null },
+    ]);
+  });
+
+  test("a type the language doesn't have, or more than one, gives no type", () => {
+    const shapes = lines(
+      "/**",
+      " * @param {number} a",
+      " * @param {num|str} b",
+      " * @param c",
+      " */",
+      "[extern(ring)][required(a)][required(b)][required(c)]",
+    );
+    const text = lines("[import(./shapes.snap)as(shapes)]", "", "[define{draw}]", "[call(shapes.ring)]");
+    const found = check(text, [], { loader: memoryLoader({ "shapes.snap": shapes }) }).expectedValues[0];
+    expect(found?.overloads).toEqual([
+      { values: [{ name: "a", type: null }, { name: "b", type: null }, { name: "c", type: null }], variadic: null },
     ]);
   });
 
   test("a half-built line, skipped with its error, still has them", () => {
-    expect(at(withP5("[call(p5.circle)][num{20}]"), 4, 0)?.overloads).toEqual([{ values: ["x", "y", "d"], variadic: null }]);
+    expect(at(withP5("[call(p5.circle)][num{20}]"), 4, 0)?.overloads).toEqual([{ values: [num("x"), num("y"), num("d")], variadic: null }]);
   });
 
   test("so does a skipped line the table read", () => {
-    expect(at(withP5("[call(p5.circle)][num{1}]"), 4, 0, [{ line: 4 }])?.overloads).toEqual([{ values: ["x", "y", "d"], variadic: null }]);
+    expect(at(withP5("[call(p5.circle)][num{1}]"), 4, 0, [{ line: 4 }])?.overloads).toEqual([{ values: [num("x"), num("y"), num("d")], variadic: null }]);
   });
 
   test("builtins, the file's own functions and nested calls have them too", () => {
@@ -233,24 +257,27 @@ describe("each call card's expected values, by text position", () => {
       "[call(p5.circle)][(][call(random)][num{500}][)][num{5}][num{5}]",
       "[call{size}][num{5}]",
       "",
+      "/** @param {num} n */",
       "[define{size}][required{n}][optional{m}]",
     );
     const found = check(text, [], { loader: memoryLoader({}) }).expectedValues.map((e) => [e.at.line, e.at.start, e.name, e.overloads.map((o) => o.values)]);
     expect(found).toEqual([
-      [4, 0, "circle", [["x", "y", "d"]]],
-      [4, 20, "random", [[], ["end"], ["start", "end"]]],
-      [5, 0, "size", [["n"], ["n", "m"]]],
+      [4, 0, "circle", [[num("x"), num("y"), num("d")]]],
+      // A builtin's types come from the language's table.
+      [4, 20, "random", [[], [num("end")], [num("start"), num("end")]]],
+      [5, 0, "size", [[num("n")], [num("n"), { name: "m", type: null }]]],
     ]);
   });
 
   test("turn into the table reader's value guide sources", () => {
     const { expectedValues } = check(withP5("[call(p5.fill)][num{1}][num{2}][num{3}]"), [], { loader: memoryLoader({}) });
     const sources = expectedValues.map(({ at: { line, start }, overloads }) => ({ version: 7, at: { line, start }, values: overloads[1].values }));
-    expect(sources).toEqual([{ version: 7, at: { line: 4, start: 0 }, values: ["r", "g", "b"] }]);
+    expect(sources).toEqual([{ version: 7, at: { line: 4, start: 0 }, values: [{ name: "r", type: null }, { name: "g", type: null }, { name: "b", type: null }] }]);
+    expect(names(sources[0].values)).toEqual(["r", "g", "b"]);
   });
 
-  test("a variadic slot is named", () => {
-    expect(at(withP5("[call(print)][num{1}]"), 4, 0)?.overloads).toEqual([{ values: [], variadic: "values" }]);
+  test("a variadic slot is named, with its type", () => {
+    expect(at(withP5("[call(print)][num{1}]"), 4, 0)?.overloads).toEqual([{ values: [], variadic: { name: "values", type: null } }]);
   });
 
   test("a call whose function isn't known has none", () => {

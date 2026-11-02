@@ -23,6 +23,8 @@ export interface TableState {
   t: number;
   mm_per_projector_height: number;
   cards: TableCard[];
+  /** The current page's track (the newest page in view), or null. Recordings from before it was sent have none. */
+  page?: number | null;
 }
 
 /** A rectangle in table mm, from its top-left corner. */
@@ -136,8 +138,11 @@ export interface StandIn {
   id: string;
   card: string;
   length: number;
-  /** Its strip's `@table` position, from the coding space's top-left. */
-  strip: { x: number; y: number; turn: number };
+  /**
+   * Its strip's `@table` position, from the coding space's top-left; or, for an auto strip, which
+   * of the entry text's auto strips it is (from 0), laid out each step for the coding space then.
+   */
+  strip: { x: number; y: number; turn: number } | { auto: number };
   /** U along the strip from its head's left end, and its line's index in the strip (its head's line is 0). */
   along: number;
   lineIndex: number;
@@ -235,7 +240,7 @@ export interface UnknownCard {
  */
 export type VirtualCard =
   | { id: string; kind: "stand-in" | "guide"; card: string; length: number; x: number; y: number; angle: number }
-  | { id: string; kind: "value"; value: string; length: number; x: number; y: number; angle: number };
+  | { id: string; kind: "value"; value: string; type: string | null; length: number; x: number; y: number; angle: number };
 
 /** A real card lying in a guide's place, so the guide isn't drawn. */
 export interface Place {
@@ -257,14 +262,32 @@ export interface ValueGuideSource {
   version: number;
   /** The call card's text position. */
   at: { line: number; start: number };
-  /** The values it expects after it, by name. */
-  values: string[];
+  /** The values it expects after it: each one's name, and its declared type or `null` (the checker's expected values). */
+  values: ExpectedValue[];
+}
+
+/**
+ * A value a call card expects: its name, and the type it's declared to take (`num`, `color` …), so
+ * its guide can be drawn as that type's card; `null` for a plain guide. It isn't checked against the
+ * card laid on it.
+ */
+export interface ExpectedValue {
+  name: string;
+  type: string | null;
 }
 
 /** The guides the table should show: the current page's program text, and value guides. */
 export interface GuideSources {
   page?: string;
   values?: ValueGuideSource[];
+}
+
+/** The page the vision service says is current, as the lockfile names it, with its track. */
+export interface CurrentPage {
+  track: number;
+  textbook: string;
+  volume: string;
+  page: number;
 }
 
 export interface StepOutput {
@@ -284,6 +307,8 @@ export interface StepOutput {
   /** Real cards in guides' places. */
   places: Place[];
   mismatches: Mismatch[];
+  /** The current page, or null when there's none or its track isn't a page in the lockfile. */
+  page: CurrentPage | null;
   /**
    * When a card that has stopped by a virtual card will have lain still long enough to take its
    * place, if one has: the table app steps again then, with the same table state.
