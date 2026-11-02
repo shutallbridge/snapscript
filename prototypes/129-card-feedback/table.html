@@ -71,7 +71,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['vlook', 'Look', ['ghost', 'outline', 'footprint']],
     ['vdim', 'Stand-in brightness', [25, 35, 45, 60, 75, 100], '%'],
     ['vmzLit', 'Stand-in marker zone', ['white', 'dark']],  // white blinds the camera to a real card laid on it
-    ['vsFill', 'Stand-in marker zone fill (dark)', [0, 10, 20, 30, 40, 50], '% white'],
+    ['vsFill', 'Stand-in marker zone fill (dark)', [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], '% white'],
     ['vsEdge', 'Stand-in marker zone edge', [0, 0.5, 1, 1.5, 2], ' mm'],
     ['vsAlpha', 'Stand-in marker zone edge brightness', [20, 30, 50, 75, 100], '%'],
     ['vedge', 'Guide edge thickness', [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2], ' mm'],
@@ -152,7 +152,7 @@ addEventListener('keydown', e => {
   const LOOKS = ['ghost', 'outline', 'footprint'];
   if (e.key === 'b') { const B = [0, 5, 10, 15, 20, 30, 40]; cfg.vfill = B[(B.indexOf(cfg.vfill) + 1) % B.length]; save(); say(`guide background: ${cfg.vfill ? cfg.vfill + '%' : 'off'}`); return; }  // off, 5, 10, 15, 20, 30, 40 %
   if (e.key === 'e') { const E = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75]; cfg.vedge = E[(E.indexOf(cfg.vedge) + 1) % E.length]; save(); say(`guide edge: ${cfg.vedge ? cfg.vedge + ' mm' : 'none'}`); return; }  // none to 1.75 mm
-  if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
+  if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
   if (e.key === 'm') { const M = [0, 0.5, 1, 1.5, 2]; cfg.vsEdge = M[(M.indexOf(cfg.vsEdge) + 1) % M.length]; save(); say(`stand-in marker zone edge: ${cfg.vsEdge ? cfg.vsEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'w') { cfg.vwb = !cfg.vwb; save(); say(`guide whiteboard edge: ${cfg.vwb ? 'on' : 'off'}`); return; }
   if (LOOKS[+e.key - 1]) { cfg.vlook = LOOKS[+e.key - 1]; save(); say(`${e.key}: ${cfg.vlook === 'ghost' ? 'stand-in' : 'guide, ' + cfg.vlook}`); return; }
