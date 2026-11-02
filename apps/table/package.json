@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./project": "./src/project.ts",
+    "./kit": "./src/kit.ts"
+  },
   "scripts": {
     "lock": "pnpm --filter \"@snapscript/table^...\" build && node src/lock.ts",
     "test": "vitest run"
@@ -14,7 +18,8 @@
     "@snapscript/parser": "workspace:*",
     "@snapscript/table-reader": "workspace:*",
     "@types/mdast": "^4.0.4",
-    "mdast-util-from-markdown": "^2.1.0"
+    "mdast-util-from-markdown": "^2.1.0",
+    "yaml": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

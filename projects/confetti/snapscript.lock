@@ -1,0 +1,18 @@
+# Marker IDs for this project's library cards and textbook pages, kept by pnpm lock.
+400 = call snapscript-p5.createCanvas 4
+401 = call snapscript-p5.background 3
+402 = call snapscript-p5.noStroke 3
+403 = call snapscript-p5.fill 2
+404 = call snapscript-p5.rect 2
+405 = call snapscript-p5.circle 2
+406 = define snapscript-p5.setup 4
+407 = define snapscript-p5.draw 3
+408 = page snapscript-p5-getting-started/confetti 1
+409 = page snapscript-p5-getting-started/confetti 2
+410 = page snapscript-p5-getting-started/confetti 3
+411 = page snapscript-p5-getting-started/confetti 4
+412 = page snapscript-p5-getting-started/confetti 5
+413 = page snapscript-p5-getting-started/confetti 6
+414 = page snapscript-p5-getting-started/confetti 7
+415 = page snapscript-p5-getting-started/confetti 8
+416 = page snapscript-p5-getting-started/confetti 9
