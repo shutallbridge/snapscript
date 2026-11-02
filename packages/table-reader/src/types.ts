@@ -114,6 +114,12 @@ export interface ReaderSettings {
   placeKeepDeg: number;
   /** A value guide's length in U. */
   valueGuideLength: number;
+  /**
+   * A card whose marker the table doesn't know is taken to be a whole number of U from
+   * unknownMinLength to unknownMaxLength long, whichever puts the next card in reach of a join.
+   */
+  unknownMinLength: number;
+  unknownMaxLength: number;
 }
 
 /**

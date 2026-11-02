@@ -43,6 +43,8 @@ export const defaultSettings: ReaderSettings = {
   placeKeepMm: 15,
   placeKeepDeg: 20,
   valueGuideLength: 4,
+  unknownMinLength: 2,
+  unknownMaxLength: 8,
 };
 
 /**
@@ -356,21 +358,27 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
 
   // Joins (#147): each card against its neighbour, along and across the line its two angles average to.
   const candidates: { left: Placed; right: Placed; held: boolean; distance: number }[] = [];
+  // A card whose marker the table doesn't know could be any whole number of U long (README: every
+  // card is a whole number of U, at least 2U), so the next card is measured from its marker at each.
+  const unknownLengths: number[] = [];
+  for (let n = s.unknownMinLength; n <= s.unknownMaxLength; n++) unknownLengths.push(n * s.unitMm);
   for (const left of cards) {
+    const lengths = left.lengthMm === undefined ? unknownLengths : [left.lengthMm];
     for (const right of cards) {
-      // Nothing joins after a card of unknown length.
-      if (right === left || right.standsAlone || left.lengthMm === undefined) continue;
+      if (right === left || right.standsAlone) continue;
       const turn = angleDiff(left.angle, right.angle);
       if (Math.abs(turn) >= s.maxAngleDeg) continue;
       const u = unit(left.angle + turn / 2);
       const d: Vec = [right.centre[0] - left.centre[0], right.centre[1] - left.centre[1]];
-      const along = d[0] * u[0] + d[1] * u[1] - left.lengthMm;
       const across = -d[0] * u[1] + d[1] * u[0];
       const held = prev.joins.has(pairKey(left.key, right.key));
-      const ok = held
-        ? along >= s.joinKeepAlongMinMm && along <= s.joinKeepAlongMaxMm && Math.abs(across) <= s.joinKeepAcrossMm
-        : along >= s.joinMakeAlongMinMm && along <= s.joinMakeAlongMaxMm && Math.abs(across) <= s.joinMakeAcrossMm;
-      if (ok) candidates.push({ left, right, held, distance: Math.hypot(along, across) });
+      for (const length of lengths) {
+        const along = d[0] * u[0] + d[1] * u[1] - length;
+        const ok = held
+          ? along >= s.joinKeepAlongMinMm && along <= s.joinKeepAlongMaxMm && Math.abs(across) <= s.joinKeepAcrossMm
+          : along >= s.joinMakeAlongMinMm && along <= s.joinMakeAlongMaxMm && Math.abs(across) <= s.joinMakeAcrossMm;
+        if (ok) candidates.push({ left, right, held, distance: Math.hypot(along, across) });
+      }
     }
   }
   // Joins already made go first, then the nearest. Each card has at most one neighbour on each side.

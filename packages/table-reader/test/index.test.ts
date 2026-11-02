@@ -279,6 +279,8 @@ describe("settings", () => {
       placeKeepMm: 15,
       placeKeepDeg: 20,
       valueGuideLength: 4,
+      unknownMinLength: 2,
+      unknownMaxLength: 8,
     });
   });
 
