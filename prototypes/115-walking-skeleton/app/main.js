@@ -116,7 +116,7 @@ app.whenReady().then(() => {
 
   ipcMain.on('lit', (_, seq, t) => { const r = pending.get(seq); if (r) { r.t_lit = t; finish(seq); } });
   ipcMain.on('drawn', (_, seq, t, err) => { const r = pending.get(seq); if (r) { r.t_drawn = t; if (err) r.run_error = err; finish(seq); } });
-  ipcMain.on('fps', (_, f) => { fps = f; });
+  ipcMain.on('fps', (_, f) => { fps = f; fs.appendFileSync(path.join(runs, 'fps.log'), `${now().toFixed(1)} ${f}\n`); });
   ipcMain.on('grab', (_, seq, ms, g) => {
     if (!process.env.CAPTURE) return;
     if (!g) return fs.appendFileSync(path.join(runs, 'grab.log'), `${seq} ${ms} no canvas\n`);
