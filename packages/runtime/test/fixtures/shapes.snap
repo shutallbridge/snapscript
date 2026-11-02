@@ -1,0 +1,3 @@
+// A made-up library whose native module records its calls.
+[extern(circle)][required(x)][required(y)][required(d)]
+[extern(fill)][required(color)]

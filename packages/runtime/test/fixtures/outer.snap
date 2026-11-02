@@ -1,0 +1,5 @@
+// A made-up library that imports another: their [on(load)]s run inner first.
+[import(./inner.snap)as(inner)]
+
+[on(load)]
+[call(print)][str{outer}]
