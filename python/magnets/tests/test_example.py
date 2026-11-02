@@ -13,6 +13,13 @@ from magnets import check
 SET_GET_EXAMPLE = set_get(top=[("left", "1/6", "S/N")], bottom=[("left", "1/6", "N/S")])
 
 
+def test_the_frozen_0_1_0_arrangement_is_found_by_name():
+    # The full search's result (#95): valid, with 74 magnets.
+    result = check("0.1.0")
+    assert result.valid
+    assert result.arrangement.name == "0.1.0"
+
+
 def pockets(result, side, edge):
     return [p.layers for p in result.sides[f"set_get.{side}"].edges[edge]]
 

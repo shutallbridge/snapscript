@@ -94,7 +94,7 @@ SPEC_CARDS = {
 # Bracketed text in the spec that is prose shorthand, not a card.
 PROSE = {"[…]", "[define]"}
 
-SPECS = [Path(__file__).parents[2] / name for name in ("REFERENCE.md", "README.md")]
+SPECS = [Path(__file__).parents[3] / name for name in ("REFERENCE.md", "README.md")]
 
 
 def sides_of(cards):

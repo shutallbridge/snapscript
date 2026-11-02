@@ -1,10 +1,12 @@
 # magnets
 
 Checker and CP-SAT solver for the Snapscript magnet arrangement (see issue
-#10 for the model).
+#10 for the model). It is a member of the uv workspace in `python/`; run
+`uv sync` there once, then these from `python/magnets/`.
 
 ```sh
 uv run magnets check                 # the bundled `example` arrangement
+uv run magnets check 0.1.0           # the frozen 0.1.0 arrangement, from language/
 uv run magnets check my.yaml --out out/mine
 uv run magnets search --flip top_bottom --classes simple_head,get,literal --time-limit 30
 uv run magnets search --flip top_bottom --pin example   # keep the example's simple_head, get and literal design
@@ -44,8 +46,13 @@ take the same roles on both sides, so under either flip a partner contact
 has its contact's verdict and nothing is unavoidable (ADR 0003); class
 data with flip pairs whose sides differ, as in the tests, has unavoidable
 leaks.
-Card classes (`classes.yaml`), grammar rules (`rules.yaml`) and bundled
-arrangements live in `src/magnets/data/`. A class has a `min_length`, its
+Card classes (`classes.yaml`), grammar rules (`rules.yaml`) and the frozen
+arrangements (`arrangements/0.1.0.yaml`) are language files: they live in
+`language/` at the repo root, and `magnets` reads them from there in the
+clone it runs from (`_data_dir()` in `data.py`). The `example` arrangement
+and the test programs are `magnets`' own, in `src/magnets/data/`; a name
+such as `0.1.0` or `example` is looked up in `language/arrangements/`
+first, then there. A class has a `min_length`, its
 shortest card (2U for every class for now; a class can be set to 1U), and a
 `pocket_reach`: a top or bottom pocket sits less than the reach from its end
 (1U, or 2U on block heads, `[elif]`, `[else]` and `[dedent]`). Each class

@@ -1,12 +1,12 @@
 """Builders for hand-made arrangements and lookups into check results."""
 
 import copy
-from importlib import resources
 
 import yaml
 from hypothesis import strategies as st
 
 from magnets import CheckResult, ContactGroup, check
+from magnets.data import _data_dir
 from magnets.physics import LAYERS
 
 SET_GET = {"set_get.set", "set_get.get"}
@@ -14,7 +14,7 @@ SET_GET = {"set_get.set", "set_get.get"}
 
 def bundled_classes():
     """The bundled card class data, as a mapping to change and pass as `class_data`."""
-    return yaml.safe_load((resources.files("magnets") / "data" / "classes.yaml").read_text(encoding="utf-8"))
+    return yaml.safe_load((_data_dir() / "classes.yaml").read_text(encoding="utf-8"))
 
 
 def _old_pairs():
