@@ -9,11 +9,14 @@ connects, and exits when its frames run out.
 A table state is sent only when a card counts, goes, or moves past the dead band. It lists every card:
 
     {"type": "state", "seq": 42, "t": 1793598123.41, "mm_per_projector_height": 781.0,
-     "cards": [{"track": 3, "marker": 1001, "x": 300.0, "y": 210.5, "angle": 0.4}],
-     "page": {"track": 5, "marker": 2000, "x": 120.0, "y": 80.0, "angle": 0.0}}
+     "cards": [{"track": 3, "marker": 1001, "x": 300.0, "y": 210.5, "angle": 0.4},
+               {"track": 5, "marker": 2000, "x": 120.0, "y": 80.0, "angle": 0.0}],
+     "page": 5}
 
-`x` and `y` are the marker's centre in table mm, and `angle` is in degrees (ADR 0007). A page is followed like a
-card; `page` is the newest page in view, or null.
+`x` and `y` are the marker's centre in table mm, and `angle` is in degrees (ADR 0007). `t` is the frame's time.
+A page is followed like a card, so it is in `cards` too; `page` is the track of the newest page in view, or null.
+A marker the service doesn't know is sent like a card (the table reader makes it an unknown card). The ruler
+page's markers are for calibration and aren't sent.
 """
 
 import argparse
@@ -47,10 +50,11 @@ def card_json(tr):
 
 
 def table_state(live, known):
-    cards = [card_json(tr) for tr in live if known.get(tr.marker) is None or known[tr.marker].kind == "card"]
+    """Every track that counts, pages and markers the service doesn't know included, and the current page."""
+    cards = [card_json(tr) for tr in live]
     pages = [tr for tr in live if known.get(tr.marker) is not None and known[tr.marker].kind == "page"]
     page = max(pages, key=lambda tr: (tr.counted_at, tr.id), default=None)
-    return cards, (card_json(page) if page else None)
+    return cards, (page.id if page else None)
 
 
 def run(args):

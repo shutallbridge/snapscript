@@ -9,10 +9,11 @@ def test_the_newest_page_in_view_is_the_current_page(tmp_path):
     frames = [[first, card]] * 2 + [[first, second, card]] * 2 + [[first, card]] * 6
     sent = states(run_drawn(tmp_path, frames, settings={"hold_s": 0.5}))
 
-    pages = [m["page"]["marker"] if m["page"] else None for m in sent]
-    assert pages == [2000, 2001, 2000]
-    assert all([c["marker"] for c in m["cards"]] == [1001] for m in sent)
-    p = sent[1]["page"]
+    def current(m):
+        return next(c["marker"] for c in m["cards"] if c["track"] == m["page"])
+
+    assert [current(m) for m in sent] == [2000, 2001, 2000]
+    p = next(c for c in sent[1]["cards"] if c["marker"] == 2001)
     assert abs(p["x"] - 330) <= 0.5 and abs(p["y"] - 160) <= 0.5 and abs(p["angle"] - 5) <= 0.5
 
 

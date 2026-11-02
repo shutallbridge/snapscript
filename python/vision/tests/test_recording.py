@@ -12,7 +12,7 @@ from vision_harness import MARKERS, Card, run_service, states, write_scene
 def write_recording(d, frames, times):
     """A recording as the rig's record.py writes it: NAME.json (w, h, a time per frame) and NAME.y (grey planes)."""
     camera = json.loads(write_scene(d, []).read_text())["camera"]
-    (d / "m.json").write_text(json.dumps({"markers": MARKERS}))
+    (d / "m.json").write_text(json.dumps(MARKERS))
     known = load_markers(d / "m.json")
     pics = [draw(camera, [c.json() for c in f], known) for f in frames]
     h, w = pics[0].shape

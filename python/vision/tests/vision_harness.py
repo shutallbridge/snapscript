@@ -21,15 +21,19 @@ MM_PER_PH = 781.0       # the line-up's mm per projector height
 
 # The card feedback prototype's marker IDs (#159: fixtures use them until #157 settles the lockfile).
 MARKERS = {
-    "1000": {"kind": "card", "card": "[define{setup}]", "length": 5, "handwritten": True, "whiteboard": [41.5, 3, 147, 27]},
-    "1001": {"kind": "card", "card": "[call(p5.createCanvas)]", "length": 6, "handwritten": False},
-    "1004": {"kind": "card", "card": "[call(p5.background)]", "length": 5, "handwritten": False},
-    "1027": {"kind": "card", "card": "[num{}]", "length": 4, "handwritten": True, "whiteboard": [41, 3, 117, 27]},
-    "0": {"kind": "card", "card": "[call(p5.circle)]", "length": 3, "handwritten": False},
-    "2000": {"kind": "page", "page": "0. Get a canvas"},
-    "2001": {"kind": "page", "page": "1. Put something on it"},
-    "2080": {"kind": "ruler"},
-    "2081": {"kind": "ruler"},
+    "languageMarkers": {
+        "1000": {"card": "[define{}]", "length": 5},
+        "1009": {"card": "[repeat]", "length": 2},
+        "1027": {"card": "[num{}]", "length": 4},
+    },
+    "lockfile": {
+        "0": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "circle", "length": 3},
+        "1001": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "createCanvas", "length": 6},
+        "1004": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "background", "length": 5},
+        "2000": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 0},
+        "2001": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 1},
+    },
+    "ruler": [2080, 2081],
 }
 
 
@@ -50,7 +54,7 @@ def frame_t(i):
 
 def write_markers(d: Path) -> Path:
     p = d / "markers.json"
-    p.write_text(json.dumps({"markers": MARKERS}))
+    p.write_text(json.dumps(MARKERS))
     return p
 
 
