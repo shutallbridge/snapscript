@@ -107,10 +107,14 @@ export interface ReaderSettings {
 
 /** What the reader carries from one step to the next. */
 export interface ReaderState {
+  /** The project's entry text the reader started from. Its strips come first in the buffer, in their order. */
+  entryText: string;
   /** Joins made, as `left>right` track pairs. */
   joins: ReadonlySet<string>;
   /** Line-to-line links made, as `above>below` track pairs. */
   links: ReadonlySet<string>;
+  /** The strips in buffer order, by their head card's track. */
+  strips: readonly number[];
   /** The buffer's version and the text it had. */
   version: number;
   text: string;
@@ -144,6 +148,8 @@ export interface StepOutput {
   version: number;
   text: string;
   map: CardMap;
+  /** The buffer changed, but only in `@table` tags: a strip moved, and the sketch needn't restart. */
+  placementOnly: boolean;
 }
 
 export interface StepInput {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { defaultSettings, initialState, step } from "../src/index.ts";
-import { card, languageMarkers, layout, lockfile, run, table, textOf, U } from "./fixtures.ts";
+import { card, code, languageMarkers, layout, lockfile, run, table, textOf, U } from "./fixtures.ts";
 
 describe("strips", () => {
   test("a [define{…}] on its own is a strip of one line", () => {
@@ -50,22 +50,22 @@ describe("joins", () => {
     const joined = "[define{setup}]\n[set{x}to][num{250}]";
     const split = "[define{setup}]\n[set{x}to]";
     const held = run(table(head, set, num(0, 0)), table(head, set, num(14, 0)));
-    expect(held.outputs.map((o) => o.text)).toEqual([joined, joined]);
+    expect(held.outputs.map((o) => code(o.text))).toEqual([joined, joined]);
     const broken = run(table(head, set, num(0, 0)), table(head, set, num(14, 0)), table(head, set, num(15.5, 0)));
-    expect(broken.last.text).toBe(split);
+    expect(code(broken.last.text)).toBe(split);
   });
 
   test("a made join holds 8 mm sideways and breaks past 9 mm", () => {
     const joined = "[define{setup}]\n[set{x}to][num{250}]";
-    expect(run(table(head, set, num(0, 0)), table(head, set, num(0, 8))).last.text).toBe(joined);
-    expect(run(table(head, set, num(0, 0)), table(head, set, num(0, 9.5))).last.text).toBe(
+    expect(code(run(table(head, set, num(0, 0)), table(head, set, num(0, 8))).last.text)).toBe(joined);
+    expect(code(run(table(head, set, num(0, 0)), table(head, set, num(0, 9.5))).last.text)).toBe(
       "[define{setup}]\n[set{x}to]",
     );
   });
 
   test("a broken join must be made again from scratch", () => {
     const r = run(table(head, set, num(0, 0)), table(head, set, num(16, 0)), table(head, set, num(14, 0)));
-    expect(r.last.text).toBe("[define{setup}]\n[set{x}to]");
+    expect(code(r.last.text)).toBe("[define{setup}]\n[set{x}to]");
   });
 
   test("cards more than 15° apart in angle don't join, and 14° apart do", () => {
@@ -86,7 +86,7 @@ describe("joins", () => {
         card(3, 1024, ...at(4 * U + 3, U + 5), { angle: a, text: "250" }),
       ),
     );
-    expect(r.last.text).toBe("[define{setup}]\n[set{x}to][num{250}]");
+    expect(code(r.last.text)).toBe("[define{setup}]\n[set{x}to][num{250}]");
   });
 });
 
@@ -113,8 +113,8 @@ describe("line to line", () => {
 
   test("a made link is kept up to 15 mm, and lost past it", () => {
     const full = "[define{draw}]\n[repeat][num{3}]\n  [set{x}to][num{1}]\n[dedent]";
-    expect(run(lines(0), lines(14)).last.text).toBe(full);
-    expect(run(lines(0), lines(14), lines(16)).last.text).toBe("[define{draw}]\n[repeat][num{3}]");
+    expect(code(run(lines(0), lines(14)).last.text)).toBe(full);
+    expect(code(run(lines(0), lines(14), lines(16)).last.text)).toBe("[define{draw}]\n[repeat][num{3}]");
   });
 
   test("a line under a dedented line keeps counting columns from the strip head", () => {
@@ -205,24 +205,27 @@ describe("the card-to-text map", () => {
 
   test("maps every card to its span and every line to its cards", () => {
     const out = run(t).last;
-    expect(out.text).toBe("[define{draw}]\n[repeat][num{3}]\n  [set{x}to]\n\n[global{n}]");
+    expect(out.text).toBe(
+      "/** @table 50 50 0 */\n[define{draw}]\n[repeat][num{3}]\n  [set{x}to]\n\n/** @table 50 300 0 */\n[global{n}]",
+    );
     expect(out.map.cards).toEqual([
-      { track: 1, span: { line: 1, start: 0, end: 14 } },
-      { track: 2, span: { line: 2, start: 0, end: 8 } },
-      { track: 3, span: { line: 2, start: 8, end: 16 } },
-      { track: 4, span: { line: 3, start: 2, end: 12 } },
-      { track: 5, span: { line: 5, start: 0, end: 11 } },
+      { track: 1, span: { line: 2, start: 0, end: 14 } },
+      { track: 2, span: { line: 3, start: 0, end: 8 } },
+      { track: 3, span: { line: 3, start: 8, end: 16 } },
+      { track: 4, span: { line: 4, start: 2, end: 12 } },
+      { track: 5, span: { line: 7, start: 0, end: 11 } },
     ]);
     expect(out.map.lines).toEqual([
-      { line: 1, tracks: [1] },
-      { line: 2, tracks: [2, 3] },
-      { line: 3, tracks: [4] },
-      { line: 5, tracks: [5] },
+      { line: 2, tracks: [1] },
+      { line: 3, tracks: [2, 3] },
+      { line: 4, tracks: [4] },
+      { line: 7, tracks: [5] },
     ]);
   });
 
   test("is tied to the buffer version, which moves only when the text changes", () => {
-    const moved = table(...t.cards.map((c) => ({ ...c, x: c.x + 0.5 })));
+    // Nudged by less than half a mm, so no @table tag moves either.
+    const moved = table(...t.cards.map((c) => ({ ...c, x: c.x + 0.3 })));
     const changed = table(...t.cards.slice(0, 3));
     const r = run(t, moved, changed);
     expect(r.outputs.map((o) => o.map.version)).toEqual(r.outputs.map((o) => o.version));
@@ -250,8 +253,8 @@ describe("the step function", () => {
     // The same table at 14 mm reads joined after a join was made, and split from a fresh state.
     const made = run(table(head, set, num(0, 0))).state;
     const input = { table: table(head, set, num(14, 0)), layout, lockfile, languageMarkers };
-    expect(step(made, input).output.text).toBe("[define{setup}]\n[set{x}to][num{250}]");
-    expect(step(initialState(), input).output.text).toBe("[define{setup}]\n[set{x}to]");
+    expect(code(step(made, input).output.text)).toBe("[define{setup}]\n[set{x}to][num{250}]");
+    expect(code(step(initialState(), input).output.text)).toBe("[define{setup}]\n[set{x}to]");
   });
 });
 
@@ -275,11 +278,11 @@ describe("settings", () => {
 
   test("the rig can tune a threshold through the step's settings", () => {
     const input = { table: table(head, set, num(11, 0)), layout, lockfile, languageMarkers };
-    expect(step(initialState(), { ...input, settings: { joinMakeAlongMaxMm: 12 } }).output.text).toBe(
+    expect(code(step(initialState(), { ...input, settings: { joinMakeAlongMaxMm: 12 } }).output.text)).toBe(
       "[define{setup}]\n[set{x}to][num{250}]",
     );
     const turned = { ...input, table: table(head, set, num(2, 0, 16)) };
-    expect(step(initialState(), { ...turned, settings: { maxAngleDeg: 20 } }).output.text).toBe(
+    expect(code(step(initialState(), { ...turned, settings: { maxAngleDeg: 20 } }).output.text)).toBe(
       "[define{setup}]\n[set{x}to][num{250}]",
     );
   });
