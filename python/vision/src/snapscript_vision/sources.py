@@ -8,7 +8,9 @@
        "frames": [[{"marker": 1001, "x": 150, "y": 120, "angle": 0}], ...]}
 
   Each card is placed by its marker's centre in table mm and its angle in degrees. The drawn camera sees table mm
-  (x, y) at pixel ((x, y) - origin_mm) * px_per_mm.
+  (x, y) at pixel ((x, y) - origin_mm) * px_per_mm. A card may have `"ink": [[x0, y0, x1, y1], ...]`, strokes
+  written on its sheet (rectangles in sheet mm). A frame may also hold `{"hand": [x0, y0, x1, y1], "grey": 160}`,
+  something plain lying over the table (a rectangle in table mm), drawn in list order with the cards.
 - **Recording**: frames recorded on the rig, in the card tracking prototype's format (#105): PATH.json holds
   {"w", "h", "t": [one time stamp per frame]} and PATH.y the frames' grey planes back to back.
 
@@ -70,8 +72,17 @@ def draw(camera, cards, markers):
     w, h = (int(round(v * ppm)) for v in camera["size_mm"])
     img = np.full((h, w), float(TABLE_GREY))
     for c in cards:
-        _draw_sheet(img, ppm, origin, c, markers)
+        if "hand" in c:
+            _draw_hand(img, ppm, origin, c)
+        else:
+            _draw_sheet(img, ppm, origin, c, markers)
     return np.clip(img, 0, 255).astype(np.uint8)
+
+
+def _draw_hand(img, ppm, origin, hand):
+    x0, y0, x1, y1 = hand["hand"]
+    (u0, v0), (u1, v1) = ((np.array(p, float) - origin) * ppm for p in ((x0, y0), (x1, y1)))
+    img[max(int(round(v0)), 0):max(int(round(v1)), 0), max(int(round(u0)), 0):max(int(round(u1)), 0)] = hand["grey"]
 
 
 def _draw_sheet(img, ppm, origin, card, markers):
@@ -105,6 +116,8 @@ def _draw_sheet(img, ppm, origin, card, markers):
     bits = pattern(int(card["marker"]))
     black = np.zeros(sx.shape, bool)
     black[in_tag] = bits[cy[in_tag], cx[in_tag]]
+    for rx0, ry0, rx1, ry1 in card.get("ink", []):
+        black |= (sx >= rx0) & (sx < rx1) & (sy >= ry0) & (sy < ry1)
     grey[black] = INK_GREY
     cover = on.mean(axis=(2, 3))
     paper = np.where(on, grey, 0).sum(axis=(2, 3)) / (k * k)

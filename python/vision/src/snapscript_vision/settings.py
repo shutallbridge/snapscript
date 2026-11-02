@@ -21,6 +21,21 @@ class Settings:
     smooth: float = 0.25            # the weight of each reading averaged into a still card's pose
     band_mm: float = 2.0            # a move counts past this far ...
     band_deg: float = 3.0           # ... or this much turn
+    # handwriting (#105, #147, #110)
+    hw_steady_frames: int = 3       # a whiteboard crop is judged once it has held steady this many frames (~0.4 s)
+    hw_steady_mm2: float = 4.0      # ... changing less than this much ink from one frame to the next
+    hw_paper_lo: float = 0.85       # ... and looks like paper: its brightness this many times the white beside
+    hw_paper_hi: float = 1.5        #     the marker, up to this (a hand reads about 0.7)
+    hw_blank_mm2: float = 6.0       # less ink than this is blank, decided here with no cloud call
+    hw_rewrite_mm2: float = 10.0    # this much ink added or removed since the crop that was read is a rewrite ...
+    hw_rewrite_frames: int = 3      # ... once it has held this many calm frames
+    hw_light_tol: float = 0.15      # no rewrite is judged while the paper is this share off its brightness at the read
+    hw_retry_s: float = 5.0         # after a failed request, try again this long after
+    # the cloud handwriting reader (`--reader openrouter`); its key is OPENROUTER_API_KEY in the environment
+    reader_url: str = "https://openrouter.ai/api/v1/chat/completions"
+    reader_model: str = "google/gemma-4-31b-it"
+    reader_timeout_s: float = 60.0  # a slow read is still reading; a request that takes longer than this failed
+    reader_px_per_mm: float = 8.0   # the whiteboard picture sent to the reader
 
     @classmethod
     def load(cls, path=None):
