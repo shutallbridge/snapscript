@@ -195,8 +195,7 @@ describe("§9 builtins", () => {
     "[call(random)][num{2.5}]",
     "[call(random)][num{500}][num{0}]",
     "[get(pi)]",
-    // Not here: §9's [call(print)][num{1}][str{a}][call(list)][str{a}], which
-    // §6.2 reads as "a".list("a"), a str's method (an open point on the reference).
+    "[num{1}][str{a}][(][call(list)][str{a}][)]",
   ])("%s checks clean", (value) => {
     const text = lines("[define{f}][required{a}][required{b}]", "[set{scores}to][call(list)][num{10}][num{20}][num{30}]", `[call(print)]${value}`);
     expect(errorsOf(text)).toEqual([]);
