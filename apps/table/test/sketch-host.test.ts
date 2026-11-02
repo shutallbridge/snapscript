@@ -158,6 +158,29 @@ describe("show, stop and kill", () => {
   });
 });
 
+describe("print output", () => {
+  test("is sent at once, then at most every 250 ms with each card's newest, and with its card's text position", async () => {
+    const { h, sent, clock, p5Of } = host();
+    await h.handle(start(1, "[define(draw)]", "[call(print)][call(random)][num{1}][num{9}]"));
+    for (const t of [0, 0.1, 0.2, 0.3]) {
+      clock.now = t;
+      p5Of(1).frame();
+    }
+    const prints = sent.filter((m) => m.type === "print");
+    expect(prints).toEqual([
+      { type: "print", run: 1, prints: [{ text: expect.any(String), span: { start: expect.any(Number), end: expect.any(Number) } }] },
+      { type: "print", run: 1, prints: [{ text: expect.any(String), span: expect.any(Object) }] },
+    ]);
+  });
+
+  test("of a run that stopped on an error is still sent", async () => {
+    const { h, sent, p5Of } = host();
+    await h.handle(start(1, "[define(draw)]", "[call(print)][num{1}]", "[call(print)][num{1}][/][num{0}]"));
+    p5Of(1).frame();
+    expect(sent.map((m) => m.type)).toEqual(["print", "error"]);
+  });
+});
+
 describe("errors", () => {
   test("an error in a frame, after run returned, is sent for that run, and p5 stops", async () => {
     const { h, sent, p5Of } = host();

@@ -5,6 +5,7 @@
 import type { TableGeometry } from "../../layout.ts";
 import type { TableBridge } from "../../preload/table.ts";
 import type { Scene } from "../../session.ts";
+import { drawFeedback } from "./feedback.ts";
 import { drawHelp } from "./help.ts";
 
 declare const table: TableBridge;
@@ -21,7 +22,7 @@ const GAP_PX = 6;
 const canvas = document.getElementById("table") as HTMLCanvasElement;
 const g = canvas.getContext("2d")!;
 let geometry: TableGeometry | null = null;
-/** The newest scene, for the card feedback's look (#195) to draw. */
+/** The newest scene. */
 let scene: Scene | null = null;
 
 function draw(): void {
@@ -62,6 +63,9 @@ function draw(): void {
     g.stroke();
   }
   g.restore();
+
+  // The card feedback (#195).
+  if (scene) drawFeedback(g, scene.feedback, geometry);
 
   // The help box, beside the help corner.
   if (scene?.help) drawHelp(g, scene.help, px);

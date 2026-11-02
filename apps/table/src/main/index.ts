@@ -98,7 +98,12 @@ function makeSketchView(): SketchView {
 
 function killSketchProcess(): void {
   const old = sketchView;
-  for (const [run, p] of positions) if (p.start >= 0) log(`run ${run} froze at text offsets ${p.start}-${p.end}`);
+  // Where each run was stuck, for the session to light that card: after this command's handling is done.
+  const stuck = [...positions].filter(([, p]) => p.start >= 0);
+  for (const [run, p] of stuck) log(`run ${run} froze at text offsets ${p.start}-${p.end}`);
+  setImmediate(() => {
+    for (const [run, span] of stuck) handle({ type: "sketch", now: now(), message: { type: "stuck", run, span } });
+  });
   positions.clear();
   old.watchdog.close();
   old.view.webContents.forcefullyCrashRenderer();

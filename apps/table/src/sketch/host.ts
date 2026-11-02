@@ -1,9 +1,11 @@
 // The sketch view's host (#181 "Processes"): it runs each program the session starts, with its own
 // p5 instance and its own copy of each native module, in a container of its own, and tells the
-// session about frames and errors. It has no Electron in it: the sketch view's renderer gives it
+// session about frames, print output and errors. It has no Electron in it: the sketch view's renderer gives it
 // p5, the DOM and the way back to main.
 import { run as runProgram, type NativeModule, type Run, type RunError } from "@snapscript/runtime";
 import type { SketchMessage } from "../session.ts";
+
+type Print = Extract<SketchMessage, { type: "print" }>["prints"][number];
 
 /** A native module's source, for the sketch view to load: main reads the file. */
 export interface NativeModuleSource {
@@ -68,10 +70,21 @@ export function createSketchHost(options: SketchHostOptions): SketchHost {
     const { run } = command;
     const live: Live = { container: options.container(run), instances: [], handle: null };
     runs.set(run, live);
+    // Print output goes at once, then at most as often as frames, with each card's newest: a print
+    // in draw runs every frame.
+    const pending = new Map<string, Print>();
+    let printedAt = -Infinity;
+    const flush = () => {
+      if (pending.size === 0) return;
+      printedAt = now();
+      options.send({ type: "print", run, prints: [...pending.values()] });
+      pending.clear();
+    };
     // A run that stopped on an error sends no more frames: the session no longer watches it for freezing.
     let stopped = false;
     const error = (e: RunError) => {
       stopped = true;
+      flush();
       options.send({ type: "error", run, error: e });
     };
     let natives: Record<string, NativeModule>;
@@ -97,10 +110,14 @@ export function createSketchHost(options: SketchHostOptions): SketchHost {
       natives: (id) => natives[id] ?? null,
       position: options.position?.(run),
       output: {
-        print: () => {},
+        print: (p) => {
+          pending.set(p.span ? `${p.span.start}-${p.span.end}` : "", p);
+          if (now() - printedAt >= frameEveryS) flush();
+        },
         error,
         frame: () => {
           const t = now();
+          if (t - printedAt >= frameEveryS) flush();
           if (stopped || t - sentAt < frameEveryS) return;
           sentAt = t;
           options.send({ type: "frame", run });
