@@ -21,6 +21,13 @@ class Settings:
     smooth: float = 0.25            # the weight of each reading averaged into a still card's pose
     band_mm: float = 2.0            # a move counts past this far ...
     band_deg: float = 3.0           # ... or this much turn
+    # calibration (#132, #172)
+    calibration_tries: int = 5      # frames a step looks at before it gives up
+    calibration_min_markers: int = 6  # step 1 needs at least this many of its 12 markers seen
+    paper_grey: float = 150.0       # step 2 fixes the exposure so the ruler page's paper comes out this grey ...
+    paper_tolerance: float = 12.0   # ... give or take this
+    exposure_max_ms: float = 50.0   # past this, gain goes up instead
+    gain_max: float = 4.0
 
     @classmethod
     def load(cls, path=None):

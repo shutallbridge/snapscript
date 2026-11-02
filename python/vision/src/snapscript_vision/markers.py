@@ -10,10 +10,14 @@ page's two markers, so a #157 loader can fill both sides the same way:
     {"languageMarkers": {"1027": {"card": "[num{}]", "length": 4}, "1009": {"card": "[repeat]", "length": 2}},
      "lockfile": {"0": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "circle", "length": 3},
                   "1900": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 3}},
-     "ruler": [2080, 2081]}
+     "ruler": [2080, 2081], "ruler_mm": 257, "calibration": [300, 301, ..., 311]}
 
 A language marker's card is handwritten when its notation has braces (`[num{}]`, `[set{}to]`); library cards are
 printed. Lengths are in U.
+
+The table's own markers (#157 puts them in the language markers, 300-399; their IDs aren't given out yet) are the
+ruler page's two, `ruler_mm` apart on the printed page, and the twelve the projector shows in calibration's first
+step (#172).
 """
 
 import json
@@ -32,7 +36,7 @@ WHITEBOARD_TOP_MM, WHITEBOARD_BOTTOM_MM = 3, 27
 @dataclass(frozen=True)
 class Marker:
     id: int
-    kind: str                         # "card", "page" or "ruler"
+    kind: str                         # "card", "page", "ruler" or "calibration"
     length: int | None = None         # U, for cards
     handwritten: bool = False
     whiteboard: tuple | None = None   # (x0, y0, x1, y1) sheet mm, for handwritten cards
@@ -62,4 +66,20 @@ def load(path) -> dict[int, Marker]:
             raise ValueError(f"lockfile marker {k}: unknown kind {v['kind']!r}")
     for k in raw.get("ruler", []):
         out[int(k)] = Marker(int(k), "ruler")
+    for k in raw.get("calibration", []):
+        out[int(k)] = Marker(int(k), "calibration")
     return out
+
+
+@dataclass(frozen=True)
+class TableMarkers:
+    ruler: tuple            # the ruler page's two markers
+    ruler_mm: float | None  # how far apart their centres are printed
+    calibration: tuple      # the markers projected in calibration's first step
+
+
+def load_table(path) -> TableMarkers:
+    raw = json.loads(Path(path).read_text())
+    mm = raw.get("ruler_mm")
+    return TableMarkers(tuple(int(k) for k in raw.get("ruler", [])), float(mm) if mm is not None else None,
+                        tuple(int(k) for k in raw.get("calibration", [])))
