@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // For the tests' Node host, which reads p5.snap from disk.
+    "types": ["node"]
+  },
+  "include": ["src", "test"]
+}
