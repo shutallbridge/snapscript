@@ -1,6 +1,6 @@
 """Thresholds are named settings, changed by a settings file, not literals (#169)."""
 
-from vision_harness import Card, Hand, frame_t, run_drawn, states
+from vision_harness import Card, Hand, frame_t, hw_of, run_drawn, states, written
 
 
 def test_how_many_sightings_a_card_needs_is_a_setting(tmp_path):
@@ -26,3 +26,17 @@ def test_the_dead_band_is_a_setting(tmp_path):
 
     assert len(states(run_drawn(tmp_path, frames))) == 1
     assert len(states(run_drawn(tmp_path, frames, settings={"band_mm": 0.5}))) == 2
+
+
+def test_how_much_darker_than_the_paper_ink_is_are_settings(tmp_path):
+    card = Card(1027, 120, 120, ink=written("500"))  # [num{}]: a handwritten card
+    frames = [[card]] * 12
+
+    def last_hw(name, settings=None):
+        d = tmp_path / name
+        d.mkdir()
+        return hw_of(run_drawn(d, frames, settings=settings), 1027)[-1]
+
+    assert last_hw("defaults")["state"] == "reading"
+    assert last_hw("share", {"hw_ink_share": 1.0}) == {"state": "blank"}
+    assert last_hw("grey", {"hw_ink_grey": 255.0}) == {"state": "blank"}

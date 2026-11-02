@@ -44,10 +44,11 @@ def sample(grey, lineup, centre, angle, box, ppm):
     return out.reshape(h, w)
 
 
-def ink_mask(a):
+def ink_mask(a, s: Settings):
     im = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
     bg = np.asarray(im.filter(ImageFilter.GaussianBlur(5 * CROP_PX_PER_MM)), float)
-    return (a - bg) < -0.2 * bg - 4  # strokes clearly darker than the paper (and any shadow) around them
+    # strokes clearly darker than the paper (and any shadow) around them
+    return (a - bg) < -s.hw_ink_share * bg - s.hw_ink_grey
 
 
 def mm2(mask):
@@ -125,7 +126,7 @@ class Handwriting:
         s = self.s
         box = self._whiteboard(tr)
         crop = sample(grey, self.lineup, tr.c, tr.a, box, CROP_PX_PER_MM)
-        ink = ink_mask(crop)
+        ink = ink_mask(crop, s)
         white = np.concatenate([sample(grey, self.lineup, tr.c, tr.a, b, CROP_PX_PER_MM).ravel()
                                 for b in WHITE_BESIDE_MARKER])
         paper = float(np.median(crop[~ink])) / max(1.0, float(np.median(white))) if (~ink).any() else 0.0
