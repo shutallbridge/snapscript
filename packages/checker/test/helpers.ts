@@ -8,10 +8,10 @@ export function errorsOf(text: string, skipped: SkippedLine[] = []): Pick<CheckE
   return check(text, skipped).errors.map(({ kind, line, message }) => ({ kind, line, message }));
 }
 
-/** The kind, line and message of each structure-stage error, leaving out what the check stage finds. */
-export function structureErrorsOf(text: string, skipped: SkippedLine[] = []): Pick<CheckError, "kind" | "line" | "message">[] {
+/** The kind, line and message of each error but `NameError`s, for examples that use names they set nowhere. */
+export function errorsButNamesOf(text: string, skipped: SkippedLine[] = []): Pick<CheckError, "kind" | "line" | "message">[] {
   return check(text, skipped)
-    .errors.filter((e) => e.stage === "structure")
+    .errors.filter((e) => e.kind !== "NameError")
     .map(({ kind, line, message }) => ({ kind, line, message }));
 }
 

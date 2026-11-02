@@ -150,7 +150,8 @@ describe("§4.2 naming and binding", () => {
       "[set{user}to][call(dict)]",
       "[get{user}][setProp{message}to][str{hi}]",
       "[call(print)][get{user}][getProp{message}]",
-      "[get{user}][call{greet}]",
+      // An attribute can be any type, so calling a method of it checks clean (types.test.ts has dict's own methods).
+      "[get{user}][getProp{message}][call{greet}]",
     );
     expect(errorsOf(text)).toEqual([]);
   });
