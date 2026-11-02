@@ -80,6 +80,12 @@ interface StatementBase {
 /** How a block ended: by its `[dedent]`, by a line in its column with none (an error), or at the end of its body or strip. */
 export type Closed = "dedent" | "missing" | "end";
 
+interface BlockBase {
+  closed: Closed;
+  /** The line of the `[dedent]` that closes it, or `null` when none does. */
+  dedent: number | null;
+}
+
 export interface Branch extends StatementBase {
   type: "if" | "elif" | "else";
   /** `null` for `[else]`, or when the value could not be read. */
@@ -93,9 +99,9 @@ export type Statement =
   | (StatementBase & { type: "return"; value: Expr | null })
   | (StatementBase & { type: "setProp"; target: Expr; name: Name | null; value: Expr | null })
   | (StatementBase & { type: "expression"; value: Expr | null })
-  | (StatementBase & { type: "repeat"; count: Expr | null; body: Statement[]; closed: Closed })
-  | (StatementBase & { type: "for"; name: Name | null; iterable: Expr | null; body: Statement[]; closed: Closed })
-  | (StatementBase & { type: "if"; branches: Branch[]; closed: Closed })
+  | (StatementBase & BlockBase & { type: "repeat"; count: Expr | null; body: Statement[] })
+  | (StatementBase & BlockBase & { type: "for"; name: Name | null; iterable: Expr | null; body: Statement[] })
+  | (StatementBase & BlockBase & { type: "if"; branches: Branch[] })
   /**
    * A line that forms no statement: one indented where no block opens (with
    * the lines indented under it), a `[dedent]` with no block to close, or an
