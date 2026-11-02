@@ -196,7 +196,7 @@ What fills one layer of a pocket: half the card's thickness, its `N` or `S` pole
 How a pocket's two layers are filled: **uniform** (two magnets stacked with the same pole: `N/N`, `S/S`), **half** (one magnet, one layer empty: `-/N`) or **split** (two magnets with different poles: `S/N`). A flip leaves a uniform pocket the same and changes the others.
 
 **Magnet arrangement**:
-The choice of pockets and their contents on every card.
+The choice of pockets and their contents on every card. It is named after the language version that first made it (`0.1.0`), and patch versions keep it.
 
 **Flip direction**:
 How every flip pair turns over: top-to-bottom (top and bottom edges change places) or left-to-right (left and right edges change places). One flip direction applies to a whole magnet arrangement. Snapscript's flip pairs turn top-to-bottom; the magnets tool can check and search both.
@@ -299,8 +299,11 @@ The document that defines the language and its text notation. A language version
 _Avoid_: spec, overview spec
 
 **Language version**:
-One release of Snapscript: its language, its card classes and one magnet arrangement, found by the search when the release is made and then fixed. An instructor prints every base from one version.
+One release of Snapscript, with one version number shared by the language and the software that runs it. The language is its language reference, its card classes and one magnet arrangement; a patch version changes only the software. An instructor prints every base from one arrangement.
 _Avoid_: release (on its own), arrangement version
+
+**Library version**:
+A library's own version number, separate from the language version. A library states which language versions it works with.
 
 ## The table
 
