@@ -22,7 +22,7 @@ ASPECT = 1.5            # the drawn projector's width over its height
 ROOM = 5.0              # the room's light: grey per ms of exposure on white paper
 PROJECTOR = 40.0        # the projector's white, the same way
 CALIBRATION = list(range(300, 312))  # the twelve markers projected in step 1
-RULER, RULER_MM = [2080, 2081], 257.0
+RULER, RULER_MM = [312, 313], 257.0
 TABLE_MARKERS = {**MARKERS, "calibration": CALIBRATION, "ruler": RULER, "ruler_mm": RULER_MM}
 FAKE_CAMERA = Path(__file__).parent / "fake_camera"
 

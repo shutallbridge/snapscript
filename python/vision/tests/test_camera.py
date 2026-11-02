@@ -10,7 +10,7 @@ import os
 from calibration_harness import ASPECT, FAKE_CAMERA, RULER_MM, Service, World, card_at, write_markers
 from vision_harness import write_lineup
 
-CARD = (1009, 150.0, 120.0)
+CARD = (19, 150.0, 120.0)
 
 
 def camera(tmp_path, world, lineup, spec="camera:lens=3.75"):

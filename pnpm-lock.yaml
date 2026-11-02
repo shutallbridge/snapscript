@@ -110,6 +110,9 @@ importers:
       '@snapscript/checker':
         specifier: workspace:*
         version: link:../checker
+      '@snapscript/core':
+        specifier: workspace:*
+        version: link:../core
       tsdown:
         specifier: 'catalog:'
         version: 0.23.4(typescript@7.0.2)

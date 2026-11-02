@@ -4,22 +4,22 @@ from vision_harness import Card, frame_t, run_drawn, states, write_lineup
 
 
 def test_a_card_counts_on_its_second_frame_not_its_first(tmp_path):
-    card = Card(1001, 150, 120)
+    card = Card(400, 150, 120)
     sent = states(run_drawn(tmp_path, [[card], [card], [card], [card]]))
 
     assert len(sent) == 1
     assert sent[0]["t"] == frame_t(1)
-    assert [c["marker"] for c in sent[0]["cards"]] == [1001]
+    assert [c["marker"] for c in sent[0]["cards"]] == [400]
 
 
 def test_a_marker_seen_in_one_frame_only_sends_nothing(tmp_path):
-    sent = states(run_drawn(tmp_path, [[Card(1001, 150, 120)], [], [], []]))
+    sent = states(run_drawn(tmp_path, [[Card(400, 150, 120)], [], [], []]))
 
     assert sent == []
 
 
 def test_positions_are_the_marker_centre_in_table_mm_and_angles_are_degrees(tmp_path):
-    cards = [Card(1001, 212.3, 148.7, 30.0), Card(0, 80.0, 250.0, -90.0), Card(1004, 330.0, 40.0, 175.0)]
+    cards = [Card(400, 212.3, 148.7, 30.0), Card(402, 80.0, 250.0, -90.0), Card(401, 330.0, 40.0, 175.0)]
     sent = states(run_drawn(tmp_path, [cards] * 3))
 
     got = {c["marker"]: c for c in sent[-1]["cards"]}
@@ -30,18 +30,18 @@ def test_positions_are_the_marker_centre_in_table_mm_and_angles_are_degrees(tmp_
 
 
 def test_a_card_slid_across_the_table_keeps_its_track(tmp_path):
-    other = Card(1004, 200, 250)
-    slide = [[Card(0, 60 + 25 * i, 100, 2 * i), other] for i in range(13)]  # 25 mm a frame, as a quick slide
+    other = Card(401, 200, 250)
+    slide = [[Card(402, 60 + 25 * i, 100, 2 * i), other] for i in range(13)]  # 25 mm a frame, as a quick slide
     sent = states(run_drawn(tmp_path, [slide[0], slide[0]] + slide + [slide[-1]]))
 
-    circle = [next(c for c in m["cards"] if c["marker"] == 0) for m in sent]
+    circle = [next(c for c in m["cards"] if c["marker"] == 402) for m in sent]
     assert len({c["track"] for c in circle}) == 1
     assert abs(circle[-1]["x"] - 360) <= 0.5 and abs(circle[-1]["angle"] - 24) <= 0.5
     assert all(len(m["cards"]) == 2 for m in sent[1:])
 
 
 def test_a_card_picked_up_and_laid_elsewhere_while_hidden_is_the_same_card(tmp_path):
-    a, b = Card(0, 80, 100), Card(0, 320, 220)
+    a, b = Card(402, 80, 100), Card(402, 320, 220)
     sent = states(run_drawn(tmp_path, [[a], [a], [], [], [b], [b]]))
 
     assert [len(m["cards"]) for m in sent] == [1, 1]
@@ -57,15 +57,15 @@ WOBBLE = [(1.0, 0.0, 2.0), (-1.0, 0.5, -2.0), (1.8, 0.0, 2.5), (0.0, 0.0, -2.5),
 
 
 def test_wobble_inside_2_mm_and_3_degrees_sends_nothing(tmp_path):
-    laid = Card(1001, 200, 150, 10.0)
-    wobble = [[Card(1001, 200 + dx, 150 + dy, 10.0 + da)] for dx, dy, da in WOBBLE * 3]
+    laid = Card(400, 200, 150, 10.0)
+    wobble = [[Card(400, 200 + dx, 150 + dy, 10.0 + da)] for dx, dy, da in WOBBLE * 3]
     sent = states(run_drawn(tmp_path, [[laid], [laid]] + wobble))
 
     assert len(sent) == 1
 
 
 def test_a_move_past_the_dead_band_sends_a_new_state(tmp_path):
-    laid, moved, turned = Card(1001, 200, 150, 10.0), Card(1001, 204, 150, 10.0), Card(1001, 204, 150, 15.0)
+    laid, moved, turned = Card(400, 200, 150, 10.0), Card(400, 204, 150, 10.0), Card(400, 204, 150, 15.0)
     # a turn in place is averaged in, so it shows within about a second
     sent = states(run_drawn(tmp_path, [[laid]] * 3 + [[moved]] * 3 + [[turned]] * 8))
 
@@ -77,7 +77,7 @@ def test_a_move_past_the_dead_band_sends_a_new_state(tmp_path):
 
 def test_every_message_carries_mm_per_projector_height(tmp_path):
     lineup = write_lineup(tmp_path, mm_per_ph=790.0)
-    a, b = Card(1001, 150, 120), Card(0, 300, 200)
+    a, b = Card(400, 150, 120), Card(402, 300, 200)
     sent = states(run_drawn(tmp_path, [[a], [a], [a, b], [a, b]], lineup=lineup))
 
     assert len(sent) == 2

@@ -116,34 +116,122 @@ const sig = (params: Param[], gives: Type | "any", variadic: Param | null = null
 const num = (name: string): Param => ({ name, takes: ["num"] });
 const anything = (name: string): Param => ({ name, takes: "any" });
 
-/** A builtin: a function, with each way it can be called, or a value. */
-export type Builtin =
-  | { name: string; type: "function"; overloads: readonly Signature[] }
-  | { name: string; type: Exclude<Type, "function"> };
+/** A function card's colour, printed on its stripe (#156): violet, fuchsia, sky and rose. */
+export type FunctionColor = "primary" | "secondary" | "helper" | "setting";
 
-/** The builtins (§9), in the order the reference lists them. Each is used without a namespace. */
-export const builtins: readonly Builtin[] = [
-  { name: "print", type: "function", overloads: [sig([], "none", anything("values"))] },
+/**
+ * What the help corner shows for a card (#156): one sentence of at most about 80 letters, then
+ * one line per value, in the order the cards sit, of at most about 40 letters. No types.
+ */
+export interface Help {
+  sentence: string;
+  values: readonly { name: string; about: string }[];
+}
+
+/** A builtin: a function, with each way it can be called, or a value. Every builtin is helper. */
+export type Builtin = { name: string; help: Help; color: FunctionColor } & (
+  | { type: "function"; overloads: readonly Signature[] }
+  | { type: Exclude<Type, "function"> }
+);
+
+/** A builtin as written below: each is coloured helper after. */
+type Entry = Builtin extends infer B ? (B extends Builtin ? Omit<B, "color"> : never) : never;
+
+const help = (sentence: string, ...values: [name: string, about: string][]): Help => ({
+  sentence,
+  values: values.map(([name, about]) => ({ name, about })),
+});
+
+const entries: readonly Entry[] = [
+  {
+    name: "print",
+    type: "function",
+    overloads: [sig([], "none", anything("values"))],
+    help: help("Shows its values beside its line, with a space between them.", ["values", "the values to show"]),
+  },
   {
     name: "range",
     type: "function",
     overloads: [sig([num("stop")], "list"), sig([num("start"), num("stop")], "list"), sig([num("start"), num("stop"), num("step")], "list")],
+    help: help(
+      "Gives a list of whole numbers from start up to, not including, stop.",
+      ["start", "the first number (0 if left out)"],
+      ["stop", "where it stops, never reached"],
+      ["step", "how much each one grows (1 if left out)"],
+    ),
   },
-  { name: "len", type: "function", overloads: [sig([{ name: "value", takes: ["list", "str"] }], "num")] },
-  { name: "list", type: "function", overloads: [sig([], "list", anything("items"))] },
-  { name: "dict", type: "function", overloads: [sig([], "dict")] },
-  { name: "abs", type: "function", overloads: [sig([num("x")], "num")] },
+  {
+    name: "len",
+    type: "function",
+    overloads: [sig([{ name: "value", takes: ["list", "str"] }], "num")],
+    help: help("Counts the items in a list, or the letters in a str.", ["value", "the list or str to count"]),
+  },
+  {
+    name: "list",
+    type: "function",
+    overloads: [sig([], "list", anything("items"))],
+    help: help("Makes a list holding its values, in order.", ["items", "the items, first to last"]),
+  },
+  { name: "dict", type: "function", overloads: [sig([], "dict")], help: help("Makes an empty dict. Takes no values.") },
+  {
+    name: "abs",
+    type: "function",
+    overloads: [sig([num("x")], "num")],
+    help: help("Gives a number without its minus sign.", ["x", "the number"]),
+  },
   // Any number of values, or one list: none at all is a ValueError at run time.
-  { name: "min", type: "function", overloads: [sig([], "any", anything("values"))] },
-  { name: "max", type: "function", overloads: [sig([], "any", anything("values"))] },
-  { name: "round", type: "function", overloads: [sig([num("x")], "num")] },
-  { name: "sqrt", type: "function", overloads: [sig([num("x")], "num")] },
-  { name: "sin", type: "function", overloads: [sig([num("angle")], "num")] },
-  { name: "cos", type: "function", overloads: [sig([num("angle")], "num")] },
+  {
+    name: "min",
+    type: "function",
+    overloads: [sig([], "any", anything("values"))],
+    help: help("Gives the smallest of its values, or of the items in one list.", ["values", "the values, or one list"]),
+  },
+  {
+    name: "max",
+    type: "function",
+    overloads: [sig([], "any", anything("values"))],
+    help: help("Gives the largest of its values, or of the items in one list.", ["values", "the values, or one list"]),
+  },
+  {
+    name: "round",
+    type: "function",
+    overloads: [sig([num("x")], "num")],
+    help: help("Rounds a number to a whole number. A half rounds away from zero.", ["x", "the number to round"]),
+  },
+  {
+    name: "sqrt",
+    type: "function",
+    overloads: [sig([num("x")], "num")],
+    help: help("Gives the square root of a number.", ["x", "the number, not below 0"]),
+  },
+  {
+    name: "sin",
+    type: "function",
+    overloads: [sig([num("angle")], "num")],
+    help: help("Gives the sine of an angle.", ["angle", "the angle, in degrees"]),
+  },
+  {
+    name: "cos",
+    type: "function",
+    overloads: [sig([num("angle")], "num")],
+    help: help("Gives the cosine of an angle.", ["angle", "the angle, in degrees"]),
+  },
   // Declared three times (#119): no values is 0 to 1, one is 0 to it.
-  { name: "random", type: "function", overloads: [sig([], "num"), sig([num("end")], "num"), sig([num("start"), num("end")], "num")] },
-  { name: "pi", type: "num" },
+  {
+    name: "random",
+    type: "function",
+    overloads: [sig([], "num"), sig([num("end")], "num"), sig([num("start"), num("end")], "num")],
+    help: help(
+      "Gives a new random number each time, from start up to, not including, end.",
+      ["start", "the lowest it can be (0 if left out)"],
+      ["end", "where it stops, never reached"],
+    ),
+  },
+  { name: "pi", type: "num", help: help("The number pi, 3.14159…, for working with circles.") },
 ];
+
+/** The builtins (§9), in the order the reference lists them. Each is used without a namespace. */
+export const builtins: readonly Builtin[] = entries.map((b): Builtin => ({ ...b, color: "helper" }));
 
 /** The builtins' names, in the order the reference lists them. "Did you mean" ties go to the earlier one. */
 export const builtinNames: readonly string[] = builtins.map((b) => b.name);
@@ -166,3 +254,12 @@ export const repeatTakes: readonly Type[] = ["num"];
 
 /** What `[for{…}in]` takes (§8.2): a list. Dicts are not iterable. */
 export const forTakes: readonly Type[] = ["list"];
+
+export { lineColumnAt, offsetAt, type LineColumn } from "./position.ts";
+export {
+  languageMarkers,
+  tableMarkers,
+  type LanguageMarker,
+  type LanguageMarkers,
+  type TableMarkers,
+} from "./markers.ts";

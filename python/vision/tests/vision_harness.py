@@ -22,21 +22,23 @@ PX_PER_MM = 4.0         # how the drawn camera sees the table
 ORIGIN_MM = (-20.0, -10.0)  # the table mm at the drawn picture's top-left pixel
 MM_PER_PH = 781.0       # the line-up's mm per projector height
 
-# The card feedback prototype's marker IDs (#159: fixtures use them until #157 settles the lockfile).
+# Marker IDs as the table app sends them: language cards from `language/markers.yaml` (90 is [define{}] 5U, 19
+# [repeat], 65 [num{}] 4U), library cards and pages from 400 as a project's lockfile gives them, and the ruler's two
+# from the table's own markers.
 MARKERS = {
     "languageMarkers": {
-        "1000": {"card": "[define{}]", "length": 5},
-        "1009": {"card": "[repeat]", "length": 2},
-        "1027": {"card": "[num{}]", "length": 4},
+        "90": {"card": "[define{}]", "length": 5},
+        "19": {"card": "[repeat]", "length": 2},
+        "65": {"card": "[num{}]", "length": 4},
     },
     "lockfile": {
-        "0": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "circle", "length": 3},
-        "1001": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "createCanvas", "length": 6},
-        "1004": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "background", "length": 5},
-        "2000": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 0},
-        "2001": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 1},
+        "402": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "circle", "length": 3},
+        "400": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "createCanvas", "length": 6},
+        "401": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "background", "length": 5},
+        "403": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 0},
+        "404": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 1},
     },
-    "ruler": [2080, 2081],
+    "ruler": [312, 313],
 }
 
 
@@ -161,7 +163,7 @@ def run_service(d: Path, source: str, settings=None, lineup=None, reader=None, e
 
 
 # Committed camera pictures of the drawn table (PX_PER_MM, ORIGIN_MM, 420 x 300 mm), for recordings:
-# `one-card` has [createCanvas] (1001) at (150, 120); `two-cards` adds [circle] (0) at (300, 200), turned 45°.
+# `one-card` has [createCanvas] (400) at (150, 120); `two-cards` adds [circle] (402) at (300, 200), turned 45°.
 RECORDINGS = Path(__file__).parent / "recordings"
 
 

@@ -7,7 +7,7 @@ room). It answers to exposure like a camera, so calibration can be tested off th
      "room": 5.0,
      "projector": {"mm_per_ph": 250.0, "light": 40.0,
                    "shows": [{"marker": 300, "x": 0.1, "y": 0.1, "size": 0.12}]},
-     "cards": [{"marker": 1001, "x": 150, "y": 120, "angle": 0}],
+     "cards": [{"marker": 400, "x": 150, "y": 120, "angle": 0}],
      "ruler": {"x": 190, "y": 125, "angle": 2, "mm": 257} | null}
 
 - **Camera**: table mm (x, y) is seen at pixel p where `Lineup.undistort(p)` is ((x, y) - origin_mm) * px_per_mm:

@@ -1,6 +1,21 @@
 import { describe, expect, test } from "vitest";
 import { initialState, step } from "../src/index.ts";
-import { at, card, code, ids, languageMarkers, layout, lockfile, play, table, U } from "./fixtures.ts";
+import {
+  at,
+  card,
+  code,
+  DEFINE,
+  GOLD,
+  ids,
+  languageMarkers,
+  layout,
+  lockfile,
+  NUM,
+  play,
+  SET,
+  table,
+  U,
+} from "./fixtures.ts";
 
 describe("text → cards: stand-ins", () => {
   test("each strip's cards lie at its @table position, at their shortest lengths", () => {
@@ -86,7 +101,7 @@ describe("text → cards: stand-ins", () => {
 describe("places on stand-ins", () => {
   const entry = "/** @table 50 50 */\n[define{draw}]\n[set{x}to][num{1}]";
   // A real [num{…}] laid on the stand-in [num{1}]'s spot, off by (dx, dy) mm.
-  const num = (dx = 0, dy = 0) => card(9, 1024, 50 + 4 * U + dx, 50 + U + dy, { text: "7" });
+  const num = (dx = 0, dy = 0) => card(9, NUM, 50 + 4 * U + dx, 50 + U + dy, { text: "7" });
 
   test("a card lying still about 0.4 s within 10 mm takes the stand-in's place, and replaces it", () => {
     const r = play(entry, [
@@ -117,9 +132,9 @@ describe("places on stand-ins", () => {
     const row = "/** @table 50 50 */\n[define{draw}]\n[set{x}to][num{1}][num{2}][num{3}]";
     const slide = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
       t: i * 0.1,
-      cards: [card(9, 1024, 50 + 4 * U + i * 15, 50 + U, { text: "7" })],
+      cards: [card(9, NUM, 50 + 4 * U + i * 15, 50 + U, { text: "7" })],
     }));
-    const away = card(9, 1024, 50 + 4 * U + 135, 50 + U + 60, { text: "7" });
+    const away = card(9, NUM, 50 + 4 * U + 135, 50 + U + 60, { text: "7" });
     const r = play(row, [...slide, { t: 2, cards: [away] }]);
     expect(ids(r.last)).toEqual(["s1", "s2", "s3", "s4", "s5"]);
   });
@@ -135,19 +150,19 @@ describe("places on stand-ins", () => {
   });
 
   test("stand-ins join lines like real cards: a real card laid right of a stand-in line joins it", () => {
-    const r = play(entry, [{ t: 0, cards: [card(9, 1025, 50 + 8 * U + 3, 50 + U + 2, { text: "5" })] }]);
+    const r = play(entry, [{ t: 0, cards: [card(9, NUM, 50 + 8 * U + 3, 50 + U + 2, { text: "5" })] }]);
     expect(code(r.last.text)).toBe("[define{draw}]\n[set{x}to][num{1}][num{5}]");
     expect(r.last.map.lines[1]).toEqual({ line: 3, tracks: [9], standIns: ["s2", "s3"] });
   });
 
   test("a real line laid under a stand-in strip head is a line of its strip", () => {
-    const r = play("/** @table 50 50 */\n[define{draw}]", [{ t: 0, cards: [card(9, 1011, 52, 50 + U, { text: "y" })] }]);
+    const r = play("/** @table 50 50 */\n[define{draw}]", [{ t: 0, cards: [card(9, SET, 52, 50 + U, { text: "y" })] }]);
     expect(code(r.last.text)).toBe("[define{draw}]\n[set{y}to]");
   });
 
   test("a real head that replaces a stand-in head keeps its strip's place and doc comment", () => {
     const two = "/**\n * Runs once.\n * @table 50 50\n */\n[define{setup}]\n\n/** @table 50 300 */\n[define{draw}]";
-    const head = card(9, 1000, 52, 51, { text: "setup" });
+    const head = card(9, DEFINE, 52, 51, { text: "setup" });
     const r = play(two, [
       { t: 0, cards: [head] },
       { t: 1, cards: [head] },
@@ -160,7 +175,7 @@ describe("places on stand-ins", () => {
   });
 
   test("any card replaces a stand-in, as an edit, and gives no mismatch", () => {
-    const gold = card(9, 1040, 50 + 4 * U, 50 + U);
+    const gold = card(9, GOLD, 50 + 4 * U, 50 + U);
     const r = play(entry, [
       { t: 0, cards: [gold] },
       { t: 1, cards: [gold] },

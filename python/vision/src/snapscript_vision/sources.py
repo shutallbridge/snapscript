@@ -5,7 +5,7 @@
 
       {"start_t": 1000000.0, "period_s": 0.125,
        "camera": {"px_per_mm": 4, "origin_mm": [-20, -10], "size_mm": [420, 300]},
-       "frames": [[{"marker": 1001, "x": 150, "y": 120, "angle": 0}], ...]}
+       "frames": [[{"marker": 400, "x": 150, "y": 120, "angle": 0}], ...]}
 
   Each card is placed by its marker's centre in table mm and its angle in degrees. The drawn camera sees table mm
   (x, y) at pixel ((x, y) - origin_mm) * px_per_mm. A card with `"smudged": true` has a smudge on its marker's

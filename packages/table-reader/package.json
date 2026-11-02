@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@snapscript/checker": "workspace:*",
+    "@snapscript/core": "workspace:*",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

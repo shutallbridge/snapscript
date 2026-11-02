@@ -1,0 +1,150 @@
+# Language markers: the marker ID of every card the language itself brings,
+# and the table's own markers (#157). Markers are tagStandard41h12, IDs 0–2114.
+#
+# - 0–299: language cards, here.
+# - 300–399: the table's own markers, here.
+# - 400–2114: library cards and textbook pages, given out per project by
+#   `snapscript.lock`.
+#
+# The ranges are for people reading the files. Software always looks an ID up
+# and never guesses what it is from the number.
+#
+# IDs are only added across minor and patch versions: never changed, never
+# reused, even for a card that is dropped, because printed cards carry them.
+# Add a new card at the next free ID, wherever it fits in the groups below.
+#
+# Each card is written in notation with empty braces where its handwriting
+# goes (`[num{}]`, `[set{}to]`), or as printed (`[repeat]`, `[color(gold)]`),
+# with its length in U. A printed card is given at its label's length by the
+# card sheet's rule (#101). A handwritten kind is given at each length from its
+# shortest up to 8U, one ID per length: every `[get{}]` 4U card carries the
+# same marker. Both sides of a flip pair have their own marker.
+#
+# Colours are the PoC kit's (#158). The language takes any CSS colour name, so
+# others are added here as kits need them.
+
+cards:
+  # Keyword cards.
+  0: {card: "[+]", length: 2}
+  1: {card: "[-]", length: 2}
+  2: {card: "[*]", length: 2}
+  3: {card: "[/]", length: 2}
+  4: {card: "[%]", length: 2}
+  5: {card: "[<]", length: 2}
+  6: {card: "[>]", length: 2}
+  7: {card: "[<=]", length: 2}
+  8: {card: "[>=]", length: 2}
+  9: {card: "[==]", length: 2}
+  10: {card: "[!=]", length: 2}
+  11: {card: "[and]", length: 2}
+  12: {card: "[or]", length: 2}
+  13: {card: "[not]", length: 2}
+  14: {card: "[(]", length: 2}
+  15: {card: "[)]", length: 2}
+  16: {card: "[if]", length: 2}
+  17: {card: "[elif]", length: 2}
+  18: {card: "[else]", length: 2}
+  19: {card: "[repeat]", length: 2}
+  20: {card: "[dedent]", length: 2}
+  21: {card: "[return]", length: 2}
+  22: {card: "[none]", length: 2}
+  23: {card: "[root]", length: 2}
+
+  # Bools and events.
+  24: {card: "[bool(true)]", length: 2}
+  25: {card: "[bool(false)]", length: 2}
+  26: {card: "[on(load)]", length: 3}
+  27: {card: "[on(stop)]", length: 3}
+
+  # Builtins, in the order core lists them.
+  28: {card: "[call(print)]", length: 2}
+  29: {card: "[call(range)]", length: 2}
+  30: {card: "[call(len)]", length: 2}
+  31: {card: "[call(list)]", length: 2}
+  32: {card: "[call(dict)]", length: 2}
+  33: {card: "[call(abs)]", length: 2}
+  34: {card: "[call(min)]", length: 2}
+  35: {card: "[call(max)]", length: 2}
+  36: {card: "[call(round)]", length: 2}
+  37: {card: "[call(sqrt)]", length: 2}
+  38: {card: "[call(sin)]", length: 2}
+  39: {card: "[call(cos)]", length: 2}
+  40: {card: "[call(random)]", length: 2}
+  41: {card: "[get(pi)]", length: 2}
+
+  # Colours: the PoC kit's, both sides of each card (#158).
+  42: {card: "[color(mediumblue)]", length: 4}
+  43: {card: "[color(deepskyblue)]", length: 4}
+  44: {card: "[color(gold)]", length: 4}
+  45: {card: "[color(yellow)]", length: 4}
+  46: {card: "[color(hotpink)]", length: 4}
+  47: {card: "[color(tomato)]", length: 4}
+  48: {card: "[color(aquamarine)]", length: 4}
+  49: {card: "[color(limegreen)]", length: 4}
+
+  # Handwritten kinds, at each length from the shortest up to 8U.
+  50: {card: "[set{}to]", length: 4}
+  51: {card: "[set{}to]", length: 5}
+  52: {card: "[set{}to]", length: 6}
+  53: {card: "[set{}to]", length: 7}
+  54: {card: "[set{}to]", length: 8}
+  55: {card: "[get{}]", length: 4}
+  56: {card: "[get{}]", length: 5}
+  57: {card: "[get{}]", length: 6}
+  58: {card: "[get{}]", length: 7}
+  59: {card: "[get{}]", length: 8}
+  60: {card: "[call{}]", length: 4}
+  61: {card: "[call{}]", length: 5}
+  62: {card: "[call{}]", length: 6}
+  63: {card: "[call{}]", length: 7}
+  64: {card: "[call{}]", length: 8}
+  65: {card: "[num{}]", length: 4}
+  66: {card: "[num{}]", length: 5}
+  67: {card: "[num{}]", length: 6}
+  68: {card: "[num{}]", length: 7}
+  69: {card: "[num{}]", length: 8}
+  70: {card: "[str{}]", length: 4}
+  71: {card: "[str{}]", length: 5}
+  72: {card: "[str{}]", length: 6}
+  73: {card: "[str{}]", length: 7}
+  74: {card: "[str{}]", length: 8}
+  75: {card: "[for{}in]", length: 4}
+  76: {card: "[for{}in]", length: 5}
+  77: {card: "[for{}in]", length: 6}
+  78: {card: "[for{}in]", length: 7}
+  79: {card: "[for{}in]", length: 8}
+  80: {card: "[required{}]", length: 4}
+  81: {card: "[required{}]", length: 5}
+  82: {card: "[required{}]", length: 6}
+  83: {card: "[required{}]", length: 7}
+  84: {card: "[required{}]", length: 8}
+  85: {card: "[optional{}]", length: 4}
+  86: {card: "[optional{}]", length: 5}
+  87: {card: "[optional{}]", length: 6}
+  88: {card: "[optional{}]", length: 7}
+  89: {card: "[optional{}]", length: 8}
+  90: {card: "[define{}]", length: 5}
+  91: {card: "[define{}]", length: 6}
+  92: {card: "[define{}]", length: 7}
+  93: {card: "[define{}]", length: 8}
+  94: {card: "[global{}]", length: 5}
+  95: {card: "[global{}]", length: 6}
+  96: {card: "[global{}]", length: 7}
+  97: {card: "[global{}]", length: 8}
+  98: {card: "[getProp{}]", length: 5}
+  99: {card: "[getProp{}]", length: 6}
+  100: {card: "[getProp{}]", length: 7}
+  101: {card: "[getProp{}]", length: 8}
+  102: {card: "[setProp{}to]", length: 5}
+  103: {card: "[setProp{}to]", length: 6}
+  104: {card: "[setProp{}to]", length: 7}
+  105: {card: "[setProp{}to]", length: 8}
+
+# The table's own markers, projected or printed, never on a card.
+table:
+  # Projected during calibration's first step, while the table is clear (#132).
+  calibration: [300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311]
+  # The ruler page's two, and how far apart their centres are printed, in mm (#132).
+  ruler:
+    markers: [312, 313]
+    distance_mm: 257

@@ -1,15 +1,30 @@
 import { describe, expect, test } from "vitest";
 import type { Handwriting } from "../src/index.ts";
 import { initialState, step } from "../src/index.ts";
-import { card, languageMarkers, layout, lockfile, run, runFrom, table, U } from "./fixtures.ts";
+import {
+  card,
+  CIRCLE,
+  DEFINE,
+  GET,
+  languageMarkers,
+  layout,
+  lockfile,
+  NUM,
+  PLAY,
+  run,
+  runFrom,
+  SET,
+  table,
+  U,
+} from "./fixtures.ts";
 
 // Every strip here lies with its first card's top-left at (50, 50) on the coding space, unturned (#166).
 const TAG = "/** @table 50 50 0 */\n";
 
 // [define{draw}] with [set{x}to][get{…}] under it, the [get{…}] in the given handwriting state.
-const draw = card(1, 1000, 50, 50, { text: "draw" });
-const set = card(2, 1011, 50, 50 + U, { text: "x" });
-const get = (hw: Handwriting) => ({ ...card(3, 1018, 50 + 4 * U, 50 + U), hw });
+const draw = card(1, DEFINE, 50, 50, { text: "draw" });
+const set = card(2, SET, 50, 50 + U, { text: "x" });
+const get = (hw: Handwriting) => ({ ...card(3, GET, 50 + 4 * U, 50 + U), hw });
 
 describe("handwriting", () => {
   test("a read goes in as read, with brackets dropped", () => {
@@ -22,7 +37,7 @@ describe("handwriting", () => {
   });
 
   test("a read that breaks its card's rule goes in as written", () => {
-    const num = { ...card(3, 1024, 50 + 4 * U, 50 + U), hw: { state: "read", text: "4o" } as Handwriting };
+    const num = { ...card(3, NUM, 50 + 4 * U, 50 + U), hw: { state: "read", text: "4o" } as Handwriting };
     const out = run(table(draw, set, num)).last;
     expect(out.text).toBe(TAG + "[define{draw}]\n[set{x}to][num{4o}]");
     expect(out.skippedLines).toEqual([]);
@@ -54,15 +69,15 @@ describe("handwriting", () => {
 
   test("an unread card's line is skipped even when the card's own text would be stale", () => {
     // A [num{…}] with a read error keeps no text, even if the vision service sent one along.
-    const num = { ...card(3, 1024, 50 + 4 * U, 50 + U), hw: { state: "read error", text: "5" } as Handwriting };
+    const num = { ...card(3, NUM, 50 + 4 * U, 50 + U), hw: { state: "read error", text: "5" } as Handwriting };
     const out = run(table(draw, set, num)).last;
     expect(out.text).toBe(TAG + "[define{draw}]\n[set{x}to][num{}]");
     expect(out.skippedLines).toEqual([{ line: 3, reason: "read error" }]);
   });
 
   test("a handwritten line head that isn't read yet skips its own line only", () => {
-    const head = { ...card(2, 1011, 50, 50 + U), hw: { state: "not read yet" } as Handwriting };
-    const below = card(4, 1011, 50, 50 + 2 * U, { text: "y" });
+    const head = { ...card(2, SET, 50, 50 + U), hw: { state: "not read yet" } as Handwriting };
+    const below = card(4, SET, 50, 50 + 2 * U, { text: "y" });
     const out = run(table(draw, head, below)).last;
     expect(out.text).toBe(TAG + "[define{draw}]\n[set{}to]\n[set{y}to]");
     expect(out.skippedLines).toEqual([{ line: 3, reason: "not read yet" }]);
@@ -108,13 +123,13 @@ describe("the entry text's hidden lines", () => {
   });
 
   test("the reader never adds an [import]", () => {
-    expect(run(table(draw, card(2, 0, 50, 50 + U))).last.text).toBe(TAG + "[define{draw}]\n[call{}]");
+    expect(run(table(draw, card(2, CIRCLE, 50, 50 + U))).last.text).toBe(TAG + "[define{draw}]\n[call{}]");
   });
 });
 
 describe("library cards", () => {
-  // Marker 0 is `call snapscript-p5.circle` (3U), with a [num{250}] after it.
-  const line = table(draw, card(2, 0, 50, 50 + U), card(3, 1024, 50 + 3 * U, 50 + U, { text: "250" }));
+  // CIRCLE is `call snapscript-p5.circle` (3U), with a [num{250}] after it.
+  const line = table(draw, card(2, CIRCLE, 50, 50 + U), card(3, NUM, 50 + 3 * U, 50 + U, { text: "250" }));
 
   test.each([
     ["p5", "[call(p5.circle)]"],
@@ -137,12 +152,12 @@ describe("unknown cards", () => {
   const p5 = "[import(snapscript-p5)as(p5)]";
 
   test("a library card whose library isn't imported: empty braces, its line skipped, and listed", () => {
-    // Marker 1500 is `call snapscript-sound.play`, with a [num{3}] after it.
-    const t = table(draw, card(2, 1500, 50, 50 + U), card(3, 1024, 50 + 3 * U, 50 + U, { text: "3" }));
+    // PLAY is `call snapscript-sound.play`, with a [num{3}] after it.
+    const t = table(draw, card(2, PLAY, 50, 50 + U), card(3, NUM, 50 + 3 * U, 50 + U, { text: "3" }));
     const out = runFrom(p5, t).last;
     expect(out.text).toBe(`${p5}\n\n${TAG}[define{draw}]\n[call{}][num{3}]`);
     expect(out.skippedLines).toEqual([{ line: 5, reason: "unknown card" }]);
-    expect(out.unknownCards).toEqual([{ track: 2, marker: 1500, package: "snapscript-sound" }]);
+    expect(out.unknownCards).toEqual([{ track: 2, marker: PLAY, package: "snapscript-sound" }]);
     expect(out.map.cards[1]).toEqual({ track: 2, span: { line: 5, start: 0, end: 8 } });
   });
 
@@ -164,7 +179,7 @@ describe("unknown cards", () => {
         draw,
         set,
         card(3, 4321, 50 + 4 * U, 50 + U),
-        card(4, 1024, 50 + (4 + length) * U, 50 + U, { text: "3" }),
+        card(4, NUM, 50 + (4 + length) * U, 50 + U, { text: "3" }),
       );
       const out = runFrom(p5, t).last;
       expect(out.text).toBe(`${p5}\n\n${TAG}[define{draw}]\n[set{x}to][num{3}]`);
@@ -175,7 +190,7 @@ describe("unknown cards", () => {
   );
 
   test("a line with an unknown card and a card not read yet is skipped as unknown", () => {
-    const t = table(draw, card(2, 1500, 50, 50 + U), { ...card(3, 1024, 50 + 3 * U, 50 + U), hw: { state: "not read yet" } });
+    const t = table(draw, card(2, PLAY, 50, 50 + U), { ...card(3, NUM, 50 + 3 * U, 50 + U), hw: { state: "not read yet" } });
     expect(runFrom(p5, t).last.skippedLines).toEqual([{ line: 5, reason: "unknown card" }]);
   });
 
@@ -183,7 +198,7 @@ describe("unknown cards", () => {
     const setup = { kind: "library", card: "define", package: "snapscript-p5", name: "setup", length: 4 } as const;
     const input = (entry: string) =>
       step(initialState(entry), {
-        table: table(card(1, 1700, 50, 50), card(2, 1011, 50, 50 + U, { text: "x" })),
+        table: table(card(1, 1700, 50, 50), card(2, SET, 50, 50 + U, { text: "x" })),
         layout,
         lockfile: new Map([...lockfile, [1700, setup]]),
         languageMarkers,
