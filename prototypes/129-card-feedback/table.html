@@ -98,7 +98,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'line end', vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -155,7 +155,7 @@ addEventListener('keydown', e => {
   if (e.key === 'r') { const R = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vwrong = R[(R.indexOf(cfg.vwrong) + 1) % R.length]; save(); say(`wrong card red fill: ${cfg.vwrong}%`); return; }  // prototyping only, not a setting
   if (e.key === 't') { const T = [0, 0.5, 1, 1.5, 2, 3]; cfg.vwrongEdge = T[(T.indexOf(cfg.vwrongEdge) + 1) % T.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdge ? cfg.vwrongEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'o') { const O = [20, 40, 60, 80, 100]; cfg.vwrongEdgeA = O[(O.indexOf(cfg.vwrongEdgeA) + 1) % O.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdgeA}%`); return; }
-  if (e.key === 'p') { const P = ['line end', 'below', 'above']; cfg.msgAt = P[(P.indexOf(cfg.msgAt) + 1) % P.length]; save(); say(`error message: ${cfg.msgAt}`); return; }
+  if (e.key === 'p') { const P = ['auto', 'right', 'below', 'above', 'left']; cfg.msgAt = P[(P.indexOf(cfg.msgAt) + 1) % P.length]; save(); say(`error message: ${cfg.msgAt}`); return; }
   if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
   if (e.key === 'm') { const M = [0, 0.5, 1, 1.5, 2]; cfg.vsEdge = M[(M.indexOf(cfg.vsEdge) + 1) % M.length]; save(); say(`stand-in marker zone edge: ${cfg.vsEdge ? cfg.vsEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'w') { cfg.vwb = !cfg.vwb; save(); say(`guide whiteboard edge: ${cfg.vwb ? 'on' : 'off'}`); return; }
@@ -440,15 +440,36 @@ function drawWrong(g, c) {
   if (e) { g.globalAlpha = cfg.vwrongEdgeA / 100; g.strokeStyle = '#ff0000'; g.lineWidth = e; g.setLineDash([]); g.strokeRect(MZ + e / 2, e / 2, w - MZ - e, H - e); }
   g.restore();
 }
-// An error's message and its kind, in the error red. cfg.msgAt: after the line's last card, under the wrong card, or above it.
-function drawMessage(g, e) {
+// An error's message and its kind, in the error red, placed like floating-ui: the first place in cfg.msgAt's order that stays
+// inside the coding space and off every card (real, or a guide on show); if none does, the first anyway. 'auto' tries
+// right (after the line's last card), then below the wrong card (from its left), then above it, then left of the line.
+const PLACES = ['right', 'below', 'above', 'left'];
+function quad(at, x, y, w, h) {  // a rectangle in mm, in the frame of a card placed at `at` (top-left at 0,0), -> 4 projector px points
+  const k = mm(), c = Math.cos(at.a), s = Math.sin(at.a), ox = -MZ / 2, oy = -H / 2;
+  return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]].map(([u, v]) => [at.m[0] + ((u + ox) * c - (v + oy) * s) * k, at.m[1] + ((u + ox) * s + (v + oy) * c) * k]);
+}
+function overlaps(p, q) {  // two convex quads, by separating axes
+  for (const poly of [p, q]) for (let i = 0; i < 4; i++) {
+    const [a, b] = [poly[i], poly[(i + 1) % 4]], n = [b[1] - a[1], a[0] - b[0]];
+    const proj = P => P.map(v => v[0] * n[0] + v[1] * n[1]);
+    const [pp, qq] = [proj(p), proj(q)];
+    if (Math.max(...pp) <= Math.min(...qq) || Math.max(...qq) <= Math.min(...pp)) return false;
+  }
+  return true;
+}
+function drawMessage(g, e, L, blockers) {
   const k = mm(), f = cfg.textPx * 0.6, text = `${e.msg} · ${e.kind}`;  // app px -> mm (1U = 50 px = 30 mm)
-  const at = cfg.msgAt === 'line end' ? lineEnds.get(e.call) : { m: e.card.m, a: e.card.a, len: 0 };
-  g.save(); g.translate(at.m[0], at.m[1]); g.rotate(at.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);  // in mm, from that card's top-left
-  g.font = font(f); g.fillStyle = '#f87171'; g.textBaseline = 'middle';
-  if (cfg.msgAt === 'line end') g.fillText(text, at.len * U + 3, H / 2);
-  else if (cfg.msgAt === 'below') { g.textBaseline = 'top'; g.fillText(text, 0, H + 2); }
-  else { g.textBaseline = 'bottom'; g.fillText(text, 0, -2); }
+  g.save(); g.font = font(f); const tw = g.measureText(text).width, th = f; g.restore();
+  const end = lineEnds.get(e.call), card = { m: e.card.m, a: e.card.a }, head = { m: e.call.m, a: e.call.a };
+  const spot = {
+    right: [end, end.len * U + 3, H / 2 - th / 2], below: [card, 0, H + 2], above: [card, 0, -2 - th], left: [head, -3 - tw, H / 2 - th / 2] };
+  const order = cfg.msgAt === 'auto' ? PLACES : [cfg.msgAt];
+  const fits = q => q.every(([x, y]) => inside(L.code, [x, y])) && !blockers.some(b => overlaps(q, b));
+  const place = order.find(p => fits(quad(...spot[p], tw, th))) || order[0];
+  e.placed = place;
+  const [at, x, y] = spot[place];
+  g.save(); g.translate(at.m[0], at.m[1]); g.rotate(at.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);
+  g.font = font(f); g.fillStyle = '#f87171'; g.textBaseline = 'middle'; g.fillText(text, x, y + th / 2);
   g.restore();
 }
 function drawVirtualCards(g, L) {
@@ -464,7 +485,11 @@ function drawVirtualCards(g, L) {
     drawVirtual(g, v); shown++;
   }
   if (cfg.vargs) for (const v of virtualArgs(cards)) { drawVirtual(g, v); shown++; }
-  if (cfg.vargs) for (const e of argErrors) { drawWrong(g, e.card); drawMessage(g, e); }
+  if (cfg.vargs) {
+    const shownArgs = virtualArgs(cards);  // recomputed: the slots on show, as blockers for messages
+    const blockers = [...cards.map(c => quad(c, 0, 0, (CARD_LEN[c.id] || lenOf(sideOf(c.text))) * U, H)), ...shownArgs.map(v => quad(v, 0, 0, lenOf(v.side) * U, H))];
+    for (const e of argErrors) { drawWrong(g, e.card); drawMessage(g, e, L, blockers); }
+  }
   vstat = `virtual ${cfg.vlook}: ${shown} shown, ${gone} replaced, ${wrong} wrong`;
 }
 let vstat = '';
@@ -476,6 +501,7 @@ const PRINTS = { 2: () => 'hello', 6: () => 'x = ' + (Math.floor(performance.now
 const DOC = { title: 'circle(x, y, d)', body: 'Draws a circle. x and y are where its centre goes, and d is how wide it is, in pixels.' };
 
 // ======================= base layer: the two windows, the program, the highlight test =======================
+const BLEED = 0.3;  // #129: how bright the coding space's drawing is where it spills into the canvas window
 function drawBase(L) {
   const g = base.getContext('2d'), u = UPX();
   g.setTransform(1, 0, 0, 1, 0, 0); g.setLineDash([]); g.fillStyle = '#000'; g.fillRect(0, 0, VW(), VH());
@@ -489,6 +515,9 @@ function drawBase(L) {
   const px0 = L.code.x + 1.5 * u;
   if (prog) drawProgram(g, prog, px0, 1.5 * u, 'virtual');
   else if (cfg.vprog || cfg.vargs) drawVirtualCards(g, L);  // #129
+  // #129: whatever the coding space draws past its edge (a card whose marker counts, a message) shows in the canvas window
+  // dimmed to BLEED, under everything there: this is the base layer, below the sketch
+  if (!prog && (cfg.vprog || cfg.vargs)) { g.fillStyle = `rgba(0,0,0,${1 - BLEED})`; g.fillRect(L.canvas.x, L.canvas.y, L.canvas.w, L.canvas.h); }
   else if (cfg.program) {
     const ends = drawProgram(g, MOCK, px0, 1.5 * u, 'mock');
     for (const [i, f] of Object.entries(PRINTS)) { const [x, y] = ends[i]; text(g, '→ ' + f(), x + 0.4 * u, y, '#86efac'); }
