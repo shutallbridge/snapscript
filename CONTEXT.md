@@ -103,6 +103,10 @@ A package of Snapscript modules that a program imports by its package name: `[im
 **Library card**:
 A printed card that a library offers with a `@card` tag in a doc comment: `[call(p5.circle)]`, `[get(p5.frameCount)]`, or `[define(setup)]` for a function that the program defines. A handwritten card with the same text means the same thing, but shows none of the library card's help.
 
+**Native module**:
+The JavaScript beside a library's `.snap` file, with the same name (`p5.js` beside `p5.snap`), that does the work of its `[extern(…)]`s: one function for each name, however many times it is declared.
+_Avoid_: binding, wrapper, FFI
+
 **Builtin**:
 A name that every file has without an import: functions such as `[call(print)]` and `[call(sin)]`, and the value `[get(pi)]`. A local or a top-level declaration with the same name hides it.
 
@@ -130,7 +134,7 @@ When an error is found: **structure** (cards that cannot form a program), **chec
 _Avoid_: layer (a layer is a level of a magnet pocket), phase
 
 **Table error**:
-An error that belongs to the table, not the language: a read error, a connection error or a mismatch. It has no kind and no stage, a text file never has one, and it never goes into a `.snap` file. The table shows it like any other error.
+An error that belongs to the table, not the language: a read error, a connection error, a mismatch, a frozen sketch or a library error. It has no kind and no stage, a text file never has one, and it never goes into a `.snap` file. The table shows it like any other error.
 
 **Read error**:
 A table error: the camera is not sure what a card's handwriting says. The card's line is skipped.
@@ -139,6 +143,14 @@ _Avoid_: OCR error
 **Connection error**:
 A table error: a card's handwriting cannot be read because the table cannot reach the handwriting reader. The card's line is skipped at once, and the card is read as soon as the reader can be reached again.
 _Avoid_: offline error, network error
+
+**Frozen sketch**:
+A table error: the sketch has not finished a frame, or its `[on(load)]`, for about 3 s, such as inside `[repeat][num{1000000000}]`. The table stops the run, lights the card it was stuck at and says so in the status bar. The next change to the program starts a new run.
+_Avoid_: timeout, hang
+
+**Library error**:
+A table error: a library's own code broke, not the program. The card that called it is lit, such as `[call(p5.circle)]`, with "snapscript-p5 broke inside circle: …", and the run stops. A library that blames the program raises an error of a kind instead, which is a runtime error.
+_Avoid_: crash, internal error
 
 **Not read yet**:
 A handwritten card whose text has not arrived. It is not an error: the program keeps running as it was until the text arrives, for up to about 5 s, and then its line is skipped until it does. A rewritten card is not read yet again.

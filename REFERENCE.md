@@ -552,6 +552,8 @@ A module's attributes are read from any file, and written only in its own file.
 | `[on(load)]` | once, when the program starts                                                                          |
 | `[on(stop)]` | once, when the program stops: after a runtime error, when a new run replaces it, or when it is stopped |
 
+A program stopped from outside gives its `[on(stop)]` handlers a moment to run. A handler still running after that, or a program that no longer responds, is stopped without them.
+
 A file has at most one handler for each event; a second is a `SyntaxError`. Every file's handlers run, an imported module's before those of the file that imports it.
 
 Repeating is a module's work: an `[extern(…)]` takes `[root]` and calls its functions.
@@ -914,6 +916,25 @@ Builtins are used without a namespace. `pi` is a value; every other builtin is a
 [call(random)][num{0}][num{500}]        a num from 0 to 500
 [get(pi)]                               3.14159…
 ```
+
+`[call(print)]` shows its values with a space between them.
+
+| Value                                            | Shows as                         |
+| ------------------------------------------------ | -------------------------------- |
+| `[num{5}]`, `[num{2.5}]`, `[num{10}][/][num{4}]` | `5`, `2.5`, `2.5`                |
+| `[num{0.1}][+][num{0.2}]`                        | `0.30000000000000004`            |
+| `[str{hello_world}]`                             | `hello world`                    |
+| `[bool(true)]`, `[none]`                         | `true`, `none`                   |
+| `[color(gold)]`                                  | `gold`                           |
+| a list                                           | `[1, 2, "a"]`                    |
+| a dict                                           | `{message: "hi"}`                |
+| a function, a module                             | `<function draw>`, `<module p5>` |
+
+```
+[call(print)][num{1}][str{a}][call(list)][str{a}]       1 a ["a"]
+```
+
+Python shows `True` and `None`, with capitals.
 
 `[call(range)]` takes whole numbers and a step that is not 0.
 
