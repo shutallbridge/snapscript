@@ -13,6 +13,9 @@
     "build": "tsdown",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@snapscript/faces": "workspace:*"
+  },
   "devDependencies": {
     "@snapscript/checker": "workspace:*",
     "tsdown": "catalog:",
