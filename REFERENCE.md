@@ -695,11 +695,32 @@ A block's body may be empty. A block with no `[dedent]` closes at the end of its
 [define{g}]
 [set{x}to][num{1}]
   [call(print)][get{x}]                 IndentationError: skipped, with the lines indented under it
+```
 
+A block with a line after it in its head's column, and no `[dedent]` between them, is an `IndentationError` on its head. The block is skipped with its body, and the line after it runs.
+
+```
 [define{h}]
-[if][get{a}]
+[if][get{a}]                            IndentationError: no [dedent]; skipped with its body
   [call(print)][get{a}]
-[call(print)][str{done}]                IndentationError: no [dedent]; the block closes here anyway
+[call(print)][str{done}]                runs
+
+[define{j}]
+[repeat][num{3}]                        IndentationError: no [dedent]; skipped with its body
+  [if][get{a}]
+    [call(print)][get{a}]
+[call(print)][str{done}]                runs
+
+[define{k}]
+[repeat][num{3}]                        runs
+  [if][get{a}]                          IndentationError: no [dedent]; skipped with its body
+    [call(print)][get{a}]
+  [call(print)][str{y}]                 runs
+[dedent]
+
+[define{m}]
+[if][get{ready}]                        IndentationError: no [dedent]; skipped
+[call(print)][str{done}]                runs
 ```
 
 ### 8.1. `[if]`, `[elif]` and `[else]`
@@ -742,6 +763,17 @@ An `[elif]` or `[else]` after a `[dedent]` or after a `[repeat]` or `[for{…}in
 [if][get{a}]
 [else]
 [elif][get{b}]                          SyntaxError: [elif] after [else]
+
+[if][get{a}]                            IndentationError: no [dedent]; skipped with the rest of the chain
+  [call(print)][str{a}]
+[else]                                  skipped
+  [call(print)][str{not_a}]
+[call(print)][str{done}]                runs
+
+[if][get{a}]                            IndentationError: no [dedent]; skipped with its body
+  [call(print)][get{a}]
+[call(print)][str{done}]                runs
+[else]                                  SyntaxError: no chain to continue
 ```
 
 ### 8.2. Loops
