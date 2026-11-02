@@ -19,3 +19,14 @@ ssh rig 'cd ~/snap-147/app && GAPS=1 node replay.js ~/snap-115/runs/vision-*.jso
 ```
 
 The line-up is the card feedback prototype's `~/snap-129/calib.json`.
+
+## Result (2026-11-03, night, room lights on)
+
+The rules that held, with five flat paper cards (`[define{setup}]`, `[call(p5.createCanvas)][num{500}][num{500}]`, `[call(p5.background)]` lit red), 600 moving confetti, hands off for minutes:
+
+```sh
+ssh rig 'bash ~/snap-147/start-vision.sh --lens 3.75 --exposure-ms 40 --miss-ok 1 --change-hold 3 --light-tol 0.15 --keep-text --face-check 0.93 --empty-ratio 0.4 --gone-empty 0.5 --hold 30'
+ssh rig 'export JOIN='"'"'{"mode":"axis","how":"mean","make":10,"brk":15,"rowBrk":15}'"'"'; STRESS=600 SKETCH=b KEEP_TEXT=1 bash ~/snap-147/start-app.sh'
+```
+
+The verdict is on the issue.
