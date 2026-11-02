@@ -100,7 +100,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'hatch', barTop: 'status', barBottom: 'errors', vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'hatch', detLook: 'skipped', barTop: 'status', barBottom: 'errors', vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -158,6 +158,7 @@ addEventListener('keydown', e => {
   if (e.key === 't') { const T = [0, 0.5, 1, 1.5, 2, 3]; cfg.vwrongEdge = T[(T.indexOf(cfg.vwrongEdge) + 1) % T.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdge ? cfg.vwrongEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'o') { const O = [20, 40, 60, 80, 100]; cfg.vwrongEdgeA = O[(O.indexOf(cfg.vwrongEdgeA) + 1) % O.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdgeA}%`); return; }
   if (e.key === 'p') { const P = ['auto', 'right', 'left']; cfg.msgAt = P[(P.indexOf(cfg.msgAt) + 1) % P.length]; save(); say(`error message: ${cfg.msgAt}`); return; }
+  if (e.key === 'd') { cfg.detLook = cfg.detLook === 'skipped' ? 'none' : 'skipped'; save(); say(`detached cards: ${cfg.detLook === 'skipped' ? 'look skipped' : 'no look'}`); return; }
   if (e.key === 'k') { cfg.skipLook = SKIP_LOOKS[(SKIP_LOOKS.indexOf(cfg.skipLook) + 1) % SKIP_LOOKS.length]; save(); say(`skipped line: ${cfg.skipLook}`); return; }
   if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
   if (e.key === 'm') { const M = [0, 0.5, 1, 1.5, 2]; cfg.vsEdge = M[(M.indexOf(cfg.vsEdge) + 1) % M.length]; save(); say(`stand-in marker zone edge: ${cfg.vsEdge ? cfg.vsEdge + ' mm' : 'none'}`); return; }
@@ -421,7 +422,8 @@ function misfit(want, got) {
   if (want.startsWith('[num') ? g === 'num' : g === 'color') return null;
   return GOT_NAME[g] || g;
 }
-function virtualArgs(cards) {
+function virtualArgs(cards, attached = null) {
+  const counts = c => !attached || attached.has(c);  // a detached card isn't part of the program, so it has no errors
   const k = mm(), out = [];
   argErrors = []; lineEnds = new Map(); lineCards = new Map();
   // mocked: a [set{x}to] with nothing after it is a SyntaxError, so its line is skipped, and x with it
@@ -432,7 +434,7 @@ function virtualArgs(cards) {
     const v = occupant({ m: [c.m[0] + d[0] * len * U * k, c.m[1] + d[1] * len * U * k], a: c.a }, cards, `set:${c.id}`);
     lineCards.set(c, v ? [c, v] : [c]);
     lineEnds.set(c, v ? { m: v.m, a: v.a, len: CARD_LEN[v.id] || lenOf(sideOf(v.text)) } : { m: c.m, a: c.a, len });
-    if (v) continue;
+    if (v || !counts(c)) continue;
     const e = { card: c, call: c, kind: 'SyntaxError', msg: `set ${sm[1]} to needs a value`, long: `set ${sm[1]} to needs a value after it.` };
     argErrors.push(e); skippedNames[sm[1].toLowerCase()] = e;
   }
@@ -445,6 +447,7 @@ function virtualArgs(cards) {
       const d = [Math.cos(end.a), Math.sin(end.a)], reach = endLen * U * k;  // marker to marker: the end card's length
       const slot = { text, side: sideOf(text), hint, a: end.a, m: [end.m[0] + d[0] * reach, end.m[1] + d[1] * reach] };
       const filled = occupant(slot, cards, `arg:${c.id}:${i}`);
+      if (filled && !counts(c)) { real.push(filled); end = filled; endLen = CARD_LEN[filled.id] || lenOf(sideOf(filled.text)); continue; }
       if (filled) {
         const got = misfit(text, filled.text), gm = /^\[get\{(\w+)\}\]$/.exec(filled.text), from = gm && skippedNames[gm[1].toLowerCase()];
         if (from) argErrors.push({ card: filled, call: c, kind: 'NameError', ref: from,  // its words name the skipped line's badge, once numbered
@@ -540,6 +543,39 @@ function drawSkipped(g, cards) {
     });
   }
 }
+// #129 structure, mocked: which cards are part of the program (REFERENCE 4.1). A line is a chain of cards, each one's
+// marker at the end of the one before (within vtol). A line belongs to a strip if a line's head sits one row (H) above its
+// head, within 10 mm across and 1.2U along (an indent or a dedent), at the same angle; a strip starts at a [define] or an
+// [on]. [import], [extern] and [global] stand alone and count. Every other line is detached: not part of the program.
+const ROW_MM = 10, ROW_ALONG = 1.2;
+function structure(cards) {
+  const k = mm(), len = c => CARD_LEN[c.id] || lenOf(sideOf(c.text)), next = new Map(), isNext = new Set();
+  for (const c of cards) {
+    const d = [Math.cos(c.a), Math.sin(c.a)], r = len(c) * U * k;
+    const n = occupant({ m: [c.m[0] + d[0] * r, c.m[1] + d[1] * r], a: c.a }, cards.filter(x => x !== c && !isNext.has(x)), `next:${c.id}`);
+    if (n) { next.set(c, n); isNext.add(n); }
+  }
+  const heads = cards.filter(c => !isNext.has(c)), lines = new Map();
+  for (const h of heads) { const l = [h]; for (let c = next.get(h); c && !l.includes(c); c = next.get(c)) l.push(c); lines.set(h, l); }
+  const above = h => heads.find(p => {
+    if (p === h || Math.abs(Math.atan2(Math.sin(p.a - h.a), Math.cos(p.a - h.a))) > 15 * Math.PI / 180) return false;
+    const dx = (p.m[0] - h.m[0]) / k, dy = (p.m[1] - h.m[1]) / k, c = Math.cos(h.a), s = Math.sin(h.a);
+    const along = dx * c + dy * s, across = -dx * s + dy * c;  // in h's frame: across < 0 is up
+    return Math.abs(across + H) <= ROW_MM && Math.abs(along) <= ROW_ALONG * U;
+  });
+  const memo = new Map();
+  const inProgram = (h, seen = new Set()) => {
+    if (memo.has(h)) return memo.get(h);
+    let v;
+    if (/^\[(define|on|import|extern|global)\b/.test(h.text)) v = true;
+    else { const p = above(h); v = !!p && !seen.has(p) && (seen.add(h), inProgram(p, seen)); }
+    memo.set(h, v); return v;
+  };
+  const attached = new Set(), detached = [];
+  for (const [h, l] of lines) if (inProgram(h)) l.forEach(c => attached.add(c)); else detached.push(l);
+  return { attached, detached };
+}
+let structStat = '';
 function drawVirtualCards(g, L) {
   const cards = realCards(L);
   let shown = 0, gone = 0;
@@ -552,9 +588,12 @@ function drawVirtualCards(g, L) {
     if (c) { drawWrong(g, c); wrong++; continue; }
     drawVirtual(g, v); shown++;
   }
-  if (cfg.vargs) for (const v of virtualArgs(cards)) { drawVirtual(g, v); shown++; }
+  const { attached, detached } = structure(cards);
+  if (cfg.detLook === 'skipped') for (const l of detached) drawSkipped(g, l);  // the same look as a skipped line, no badge, no message
+  structStat = `${attached.size} cards in the program, ${detached.length} detached lines`;
+  if (cfg.vargs) for (const v of virtualArgs(cards, attached)) { drawVirtual(g, v); shown++; }
   if (cfg.vargs) {
-    const shownArgs = virtualArgs(cards);  // recomputed: the slots on show, as blockers for messages
+    const shownArgs = virtualArgs(cards, attached);  // recomputed: the slots on show, as blockers for messages
     const blockers = [...cards.map(c => quad(c, 0, 0, (CARD_LEN[c.id] || lenOf(sideOf(c.text))) * U, H)), ...shownArgs.map(v => quad(v, 0, 0, lenOf(v.side) * U, H))];
     // numbered in program order: lines top to bottom (by their first card), then along each line
     const along = e => (e.card.m[0] - e.call.m[0]) * Math.cos(e.call.a) + (e.card.m[1] - e.call.m[1]) * Math.sin(e.call.a);
@@ -564,7 +603,7 @@ function drawVirtualCards(g, L) {
     for (const e of argErrors) drawWrong(g, e.card);
     for (const call of new Set(argErrors.map(e => e.call))) drawMessages(g, argErrors.filter(e => e.call === call), L, blockers);
   }
-  vstat = `virtual ${cfg.vlook}: ${shown} shown, ${gone} replaced, ${wrong} wrong`;
+  vstat = `virtual ${cfg.vlook}: ${shown} shown, ${gone} replaced, ${wrong} wrong · ${structStat}`;
 }
 let vstat = '';
 
