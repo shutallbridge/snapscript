@@ -65,6 +65,7 @@ ssh rig 'mkdir -p ~/.local/state/snapscript && cd ~/snapscript/python && \
     --lineup ~/.local/state/snapscript/lineup.json --markers MARKERS.json --port 8115'
 ```
 
+- Handwriting is read in the cloud by default (`--reader openrouter`), which needs `OPENROUTER_API_KEY` in the service's environment. Keep the key out of the repo. `--reader fake:FAKE.json` runs without it.
 - `--source camera` focuses once at start. `camera:lens=3.75` holds a known focus (in dioptres) instead.
 - `--lineup` is the service's own file. Calibration writes it there, and it stays across restarts. Until the first calibration is saved, positions are in camera pixels.
 - Run `.venv/bin/python` directly, not `uv run`. `uv run` would sync first, and without `--python` that sync replaces the venv.

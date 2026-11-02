@@ -43,13 +43,45 @@ class Card:
     x: float
     y: float
     angle: float = 0.0
+    smudged: bool = False  # a smudge on the marker's corner: the camera misses it, but the card looks the same
+    ink: tuple = ()     # strokes written on the sheet: (x0, y0, x1, y1) rectangles in sheet mm
 
     def json(self):
-        return {"marker": self.marker, "x": self.x, "y": self.y, "angle": self.angle}
+        out = {"marker": self.marker, "x": self.x, "y": self.y, "angle": self.angle}
+        if self.ink:
+            out["ink"] = [list(r) for r in self.ink]
+        return out | ({"smudged": True} if self.smudged else {})
 
 
-def frame_t(i):
-    return START_T + i * PERIOD_S
+# Digits as seven-segment strokes 1 mm wide, 6 mm wide and 12 mm tall: each segment is 6 mm² of ink.
+SEGMENTS = {"a": (0, 0, 6, 1), "b": (5, 0, 6, 6), "c": (5, 6, 6, 12), "d": (0, 11, 6, 12),
+            "e": (0, 6, 1, 12), "f": (0, 0, 1, 6), "g": (0, 5.5, 6, 6.5)}
+DIGITS = {"0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "afgcd", "6": "afgedc",
+          "7": "abc", "8": "abcdefg", "9": "abcdfg"}
+
+
+def written(text, x0=45.0, y0=9.0):
+    """Ink strokes for digits written along a whiteboard from sheet mm (x0, y0). For `[num{}]` (4U) the
+    whiteboard is x 41-117 mm, y 3-27 mm."""
+    out = []
+    for i, ch in enumerate(text):
+        dx = x0 + i * 9
+        out += [(dx + a, y0 + b, dx + c, y0 + d) for a, b, c, d in (SEGMENTS[s] for s in DIGITS[ch])]
+    return tuple(out)
+
+
+@dataclass
+class Hand:
+    """A hand lying flat on the table, its palm centred at (x, y) table mm, fingers pointing up the table."""
+    x: float
+    y: float
+
+    def json(self):
+        return {"hand": [self.x, self.y]}
+
+
+def frame_t(i, period_s=PERIOD_S):
+    return START_T + i * period_s
 
 
 def write_markers(d: Path) -> Path:
@@ -68,26 +100,45 @@ def write_lineup(d: Path, mm_per_ph=MM_PER_PH) -> Path:
     return p
 
 
-def write_scene(d: Path, frames, size_mm=(420, 300)) -> Path:
-    """frames: one list of Cards per frame."""
+def write_scene(d: Path, frames, size_mm=(420, 300), period_s=PERIOD_S) -> Path:
+    """frames: one list of Cards (and Hands) per frame, drawn in order, later ones on top."""
     p = d / "scene.json"
     p.write_text(json.dumps({
-        "start_t": START_T, "period_s": PERIOD_S,
+        "start_t": START_T, "period_s": period_s,
         "camera": {"px_per_mm": PX_PER_MM, "origin_mm": list(ORIGIN_MM), "size_mm": list(size_mm)},
         "frames": [[c.json() for c in f] for f in frames],
     }))
     return p
 
 
-def run_service(d: Path, source: str, settings=None, lineup=None, timeout=120):
-    """Start the service on a free port, read every JSON line it sends until its frames run out, and return them."""
-    args = [sys.executable, "-m", "snapscript_vision", "--source", source, "--port", "0",
+def write_fake_reader(d: Path, answers) -> Path:
+    """A fake handwriting reader. It answers its calls in order (the last answer repeats), each `after_s` of frame
+    time after the call, and notes every call in `calls.jsonl`. An answer is {"text": "500"} (empty: no text back)
+    or {"fail": "connect"} / {"fail": "server"}."""
+    p = d / "reader.json"
+    p.write_text(json.dumps({"answers": answers, "calls": str(d / "calls.jsonl")}))
+    return p
+
+
+def reader_calls(d: Path):
+    p = d / "calls.jsonl"
+    return [json.loads(l) for l in p.read_text().splitlines()] if p.exists() else []
+
+
+def run_service(d: Path, source: str, settings=None, lineup=None, reader=None, env=None, timeout=120):
+    """Start the service on a free port, read every JSON line it sends until its frames run out, and return them.
+
+    `reader`: the fake reader's answers (see write_fake_reader), or a `--reader` spec. By default a fake reader
+    answers "500" after 2 s."""
+    if not isinstance(reader, str):
+        reader = f"fake:{write_fake_reader(d, reader or [{'text': '500', 'after_s': 2.0}])}"
+    args = [sys.executable, "-m", "snapscript_vision", "--source", source, "--port", "0", "--reader", reader,
             "--markers", str(write_markers(d)), "--lineup", str(lineup or write_lineup(d))]
     if settings is not None:
         sp = d / "settings.json"
         sp.write_text(json.dumps(settings))
         args += ["--settings", str(sp)]
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
     try:
         line = proc.stdout.readline()
         m = re.search(r"listening on 127\.0\.0\.1:(\d+)", line)
@@ -106,9 +157,14 @@ def run_service(d: Path, source: str, settings=None, lineup=None, timeout=120):
     return [json.loads(l) for l in buf.decode().splitlines() if l.strip()]
 
 
-def run_drawn(d: Path, frames, **kw):
-    return run_service(d, f"drawn:{write_scene(d, frames)}", **kw)
+def run_drawn(d: Path, frames, period_s=PERIOD_S, **kw):
+    return run_service(d, f"drawn:{write_scene(d, frames, period_s=period_s)}", **kw)
 
 
 def states(msgs):
     return [m for m in msgs if m["type"] == "state"]
+
+
+def hw_of(msgs, marker):
+    """The handwriting of the card with this marker, in each table state it's in."""
+    return [c.get("hw") for m in states(msgs) for c in m["cards"] if c["marker"] == marker]

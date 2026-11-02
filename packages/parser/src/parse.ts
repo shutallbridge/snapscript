@@ -35,6 +35,8 @@ interface Cursor {
   i: number;
   /** The index of an `[elif]` or `[else]` whose error is already reported. */
   reported?: number;
+  /** The line of the `[dedent]` the last block read was closed by. */
+  dedent?: number;
 }
 
 class Parser {
@@ -303,7 +305,7 @@ class Parser {
         this.error("SyntaxError", next.scanned.number, `${what} has no ${next.scanned.cards[0].text}`, [next.scanned.cards[0].span], false);
         return true;
       });
-      const base = { line: scanned.number, span: scanned.span, body, closed };
+      const base = { line: scanned.number, span: scanned.span, body, closed, dedent: dedentOf(cursor, closed) };
       if (kind === "repeat") return { ...base, type: "repeat", count: value };
       const name = this.name(scanned, () => readName(scanned.cards[0], scanned.cards[0].slots[0]));
       return { ...base, type: "for", name, iterable: value };
@@ -328,7 +330,7 @@ class Parser {
       });
       return false;
     });
-    return { type: "if", line: scanned.number, span: scanned.span, branches, closed };
+    return { type: "if", line: scanned.number, span: scanned.span, branches, closed, dedent: dedentOf(cursor, closed) };
   }
 
   /**
@@ -342,6 +344,7 @@ class Parser {
       if (next.level > level) return "end";
       if (next.head === "dedent") {
         cursor.i += 1;
+        cursor.dedent = next.scanned.number;
         this.read(next.scanned, (r) => (r.next(), r.end(next.scanned.cards[0])), undefined);
         return "dedent";
       }
@@ -414,6 +417,10 @@ class Parser {
       }
     }
   }
+}
+
+function dedentOf(cursor: Cursor, closed: Closed): number | null {
+  return closed === "dedent" ? cursor.dedent! : null;
 }
 
 function externOnly(declarations: Declaration[]): boolean {

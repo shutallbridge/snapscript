@@ -167,14 +167,17 @@ describe("strip order", () => {
       return last!;
     };
 
-    test("an empty table gives the starting text back as written", () => {
-      expect(from(table()).text).toBe(entry);
+    // Its placed strip is now stand-ins, written back with its turn.
+    const written = entry.replace("@table 120 40", "@table 120 40 0");
+
+    test("an empty table gives the starting text back, its placed strips as stand-ins", () => {
+      expect(from(table()).text).toBe(written);
     });
 
     test("its strips keep their order, and the table's strips go after them", () => {
-      const out = from(table(card(2, 1000, 50, 20, { text: "draw" })));
-      expect(out.text).toBe(`${entry}\n\n/** @table 50 20 0 */\n[define{draw}]`);
-      expect(out.map.cards).toEqual([{ track: 2, span: { line: 15, start: 0, end: 14 } }]);
+      const out = from(table(card(2, 1000, 50, 300, { text: "draw" })));
+      expect(out.text).toBe(`${written}\n\n/** @table 50 300 0 */\n[define{draw}]`);
+      expect(out.map.cards.at(-1)).toEqual({ track: 2, span: { line: 15, start: 0, end: 14 } });
     });
   });
 });

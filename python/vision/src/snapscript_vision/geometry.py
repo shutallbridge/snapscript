@@ -78,6 +78,18 @@ class Lineup:
     def to_mm(self, px):
         return self.to_ph(px) * self.mm_per_ph
 
+    def to_px(self, mm):
+        """Table mm -> camera px: the homography undone, then the lens term put back (a few fixed-point steps)."""
+        q = apply(np.linalg.inv(self.H), np.asarray(mm, float) / self.mm_per_ph)
+        if not self.k1:
+            return q
+        ctr = np.array(self.image_size, float) / 2
+        px = q.copy()
+        for _ in range(8):
+            r = (px - ctr) / np.hypot(*ctr)
+            px = ctr + (q - ctr) / (1 + self.k1 * (r ** 2).sum(-1, keepdims=True))
+        return px
+
 
 def undistort(px, k1, image_size):
     """Undo one radial lens term about the picture's centre, in units of its half diagonal."""

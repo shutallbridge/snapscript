@@ -29,3 +29,21 @@ export const stagesOfKind: Readonly<Record<ErrorKind, readonly Stage[]>> = {
   ZeroDivisionError: ["runtime"],
   RecursionError: ["runtime"],
 };
+
+/** The builtins' names, in the order the reference lists them (§9). Each is used without a namespace. */
+export const builtinNames: readonly string[] = [
+  "print",
+  "range",
+  "len",
+  "list",
+  "dict",
+  "abs",
+  "min",
+  "max",
+  "round",
+  "sqrt",
+  "sin",
+  "cos",
+  "random",
+  "pi",
+];

@@ -15,7 +15,7 @@ import sys
 import time
 from pathlib import Path
 
-from vision_harness import MARKERS, ORIGIN_MM, PX_PER_MM
+from vision_harness import MARKERS, ORIGIN_MM, PX_PER_MM, write_fake_reader
 
 MM_PER_PH = 250.0       # the drawn projector's true mm per projector height (its picture is 375 x 250 mm)
 ASPECT = 1.5            # the drawn projector's width over its height
@@ -66,8 +66,9 @@ class Service:
     """The real service as a process, on a free port, with a JSON-lines connection to it."""
 
     def __init__(self, d: Path, source: str, lineup: Path, env=None):
+        reader = write_fake_reader(d, [{"text": "500", "after_s": 2.0}])
         args = [sys.executable, "-m", "snapscript_vision", "--source", source, "--port", "0",
-                "--markers", str(write_markers(d)), "--lineup", str(lineup)]
+                "--reader", f"fake:{reader}", "--markers", str(write_markers(d)), "--lineup", str(lineup)]
         self.proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                      env={**os.environ, **(env or {})})
         line = self.proc.stdout.readline()

@@ -8,7 +8,10 @@
        "frames": [[{"marker": 1001, "x": 150, "y": 120, "angle": 0}], ...]}
 
   Each card is placed by its marker's centre in table mm and its angle in degrees. The drawn camera sees table mm
-  (x, y) at pixel ((x, y) - origin_mm) * px_per_mm.
+  (x, y) at pixel ((x, y) - origin_mm) * px_per_mm. A card with `"smudged": true` has a smudge on its marker's
+  corner, so the camera misses the marker while the card looks the same. A card may have
+  `"ink": [[x0, y0, x1, y1], ...]`, strokes written on its sheet (rectangles in sheet mm). `{"hand": [x, y]}` in a
+  frame is a hand lying flat, its palm centred at (x, y) table mm. Things are drawn in order, later ones on top.
 - **Recording**: frames recorded on the rig, in the card tracking prototype's format (#105): PATH.json holds
   {"w", "h", "t": [one time stamp per frame]} and PATH.y the frames' grey planes back to back.
 
@@ -32,6 +35,7 @@ from .tags import pattern
 TABLE_GREY = 110
 PAPER_GREY = 235
 INK_GREY = 25
+SKIN_GREY = 190
 SUPERSAMPLE = 3
 
 
@@ -81,8 +85,25 @@ def draw(camera, cards, markers):
     w, h = (int(round(v * ppm)) for v in camera["size_mm"])
     img = np.full((h, w), float(TABLE_GREY))
     for c in cards:
-        _draw_sheet(img, ppm, origin, c, markers)
+        if "hand" in c:
+            _draw_hand(img, ppm, origin, c["hand"])
+        else:
+            _draw_sheet(img, ppm, origin, c, markers)
     return np.clip(img, 0, 255).astype(np.uint8)
+
+
+def _draw_hand(img, ppm, origin, centre):
+    """A palm (80 x 60 mm) and four fingers (15 x 55 mm, 5 mm apart) above it, shaded from wrist to fingertips."""
+    x, y = centre
+    parts = [(x - 40, y - 30, x + 40, y + 30)] + [(x - 40 + 20 * i, y - 85, x - 25 + 20 * i, y - 30) for i in range(4)]
+    h, w = img.shape
+    for x0, y0, x1, y1 in parts:
+        (c0, r0), (c1, r1) = ((np.array(p) - origin) * ppm for p in ((x0, y0), (x1, y1)))
+        c0, r0 = max(int(c0), 0), max(int(r0), 0)
+        c1, r1 = min(int(c1), w), min(int(r1), h)
+        if c1 > c0 and r1 > r0:
+            rows = (np.arange(r0, r1) / ppm + origin[1] - (y - 85)) / 115  # 0 at the fingertips, 1 at the wrist
+            img[r0:r1, c0:c1] = (SKIN_GREY - 40 * rows)[:, None]
 
 
 def _draw_sheet(img, ppm, origin, card, markers):
@@ -114,8 +135,13 @@ def _draw_sheet(img, ppm, origin, card, markers):
     cy = np.floor((sy - (mc[1] - g.MARKER_MM / 2)) / cell).astype(int)
     in_tag = (cx >= 0) & (cx < 9) & (cy >= 0) & (cy < 9)
     bits = pattern(int(card["marker"]))
+    if card.get("smudged"):
+        bits = bits.copy()
+        bits[2, 2] = True  # a dark smudge on the marker's inner ring, at its corner: no quad there
     black = np.zeros(sx.shape, bool)
     black[in_tag] = bits[cy[in_tag], cx[in_tag]]
+    for rx0, ry0, rx1, ry1 in card.get("ink", []):
+        black |= (sx >= rx0) & (sx < rx1) & (sy >= ry0) & (sy < ry1)
     grey[black] = INK_GREY
     cover = on.mean(axis=(2, 3))
     paper = np.where(on, grey, 0).sum(axis=(2, 3)) / (k * k)

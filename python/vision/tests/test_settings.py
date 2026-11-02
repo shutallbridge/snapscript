@@ -1,6 +1,6 @@
 """Thresholds are named settings, changed by a settings file, not literals (#169)."""
 
-from vision_harness import Card, frame_t, run_drawn, states
+from vision_harness import Card, Hand, frame_t, run_drawn, states
 
 
 def test_how_many_sightings_a_card_needs_is_a_setting(tmp_path):
@@ -10,9 +10,10 @@ def test_how_many_sightings_a_card_needs_is_a_setting(tmp_path):
     assert [m["t"] for m in sent] == [frame_t(2)]
 
 
-def test_a_card_unseen_for_the_hold_goes(tmp_path):
+def test_how_long_a_covered_card_stays_is_a_setting(tmp_path):
     card = Card(1001, 150, 120)
-    sent = states(run_drawn(tmp_path, [[card]] * 2 + [[]] * 8, settings={"hold_s": 0.5}))
+    frames = [[card]] * 2 + [[card, Hand(165, 125)]] * 8
+    sent = states(run_drawn(tmp_path, frames, settings={"hold_s": 0.5}))
 
     assert [len(m["cards"]) for m in sent] == [1, 0]
     assert sent[1]["t"] - frame_t(1) > 0.5
