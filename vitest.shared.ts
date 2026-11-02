@@ -18,6 +18,7 @@ export const shared = {
       "@snapscript/table-reader": source("table-reader"),
       "@snapscript/runtime/compiler": source("runtime", "compiler"),
       "@snapscript/runtime": source("runtime"),
+      "@snapscript/faces": source("faces"),
     },
   },
 };
