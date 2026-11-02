@@ -81,6 +81,8 @@ describe("a frozen sketch", () => {
   test("no frame for 3 s kills the sketch process", () => {
     const session = running();
     session.handle({ type: "sketch", now: 1, message: { type: "frame", run: 1 } });
+    // The num card's read-back flashes until 3 s; then the freeze is next.
+    session.handle({ type: "tick", now: 3 });
     expect(session.wakeAt).toBeCloseTo(4);
     expect(session.handle({ type: "tick", now: 3.9 }).sketch).toEqual([]);
     expect(session.handle({ type: "tick", now: 4 }).sketch).toEqual([{ type: "kill process" }]);

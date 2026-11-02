@@ -13,6 +13,10 @@ const BADGE = "#ef4444";
 const MESSAGE = "#f87171";
 const OK = "#22c55e";
 const SKIPPED = "#a1a1aa";
+/** #129's connection error yellow. */
+const NO_INTERNET = "#facc15";
+/** A waiting line's spinner: one turn a second, its arc a quarter of the dot. */
+const SPIN_S = 1;
 const PRINT = "#86efac";
 /** Sizes in mm: a lit face's fill and edge, the gutter's gap, dots and badges, the text. */
 const LIT_ALPHA = 0.5;
@@ -70,11 +74,28 @@ function gutter(g: CanvasRenderingContext2D, { at, dot, badges }: Feedback["gutt
     if (dot) {
       const cx = x - DOT / 2;
       const r = DOT / 2;
-      if (dot === "ok") {
-        g.fillStyle = OK;
+      if (dot === "ok" || dot === "no internet") {
+        g.fillStyle = dot === "ok" ? OK : NO_INTERNET;
         g.beginPath();
         g.arc(cx, cy, r, 0, 2 * Math.PI);
         g.fill();
+        if (dot === "no internet") {
+          g.fillStyle = "#fff";
+          g.font = FONT(DOT * 0.75, 800);
+          g.textAlign = "center";
+          g.textBaseline = "middle";
+          g.fillText("!", cx, cy + DOT * 0.03);
+          g.textAlign = "left";
+        }
+      } else if (dot === "waiting") {
+        const turn = ((performance.now() / 1000 / SPIN_S) % 1) * 2 * Math.PI;
+        g.strokeStyle = "#fff";
+        g.lineWidth = 1.5;
+        g.lineCap = "round";
+        g.beginPath();
+        g.arc(cx, cy, r - 0.75, turn, turn + 1.5 * Math.PI);
+        g.stroke();
+        g.lineCap = "butt";
       } else {
         g.strokeStyle = SKIPPED;
         g.lineWidth = 1.5;
@@ -109,7 +130,13 @@ function print(g: CanvasRenderingContext2D, { text, at }: Feedback["prints"][num
 }
 
 /** A status bar's items, wrapped into centred rows on a black band, at the top or bottom of the work area. */
-export function bar(g: CanvasRenderingContext2D, items: { badge?: string; text: string }[], top: boolean, geometry: TableGeometry): void {
+export function bar(
+  g: CanvasRenderingContext2D,
+  items: { badge?: string; text: string }[],
+  top: boolean,
+  geometry: TableGeometry,
+  color: string = MESSAGE,
+): void {
   if (items.length === 0) return;
   const { width, height } = geometry.workArea;
   const maxW = Math.min(width - 2 * BAR_SIDE, BAR_MAX);
@@ -150,7 +177,7 @@ export function bar(g: CanvasRenderingContext2D, items: { badge?: string; text: 
         tx += size + gap;
       }
       g.font = FONT(TEXT);
-      g.fillStyle = MESSAGE;
+      g.fillStyle = color;
       g.textBaseline = "middle";
       g.fillText(it.text, tx, y);
       x += it.w + gapX;
