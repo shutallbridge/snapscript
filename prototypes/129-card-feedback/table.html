@@ -74,6 +74,8 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['vdash', 'Guide edge dashes', [2, 4, 6, 8, 12], ' mm'],
     ['vfill', 'Guide background', [0, 5, 10, 15, 20, 30, 40, 60], '%'],
     ['vwb', 'Guide whiteboard edge', [false, true]],
+    ['vmzEdge', 'Guide marker zone edge (no card edge)', [0, 0.5, 1, 1.5, 2], ' mm'],
+    ['vmzAlpha', 'Guide marker zone edge brightness', [10, 20, 30, 50, 100], '%'],
     ['vprog', 'Virtual program (demo 1)', [true, false]],
     ['vargs', 'Virtual arguments', [false, true]],
     ['vmatch', 'A real card replaces it when', ['same card', 'same kind']],
@@ -92,7 +94,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 1.75, vdash: 6, vfill: 15, vwb: false, vprog: true, vargs: false, vmatch: 'same card', vtol: 10, vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmatch: 'same card', vtol: 10, vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -339,6 +341,10 @@ function drawVirtual(g, v) {
     g.strokeStyle = col; g.lineCap = 'butt'; g.lineWidth = cfg.vedge; g.setLineDash([cfg.vdash, 2.4]);
     const e = cfg.vedge / 2;
     if (cfg.vedge) { g.strokeRect(e, e, w - 2 * e, H - 2 * e); g.beginPath(); g.moveTo(MZ, e); g.lineTo(MZ, H - e); g.stroke(); }  // lineWidth 0 is ignored, so skip
+    else if (cfg.vmzEdge) {  // no edge: the marker zone gets a faint white bracket (top, left, bottom; open to the card), to give it shape
+      const t = cfg.vmzEdge / 2; g.save(); g.setLineDash([]); g.lineCap = 'butt'; g.lineJoin = 'miter'; g.globalAlpha = cfg.vmzAlpha / 100; g.strokeStyle = '#fff'; g.lineWidth = cfg.vmzEdge;
+      g.beginPath(); g.moveTo(MZ, t); g.lineTo(t, t); g.lineTo(t, H - t); g.lineTo(MZ, H - t); g.stroke(); g.restore();
+    }
     if (side.k === 'hw' && cfg.vwb) { g.lineWidth = cfg.vedge * 0.6; g.setLineDash([0, cfg.vedge * 2.2]); g.strokeRect(wbX, CARD_S.wbPad, wbW, H - 2 * CARD_S.wbPad); }
     g.setLineDash([]); g.lineCap = 'butt';
     if (side.k === 'color' && side.label) { g.fillStyle = side.c.bg; g.fillRect(MZ, 0, 3, H); }  // the colour as a solid bar: a dark colour's name can't show on a dark table
