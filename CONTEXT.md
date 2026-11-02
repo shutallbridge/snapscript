@@ -299,7 +299,7 @@ The document that defines the language and its text notation. A language version
 _Avoid_: spec, overview spec
 
 **Language version**:
-One release of Snapscript, with one version number shared by the language and the software that runs it. The language is its language reference, its card classes and one magnet arrangement; a patch version changes only the software. An instructor prints every base from one arrangement.
+One release of Snapscript, with one version number shared by the language and the software that runs it. The language is its language reference, its card classes, its grammar rules and one magnet arrangement; a patch version changes only the software. An instructor prints every base from one arrangement.
 _Avoid_: release (on its own), arrangement version
 
 **Library version**:
