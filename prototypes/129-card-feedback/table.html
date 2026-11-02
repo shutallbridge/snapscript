@@ -157,7 +157,7 @@ addEventListener('keydown', e => {
   if (e.key === 'r') { const R = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vwrong = R[(R.indexOf(cfg.vwrong) + 1) % R.length]; save(); say(`wrong card red fill: ${cfg.vwrong}%`); return; }  // prototyping only, not a setting
   if (e.key === 't') { const T = [0, 0.5, 1, 1.5, 2, 3]; cfg.vwrongEdge = T[(T.indexOf(cfg.vwrongEdge) + 1) % T.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdge ? cfg.vwrongEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'o') { const O = [20, 40, 60, 80, 100]; cfg.vwrongEdgeA = O[(O.indexOf(cfg.vwrongEdgeA) + 1) % O.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdgeA}%`); return; }
-  if (e.key === 'p') { const P = ['auto', 'right', 'below', 'left']; cfg.msgAt = P[(P.indexOf(cfg.msgAt) + 1) % P.length]; save(); say(`error message: ${cfg.msgAt}`); return; }
+  if (e.key === 'p') { const P = ['auto', 'right', 'left']; cfg.msgAt = P[(P.indexOf(cfg.msgAt) + 1) % P.length]; save(); say(`error message: ${cfg.msgAt}`); return; }
   if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
   if (e.key === 'm') { const M = [0, 0.5, 1, 1.5, 2]; cfg.vsEdge = M[(M.indexOf(cfg.vsEdge) + 1) % M.length]; save(); say(`stand-in marker zone edge: ${cfg.vsEdge ? cfg.vsEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'w') { cfg.vwb = !cfg.vwb; save(); say(`guide whiteboard edge: ${cfg.vwb ? 'on' : 'off'}`); return; }
@@ -443,9 +443,9 @@ function drawWrong(g, c) {
   if (e) { g.globalAlpha = cfg.vwrongEdgeA / 100; g.strokeStyle = '#ff0000'; g.lineWidth = e; g.setLineDash([]); g.strokeRect(MZ + e / 2, e / 2, w - MZ - e, H - e); }
   g.restore();
 }
-// An error's message and its kind, in the error red, placed like floating-ui: the first place in cfg.msgAt's order that stays
-// inside the coding space and off every card (real, or a guide on show); if none does, the first anyway. 'auto' tries
-// right (after the line's last card), then below the wrong card (from its left, shifted left if it must), then left of the line.
+// A line's short error messages, in the error red, placed like floating-ui: the first place in cfg.msgAt's order that stays
+// inside the coding space and off every card (real, or a guide on show); if none does, right anyway. 'auto' tries right
+// (after the line's last card), then left (before its first). Never above or below a line.
 // An error's badge: a red circle with its number in bold white ("E1"), so a message by the cards and its long form in
 // the bottom bar can be matched. Drawn in the current units, centred on y; returns its width.
 function badge(g, label, x, y, size) {
@@ -453,7 +453,7 @@ function badge(g, label, x, y, size) {
   g.fillStyle = '#fff'; g.font = `700 ${size * 0.48}px "Geist Mono"`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, x + size / 2, y + size * 0.03);
   g.restore(); return size;
 }
-const PLACES = ['right', 'below', 'left'];  // not above: a 3D card's own height hides text above it from the table
+const PLACES = ['right', 'left'];  // not above (a 3D card's height hides it) nor below (it can blind the marker of a card laid there next)
 const lastPlace = {};  // a line's first card ID -> where its messages went last time: kept while it still fits, so it doesn't flip on jitter
 function quad(at, x, y, w, h) {  // a rectangle in mm, in the frame of a card placed at `at` (top-left at 0,0), -> 4 projector px points
   const k = mm(), c = Math.cos(at.a), s = Math.sin(at.a), ox = -MZ / 2, oy = -H / 2;
@@ -472,22 +472,16 @@ function drawMessages(g, errs, L, blockers) {  // one line's errors: their short
   const k = mm(), f = cfg.textPx * 0.6, bs = f * 1.5, bgap = f * 0.4, rowGap = f * 0.3;  // app px -> mm (1U = 50 px = 30 mm)
   g.save(); g.font = font(f); const tw = Math.max(...errs.map(e => bs + bgap + g.measureText(e.msg).width)); g.restore();
   const th = errs.length * bs + (errs.length - 1) * rowGap, call = errs[0].call;
-  const first = errs.reduce((a, e) => (e.card.m[0] - a.card.m[0]) * Math.cos(call.a) + (e.card.m[1] - a.card.m[1]) * Math.sin(call.a) < 0 ? e : a);  // leftmost along the line
-  const end = lineEnds.get(call), card = { m: first.card.m, a: first.card.a }, head = { m: call.m, a: call.a };
-  const spot = {  // right: from the line's top, down; below: under the first wrong card; left: from the line's top, down
-    right: [end, end.len * U + 3, (H - bs) / 2], below: [card, 0, H + 2], left: [head, -3 - tw, (H - bs) / 2] };
+  const end = lineEnds.get(call), head = { m: call.m, a: call.a };
+  const spot = {  // right of the line's last card, or left of its first, from the line's top, down
+    right: [end, end.len * U + 3, (H - bs) / 2], left: [head, -3 - tw, (H - bs) / 2] };
   const last = lastPlace[call.id];
   const order = cfg.msgAt !== 'auto' ? [cfg.msgAt] : last ? [last.p, ...PLACES.filter(p => p !== last.p)] : PLACES;
   const fits = q => q.every(([x, y]) => inside(L.code, [x, y])) && !blockers.some(b => overlaps(q, b));
-  // below may also shift left along the card (floating-ui's shift), up to the block's own width; the last shift is tried first
-  const tries = p => p === 'below' ? [...(last && last.p === p ? [last.dx] : []), ...Array.from({ length: Math.ceil(tw / 5) + 1 }, (_, i) => -5 * i)] : [0];
-  let place = cfg.msgAt === 'auto' ? PLACES[0] : order[0], dx = 0;  // if nothing fits: right, even if it spills
-  found: for (const p of order) for (const d of tries(p)) {
-    const [at, x, y] = spot[p];
-    if (fits(quad(at, x + d, y, tw, th))) { place = p; dx = d; break found; }
-  }
-  lastPlace[call.id] = { p: place, dx };
-  const [at, x0, y0] = spot[place], x = x0 + dx;
+  let place = cfg.msgAt === 'auto' ? PLACES[0] : order[0];  // if nothing fits: right, even if it spills
+  for (const p of order) { const [at, x, y] = spot[p]; if (fits(quad(at, x, y, tw, th))) { place = p; break; } }
+  lastPlace[call.id] = { p: place };
+  const [at, x, y0] = spot[place];
   g.save(); g.translate(at.m[0], at.m[1]); g.rotate(at.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);
   errs.forEach((e, i) => { const y = y0 + i * (bs + rowGap) + bs / 2;
     badge(g, e.id, x, y, bs); g.font = font(f); g.fillStyle = '#f87171'; g.textBaseline = 'middle'; g.fillText(e.msg, x + bs + bgap, y); });
