@@ -2,9 +2,10 @@
 // with every table state. Stacking, bottom to top (#114): the windows (the coding space here; the
 // canvas space is the sketch view below, left clear) < the corners, with the scene's card look
 // (#195-#197) < the help box < pages < the settings menu, drawn last.
-import type { TableGeometry } from "../../layout.ts";
+import { U_MM, type TableGeometry } from "../../layout.ts";
 import type { TableBridge } from "../../preload/table.ts";
 import type { Scene } from "../../session.ts";
+import { defaultTableSettings } from "../../settings.ts";
 import { drawCalibration } from "./calibration.ts";
 import { drawMenu } from "./menu.ts";
 import "@fontsource/geist-mono/500.css";
@@ -43,7 +44,6 @@ function draw(): void {
   const px = 1 / geometry.pxPerMm;
   g.setTransform(k, 0, 0, k, 0, 0);
   const { codingSpace, corners } = geometry.layout;
-  const u = 30;
 
   // Calibration covers everything, the sketch too.
   if (scene?.calibration) return drawCalibration(g, geometry, scene.calibration);
@@ -51,14 +51,14 @@ function draw(): void {
   // The windows: the coding space filled, and the boundary a card counts by. In full screen the
   // canvas covers the table, and cards still count where the coding space would be.
   if (!geometry.fullScreen) {
-    const grey = scene?.settings.codingSpaceGrey ?? 12;
+    const grey = (scene?.settings ?? defaultTableSettings).codingSpaceGrey;
     g.fillStyle = `rgb(${grey}, ${grey}, ${grey})`;
     g.fillRect(codingSpace.x, codingSpace.y, codingSpace.width, codingSpace.height);
     g.strokeStyle = BOUNDARY;
     g.lineWidth = LINE_PX * px;
     g.beginPath();
-    g.moveTo(codingSpace.x + codingSpace.width, 0.5 * u);
-    g.lineTo(codingSpace.x + codingSpace.width, codingSpace.height - 0.5 * u);
+    g.moveTo(codingSpace.x + codingSpace.width, 0.5 * U_MM);
+    g.lineTo(codingSpace.x + codingSpace.width, codingSpace.height - 0.5 * U_MM);
     g.stroke();
   }
 

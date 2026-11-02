@@ -1,12 +1,12 @@
 // The help corner's box (#198), drawn in table mm: black with a grey border so it reads over the
 // sketch, its bottom-left where the session put it, 9U wide and as tall as its text.
 import type { HelpBox } from "../../help.ts";
-import { U_MM } from "../../layout.ts";
+import { APP_PX_PER_U, U_MM } from "../../layout.ts";
 
 /** The box's width, as in the #114 prototype. */
 const HELP_BOX_WIDTH_MM = 9 * U_MM;
 /** #114's look: 16 app px text (1U = 50 app px), 0.4U padding, 1.4 lines. */
-const TEXT_MM = (16 / 50) * U_MM;
+const TEXT_MM = (16 / APP_PX_PER_U) * U_MM;
 const LINE_MM = TEXT_MM * 1.4;
 const PAD_MM = 0.4 * U_MM;
 const FONT = `500 ${TEXT_MM}px "Geist Mono", ui-monospace, Menlo, monospace`;

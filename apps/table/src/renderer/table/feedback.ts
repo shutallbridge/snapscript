@@ -3,12 +3,10 @@
 // It all goes on a layer of its own, with every card's marker zone cut out of it, so nothing it
 // draws covers a marker, a neighbour's included.
 import type { Feedback } from "../../feedback.ts";
-import type { TableGeometry } from "../../layout.ts";
+import { APP_PX_PER_U, U_MM as U, type TableGeometry } from "../../layout.ts";
 import type { Quad } from "../../pose.ts";
 import { within } from "./within.ts";
 
-/** 1U, in mm. */
-const U = 30;
 const RED = "#ff0000";
 /** #129's badge and message reds, the ok dot's green, the skipped dot's grey, print output's green. */
 const BADGE = "#ef4444";
@@ -27,7 +25,7 @@ const GUTTER_GAP = 6;
 const DOT = 12;
 const DOT_GAP = 2;
 /** 16 app px (#114's text size), 1U being 50 app px. */
-const TEXT = (16 * U) / 50;
+const TEXT = (16 * U) / APP_PX_PER_U;
 /** The status bars: at most 24U wide, 4U in from each side (clear of the corners), wrapping into rows. */
 const BAR_MAX = 24 * U;
 const BAR_SIDE = 4 * U;
