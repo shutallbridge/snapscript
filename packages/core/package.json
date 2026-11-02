@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "devDependencies": {
     "tsdown": "catalog:",
