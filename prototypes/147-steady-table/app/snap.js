@@ -41,7 +41,7 @@ function gap(c, n, how = 'own') {
 // #147 join rules (JOIN env, all mm): mode 'corner' = #111's end-to-corner distance (make = break = 10 mm unless
 // set); mode 'axis' = along and across judged apart: along in [-overlap, make], |across| <= across. A join already
 // made (by track ids, from the last read) is kept until it passes the break limits.
-const JOIN = { mode: 'corner', make: 10, brk: 10, across: 6, acrossBrk: 9, overlap: 8, how: 'own', ang: 15,
+const JOIN = { mode: 'corner', make: 10, brk: 10, rowMake: 10, rowBrk: 10, across: 6, acrossBrk: 9, overlap: 8, how: 'own', ang: 15,
   ...JSON.parse(process.env.JOIN || '{}') };
 
 function joins(c, n, held) {
@@ -70,10 +70,17 @@ function read(state, notes, { split, prevJoins = new Set() }) {
   const joined = new Set([...right].map(([c, n]) => `${c.track}>${n.track}`));
   const lineOf = head => { const l = [head]; let c = head; while (right.has(c)) l.push(c = right.get(c)); return l; };
   const heads = cards.filter(c => !hasLeft.has(c));
-  const below = h => {  // the head of the line under this one: one row down, indent 0 or ±1U
+  // the head of the line under this one: one row down, indent 0 or ±1U. #147: a row link already made (track
+  // ids, from the last read) is kept up to JOIN.rowBrk mm; a new one needs JOIN.rowMake (both 10 by default, as #111)
+  const below = h => {
     const down = [h.tl[0] + U * h.v[0], h.tl[1] + U * h.v[1]];
-    return [0, 1, -1].map(k => ({ k, n: near([down[0] + k * U * h.u[0], down[1] + k * U * h.u[1]], heads.filter(o => o !== h && angDiff(o.angle, h.angle) < 15)) }))
-      .find(x => x.n);
+    const cand = heads.filter(o => o !== h && angDiff(o.angle, h.angle) < 15);
+    for (const k of [0, 1, -1]) {
+      const p = [down[0] + k * U * h.u[0], down[1] + k * U * h.u[1]];
+      const held = cand.filter(o => prevJoins.has(`${h.track}v${o.track}`) && dist(p, o.tl) < JOIN.rowBrk);
+      const n = held[0] || near(p, cand, JOIN.rowMake);
+      if (n) return { k, n };
+    }
   };
   const strips = heads.filter(h => STANDALONE.test(h.note)).sort((a, b) => a.tl[1] - b.tl[1] || a.tl[0] - b.tl[0]);
   const lines = [], used = new Set();
@@ -84,6 +91,7 @@ function read(state, notes, { split, prevJoins = new Set() }) {
       lines.push({ col, cards: lineOf(h) });
       const b = below(h);
       if (!b || STANDALONE.test(b.n.note)) break;
+      joined.add(`${h.track}v${b.n.track}`);
       h = b.n; col = Math.max(0, col + b.k);
     }
   }

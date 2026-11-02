@@ -196,12 +196,13 @@ def main():
         dets = det.detect(gray)
         search = time.perf_counter() - t0
 
-        seen = {}
+        seen, margins = {}, {}
         for d in dets:
             if d.tag_id not in CARDS:
                 continue
             q = apply(to_proj, undistort(d.corners, k1, SIZE)) * a.table_mm  # table mm
             seen[d.tag_id] = (q.mean(0), float(np.degrees(np.arctan2(q[1][1] - q[0][1], q[1][0] - q[0][0]))), d.corners)
+            margins[d.tag_id] = round(float(d.decision_margin), 1)
 
         # match to tracks of the same marker, nearest first, within the gate
         pairs = sorted((float(np.linalg.norm(c - tr["c"])), mid, i) for mid, (c, _, _) in seen.items()
@@ -322,10 +323,19 @@ def main():
                "sent": seq if changed else None, **({"state": cards} if changed else {}),
                "seen": sorted(int(m) for m in seen),
                "raw": {int(m): [round(float(c[0]), 2), round(float(c[1]), 2), round(ang, 2)] for m, (c, ang, _) in seen.items()},
+               "dm": margins,
                "paper": {int(tr["mid"]): round(tr["paper"], 3) for tr in tracks if tr.get("paper") is not None}}
         log.write(json.dumps(rec) + "\n")
         log.flush()
         hub.send({"type": "frame", **rec})
+        grab = runs / "grab"
+        if grab.exists():  # #147 debug: touch runs/grab to save the next 30 full-res frames around the cards (npz)
+            xs = np.concatenate([d.corners for d in dets]) if dets else np.zeros((1, 2))
+            x0, y0 = np.maximum(xs.min(0).astype(int) - 300, 0)
+            x1, y1 = xs.max(0).astype(int) + 300
+            n = int(grab.read_text() or 0)
+            np.savez_compressed(runs / f"grab-{n:02d}.npz", img=gray[y0:y1, x0:x1], off=np.array([x0, y0]), seen=np.array(sorted(seen)))
+            grab.write_text(str(n + 1)) if n < 29 else grab.unlink()
         snap = runs / "snap"
         if snap.exists():  # debug: touch runs/snap to save this frame (quarter size) with the markers found
             snap.unlink()
