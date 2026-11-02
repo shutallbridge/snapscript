@@ -170,6 +170,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
       tsdown:
         specifier: 'catalog:'
         version: 0.23.4(typescript@7.0.2)
@@ -214,6 +217,9 @@ importers:
       '@snapscript/core':
         specifier: workspace:*
         version: link:../core
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
       tsdown:
         specifier: 'catalog:'
         version: 0.23.4(typescript@7.0.2)

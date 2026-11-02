@@ -8,4 +8,6 @@ export default defineConfig({
   // The output folder is the package itself.
   clean: false,
   outExtensions: () => ({ js: ".js" }),
+  // Nothing imports its types; tsdown would write them because the base tsconfig sets declaration.
+  dts: false,
 });
