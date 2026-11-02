@@ -178,8 +178,8 @@ describe("windows and corners", () => {
     expect(textOf(t)).toBe("[define{draw}]");
   });
 
-  test("markers that are pages or unknown to both lockfile and language markers make no cards", () => {
-    const t = table(card(1, 1000, 50, 50, { text: "setup" }), card(2, 1900, 50, 50 + U), card(3, 4321, 50, 50 + U));
+  test("markers that are pages make no cards", () => {
+    const t = table(card(1, 1000, 50, 50, { text: "setup" }), card(2, 1900, 50, 50 + U));
     expect(textOf(t)).toBe("[define{setup}]");
   });
 });

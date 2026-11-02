@@ -32,6 +32,7 @@ export const languageMarkers: LanguageMarkers = new Map([
 export const lockfile: Lockfile = new Map([
   [0, { kind: "library", card: "call", package: "snapscript-p5", name: "circle", length: 3 }],
   [1001, { kind: "library", card: "call", package: "snapscript-p5", name: "createCanvas", length: 4 }],
+  [1500, { kind: "library", card: "call", package: "snapscript-sound", name: "play", length: 3 }],
   [1900, { kind: "page", textbook: "snapscript-p5-getting-started", volume: "confetti", page: 3 }],
 ]);
 
@@ -76,7 +77,15 @@ export function table(...cards: TableCard[]): TableState {
 
 /** Runs table states through the step function in turn, returning every output and the last state. */
 export function run(...tables: TableState[]): { outputs: StepOutput[]; state: ReaderState; last: StepOutput } {
-  let state = initialState();
+  return runFrom(undefined, ...tables);
+}
+
+/** The same, starting from a project's entry text. */
+export function runFrom(
+  entryText: string | undefined,
+  ...tables: TableState[]
+): { outputs: StepOutput[]; state: ReaderState; last: StepOutput } {
+  let state = initialState(entryText);
   const outputs: StepOutput[] = [];
   for (const t of tables) {
     const r = step(state, { table: t, layout, lockfile, languageMarkers });

@@ -111,6 +111,8 @@ export interface ReaderState {
   joins: ReadonlySet<string>;
   /** Line-to-line links made, as `above>below` track pairs. */
   links: ReadonlySet<string>;
+  /** The entry text's hidden lines (`[import]`s and `[extern]`s), kept exactly as written. */
+  hidden: string;
   /** The buffer's version and the text it had. */
   version: number;
   text: string;
@@ -140,10 +142,32 @@ export interface CardMap {
   lines: LineCards[];
 }
 
+/** Why the reader skipped a line: the camera's reason, for the table app's gutter and the 5 s wait. */
+export type SkipReason = "not read yet" | "read error" | "connection error" | "unknown card";
+
+/** A line the reader wrote with empty braces, for `check(text, skippedLines)`. */
+export interface SkippedLine {
+  line: number;
+  reason: SkipReason;
+}
+
+/**
+ * A card in the buffer the table can't write as text: its marker isn't in the lockfile, or the
+ * program doesn't import its library, named in `package` ("This program doesn't import
+ * snapscript-sound").
+ */
+export interface UnknownCard {
+  track: number;
+  marker: number;
+  package?: string;
+}
+
 export interface StepOutput {
   version: number;
   text: string;
   map: CardMap;
+  skippedLines: SkippedLine[];
+  unknownCards: UnknownCard[];
 }
 
 export interface StepInput {
