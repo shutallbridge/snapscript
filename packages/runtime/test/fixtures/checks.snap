@@ -1,0 +1,10 @@
+// A made-up library that blames the program, breaks, and calls back later.
+[extern(positive)][required(n)]
+[extern(broken)]
+[extern(later)][required(fn)]
+
+[define{guess}][required{ready}]
+[if][get{ready}]
+  [set{n}to][num{1}]
+[dedent]
+[return][get{n}]

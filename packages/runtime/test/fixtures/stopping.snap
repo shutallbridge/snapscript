@@ -1,0 +1,3 @@
+// A made-up library with an [on(stop)], as a library halting its hardware has.
+[on(stop)]
+[call(print)][str{stopping_stopped}]
