@@ -85,6 +85,9 @@ importers:
 
   packages/table-reader:
     devDependencies:
+      '@snapscript/checker':
+        specifier: workspace:*
+        version: link:../checker
       tsdown:
         specifier: 'catalog:'
         version: 0.23.4(typescript@7.0.2)
