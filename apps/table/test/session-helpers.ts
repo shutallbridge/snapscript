@@ -35,6 +35,7 @@ export const project: SessionProject = {
   lockfile: new Map(),
   languageMarkers,
   cards: [],
+  pages: [],
 };
 
 /** A card whose top-left corner lies at (x, y) mm, upright; a handwritten one read as `text`. */

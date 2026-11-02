@@ -12,17 +12,19 @@ import {
   type CardMap,
   type DetachedLine,
   type Layout,
+  type Mismatch,
   type ReaderState,
   type TableState,
   type UnknownCard,
   type VirtualCard,
 } from "@snapscript/table-reader";
 import { feedback, type Feedback } from "./feedback.ts";
+import { createGuides, labelOf, type PageCut, type VirtualFace } from "./guides.ts";
 import { createHelpCorner, type HelpBox } from "./help.ts";
 import type { Project } from "./project.ts";
 
 /** What the session needs of a loaded project. */
-export type SessionProject = Pick<Project, "entry" | "loader" | "lockfile" | "languageMarkers" | "cards">;
+export type SessionProject = Pick<Project, "entry" | "loader" | "lockfile" | "languageMarkers" | "cards" | "pages">;
 
 /** The session's timings, in seconds: the decided starting values (#181), for the rig to tune. */
 export interface SessionSettings {
@@ -106,6 +108,12 @@ export interface Scene {
   frozen: boolean;
   /** The reader's virtual cards: stand-ins, then guides with no real card in their place. */
   virtualCards: VirtualCard[];
+  /** The virtual cards to draw: stand-ins, a page's guides, and value guides after call cards (#197). */
+  virtual: VirtualFace[];
+  /** Every page on the table, to cut out of everything projected. */
+  pages: PageCut[];
+  /** The top status bar's messages. */
+  status: string[];
   /** The help corner's box, while a card lies there and for 1 s after. */
   help: HelpBox | null;
   /** The card feedback's look: lit cards, gutters, badges, the error bar and print output (#195). */
@@ -186,6 +194,7 @@ export function createSession(options: SessionOptions): Session {
   /** When the reader wants that, on the app's clock. */
   let readerWake: number | null = null;
   const help = createHelpCorner(project);
+  const guides = createGuides(project);
 
   const stop = (run: Run, now: number, sketch: SketchCommand[]): void => {
     sketch.push({ type: "stop", run: run.id });
@@ -195,31 +204,34 @@ export function createSession(options: SessionOptions): Session {
   const onTable = (state: TableState, now: number, sketch: SketchCommand[]): void => {
     if (last?.state !== state) last = { state, offset: state.t - now };
     help.see(state, layout, now);
-    const r = step(reader, {
-      table: state,
-      layout,
-      lockfile: project.lockfile,
-      languageMarkers: project.languageMarkers,
-      now: now + last.offset,
-    });
+    const input = { table: state, layout, lockfile: project.lockfile, languageMarkers: project.languageMarkers, now: now + last.offset };
+    let r = step(reader, { ...input, guideSources: guides.sources(state, now) });
     const changed = r.state.version !== reader.version;
     reader = r.state;
-    readerWake = r.output.wakeAt === undefined ? null : r.output.wakeAt - last.offset;
     buffer = { text: r.output.text, map: r.output.map };
-    virtualCards = r.output.virtualCards;
     stripHeads = r.output.stripHeads;
     detached = r.output.detached;
-    tableErrors = tableErrorsOf(state, r.output.unknownCards);
-    if (!changed) return;
-    const checked = check(r.output.text, r.output.skippedLines, { loader: project.loader, id: project.entry.id });
-    skippedLines = checked.program.skippedLines;
-    checkErrors = checked.errors.map((e) => {
-      const error: SceneError = { from: "check", kind: e.kind, message: e.message, cards: cardsAt(buffer, e.spans) };
-      const name = e.spans[0] && buffer.text.slice(e.spans[0].start, e.spans[0].end);
-      if (e.followsFrom !== null && name) error.followsFrom = { line: e.followsFrom, name };
-      return error;
-    });
-    if (r.output.placementOnly) return;
+    const { placementOnly } = r.output;
+    let checked: ReturnType<typeof check> | null = null;
+    if (changed) {
+      checked = check(r.output.text, r.output.skippedLines, { loader: project.loader, id: project.entry.id });
+      skippedLines = checked.program.skippedLines;
+      checkErrors = checked.errors.map((e) => {
+        const error: SceneError = { from: "check", kind: e.kind, message: e.message, cards: cardsAt(buffer, e.spans) };
+        const name = e.spans[0] && buffer.text.slice(e.spans[0].start, e.spans[0].end);
+        if (e.followsFrom !== null && name) error.followsFrom = { line: e.followsFrom, name };
+        return error;
+      });
+      // Value guides come from the check of this buffer: step again, with the same table, to place them.
+      guides.checked(checked, buffer.map, now);
+      r = step(reader, { ...input, guideSources: guides.sources(state, now) });
+      reader = r.state;
+    }
+    readerWake = r.output.wakeAt === undefined ? null : r.output.wakeAt - last.offset;
+    virtualCards = r.output.virtualCards;
+    guides.see(state, r.output);
+    tableErrors = tableErrorsOf(state, r.output.unknownCards, r.output.mismatches);
+    if (!checked || placementOnly) return;
     if (next) stop(next, now, sketch);
     runs += 1;
     next = newest = { id: runs, buffer, frozenAt: now + settings.frozenS, error: null, prints: new Map() };
@@ -228,8 +240,8 @@ export function createSession(options: SessionOptions): Session {
     sketch.push({ type: "start", run: next.id, js: compile(checked.program), natives: nativeModulesOf(checked.program) });
   };
 
-  /** The read errors and unknown cards in the buffer: the table's own errors, each lighting its card. */
-  const tableErrorsOf = (state: TableState, unknown: readonly UnknownCard[]): SceneError[] => {
+  /** The read errors, unknown cards and mismatches in the buffer: the table's own errors, each lighting its card. */
+  const tableErrorsOf = (state: TableState, unknown: readonly UnknownCard[], mismatches: readonly Mismatch[]): SceneError[] => {
     const inBuffer = new Set(buffer.map.cards.flatMap((c) => ("track" in c ? [c.track] : [])));
     const errors: SceneError[] = [];
     for (const c of state.cards) {
@@ -240,6 +252,10 @@ export function createSession(options: SessionOptions): Session {
     for (const u of unknown) {
       const message = u.package ? `Unknown card: this program doesn't import ${u.package}.` : "Unknown card: the table doesn't know this card.";
       errors.push({ from: "table", kind: null, message, cards: [{ track: u.track }] });
+    }
+    for (const m of mismatches) {
+      const message = `Not the card the page shows (${labelOf(m.card)}). It still runs.`;
+      errors.push({ from: "table", kind: null, message, cards: [{ track: m.track }] });
     }
     return errors;
   };
@@ -297,7 +313,7 @@ export function createSession(options: SessionOptions): Session {
         layout = event.layout;
         if (last) onTable(last.state, event.now, sketch);
       }
-      else if (last && readerWake !== null && readerWake <= event.now) onTable(last.state, event.now, sketch);
+      else if (last && Math.min(readerWake ?? Infinity, guides.wakeAt ?? Infinity) <= event.now) onTable(last.state, event.now, sketch);
       return { sketch };
     },
     get scene(): Scene {
@@ -308,6 +324,9 @@ export function createSession(options: SessionOptions): Session {
         errors,
         frozen,
         virtualCards,
+        virtual: guides.virtual,
+        pages: guides.pages,
+        status: guides.status,
         help: help.box,
         feedback: feedback({ state: last?.state ?? null, map: buffer.map, lengthOf, stripHeads, detached, skippedLines, errors, prints }),
       };
@@ -316,6 +335,7 @@ export function createSession(options: SessionOptions): Session {
       const times = [
         readerWake ?? Infinity,
         help.wakeAt ?? Infinity,
+        guides.wakeAt ?? Infinity,
         ...stopping.map((s) => s.killAt),
         ...[shown, next].map((r) => r?.frozenAt ?? Infinity),
       ];
