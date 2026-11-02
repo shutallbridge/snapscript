@@ -14,6 +14,16 @@ export interface NativeModuleFile {
 interface Unit {
   id: string | null;
   program: CheckedProgram;
+  /** How a library error names it: a package by its name, a file by its own, `null` for the entry program. */
+  library: string | null;
+}
+
+const fileName = (id: string): string => (id.split(/[\\/]/).pop() ?? id).replace(/\.snap$/, "");
+
+/** The library an import loads: the package it names, or the file's name for a path. */
+function libraryOf(program: CheckedProgram, line: number, id: string): string {
+  const d = program.declarations.find((x) => x.type === "import" && x.line === line);
+  return d?.type === "import" && !/^\.\.?\//.test(d.source) ? d.source : fileName(id);
 }
 
 /** Every module the program loads, an imported module before the module importing it, the entry last. */
@@ -24,11 +34,11 @@ function unitsOf(program: CheckedProgram): Unit[] {
     for (const m of unit.program.modules) {
       if (seen.has(m.id)) continue;
       seen.add(m.id);
-      visit({ id: m.id, program: m.program });
+      visit({ id: m.id, program: m.program, library: libraryOf(unit.program, m.line, m.id) });
     }
     units.push(unit);
   };
-  visit({ id: null, program });
+  visit({ id: null, program, library: null });
   return units;
 }
 
@@ -90,9 +100,9 @@ class ModuleCompiler {
   }
 
   compile(): string {
-    const { id } = this.unit;
-    const name = id === null ? "main" : (id.split(/[\\/]/).pop() ?? id).replace(/\.snap$/, "");
-    const out = [`const ${this.module} = rt.module(${id === null ? "null" : str(id)}, ${str(name)}, ${id === null});`];
+    const { id, library } = this.unit;
+    const name = id === null ? "main" : fileName(id);
+    const out = [`const ${this.module} = rt.module(${id === null ? "null" : str(id)}, ${str(name)}, ${library === null ? "null" : str(library)});`];
     for (const d of this.declarations()) out.push(this.declaration(d));
     return out.filter((s) => s !== "").join("\n");
   }
@@ -173,12 +183,12 @@ class ModuleCompiler {
       case "repeat": {
         const n = `t${this.temps++}`;
         const i = `t${this.temps++}`;
-        return `for (let ${n} = rt.count(${value(s.count)}), ${i} = 0; ${i} < ${n}; ${i}++) {\n${this.body(s.body, scope)}\n}`;
+        return `for (let ${n} = rt.count(${value(s.count)}), ${i} = 0; ${i} < ${n}; ${i}++) {\n${this.loop(s, s.count)}${this.body(s.body, scope)}\n}`;
       }
       case "for": {
         const item = `t${this.temps++}`;
         const assign = s.name ? this.assign(s.name, item, scope) : "";
-        return `for (const ${item} of rt.items(${value(s.iterable)})) {\n${assign}\n${this.body(s.body, scope)}\n}`;
+        return `for (const ${item} of rt.items(${value(s.iterable)})) {\n${this.loop(s, s.iterable)}${assign}\n${this.body(s.body, scope)}\n}`;
       }
       case "if": {
         const parts: string[] = [];
@@ -193,6 +203,12 @@ class ModuleCompiler {
       case "invalid":
         return "";
     }
+  }
+
+  /** Each time round, an entry program's loop marks its head card (the cards before its value), for a frozen sketch. */
+  private loop(s: Statement, value: Expr | null): string {
+    if (this.unit.id !== null) return "";
+    return `rt.loop(${s.span.start}, ${value?.span.start ?? s.span.end});\n`;
   }
 
   private assign(name: Name, value: string, scope: Scope): string {
