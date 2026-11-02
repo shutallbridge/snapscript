@@ -1,0 +1,5 @@
+{
+  "name": "fixture-long-page",
+  "private": true,
+  "volumes": ["long.md"]
+}

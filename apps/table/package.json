@@ -13,9 +13,13 @@
     "table": "pnpm --filter \"@snapscript/table^...\" --filter \"confetti^...\" build && electron-vite build && node src/start.ts",
     "smoke": "node test/smoke/smoke.ts",
     "lock": "pnpm --filter \"@snapscript/table^...\" build && node src/lock.ts",
+    "print": "pnpm --filter \"@snapscript/table^...\" build && electron-vite build && node src/print/run.ts",
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/geist": "^5.3.0",
+    "@fontsource/geist-mono": "^5.3.0",
+    "@fontsource/kalam": "^5.3.0",
     "@snapscript/checker": "workspace:*",
     "@snapscript/core": "workspace:*",
     "@snapscript/faces": "workspace:*",
