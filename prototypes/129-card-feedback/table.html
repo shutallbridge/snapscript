@@ -56,6 +56,9 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['centre', 'Centre the sketch', [true, false]]]],
   ['Corners', [
     ...CORNERS.map(c => ['corner_' + c, cap(CORNER_NAME[c]), ['none', 'help']])]],
+  ['Status bars', [  // #129: centred along the top and bottom edges, between the corners
+    ['barTop', 'Top bar', ['status', 'errors', 'none']],
+    ['barBottom', 'Bottom bar', ['errors', 'status', 'none']]]],
   ['Textbook pages', [
     ['margin', 'Margin', [0, 2, 3, 5, 10, 15], ' mm'],
     ['halo', 'Dim area', [0, 2, 5, 10, 20, 40, 60, 100], ' mm'],
@@ -88,7 +91,6 @@ const SECTIONS = [  // name, [key, label, choices, unit]
   ['Debug', [
     ['marks', 'Show marker reads', [true, false]],
     ['outline', 'Page outline (red)', [true, false]],
-    ['hud', 'Status line', [true, false]],
     ['fake', 'Pretend a card is in a corner', ['off', ...CORNERS]],
     ['program', 'Mock program', [true, false]],
     ['test', 'Highlight test', [false, true]],
@@ -98,7 +100,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', barTop: 'status', barBottom: 'errors', vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -421,7 +423,8 @@ function virtualArgs(cards) {
       const filled = occupant(slot, cards);
       if (filled) {
         const got = misfit(text, filled.text);
-        if (got) argErrors.push({ card: filled, call: c, msg: `${m[1]}: ${hint} needs ${KIND_NAME[kindOf(text)]}, got ${got}`, kind: 'TypeError' });
+        if (got) argErrors.push({ card: filled, call: c, kind: 'TypeError', msg: `${hint} needs ${KIND_NAME[kindOf(text)]}`,
+          long: `${m[1]}'s ${hint} needs ${KIND_NAME[kindOf(text)]}. Got ${got} instead.` });
         end = filled; endLen = CARD_LEN[filled.id] || lenOf(sideOf(filled.text)); continue;
       }
       out.push(slot);
@@ -443,6 +446,13 @@ function drawWrong(g, c) {
 // An error's message and its kind, in the error red, placed like floating-ui: the first place in cfg.msgAt's order that stays
 // inside the coding space and off every card (real, or a guide on show); if none does, the first anyway. 'auto' tries
 // right (after the line's last card), then below the wrong card (from its left, shifted left if it must), then left of the line.
+// An error's badge: a red circle with its number in bold white ("E1"), so a message by the cards and its long form in
+// the bottom bar can be matched. Drawn in the current units, centred on y; returns its width.
+function badge(g, label, x, y, size) {
+  g.save(); g.fillStyle = '#ef4444'; g.beginPath(); g.arc(x + size / 2, y, size / 2, 0, 2 * Math.PI); g.fill();
+  g.fillStyle = '#fff'; g.font = `700 ${size * 0.48}px "Geist Mono"`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, x + size / 2, y + size * 0.03);
+  g.restore(); return size;
+}
 const PLACES = ['right', 'below', 'left'];  // not above: a 3D card's own height hides text above it from the table
 const lastPlace = {};  // wrong card ID -> where its message went last time: kept while it still fits, so it doesn't flip on jitter
 function quad(at, x, y, w, h) {  // a rectangle in mm, in the frame of a card placed at `at` (top-left at 0,0), -> 4 projector px points
@@ -459,8 +469,8 @@ function overlaps(p, q) {  // two convex quads, by separating axes
   return true;
 }
 function drawMessage(g, e, L, blockers) {
-  const k = mm(), f = cfg.textPx * 0.6, text = `${e.msg} · ${e.kind}`;  // app px -> mm (1U = 50 px = 30 mm)
-  g.save(); g.font = font(f); const tw = g.measureText(text).width, th = f; g.restore();
+  const k = mm(), f = cfg.textPx * 0.6, text = e.msg, bs = f * 1.5, bgap = f * 0.4;  // app px -> mm (1U = 50 px = 30 mm)
+  g.save(); g.font = font(f); const tw = bs + bgap + g.measureText(text).width, th = bs; g.restore();
   const end = lineEnds.get(e.call), card = { m: e.card.m, a: e.card.a }, head = { m: e.call.m, a: e.call.a };
   const spot = {
     right: [end, end.len * U + 3, H / 2 - th / 2], below: [card, 0, H + 2], left: [head, -3 - tw, H / 2 - th / 2] };
@@ -477,7 +487,8 @@ function drawMessage(g, e, L, blockers) {
   e.placed = place; lastPlace[e.card.id] = { p: place, dx };
   const [at, x0, y] = spot[place], x = x0 + dx;
   g.save(); g.translate(at.m[0], at.m[1]); g.rotate(at.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);
-  g.font = font(f); g.fillStyle = '#f87171'; g.textBaseline = 'middle'; g.fillText(text, x, y + th / 2);
+  badge(g, e.id, x, y + th / 2, bs);
+  g.font = font(f); g.fillStyle = '#f87171'; g.textBaseline = 'middle'; g.fillText(text, x + bs + bgap, y + th / 2);
   g.restore();
 }
 function drawVirtualCards(g, L) {
@@ -496,6 +507,7 @@ function drawVirtualCards(g, L) {
   if (cfg.vargs) {
     const shownArgs = virtualArgs(cards);  // recomputed: the slots on show, as blockers for messages
     const blockers = [...cards.map(c => quad(c, 0, 0, (CARD_LEN[c.id] || lenOf(sideOf(c.text))) * U, H)), ...shownArgs.map(v => quad(v, 0, 0, lenOf(v.side) * U, H))];
+    argErrors.sort((a, b) => a.card.m[1] - b.card.m[1] || a.card.m[0] - b.card.m[0]).forEach((e, i) => e.id = 'E' + (i + 1));
     for (const e of argErrors) { drawWrong(g, e.card); drawMessage(g, e, L, blockers); }
   }
   vstat = `virtual ${cfg.vlook}: ${shown} shown, ${gone} replaced, ${wrong} wrong`;
@@ -618,11 +630,34 @@ function drawOver(L) {
   if (L.sketch.x < L.canvas.x || L.sketch.y < L.canvas.y || L.sketch.x + L.sketch.w > L.canvas.x + L.canvas.w + 1 || L.sketch.y + L.sketch.h > L.canvas.y + L.canvas.h + 1) {
     text(g, `sketch doesn't fit: ${(L.sketch.w / mm()).toFixed(0)} × ${(L.sketch.h / mm()).toFixed(0)} mm, canvas window ${(L.canvas.w / mm()).toFixed(0)} × ${(L.canvas.h / mm()).toFixed(0)} mm`, L.canvas.x + 0.5 * u, 1.1 * u, '#ef4444');
   }
-  if (cfg.hud) {
-    const cur = state.current && book && book.pages.find(q => q.key === state.current);
-    text(g, `1U = ${PX_PER_U} px (${u.toFixed(1)} projector px) · ${cfg.full ? 'canvas full screen (split ' + cfg.split + '% kept)' : 'split ' + cfg.split + '%'} · sketch ${sw} × ${sh} px = ${(L.sketch.w / mm()).toFixed(0)} × ${(L.sketch.h / mm()).toFixed(0)} mm · ` +
-      `text ${cfg.textPx} px = ${(cfg.textPx * S() / mm()).toFixed(1)} mm · page ${cur ? cur.name : '-'} · cards ${(state.cards || []).length}` +
-      (vstat ? ' · ' + vstat : '') + (state.calibrated === false ? ' · NOT CALIBRATED' : '') + (state.t ? '' : ' · no vision'), 0.5 * u, 0.4 * u, '#71717a', 14);
+  drawBars(g, L);
+}
+// #129 status bars: centred along the top and bottom edges, between the corners' circles. Each shows 'status' (the
+// prototype's status line), 'errors' (each error's long message with its badge, one line each) or nothing.
+function statusLine(L) {
+  const [sw, sh] = sketchSize(), u = UPX(), cur = state.current && book && book.pages.find(q => q.key === state.current);
+  return `1U = ${PX_PER_U} px (${u.toFixed(1)} projector px) · ${cfg.full ? 'canvas full screen (split ' + cfg.split + '% kept)' : 'split ' + cfg.split + '%'} · sketch ${sw} × ${sh} px = ${(L.sketch.w / mm()).toFixed(0)} × ${(L.sketch.h / mm()).toFixed(0)} mm · ` +
+    `text ${cfg.textPx} px = ${(cfg.textPx * S() / mm()).toFixed(1)} mm · page ${cur ? cur.name : '-'} · cards ${(state.cards || []).length}` +
+    (vstat ? ' · ' + vstat : '') + (state.calibrated === false ? ' · NOT CALIBRATED' : '') + (state.t ? '' : ' · no vision');
+}
+function drawBars(g, L) {
+  const u = UPX(), x0 = 4 * u, x1 = VW() - 4 * u, cx = (x0 + x1) / 2;  // clear of the 3.5U corners, plus 0.5U
+  for (const [what, top] of [[cfg.barTop, true], [cfg.barBottom, false]]) {
+    if (what === 'status') {
+      g.save(); g.font = font(14 * S()); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#71717a';
+      g.fillText(statusLine(L), cx, top ? 0.4 * u : VH() - 0.4 * u, x1 - x0); g.restore();
+    } else if (what === 'errors' && cfg.vargs && argErrors.length) {
+      const px = cfg.textPx * S(), bs = px * 1.5, gap = px * 0.4, lh = bs * 1.25;
+      const lines = argErrors.map(e => ({ e, t: `${e.kind}: ${e.long}` }));
+      g.save(); g.font = font(px);
+      lines.forEach(({ e, t }, i) => {
+        const w = bs + gap + g.measureText(t).width, x = cx - w / 2;
+        const y = top ? 0.4 * u + bs / 2 + i * lh : VH() - 0.4 * u - bs / 2 - (lines.length - 1 - i) * lh;
+        badge(g, e.id, x, y, bs);
+        g.font = font(px); g.fillStyle = '#f87171'; g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillText(t, x + bs + gap, y);
+      });
+      g.restore();
+    }
   }
 }
 function drawCalib(g) {
