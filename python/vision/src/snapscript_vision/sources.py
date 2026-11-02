@@ -15,7 +15,12 @@
 - **Recording**: frames recorded on the rig, in the card tracking prototype's format (#105): PATH.json holds
   {"w", "h", "t": [one time stamp per frame]} and PATH.y the frames' grey planes back to back.
 
-(The camera source comes with calibration, #172.)
+- **World**: `world:WORLD.json`, a drawn table that can change while the service runs, with exposure. See
+  `world.py`.
+- **Camera**: `camera` or `camera:lens=3.75`, the rig's camera through `picamera2`. See `camera.py`.
+
+Sources that take an exposure have `expose(ms, gain)` (no arguments for auto) and `exposure`, the (ms, gain) the
+last frame was taken at. The drawn and recorded ones don't.
 """
 
 import json
@@ -40,7 +45,13 @@ def make(spec: str, markers: dict[int, Marker]):
         return drawn(arg, markers)
     if kind == "recording":
         return recording(arg)
-    raise ValueError(f"unknown frame source {spec!r} (drawn:SCENE.json or recording:PATH)")
+    if kind == "world":
+        from .world import WorldSource
+        return WorldSource(arg, markers)
+    if kind == "camera":
+        from .camera import CameraSource
+        return CameraSource.from_spec(arg)
+    raise ValueError(f"unknown frame source {spec!r} (drawn:SCENE.json, recording:PATH, world:WORLD.json or camera)")
 
 
 def recording(base):

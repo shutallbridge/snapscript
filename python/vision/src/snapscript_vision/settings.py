@@ -42,6 +42,13 @@ class Settings:
     reader_model: str = "google/gemma-4-31b-it"
     reader_timeout_s: float = 60.0  # a slow read is still reading; a request that takes longer than this failed
     reader_px_per_mm: float = 8.0   # the whiteboard picture sent to the reader
+    # calibration (#132, #172)
+    calibration_tries: int = 5      # frames a step looks at before it gives up
+    calibration_min_markers: int = 6  # step 1 needs at least this many of its 12 markers seen
+    paper_grey: float = 150.0       # step 2 fixes the exposure so the ruler page's paper comes out this grey ...
+    paper_tolerance: float = 12.0   # ... give or take this
+    exposure_max_ms: float = 50.0   # past this, gain goes up instead
+    gain_max: float = 4.0
 
     @classmethod
     def load(cls, path=None):
