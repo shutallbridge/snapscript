@@ -186,3 +186,18 @@ describe("the reader's wake", () => {
     expect(session.scene.virtualCards.map((v) => v.id)).toEqual(["s1", "s2"]);
   });
 });
+
+describe("the layout", () => {
+  test("a new layout reads the last table state again: a strip the coding space now takes in starts a run", () => {
+    const session = createSession({ project, layout });
+    // In the canvas space (x from 400 mm), so it isn't the program.
+    expect(session.handle({ type: "table", now: 0, state: table(0, ...onLoad(1, 450, 30, "1")) }).sketch).toEqual([]);
+    const wider = { ...layout, codingSpace: { x: 0, y: 0, width: 600, height: 600 }, canvasSpace: { x: 600, y: 0, width: 200, height: 600 } };
+    expect(session.handle({ type: "layout", now: 1, layout: wider }).sketch).toEqual([{ type: "start", run: 1, js: expect.any(String), natives: [] }]);
+  });
+
+  test("before any table state, a new layout starts nothing", () => {
+    const session = createSession({ project, layout });
+    expect(session.handle({ type: "layout", now: 0, layout }).sketch).toEqual([]);
+  });
+});

@@ -71,3 +71,38 @@ ssh rig 'mkdir -p ~/.local/state/snapscript && cd ~/snapscript/python && \
 - `--lineup` is the service's own file. Calibration writes it there, and it stays across restarts. Until the first calibration is saved, positions are in camera pixels.
 - Run `.venv/bin/python` directly, not `uv run`. `uv run` would sync first, and without `--python` that sync replaces the venv.
 - To check the pinning while it runs: `ssh rig 'taskset -cp $(pgrep -f snapscript_vision)'` should say `0,1`.
+
+## The table app
+
+`pnpm table` starts the table app (`apps/table`), which starts the vision service itself, pinned as above, and opens `projects/confetti/`. It needs the whole repo on the Pi, at `~/snapscript` (where the venv above is), and Node and pnpm. The Pi had neither on 2026-11-03.
+
+1. Install Node and pnpm at the repo's versions (`mise.toml`), with mise:
+
+   ```sh
+   ssh rig 'curl https://mise.run | sh && ~/.local/bin/mise use -g node@24.18.1 pnpm@11.7.0'
+   ```
+
+2. Copy the repo from the Mac (the venv, `node_modules` and builds are made on the Pi):
+
+   ```sh
+   rsync -a --delete --exclude .git --exclude node_modules --exclude .venv --exclude __pycache__ \
+     --exclude dist --exclude out --exclude libraries/p5/p5.js ./ rig:snapscript/
+   ```
+
+   `--delete` would also remove the venv, so `--exclude .venv` matters. Then make the venv as above if it isn't there yet.
+
+3. Install the packages: `ssh rig 'cd ~/snapscript && ~/.local/bin/mise exec -- pnpm install'`. Electron downloads its arm64 build the first time it starts.
+
+4. Start it, on the Pi's desktop or over SSH (it draws on the desktop session's Wayland display either way):
+
+   ```sh
+   ssh rig 'cd ~/snapscript && OPENROUTER_API_KEY=… ~/.local/bin/mise exec -- pnpm table'
+   ```
+
+   It builds what changed, then runs the app pinned to cores 2–3. `Ctrl+Q` on the table's keyboard quits it, and the service with it. There's no autostart.
+
+The app takes these from its environment, all optional: `SNAPSCRIPT_PROJECT` (the project folder), `SNAPSCRIPT_VISION=off` (don't start the service; connect to one already running), `SNAPSCRIPT_VISION_PORT` (8115), `SNAPSCRIPT_VISION_SOURCE` (`camera`), `SNAPSCRIPT_VISION_READER` (the service's default, the cloud) and `SNAPSCRIPT_LINEUP` (`~/.local/state/snapscript/lineup.json`).
+
+To check the pinning while it runs: `ssh rig 'taskset -cp $(pgrep -f -o electron)'` should say `2,3`.
+
+Off the rig, `pnpm --filter @snapscript/table smoke` starts the built app against a stand-in for the service on the machine's own display: it lays a program, changes it (a restart in the same process), freezes it (the sketch process is killed and replaced) and lays another. Screenshots of each view go to `apps/table/out/smoke/`.

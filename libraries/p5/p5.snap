@@ -67,5 +67,11 @@
 /** Calls the program's setup once, then its draw every frame, if it has them. */
 [extern(run)][required(program)]
 
+/** Stops p5's loop, so it calls draw no more. */
+[extern(noLoop)]
+
 [on(load)]
 [call(run)][root]
+
+[on(stop)]
+[call(noLoop)]

@@ -12,6 +12,7 @@ interface P5Instance {
   fill(color: string): unknown;
   rect(x: number, y: number, width: number, height: number): unknown;
   circle(x: number, y: number, d: number): unknown;
+  noLoop(): unknown;
 }
 
 /** p5's constructor, in instance mode: `new p5(sketch, container)`. */
@@ -79,4 +80,9 @@ export function rect(_context: NativeContext, x: Value, y: Value, width: Value, 
 
 export function circle(_context: NativeContext, x: Value, y: Value, d: Value): void {
   instance().circle(x as number, y as number, d as number);
+}
+
+/** The run stopped (its `[on(stop)]`): p5 draws no more frames. The canvas keeps what it drew. */
+export function noLoop(_context: NativeContext): void {
+  p?.noLoop();
 }

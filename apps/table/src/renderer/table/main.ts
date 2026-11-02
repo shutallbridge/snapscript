@@ -1,0 +1,73 @@
+// The table view's renderer: it draws in table mm, scaled by the mm per projector height that comes
+// with every table state. Stacking, bottom to top (#114): the windows (the coding space here; the
+// canvas space is the sketch view below, left clear) < the corners < pages < the settings menu.
+// The scene's own look (#195-#199) is drawn on top of this.
+import type { TableGeometry } from "../../layout.ts";
+import type { TableBridge } from "../../preload/table.ts";
+import type { Scene } from "../../session.ts";
+
+declare const table: TableBridge;
+
+/** #114's colours: the coding space's dark grey, the boundary between the windows, a corner's dots. */
+const CODING_SPACE = "rgb(12, 12, 12)";
+const BOUNDARY = "#3f3f46";
+const CORNER = "#52525b";
+/** Line widths and dots, in projector px. */
+const LINE_PX = 2;
+const DOT_PX = 3;
+const GAP_PX = 6;
+
+const canvas = document.getElementById("table") as HTMLCanvasElement;
+const g = canvas.getContext("2d")!;
+let geometry: TableGeometry | null = null;
+/** The newest scene, for the card feedback's look (#195) to draw. */
+let scene: Scene | null = null;
+
+function draw(): void {
+  canvas.width = innerWidth * devicePixelRatio;
+  canvas.height = innerHeight * devicePixelRatio;
+  canvas.style.width = `${innerWidth}px`;
+  canvas.style.height = `${innerHeight}px`;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, canvas.width, canvas.height);
+  if (!geometry) return;
+  const k = geometry.pxPerMm * devicePixelRatio;
+  const px = 1 / geometry.pxPerMm;
+  g.setTransform(k, 0, 0, k, 0, 0);
+  const { codingSpace, corners } = geometry.layout;
+  const u = 30;
+
+  // The windows: the coding space filled, and the boundary a card counts by.
+  g.fillStyle = CODING_SPACE;
+  g.fillRect(codingSpace.x, codingSpace.y, codingSpace.width, codingSpace.height);
+  g.strokeStyle = BOUNDARY;
+  g.lineWidth = LINE_PX * px;
+  g.beginPath();
+  g.moveTo(codingSpace.x + codingSpace.width, 0.5 * u);
+  g.lineTo(codingSpace.x + codingSpace.width, codingSpace.height - 0.5 * u);
+  g.stroke();
+
+  // The corners: dotted quarter circles, clipped to the work area.
+  g.save();
+  g.beginPath();
+  g.rect(0, 0, geometry.workArea.width, geometry.workArea.height);
+  g.clip();
+  g.strokeStyle = CORNER;
+  g.lineCap = "round";
+  g.setLineDash([DOT_PX * px, GAP_PX * px]);
+  for (const c of corners) {
+    g.beginPath();
+    g.arc(c.x, c.y, c.radius, 0, 2 * Math.PI);
+    g.stroke();
+  }
+  g.restore();
+}
+
+table.onGeometry((g) => {
+  geometry = g;
+  draw();
+});
+table.onScene((s) => {
+  scene = s;
+});
+addEventListener("resize", draw);
