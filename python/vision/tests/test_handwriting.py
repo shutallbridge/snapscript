@@ -110,3 +110,15 @@ def test_when_a_request_gets_through_every_card_with_a_connection_error_is_read(
     assert ["connection error", "connection error"] in seen
     assert ["read", "reading"] in seen
     assert len(reader_calls(tmp_path)) == 4
+
+
+def test_a_card_read_again_keeps_its_text_while_its_failed_request_is_retried(tmp_path):
+    before, after = Card(NUM, 120, 120, ink=written("40")), Card(NUM, 120, 120, ink=written("400"))
+    sent = run_drawn(tmp_path, [[before]] * 24 + [[after]] * 60, settings={"hw_retry_s": 2.0},
+                     reader=[{"text": "40", "after_s": 1.0}, {"fail": "connect", "after_s": 0.5},
+                             {"fail": "server", "after_s": 0.5}, {"text": "400", "after_s": 1.0}])
+
+    assert changes(hw_of(sent, NUM)) == [
+        {"state": "not read yet"}, {"state": "reading"}, {"state": "read", "text": "40"},
+        {"state": "reading", "text": "40"}, {"state": "read", "text": "400"}]
+    assert len(reader_calls(tmp_path)) == 4

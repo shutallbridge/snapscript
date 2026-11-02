@@ -5,11 +5,11 @@ around them. A crop is judged only once it has held steady and looks like paper 
 beside the marker), so a hand lying still over a whiteboard never reads as blank. Blank is decided here, with no
 cloud call. A rewrite is enough ink added or removed since the crop that was read, held for a few calm frames,
 and isn't judged while the paper's brightness is far off its brightness at the read. A card being read again
-keeps its text, with state `reading`.
+keeps its text, with state `reading`, until the new read arrives, even while its request fails and is retried.
 
 States: `not read yet`, `reading` (with kept text), `blank`, `read error` (no text back for a card with writing
-on it), `connection error` (the request failed), `read`. Failed requests are retried one at a time; when one
-gets through, every card with a connection error is read again as normal.
+on it), `connection error` (the request failed for a card with no text yet), `read`. Failed requests are retried
+one at a time; when one gets through, every card whose request failed is read again as normal.
 """
 
 from dataclasses import dataclass, field
@@ -75,7 +75,8 @@ class Card:
     read_image: np.ndarray | None = None
     changed: int = 0                    # calm frames in a row the crop has differed from the judged one
     pending: object = None              # the read on its way
-    since: float = 0.0                  # when this card got its connection error, to retry the oldest first
+    failed: bool = False                # its last request failed: it waits for a retry
+    since: float = 0.0                  # when its request first failed, to retry the oldest first
 
     def json(self):
         out = {"state": self.state}
@@ -143,17 +144,17 @@ class Handwriting:
         if self.probe == tr.id:
             self.probe = None
         if mm2(ink) < s.hw_blank_mm2:
-            card.state, card.text = "blank", None
+            card.state, card.text, card.failed = "blank", None, False
             return
         card.read_image = np.clip(sample(grey, self.lineup, tr.c, tr.a, box, s.reader_px_per_mm), 0, 255) \
             .astype(np.uint8)
-        if card.state == "connection error" and self.retry_at is not None:
+        if card.failed and self.retry_at is not None:
             return  # rewritten while still offline: it waits its turn for the retry, with the new writing
         self._send(t, card)
 
     def _send(self, t, card):
         card.text = card.text if card.state in ("read", "reading") else None  # a card read again keeps its text
-        card.state = "reading"
+        card.state, card.failed = "reading", False
         card.pending = self.reader.request(card.read_image, t)
 
     def _answer(self, t, k, card, answer: Answer):
@@ -162,26 +163,29 @@ class Handwriting:
         if was_probe:
             self.probe = None
         if answer.failed:
-            if card.state != "connection error":
+            if not card.failed:
                 card.since = t
-            card.state, card.text = "connection error", None
+            card.failed = True
+            if card.text is None:  # a card with text keeps it, still `reading`, until a retry gets through
+                card.state = "connection error"
             if self.retry_at is None or was_probe:
                 self.retry_at = t + self.s.hw_retry_s
             return
         card.state, card.text = ("read", answer.text) if answer.text else ("read error", None)
+        card.failed = False
         self.retry_at = None
         for other in self.cards.values():  # a request got through: the cards that failed are read as normal
-            if other.state == "connection error" and other.pending is None:
+            if other.failed and other.pending is None:
                 self._send(t, other)
 
     def _retry(self, t):
         if self.retry_at is None or self.probe is not None or t < self.retry_at:
             return
-        waiting = [(c.since, k) for k, c in self.cards.items() if c.state == "connection error" and c.pending is None]
+        waiting = [(c.since, k) for k, c in self.cards.items() if c.failed and c.pending is None]
         if not waiting:
             self.retry_at = None
             return
         k = min(waiting)[1]
         card = self.cards[k]
         self.probe = k
-        card.pending = self.reader.request(card.read_image, t)  # still a connection error until it gets through
+        card.pending = self.reader.request(card.read_image, t)  # its state holds until it gets through
