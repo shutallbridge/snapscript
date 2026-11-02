@@ -6,16 +6,23 @@ import { offsetAt, type ErrorKind } from "@snapscript/core";
 import type { RunError } from "@snapscript/runtime";
 import { compile, nativeModulesOf, type NativeModuleFile } from "@snapscript/runtime/compiler";
 import {
+  defaultSettings as readerDefaults,
   initialState,
   step,
   type CardMap,
+  type DetachedLine,
   type Layout,
   type ReaderState,
   type TableState,
+  type UnknownCard,
   type VirtualCard,
 } from "@snapscript/table-reader";
+import { createCalibration, type CalibrationResult, type CalibrationView, type VisionCommand } from "./calibration.ts";
+import { createMenu, type MenuView } from "./menu.ts";
+import { feedback, type Feedback } from "./feedback.ts";
 import { createHelpCorner, type HelpBox } from "./help.ts";
 import type { Project } from "./project.ts";
+import { defaultTableSettings, type TableSettings } from "./settings.ts";
 
 /** What the session needs of a loaded project. */
 export type SessionProject = Pick<Project, "entry" | "loader" | "lockfile" | "languageMarkers" | "cards">;
@@ -37,13 +44,23 @@ export interface SessionOptions {
   project: SessionProject;
   layout: Layout;
   settings?: Partial<SessionSettings>;
+  /** The settings menu's settings, as kept in their file. */
+  tableSettings?: TableSettings;
+  /** The projector picture's width over its height, for calibration's markers. */
+  projectorAspect?: number;
 }
 
 /**
  * What the sketch view says about a run: it drew a frame (the first shows it), or it stopped on an
- * error, which the runtime reports with the text position of the table card that led there.
+ * error, which the runtime reports with the text position of the table card that led there. It
+ * printed (the newest output of each `[call(print)]` card since it last said). And, from main once
+ * a frozen sketch's process is killed, where the run was stuck.
  */
-export type SketchMessage = { type: "frame"; run: number } | { type: "error"; run: number; error: RunError };
+export type SketchMessage =
+  | { type: "frame"; run: number }
+  | { type: "error"; run: number; error: RunError }
+  | { type: "print"; run: number; prints: { text: string; span: Span | null }[] }
+  | { type: "stuck"; run: number; span: Span };
 
 /** Something that happened, at `now` seconds on the app's clock. */
 export type SessionEvent =
@@ -52,7 +69,11 @@ export type SessionEvent =
   /** The clock: the host sends one at `wakeAt`, if not sooner. */
   | { type: "tick"; now: number }
   /** The windows changed (resized, or the table's size in mm came with a state): the last state is read again with them. */
-  | { type: "layout"; now: number; layout: Layout };
+  | { type: "layout"; now: number; layout: Layout }
+  /** A key on the facilitator's keyboard, by its `KeyboardEvent.key` (",", "ArrowUp", "Enter", "Escape" …). */
+  | { type: "key"; now: number; key: string }
+  /** What the vision service said that isn't a table state: a calibration step's result. */
+  | { type: "vision"; now: number; message: CalibrationResult };
 
 /**
  * What the sketch view is told to do. Runs are numbered from 1. A run starts hidden; `show` swaps
@@ -70,6 +91,10 @@ export type SketchCommand =
 /** What an event gives. */
 export interface SessionOutput {
   sketch: SketchCommand[];
+  /** The settings, when the menu changed them: the host keeps them in their file and lays the windows out again. */
+  settings: TableSettings | null;
+  /** Commands to the vision service: calibration's steps. */
+  vision: VisionCommand[];
 }
 
 /** A card on the table: a real card by its track, or a stand-in by its id. */
@@ -77,25 +102,34 @@ export type CardRef = { track: number } | { standIn: string };
 
 /** An error, and the cards it blames. */
 export interface SceneError {
-  /** The checker's, or the run's: a runtime error, or a library's own code breaking. */
-  from: "check" | "runtime" | "library";
+  /** The checker's; the run's (a runtime error, or a library's own code breaking); or the table's own (a card it can't read, a frozen sketch). */
+  from: "check" | "runtime" | "library" | "table";
   kind: ErrorKind | null;
   message: string;
   cards: CardRef[];
+  /** A follow-on error: the skipped line it comes from, and the name that line would have set. */
+  followsFrom?: { line: number; name: string };
 }
 
 /** What the table view draws. */
 export interface Scene {
   /** The program's cards, in buffer order. */
   cards: CardRef[];
-  /** The check's errors for the buffer as it is, then the newest run's. */
+  /** The check's errors for the buffer as it is, the table's, then the newest run's, then a frozen sketch's. */
   errors: SceneError[];
   /** The newest run froze and was killed. */
   frozen: boolean;
   /** The reader's virtual cards: stand-ins, then guides with no real card in their place. */
   virtualCards: VirtualCard[];
+  /** The settings menu, while it's open: drawn above everything. */
+  menu: MenuView | null;
+  /** Calibration's step, while it runs: drawn over everything, the sketch included. */
+  calibration: CalibrationView | null;
+  settings: TableSettings;
   /** The help corner's box, while a card lies there and for 1 s after. */
   help: HelpBox | null;
+  /** The card feedback's look: lit cards, gutters, badges, the error bar and print output (#195). */
+  feedback: Feedback;
 }
 
 export interface Session {
@@ -119,6 +153,8 @@ interface Run {
   /** When it counts as frozen, unless a frame comes first; `Infinity` once it stopped on an error. */
   frozenAt: number;
   error: SceneError | null;
+  /** The newest output of each `[call(print)]` card, by its text position. */
+  prints: Map<string, { text: string; span: Span }>;
 }
 
 const refOf = (c: CardMap["cards"][number]): CardRef => ("track" in c ? { track: c.track } : { standIn: c.standIn });
@@ -133,6 +169,9 @@ function cardsAt(buffer: Buffer, spans: readonly Span[]): CardRef[] {
     })
     .map(refOf);
 }
+
+/** The word a handwritten card is named by in a message: `num` for `[num{}]`. */
+const wordOf = (notation: string): string => /^\[(\w+)/.exec(notation)?.[1] ?? "handwritten";
 
 export function createSession(options: SessionOptions): Session {
   const { project } = options;
@@ -151,10 +190,31 @@ export function createSession(options: SessionOptions): Session {
   let buffer: Buffer = { text: reader.text, map: { version: reader.version, cards: [], lines: [] } };
   let checkErrors: SceneError[] = [];
   let virtualCards: VirtualCard[] = [];
+  let stripHeads: number[] = [];
+  let detached: DetachedLine[] = [];
+  let skippedLines: number[] = [];
+  /** Cards the table can't read or doesn't know, in the buffer as it is. */
+  let tableErrors: SceneError[] = [];
+  /** The run that froze, and the error that says so, until the next run starts. */
+  let frozenRun: { run: Run; error: SceneError } | null = null;
+  const lengthOf = (marker: number): number => {
+    const entry = project.lockfile.get(marker);
+    return project.languageMarkers.get(marker)?.length ?? (entry?.kind === "library" ? entry.length : readerDefaults.unknownMinLength);
+  };
   /** The last table state, and its clock less the app's, to step it again at the reader's wake. */
   let last: { state: TableState; offset: number } | null = null;
   /** When the reader wants that, on the app's clock. */
   let readerWake: number | null = null;
+  let tableSettings = options.tableSettings ?? defaultTableSettings;
+  const menu = createMenu();
+  const calibration = createCalibration(options.projectorAspect ?? 16 / 9);
+  /** The newest table state: calibration's check view outlines its cards, and it's read once calibration ends. */
+  let latest: TableState | null = null;
+  /** A card's length when the project knows it: calibration outlines only those. */
+  const knownLengthOf = (marker: number): number | undefined => {
+    const entry = project.lockfile.get(marker);
+    return project.languageMarkers.get(marker)?.length ?? (entry?.kind === "library" ? entry.length : undefined);
+  };
   const help = createHelpCorner(project);
 
   const stop = (run: Run, now: number, sketch: SketchCommand[]): void => {
@@ -177,20 +237,54 @@ export function createSession(options: SessionOptions): Session {
     readerWake = r.output.wakeAt === undefined ? null : r.output.wakeAt - last.offset;
     buffer = { text: r.output.text, map: r.output.map };
     virtualCards = r.output.virtualCards;
+    stripHeads = r.output.stripHeads;
+    detached = r.output.detached;
+    tableErrors = tableErrorsOf(state, r.output.unknownCards);
     if (!changed) return;
     const checked = check(r.output.text, r.output.skippedLines, { loader: project.loader, id: project.entry.id });
-    checkErrors = checked.errors.map((e) => ({ from: "check", kind: e.kind, message: e.message, cards: cardsAt(buffer, e.spans) }));
+    skippedLines = checked.program.skippedLines;
+    checkErrors = checked.errors.map((e) => {
+      const error: SceneError = { from: "check", kind: e.kind, message: e.message, cards: cardsAt(buffer, e.spans) };
+      const name = e.spans[0] && buffer.text.slice(e.spans[0].start, e.spans[0].end);
+      if (e.followsFrom !== null && name) error.followsFrom = { line: e.followsFrom, name };
+      return error;
+    });
     if (r.output.placementOnly) return;
     if (next) stop(next, now, sketch);
     runs += 1;
-    next = newest = { id: runs, buffer, frozenAt: now + settings.frozenS, error: null };
+    next = newest = { id: runs, buffer, frozenAt: now + settings.frozenS, error: null, prints: new Map() };
     frozen = false;
+    frozenRun = null;
     sketch.push({ type: "start", run: next.id, js: compile(checked.program), natives: nativeModulesOf(checked.program) });
   };
 
+  /** The read errors and unknown cards in the buffer: the table's own errors, each lighting its card. */
+  const tableErrorsOf = (state: TableState, unknown: readonly UnknownCard[]): SceneError[] => {
+    const inBuffer = new Set(buffer.map.cards.flatMap((c) => ("track" in c ? [c.track] : [])));
+    const errors: SceneError[] = [];
+    for (const c of state.cards) {
+      if (c.hw?.state !== "read error" || !inBuffer.has(c.track)) continue;
+      const word = wordOf(project.languageMarkers.get(c.marker)?.card ?? "");
+      errors.push({ from: "table", kind: null, message: `Can't read this ${word} card's handwriting. Write it again more clearly.`, cards: [{ track: c.track }] });
+    }
+    for (const u of unknown) {
+      const message = u.package ? `Unknown card: this program doesn't import ${u.package}.` : "Unknown card: the table doesn't know this card.";
+      errors.push({ from: "table", kind: null, message, cards: [{ track: u.track }] });
+    }
+    return errors;
+  };
+
   const onSketch = (message: SketchMessage, now: number, sketch: SketchCommand[]): void => {
+    if (message.type === "stuck") {
+      if (frozenRun?.run.id === message.run) frozenRun.error.cards = cardsAt(frozenRun.run.buffer, [message.span]);
+      return;
+    }
     const run = [shown, next].find((r) => r?.id === message.run);
     if (!run) return;
+    if (message.type === "print") {
+      for (const p of message.prints) if (p.span) run.prints.set(`${p.span.start}-${p.span.end}`, { text: p.text, span: p.span });
+      return;
+    }
     if (message.type === "frame") run.frozenAt = now + settings.frozenS;
     else {
       // The run stopped itself, and its canvas keeps what it drew: it is shown with its error.
@@ -207,9 +301,13 @@ export function createSession(options: SessionOptions): Session {
   };
 
   const onClock = (now: number, sketch: SketchCommand[]): void => {
-    if ([shown, next].some((r) => r && r.frozenAt <= now)) {
+    const stuck = [next, shown].find((r) => r && r.frozenAt <= now);
+    if (stuck) {
       sketch.push({ type: "kill process" });
       frozen = true;
+      // Where it is stuck comes from main once the process is gone (a "stuck" message).
+      const message = `Frozen sketch: it stopped responding for ${settings.frozenS} s, so the table stopped it.`;
+      frozenRun = { run: stuck, error: { from: "table", kind: null, message, cards: [] } };
       shown = next = null;
       stopping = [];
       return;
@@ -221,29 +319,59 @@ export function createSession(options: SessionOptions): Session {
   return {
     handle(event: SessionEvent): SessionOutput {
       const sketch: SketchCommand[] = [];
+      let changed: TableSettings | null = null;
+      let vision: VisionCommand[] = [];
+      const calibrating = calibration.active;
       onClock(event.now, sketch);
       help.tick(event.now);
-      if (event.type === "table") onTable(event.state, event.now, sketch);
+      // While calibrating, the table is cleared and laid for calibration: the program is left as it was.
+      if (event.type === "table") {
+        latest = event.state;
+        if (!calibrating) onTable(event.state, event.now, sketch);
+      }
       else if (event.type === "sketch") onSketch(event.message, event.now, sketch);
       else if (event.type === "layout") {
         layout = event.layout;
-        if (last) onTable(last.state, event.now, sketch);
+        if (last && !calibrating) onTable(last.state, event.now, sketch);
       }
-      else if (last && readerWake !== null && readerWake <= event.now) onTable(last.state, event.now, sketch);
-      return { sketch };
+      else if (event.type === "key") {
+        if (calibrating) vision = calibration.key(event.key);
+        else {
+          const r = menu.key(event.key, tableSettings);
+          if (r?.settings) tableSettings = changed = r.settings;
+          if (r?.action === "calibrate") {
+            menu.close();
+            calibration.start();
+          }
+        }
+      }
+      else if (event.type === "vision") vision = calibration.result(event.message, event.now);
+      else {
+        vision = calibration.tick(event.now);
+        if (!calibrating && last && readerWake !== null && readerWake <= event.now) onTable(last.state, event.now, sketch);
+      }
+      if (calibrating && !calibration.active && latest) onTable(latest, event.now, sketch);
+      return { sketch, settings: changed, vision };
     },
     get scene(): Scene {
+      const errors = [...checkErrors, ...tableErrors, ...(newest?.error ? [newest.error] : []), ...(frozenRun ? [frozenRun.error] : [])];
+      const prints = shown ? [...shown.prints.values()].map((p) => ({ text: p.text, cards: cardsAt(shown!.buffer, [p.span]) })) : [];
       return {
         cards: buffer.map.cards.map(refOf),
-        errors: [...checkErrors, ...(newest?.error ? [newest.error] : [])],
+        errors,
         frozen,
         virtualCards,
+        menu: menu.view(tableSettings),
+        calibration: calibration.view(layout, latest?.cards ?? [], knownLengthOf),
+        settings: tableSettings,
         help: help.box,
+        feedback: feedback({ state: last?.state ?? null, map: buffer.map, lengthOf, stripHeads, detached, skippedLines, errors, prints }),
       };
     },
     get wakeAt(): number | null {
       const times = [
-        readerWake ?? Infinity,
+        calibration.active ? Infinity : (readerWake ?? Infinity),
+        calibration.wakeAt ?? Infinity,
         help.wakeAt ?? Infinity,
         ...stopping.map((s) => s.killAt),
         ...[shown, next].map((r) => r?.frozenAt ?? Infinity),

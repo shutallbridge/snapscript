@@ -51,4 +51,5 @@ sketch.onCommand((command) => {
   void host.handle(command);
   if (command.type === "kill") watchdog.postMessage({ type: "unwatch", run: command.run });
 });
+sketch.onSketchAt((at) => document.body.classList.toggle("top-left", at === "top-left"));
 sketch.hello({ crossOriginIsolated });

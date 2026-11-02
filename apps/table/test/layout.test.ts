@@ -43,6 +43,14 @@ describe("tableGeometry", () => {
     expect(wide.canvasPx).toEqual({ x: 972, y: 0, width: 648, height: 1080 });
   });
 
+  test("full screen lays the sketch view over the whole work area, and keeps the windows for the cards", () => {
+    const full = tableGeometry(screen, 781, { splitPercent: 60, fullScreen: true });
+    expect(full.canvasPx).toEqual({ x: 0, y: 0, width: 1620, height: 1080 });
+    expect(full.fullScreen).toBe(true);
+    expect(full.layout).toEqual(tableGeometry(screen, 781, { splitPercent: 60 }).layout);
+    expect(tableGeometry(screen, 781).fullScreen).toBe(false);
+  });
+
   test("a projector narrower than 1.5:1 gives its whole width", () => {
     expect(tableGeometry({ width: 1200, height: 1000 }, 800).workArea.width).toBeCloseTo(960);
   });

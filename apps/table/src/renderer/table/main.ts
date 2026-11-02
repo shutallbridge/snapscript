@@ -5,12 +5,14 @@
 import type { TableGeometry } from "../../layout.ts";
 import type { TableBridge } from "../../preload/table.ts";
 import type { Scene } from "../../session.ts";
+import { drawCalibration } from "./calibration.ts";
+import { drawMenu } from "./menu.ts";
+import { drawFeedback } from "./feedback.ts";
 import { drawHelp } from "./help.ts";
 
 declare const table: TableBridge;
 
-/** #114's colours: the coding space's dark grey, the boundary between the windows, a corner's dots. */
-const CODING_SPACE = "rgb(12, 12, 12)";
+/** #114's colours: the boundary between the windows, a corner's dots. The coding space's grey is a setting. */
 const BOUNDARY = "#3f3f46";
 const CORNER = "#52525b";
 /** Line widths and dots, in projector px. */
@@ -21,7 +23,7 @@ const GAP_PX = 6;
 const canvas = document.getElementById("table") as HTMLCanvasElement;
 const g = canvas.getContext("2d")!;
 let geometry: TableGeometry | null = null;
-/** The newest scene, for the card feedback's look (#195) to draw. */
+/** The newest scene. */
 let scene: Scene | null = null;
 
 function draw(): void {
@@ -38,15 +40,22 @@ function draw(): void {
   const { codingSpace, corners } = geometry.layout;
   const u = 30;
 
-  // The windows: the coding space filled, and the boundary a card counts by.
-  g.fillStyle = CODING_SPACE;
-  g.fillRect(codingSpace.x, codingSpace.y, codingSpace.width, codingSpace.height);
-  g.strokeStyle = BOUNDARY;
-  g.lineWidth = LINE_PX * px;
-  g.beginPath();
-  g.moveTo(codingSpace.x + codingSpace.width, 0.5 * u);
-  g.lineTo(codingSpace.x + codingSpace.width, codingSpace.height - 0.5 * u);
-  g.stroke();
+  // Calibration covers everything, the sketch too.
+  if (scene?.calibration) return drawCalibration(g, geometry, scene.calibration);
+
+  // The windows: the coding space filled, and the boundary a card counts by. In full screen the
+  // canvas covers the table, and cards still count where the coding space would be.
+  if (!geometry.fullScreen) {
+    const grey = scene?.settings.codingSpaceGrey ?? 12;
+    g.fillStyle = `rgb(${grey}, ${grey}, ${grey})`;
+    g.fillRect(codingSpace.x, codingSpace.y, codingSpace.width, codingSpace.height);
+    g.strokeStyle = BOUNDARY;
+    g.lineWidth = LINE_PX * px;
+    g.beginPath();
+    g.moveTo(codingSpace.x + codingSpace.width, 0.5 * u);
+    g.lineTo(codingSpace.x + codingSpace.width, codingSpace.height - 0.5 * u);
+    g.stroke();
+  }
 
   // The corners: dotted quarter circles, clipped to the work area.
   g.save();
@@ -63,8 +72,14 @@ function draw(): void {
   }
   g.restore();
 
+  // The card feedback (#195).
+  if (scene) drawFeedback(g, scene.feedback, geometry);
+
   // The help box, beside the help corner.
   if (scene?.help) drawHelp(g, scene.help, px);
+
+  // The settings menu, above windows, corners and pages: draw it last.
+  if (scene?.menu) drawMenu(g, geometry, scene.menu);
 }
 
 table.onGeometry((g) => {
