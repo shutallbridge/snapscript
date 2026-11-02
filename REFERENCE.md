@@ -114,6 +114,8 @@ x runs right and y runs down. `[import(…)as(…)]` and `[extern(…)]` are nev
 
 A `@table` the system cannot read counts as `@table auto`.
 
+The system lays `@table auto` strips out in file order, down the left of the coding space: the first 4U from its top and left edges, each next one 2U below the last. When a column runs out of room, the next column starts 2U right of its widest strip. The same file always lays out the same way, and a strip added at the end never moves the ones before it.
+
 ### 1.2. A first sketch
 
 ```
