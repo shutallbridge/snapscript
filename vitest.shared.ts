@@ -3,8 +3,8 @@
 import { fileURLToPath } from "node:url";
 import { yaml } from "./yaml-plugin.ts";
 
-const source = (name: string): string =>
-  fileURLToPath(new URL(`./packages/${name}/src/index.ts`, import.meta.url));
+const source = (name: string, file = "index"): string =>
+  fileURLToPath(new URL(`./packages/${name}/src/${file}.ts`, import.meta.url));
 
 export const shared = {
   plugins: [yaml()],
@@ -12,6 +12,8 @@ export const shared = {
     alias: {
       "@snapscript/core": source("core"),
       "@snapscript/parser": source("parser"),
+      // Before the package itself, which would match as a prefix.
+      "@snapscript/checker/disk": source("checker", "disk"),
       "@snapscript/checker": source("checker"),
       "@snapscript/table-reader": source("table-reader"),
     },
