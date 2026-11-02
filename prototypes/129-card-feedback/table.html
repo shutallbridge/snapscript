@@ -414,6 +414,18 @@ function misfit(want, got) {
 function virtualArgs(cards) {
   const k = mm(), out = [];
   argErrors = []; lineEnds = new Map(); lineCards = new Map();
+  // mocked: a [set{x}to] with nothing after it is a SyntaxError, so its line is skipped, and x with it
+  const skippedNames = {};
+  for (const c of cards) {
+    const sm = /^\[set\{(\w+)\}to\]$/.exec(c.text); if (!sm) continue;
+    const len = CARD_LEN[c.id] || lenOf(sideOf(c.text)), d = [Math.cos(c.a), Math.sin(c.a)];
+    const v = occupant({ m: [c.m[0] + d[0] * len * U * k, c.m[1] + d[1] * len * U * k], a: c.a }, cards);
+    lineCards.set(c, v ? [c, v] : [c]);
+    lineEnds.set(c, v ? { m: v.m, a: v.a, len: CARD_LEN[v.id] || lenOf(sideOf(v.text)) } : { m: c.m, a: c.a, len });
+    if (v) continue;
+    const e = { card: c, call: c, kind: 'SyntaxError', msg: `set ${sm[1]} to needs a value`, long: `set ${sm[1]} to needs a value after it.` };
+    argErrors.push(e); skippedNames[sm[1].toLowerCase()] = e;
+  }
   for (const c of cards) {
     const m = /^\[call\((?:p5\.)?(\w+)\)\]$/.exec(c.text), sig = m && SIG[m[1]];
     if (!sig) continue;
@@ -424,8 +436,10 @@ function virtualArgs(cards) {
       const slot = { text, side: sideOf(text), hint, a: end.a, m: [end.m[0] + d[0] * reach, end.m[1] + d[1] * reach] };
       const filled = occupant(slot, cards);
       if (filled) {
-        const got = misfit(text, filled.text);
-        if (got) argErrors.push({ card: filled, call: c, kind: 'TypeError', msg: `${hint} needs ${KIND_NAME[kindOf(text)]}`,
+        const got = misfit(text, filled.text), gm = /^\[get\{(\w+)\}\]$/.exec(filled.text), from = gm && skippedNames[gm[1].toLowerCase()];
+        if (from) argErrors.push({ card: filled, call: c, kind: 'NameError', ref: from,  // its words name the skipped line's badge, once numbered
+          words: id => [`${gm[1]} comes from skipped ${id}`, `${gm[1]} is set on a line that's skipped (${id}), so it has no value here.`] });
+        else if (got) argErrors.push({ card: filled, call: c, kind: 'TypeError', msg: `${hint} needs ${KIND_NAME[kindOf(text)]}`,
           long: `${m[1]}'s ${hint} needs ${KIND_NAME[kindOf(text)]}. Got ${got} instead.` });
         real.push(filled); end = filled; endLen = CARD_LEN[filled.id] || lenOf(sideOf(filled.text)); continue;
       }
@@ -535,6 +549,7 @@ function drawVirtualCards(g, L) {
     // numbered in program order: lines top to bottom (by their first card), then along each line
     const along = e => (e.card.m[0] - e.call.m[0]) * Math.cos(e.call.a) + (e.card.m[1] - e.call.m[1]) * Math.sin(e.call.a);
     argErrors.sort((a, b) => a.call.m[1] - b.call.m[1] || a.call.m[0] - b.call.m[0] || along(a) - along(b)).forEach((e, i) => e.id = 'E' + (i + 1));
+    for (const e of argErrors) if (e.ref) [e.msg, e.long] = e.words(e.ref.id);
     for (const call of new Set(argErrors.map(e => e.call))) drawSkipped(g, lineCards.get(call));  // a line with an error is skipped
     for (const e of argErrors) drawWrong(g, e.card);
     for (const call of new Set(argErrors.map(e => e.call))) drawMessages(g, argErrors.filter(e => e.call === call), L, blockers);
