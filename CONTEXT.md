@@ -114,9 +114,6 @@ A name that every file has without an import: functions such as `[call(print)]` 
 Which of four colors a function card is printed in: action (violet: `[call(p5.circle)]`), action 2 (fuchsia: `[call(p5.translate)]`), helper (sky: `[call(random)]`) or setting (rose: `[call(p5.fill)]`). Variable cards such as `[get(p5.width)]` are orange instead.
 _Avoid_: role (a role is what an edge needs from the edge that faces it)
 
-**Prelude**:
-Text that the system puts at the start of every table program, such as `[import(snapscript-p5)as(p5)]`. Nobody lays it on the table.
-
 **Official registry**:
 An endorsed list that gives popular libraries their marker IDs, so that library cards printed for one project read the same in another. A project may assign IDs differently.
 
@@ -134,11 +131,14 @@ When an error is found: **structure** (cards that cannot form a program), **chec
 _Avoid_: layer (a layer is a level of a magnet pocket), phase
 
 **Table error**:
-An error that belongs to the table, not the language: a read error, a connection error, a mismatch, a frozen sketch or a library error. It has no kind and no stage, a text file never has one, and it never goes into a `.snap` file. The table shows it like any other error.
+An error that belongs to the table, not the language: a read error, a connection error, an unknown card, a mismatch, a frozen sketch or a library error. It has no kind and no stage, a text file never has one, and it never goes into a `.snap` file. The table shows it like any other error.
 
 **Read error**:
-A table error: the camera is not sure what a card's handwriting says. The card's line is skipped.
+A table error: the handwriting reader gave back no text for a card with writing on it. The card's line is skipped. A read that breaks its card's rule, such as `[num{4o}]`, is not a read error: it goes into the text as read, and the language finds the error.
 _Avoid_: OCR error
+
+**Unknown card**:
+A table error: the table can't write a card as text, because its marker is not in the lockfile, or because its library is not imported by the program, such as a `play` card from `snapscript-sound` in a program that imports only `snapscript-p5`. The card is lit and its line is skipped.
 
 **Connection error**:
 A table error: a card's handwriting cannot be read because the table cannot reach the handwriting reader. The card's line is skipped at once, and the card is read as soon as the reader can be reached again.
@@ -157,11 +157,11 @@ A handwritten card whose text has not arrived. It is not an error: the program k
 _Avoid_: pending, loading
 
 **Mismatch**:
-A table error: a real card lies in a guide card's place but is not the card the guide asks for, such as `[color(gold)]` where a textbook page's guide shows `[num{500}]`. The card still counts and runs.
+A table error: a real card lies in a guide card's place but is not the card the guide asks for, such as `[color(gold)]` where a textbook page's guide shows `[num{500}]`. The card still counts and runs. Different handwriting on the right kind of card, such as `[num{300}]` where the guide shows `[num{500}]`, is not a mismatch.
 _Avoid_: wrong card
 
 **Skipped line**:
-A line left out of a run because it has a structure or check error, or holds a card with a read error, a connection error, or one still not read yet after the wait. Its gutter marks it, and the rest of its function runs. Skipping a block head skips its body, and in a chain, every later block of the chain too; skipping a `[define{…}]` header skips its strip.
+A line left out of a run because it has a structure or check error, or holds a card with a read error, a connection error, an unknown card, or one still not read yet after the wait. Its gutter marks it, and the rest of its function runs. Skipping a block head skips its body, and in a chain, every later block of the chain too; skipping a `[define{…}]` header skips its strip.
 _Avoid_: ignored line, disabled line
 
 **Follow-on error**:
@@ -335,7 +335,7 @@ A card the projector draws where a real card is not. It is a stand-in card or a 
 _Avoid_: virtual block, ghost card
 
 **Stand-in card**:
-A virtual card that is part of the program: it counts in the buffer and runs, such as a card of a program opened from a `.snap` file. Any real card laid in its place replaces it, as an edit.
+A virtual card that is part of the program: it counts in the buffer and runs, such as a card of a program opened from a `.snap` file. Any real card laid in its place replaces it, as an edit, and it does not come back when that card is lifted.
 
 **Guide card**:
 A virtual card that only suggests: a textbook page's cards, or the values a call card expects after it. The right card laid in its place replaces it; any other card still counts, as a mismatch.
@@ -347,7 +347,7 @@ The space left of a line's first card where the table marks the line: a green do
 A bar of text along the top or bottom edge of the table. The errors bar holds each error's full message beside its badge.
 
 **Read-back**:
-What the handwriting reader saw, drawn on the card's whiteboard. It shows for a moment after each new read, always as a debug view, and on a card with a `NameError` and the cards that define the name it suggests.
+What the handwriting reader saw, drawn on the card's whiteboard. It shows for a moment after each new read, always as a debug view, and on a card whose own text an error blames (a `SyntaxError` on its handwriting, a `NameError` or an `AttributeError`), with the cards that define the name a `NameError` suggests.
 
 **Window**:
 A region of the table that owns the markers in it and what is drawn there. A card belongs to the window its marker is in, even if its tail reaches into the next one.
