@@ -118,7 +118,7 @@ _Avoid_: role (a role is what an edge needs from the edge that faces it)
 An endorsed list that gives popular libraries their marker IDs, so that library cards printed for one project read the same in another. A project may assign IDs differently.
 
 **Lockfile**:
-A project's list of which marker ID stands for which library card, such as `1293 = call snapscript-p5.circle`. The camera reads library cards through it.
+A project's list of which marker ID stands for which library card or textbook page, such as `1293 = call snapscript-p5.circle` or `1900 = page snapscript-p5-getting-started/confetti 3`. The camera reads library cards and pages through it.
 
 ## Errors
 
@@ -311,6 +311,14 @@ A library's own version number, separate from the language version. A library st
 The person who sets up a table: prints and assembles the bases and sheets, and sets up libraries.
 _Avoid_: builder
 
+**Learner**:
+A person at the table who lays the cards and reads the textbook. Several learners share one table.
+_Avoid_: student, player, user, group
+
+**Learner**:
+A person at the table who lays the cards and reads the textbook. Learners work on one program together.
+_Avoid_: student, player, user, group
+
 **Instructor tool**:
 What the instructor runs on their own computer to set up a table: libraries, bases, assembly pages and sheets. It never talks to the table app.
 
@@ -370,3 +378,23 @@ _Avoid_: help spot, hot corner
 
 **Settings menu**:
 The table app's menu for whoever runs the table, opened from a keyboard. It holds the table's settings, including calibration.
+
+## Textbooks
+
+**Textbook**:
+A package of printed lessons that a project lists as a dependency, the same way it lists a library, such as `snapscript-p5-getting-started`. It works only with the library versions it names. Its pages show their programs on the table as guide cards.
+_Avoid_: course, tutorial, worksheet
+
+**Volume**:
+One markdown file of a textbook, printed as a set of A4 pages, such as `confetti.md`. A textbook lists its volumes in order.
+
+**Page**:
+One printed A4 sheet of a volume, with one marker at its bottom-right. Pages are numbered from 1. A page's program is never printed: the table shows it as guide cards, and a page without a program shows none.
+_Avoid_: sheet (a sheet holds card faces), beat, step
+
+**Current page**:
+The page whose guide cards the table shows: the newest page in view. A page under a hand stays in view, as a card does. With no page in view, no guide cards show.
+
+**Mini card**:
+A small picture of a card printed in a page's text, with the real card's look and a grey dot where its marker would be, so the camera never reads it.
+
