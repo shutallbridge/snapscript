@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { initialState, step } from "../src/index.ts";
+import { initialState, step, type StepOutput } from "../src/index.ts";
 import {
   at,
   card,
@@ -89,12 +89,106 @@ describe("text → cards: stand-ins", () => {
     );
   });
 
-  test("a strip with no @table position is kept as written and shows no stand-ins (auto placement is #157's)", () => {
-    // The gap: `@table auto` (and no tag, or one the system can't read) lays out no stand-ins yet.
-    const entry = "[define{setup}]\n[set{x}to][num{1}]\n\n/** @table auto */\n[define{draw}]";
+  test("a hidden strip is kept as written and shows no stand-ins", () => {
+    const entry = "/** @table hidden */\n[define{helper}]\n[return][num{1}]";
     const out = play(entry, [{ t: 0, cards: [] }]).last;
     expect(out.text).toBe(entry);
     expect(out.virtualCards).toEqual([]);
+  });
+});
+
+describe("text → cards: @table auto", () => {
+  // Strips with no tag, `@table auto` or a tag the system can't read, in file order.
+  const strips = [
+    "[define{setup}]\n[call(p5.createCanvas)][num{500}][num{500}]",
+    "/** @table auto */\n[define{draw}]\n[call(p5.circle)][num{1}]",
+    "/** @table here */\n[define{other}]",
+  ];
+  const heads = (out: StepOutput) =>
+    out.virtualCards.filter((v) => v.kind === "stand-in" && v.card.startsWith("[define"));
+
+  test("stack down the left of the coding space: the first 4U from its top and left, each next 2U below the last", () => {
+    const out = play(strips.join("\n\n"), [{ t: 0, cards: [] }]).last;
+    expect(out.virtualCards).toEqual([
+      { id: "s1", kind: "stand-in", card: "[define{setup}]", length: 5, ...at(4 * U, 4 * U) },
+      { id: "s2", kind: "stand-in", card: "[call(p5.createCanvas)]", length: 4, ...at(4 * U, 5 * U) },
+      { id: "s3", kind: "stand-in", card: "[num{500}]", length: 4, ...at(8 * U, 5 * U) },
+      { id: "s4", kind: "stand-in", card: "[num{500}]", length: 4, ...at(12 * U, 5 * U) },
+      // The first strip is 2U tall, so the next starts 2U below its bottom: 8U down.
+      { id: "s5", kind: "stand-in", card: "[define{draw}]", length: 5, ...at(4 * U, 8 * U) },
+      { id: "s6", kind: "stand-in", card: "[call(p5.circle)]", length: 2, ...at(4 * U, 9 * U) },
+      { id: "s7", kind: "stand-in", card: "[num{1}]", length: 4, ...at(6 * U, 9 * U) },
+      { id: "s8", kind: "stand-in", card: "[define{other}]", length: 5, ...at(4 * U, 12 * U) },
+    ]);
+  });
+
+  test("the buffer writes each where it lies, its doc comment kept", () => {
+    const out = play(strips.join("\n\n"), [{ t: 0, cards: [] }]).last;
+    expect(out.text).toBe(
+      [
+        "/** @table 120 120 0 */",
+        "[define{setup}]",
+        "[call(p5.createCanvas)][num{500}][num{500}]",
+        "",
+        "/** @table 120 240 0 */",
+        "[define{draw}]",
+        "[call(p5.circle)][num{1}]",
+        "",
+        "/** @table 120 360 0 */",
+        "[define{other}]",
+      ].join("\n"),
+    );
+  });
+
+  test("lay out the same every time, and a strip added at the end moves none of the others", () => {
+    const once = heads(play(strips.join("\n\n"), [{ t: 0, cards: [] }]).last);
+    const again = heads(play(strips.join("\n\n"), [{ t: 0, cards: [] }]).last);
+    const more = heads(play([...strips, "[define{last}]"].join("\n\n"), [{ t: 0, cards: [] }]).last);
+    expect(again).toEqual(once);
+    expect(more.slice(0, 3)).toEqual(once);
+    expect(more[3]).toMatchObject({ card: "[define{last}]", ...at(4 * U, 15 * U) });
+  });
+
+  test("leave out hidden strips and strips with a position, and ignore real cards", () => {
+    const entry = [
+      "/** @table hidden */\n[define{helper}]",
+      strips[0],
+      "/** @table 250 400 */\n[define{placed}]",
+      strips[1],
+    ].join("\n\n");
+    // A loose real card lies just under the first auto strip's spot.
+    const loose = card(9, NUM, 4 * U, 4 * U + 40, { text: "3" });
+    const out = play(entry, [
+      { t: 0, cards: [loose] },
+      { t: 1, cards: [loose] },
+    ]).last;
+    expect(heads(out)).toEqual([
+      expect.objectContaining({ card: "[define{setup}]", ...at(4 * U, 4 * U) }),
+      expect.objectContaining({ card: "[define{placed}]", ...at(250, 400) }),
+      expect.objectContaining({ card: "[define{draw}]", ...at(4 * U, 8 * U) }),
+    ]);
+  });
+
+  test("a column that runs out of room starts the next 2U right of its widest strip", () => {
+    // Four 2U-tall strips fill the 600 mm coding space's first column at 4U, 8U, 12U and 16U down;
+    // a fifth would end at 22U (660 mm). The second strip is the widest, at 6U.
+    const entry = [
+      "[define{a}]\n[repeat]",
+      "[define{b}]\n[repeat][repeat][repeat]",
+      "[define{c}]\n[repeat]",
+      "[define{d}]\n[repeat]",
+      "[define{e}]\n[repeat]",
+      "[define{f}]\n[repeat]",
+    ].join("\n\n");
+    const out = heads(play(entry, [{ t: 0, cards: [] }]).last);
+    expect(out.map(({ x, y }) => ({ x, y }))).toEqual([
+      at(4 * U, 4 * U),
+      at(4 * U, 8 * U),
+      at(4 * U, 12 * U),
+      at(4 * U, 16 * U),
+      at(12 * U, 4 * U),
+      at(12 * U, 8 * U),
+    ].map(({ x, y }) => ({ x, y })));
   });
 });
 
