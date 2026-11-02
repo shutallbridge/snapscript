@@ -2,7 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     // The project loader and `pnpm lock` read and write the project's files.
-    "types": ["node"]
+    "types": ["node"],
+    // The base's isolatedDeclarations needs it; nothing is emitted (noEmit).
+    "declaration": true
   },
   "include": ["src", "test"]
 }

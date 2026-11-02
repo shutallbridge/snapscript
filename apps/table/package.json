@@ -12,6 +12,7 @@
     "@snapscript/core": "workspace:*",
     "@snapscript/faces": "workspace:*",
     "@snapscript/parser": "workspace:*",
+    "@snapscript/runtime": "workspace:*",
     "@snapscript/table-reader": "workspace:*",
     "@types/mdast": "^4.0.4",
     "mdast-util-from-markdown": "^2.1.0"

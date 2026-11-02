@@ -13,6 +13,12 @@ describe("the project loader", () => {
     ]);
     expect(project.languageMarkers).toBe(languageMarkers);
   });
+
+  test("reads the entry module its package.json names, by the loader's id for it", () => {
+    const dir = fixtureProject();
+    const project = loadProject(dir);
+    expect(project.entry).toEqual({ id: join(project.dir, "main.snap"), text: "/** @table hidden */\n[import(fixture-shapes)as(shapes)]\n" });
+  });
 });
 
 describe("library cards", () => {
