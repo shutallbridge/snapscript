@@ -2,7 +2,7 @@
 // line's gutter marks and badges, the bottom status bar's errors, and where `print` output goes. All
 // in table mm, from where the cards lie now. Nothing projected may cover a card's marker zone: the
 // table view cuts `keepClear` out of everything it draws for this.
-import type { CardMap, DetachedLine, TableCard, TableState } from "@snapscript/table-reader";
+import type { CardMap, DetachedLine, SkippedLine, TableCard, TableState } from "@snapscript/table-reader";
 import type { CardRef, SceneError } from "./session.ts";
 
 /** A rectangle on the table: its top-left corner at (x, y) in table mm, turned `angle` degrees about it, `width` along and `height` across. */
@@ -22,12 +22,13 @@ export interface LitCard {
 
 /**
  * A line's gutter, drawn left of the line's first card (`at`), from the line outward: its dot, then
- * its errors' badges. `ok` is a recognised strip head; `skipped` a skipped or detached line.
+ * its errors' badges. `ok` is a recognised strip head; `skipped` a skipped or detached line;
+ * `waiting` (a spinner) a line with a card not read yet; `no internet` one whose handwriting couldn't reach the cloud.
  */
 export interface Gutter {
   track: number;
   at: Quad;
-  dot: "ok" | "skipped" | null;
+  dot: "ok" | "skipped" | "waiting" | "no internet" | null;
   badges: string[];
 }
 
@@ -70,6 +71,8 @@ export interface FeedbackInput {
   detached: readonly DetachedLine[];
   /** The buffer's skipped lines, as the checker gives them. */
   skippedLines: readonly number[];
+  /** Why the reader skipped its lines: a card not read yet, or a connection error, has a dot of its own. */
+  readerSkips?: readonly SkippedLine[];
   errors: readonly SceneError[];
   /** The shown run's print output, by the cards that printed it. */
   prints: readonly { text: string; cards: readonly CardRef[] }[];
@@ -139,11 +142,14 @@ export function feedback(input: FeedbackInput): Feedback {
 
   const gutters: Gutter[] = [];
   const skipped = new Set(input.skippedLines);
+  const reasons = new Map((input.readerSkips ?? []).map((l) => [l.line, l.reason]));
+  const skipDot = (line: number): Gutter["dot"] =>
+    reasons.get(line) === "not read yet" ? "waiting" : reasons.get(line) === "connection error" ? "no internet" : "skipped";
   for (const { line, tracks } of input.map.lines) {
     const head = poses.get(tracks[0]!);
     if (!head) continue;
     const badges = badged.filter((b) => b.line === line).map((b) => b.badge);
-    const dot = skipped.has(line) ? "skipped" : input.stripHeads.includes(head.track) ? "ok" : null;
+    const dot = skipped.has(line) ? skipDot(line) : input.stripHeads.includes(head.track) ? "ok" : null;
     if (dot || badges.length) gutters.push({ track: head.track, at: onCard(head, 0, lengthMm(head)), dot, badges });
   }
   for (const d of input.detached) {

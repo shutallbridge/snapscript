@@ -1,7 +1,7 @@
 // The table view's renderer: it draws in table mm, scaled by the mm per projector height that comes
 // with every table state. Stacking, bottom to top (#114): the windows (the coding space here; the
-// canvas space is the sketch view below, left clear) < the corners < pages < the settings menu.
-// The scene's own look (#195-#199) is drawn on top of this.
+// canvas space is the sketch view below, left clear) < the corners, with the scene's card look
+// (#195-#197) < the help box < pages < the settings menu, drawn last.
 import type { TableGeometry } from "../../layout.ts";
 import type { TableBridge } from "../../preload/table.ts";
 import type { Scene } from "../../session.ts";
@@ -10,6 +10,7 @@ import { drawMenu } from "./menu.ts";
 import "@fontsource/geist-mono/500.css";
 import "@fontsource/kalam/400.css";
 import { bar, drawFeedback } from "./feedback.ts";
+import { drawHandwriting, STATUS } from "./handwriting.ts";
 import { drawHelp } from "./help.ts";
 import { drawPages } from "./pages.ts";
 import { drawVirtual } from "./virtual.ts";
@@ -76,11 +77,14 @@ function draw(): void {
   }
   g.restore();
 
-  // The virtual cards (#197), under the card feedback (#195), then the status bar.
+  // The virtual cards (#197), under the card feedback (#195) and handwriting's read-back (#196), then
+  // the one top status bar (#196's no internet, #197's). A waiting line's spinner turns, so draw again next frame.
   if (scene) {
     drawVirtual(g, scene.virtual, scene.feedback.keepClear, draw);
     drawFeedback(g, scene.feedback, geometry);
-    bar(g, scene.status.map((text) => ({ text })), true, geometry);
+    drawHandwriting(g, scene.handwriting);
+    bar(g, scene.status.map((text) => ({ text })), true, geometry, STATUS);
+    if (scene.feedback.gutters.some((gt) => gt.dot === "waiting")) requestRedraw();
   }
 
   // The help box, beside the help corner.
@@ -91,6 +95,14 @@ function draw(): void {
 
   // The settings menu, above windows, corners and pages: draw it last.
   if (scene?.menu) drawMenu(g, geometry, scene.menu);
+}
+
+let redraw = 0;
+function requestRedraw(): void {
+  if (!redraw) redraw = requestAnimationFrame(() => {
+    redraw = 0;
+    draw();
+  });
 }
 
 table.onGeometry((g) => {

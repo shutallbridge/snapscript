@@ -101,6 +101,26 @@ function text(x: number, y: number, str: string, o: { size: number; fill: string
 
 const monoWidth = (str: string, size = FONT): number => str.length * size * MONO_EM;
 
+/** A rectangle on a face, in mm from its top-left. */
+export interface FaceRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function whiteboardRect(side: Extract<Side, { kind: "handwritten" }>, w: number): FaceRect {
+  const x = LABEL_X + monoWidth(side.keyword) + SHEET.gapMm;
+  const end = side.after ? w - SHEET.paddingMm - monoWidth(side.after) - SHEET.gapMm : w - SHEET.paddingMm;
+  return { x, y: WHITEBOARD_INSET, width: end - x, height: H - 2 * WHITEBOARD_INSET };
+}
+
+/** A handwritten card's whiteboard on its printed face at `length` U, or null for a card with none. */
+export function whiteboardOf(card: string, length: number = shortestLength(card)): FaceRect | null {
+  const side = sideOf(card);
+  return side.kind === "handwritten" ? whiteboardRect(side, length * SHEET.unitMm) : null;
+}
+
 /** The face's main area, right of the stripe: its label, or its words and whiteboard, or its icon. */
 function mainArea(side: Side, w: number, labelFill: string, whiteboard: string | null, written: string, writtenFill: string): string {
   const mid = (MZ + SHEET.stripeMm + w) / 2;
@@ -120,12 +140,10 @@ function mainArea(side: Side, w: number, labelFill: string, whiteboard: string |
     }
     case "handwritten": {
       let out = text(LABEL_X, H / 2, side.keyword, { size: FONT, fill: labelFill, part: "label" });
-      const x = LABEL_X + monoWidth(side.keyword) + SHEET.gapMm;
-      const afterX = w - SHEET.paddingMm - monoWidth(side.after);
-      const end = side.after ? afterX - SHEET.gapMm : w - SHEET.paddingMm;
-      if (whiteboard) out += rect(x, WHITEBOARD_INSET, end - x, H - 2 * WHITEBOARD_INSET, whiteboard, "whiteboard");
-      if (written) out += text(x + 2.5, H / 2, written, { size: HAND_MM, fill: writtenFill, part: "value", hand: true });
-      if (side.after) out += text(afterX, H / 2, side.after, { size: FONT, fill: labelFill, part: "label" });
+      const wb = whiteboardRect(side, w);
+      if (whiteboard) out += rect(wb.x, wb.y, wb.width, wb.height, whiteboard, "whiteboard");
+      if (written) out += text(wb.x + 2.5, H / 2, written, { size: HAND_MM, fill: writtenFill, part: "value", hand: true });
+      if (side.after) out += text(w - SHEET.paddingMm - monoWidth(side.after), H / 2, side.after, { size: FONT, fill: labelFill, part: "label" });
       return out;
     }
   }
