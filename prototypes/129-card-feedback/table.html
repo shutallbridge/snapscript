@@ -100,7 +100,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'hatch', detLook: 'skipped', ovSec: 1, dedLook: 'both', barTop: 'status', barBottom: 'errors', vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'none', gutter: true, detLook: 'skipped', ovSec: 1, dedLook: 'bar', barTop: 'status', barBottom: 'errors', vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -538,6 +538,24 @@ function drawMessages(g, errs, L, blockers) {  // one line's errors: their short
 //   strike  one grey line through the middle of the whole line, like struck-out text
 //   outline a dashed grey outline round the whole line
 const SKIP_LOOKS = ['none', 'wash', 'hatch', 'strike', 'outline'];
+// #129 a line's gutter: left of its first card, never right (a card laid next on the line would land under it). From the
+// line outward: a status dot (green: a strip head the system recognised; grey, crossed out: a skipped or detached line),
+// then each error's badge with its short message, right-aligned, stacked within the row.
+function drawGutter(g, h, dot, errs) {
+  const k = mm(), f = cfg.textPx * 0.6, bs = f * 1.5, ds = bs * 0.7, gap = 3, rowH = bs + f * 0.3;
+  g.save(); g.translate(h.m[0], h.m[1]); g.rotate(h.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);
+  let x = -gap; const cy = H / 2;
+  if (dot) {
+    const cx = x - ds / 2, r = ds / 2;
+    if (dot === 'ok') { g.fillStyle = '#22c55e'; g.beginPath(); g.arc(cx, cy, r, 0, 2 * Math.PI); g.fill(); }
+    else { g.strokeStyle = '#a1a1aa'; g.lineWidth = 1.2; g.beginPath(); g.arc(cx, cy, r - 0.6, 0, 2 * Math.PI); g.stroke();
+      const q = (r - 0.6) * Math.SQRT1_2; g.beginPath(); g.moveTo(cx - q, cy + q); g.lineTo(cx + q, cy - q); g.stroke(); }
+    x -= ds + gap;
+  }
+  errs.forEach((e, i) => { const y = cy + (i - (errs.length - 1) / 2) * rowH;
+    badge(g, e.id, x - bs, y, bs); g.font = font(f); g.fillStyle = '#f87171'; g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(e.msg, x - bs - f * 0.4, y); });
+  g.restore();
+}
 function drawSkipped(g, cards) {
   const look = cfg.skipLook; if (!cards || look === 'none') return;
   const k = mm(), lens = cards.map(c => CARD_LEN[c.id] || lenOf(sideOf(c.text)));
@@ -650,7 +668,7 @@ function drawVirtualCards(g, L) {
     drawVirtual(g, v); shown++;
   }
   const st = structure(cards), { attached, detached } = st;
-  if (cfg.detLook === 'skipped') for (const l of detached) drawSkipped(g, l);  // the same look as a skipped line, no badge, no message
+  for (const l of detached) drawSkipped(g, l);  // the same look as a skipped line (cfg.skipLook), no badge, no message
   structStat = `${attached.size} cards in the program, ${detached.length} detached lines`;
   if (cfg.vargs) for (const v of virtualArgs(cards, attached)) { drawVirtual(g, v); shown++; }
   if (cfg.vargs) {
@@ -664,13 +682,18 @@ function drawVirtualCards(g, L) {
         long: `${name} has no [dedent]. Its block closes here anyway.` });
     }
     const blockers = [...ded.flatMap(dedentQuads), ...cards.map(c => quad(c, 0, 0, (CARD_LEN[c.id] || lenOf(sideOf(c.text))) * U, H)), ...shownArgs.map(v => quad(v, 0, 0, lenOf(v.side) * U, H))];
-    // numbered in program order: lines top to bottom (by their first card), then along each line
-    const along = e => (e.card.m[0] - e.call.m[0]) * Math.cos(e.call.a) + (e.card.m[1] - e.call.m[1]) * Math.sin(e.call.a);
-    argErrors.sort((a, b) => a.call.m[1] - b.call.m[1] || a.call.m[0] - b.call.m[0] || along(a) - along(b)).forEach((e, i) => e.id = 'E' + (i + 1));
+    // each error belongs to its line (the line's first card), numbered in program order: lines top to bottom, then along each line
+    const headOf = new Map(); for (const [h, l] of st.lines) l.forEach(c => headOf.set(c, h));
+    for (const e of argErrors) e.line = headOf.get(e.call) || e.call;
+    const along = e => (e.card.m[0] - e.line.m[0]) * Math.cos(e.line.a) + (e.card.m[1] - e.line.m[1]) * Math.sin(e.line.a);
+    argErrors.sort((a, b) => a.line.m[1] - b.line.m[1] || a.line.m[0] - b.line.m[0] || along(a) - along(b)).forEach((e, i) => e.id = 'E' + (i + 1));
     for (const e of argErrors) if (e.ref) [e.msg, e.long] = e.words(e.ref.id);
-    for (const call of new Set(argErrors.filter(e => !e.noSkip).map(e => e.call))) drawSkipped(g, lineCards.get(call));  // a line with an error is skipped
     for (const e of argErrors) drawWrong(g, e.card);
-    for (const call of new Set(argErrors.map(e => e.call))) drawMessages(g, argErrors.filter(e => e.call === call), L, blockers);
+    const gut = new Map(), at = h => gut.get(h) || gut.set(h, { dot: null, errs: [] }).get(h);
+    for (const r of st.roots) at(r).dot = 'ok';
+    for (const l of detached) at(l[0]).dot = 'skip';
+    for (const e of argErrors) { at(e.line).errs.push(e); if (!e.noSkip) { at(e.line).dot = 'skip'; drawSkipped(g, st.lines.get(e.line)); } }
+    if (cfg.gutter) for (const [h, { dot, errs }] of gut) drawGutter(g, h, dot, errs);
   }
   vstat = `virtual ${cfg.vlook}: ${shown} shown, ${gone} replaced, ${wrong} wrong · ${structStat}`;
 }
