@@ -16,6 +16,8 @@ export const shared = {
       "@snapscript/checker/disk": source("checker", "disk"),
       "@snapscript/checker": source("checker"),
       "@snapscript/table-reader": source("table-reader"),
+      "@snapscript/runtime/compiler": source("runtime", "compiler"),
+      "@snapscript/runtime": source("runtime"),
     },
   },
 };

@@ -4,7 +4,7 @@
 // attributes.
 import { firstStage, type Signature } from "@snapscript/core";
 import { parse, type Declaration, type Program } from "@snapscript/parser";
-import type { CheckError } from "./index.ts";
+import type { CheckError, CheckedProgram } from "./index.ts";
 
 /** A module's source text, and the id the loader knows it by. */
 export interface LoadedModule {
@@ -32,10 +32,11 @@ export type Member =
   | { type: "value" }
   | { type: "module"; text: string; module: ModuleInfo | null };
 
-/** A loaded module: its attributes, by name key. */
+/** A loaded module: its attributes, by name key, and its checked program. */
 export interface ModuleInfo {
   id: string;
   attributes: ReadonlyMap<string, Member>;
+  program: CheckedProgram;
 }
 
 /** What the module each import line loads: `null` when the import fails, or isn't loaded. */
