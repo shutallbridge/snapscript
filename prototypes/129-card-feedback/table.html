@@ -315,10 +315,16 @@ function realCards(L) {
   return Object.values(real).filter(c => now - c.seen < KEEP_S && CARD_TEXT[c.id] && inside(L.code, toPx(c.c)))
     .map(c => ({ ...c, text: CARD_TEXT[c.id], m: toPx(c.c) }));
 }
-// Is there a real card in this virtual card's place? Place: marker within vtol mm, angle within 15°.
-function occupant(v, cards) {
-  return cards.find(c => Math.hypot(c.m[0] - v.m[0], c.m[1] - v.m[1]) <= cfg.vtol * mm() &&
-    Math.abs(Math.atan2(Math.sin(c.a - v.a), Math.cos(c.a - v.a))) < 15 * Math.PI / 180);
+// Is there a real card in this virtual card's place? Place: marker within vtol mm, angle within 15°. A card already in a
+// place (key) keeps it until it's HOLD_MM further out (or 20°), so a card sitting near the edge doesn't flicker in and out.
+const HOLD_MM = 5, held = {};
+function occupant(v, cards, key) {
+  const near = (c, mmTol, deg) => Math.hypot(c.m[0] - v.m[0], c.m[1] - v.m[1]) <= mmTol * mm() &&
+    Math.abs(Math.atan2(Math.sin(c.a - v.a), Math.cos(c.a - v.a))) < deg * Math.PI / 180;
+  const kept = key && cards.find(c => c.id === held[key] && near(c, cfg.vtol + HOLD_MM, 20));
+  const c = kept || cards.find(c => near(c, cfg.vtol, 15));
+  if (key) held[key] = c ? c.id : undefined;
+  return c;
 }
 const replaces = (c, v) => cfg.vmatch === 'same kind' ? kindOf(c.text) === kindOf(v.text) : c.text === v.text;
 
@@ -419,7 +425,7 @@ function virtualArgs(cards) {
   for (const c of cards) {
     const sm = /^\[set\{(\w+)\}to\]$/.exec(c.text); if (!sm) continue;
     const len = CARD_LEN[c.id] || lenOf(sideOf(c.text)), d = [Math.cos(c.a), Math.sin(c.a)];
-    const v = occupant({ m: [c.m[0] + d[0] * len * U * k, c.m[1] + d[1] * len * U * k], a: c.a }, cards);
+    const v = occupant({ m: [c.m[0] + d[0] * len * U * k, c.m[1] + d[1] * len * U * k], a: c.a }, cards, `set:${c.id}`);
     lineCards.set(c, v ? [c, v] : [c]);
     lineEnds.set(c, v ? { m: v.m, a: v.a, len: CARD_LEN[v.id] || lenOf(sideOf(v.text)) } : { m: c.m, a: c.a, len });
     if (v) continue;
@@ -431,10 +437,10 @@ function virtualArgs(cards) {
     if (!sig) continue;
     let end = c, endLen = CARD_LEN[c.id] || lenOf(sideOf(c.text));
     const real = [c]; lineCards.set(c, real);
-    for (const [hint, text] of sig) {
+    for (const [i, [hint, text]] of sig.entries()) {
       const d = [Math.cos(end.a), Math.sin(end.a)], reach = endLen * U * k;  // marker to marker: the end card's length
       const slot = { text, side: sideOf(text), hint, a: end.a, m: [end.m[0] + d[0] * reach, end.m[1] + d[1] * reach] };
-      const filled = occupant(slot, cards);
+      const filled = occupant(slot, cards, `arg:${c.id}:${i}`);
       if (filled) {
         const got = misfit(text, filled.text), gm = /^\[get\{(\w+)\}\]$/.exec(filled.text), from = gm && skippedNames[gm[1].toLowerCase()];
         if (from) argErrors.push({ card: filled, call: c, kind: 'NameError', ref: from,  // its words name the skipped line's badge, once numbered
@@ -536,8 +542,8 @@ function drawVirtualCards(g, L) {
   // A real card in a stand-in's place always replaces it (it's an edit; language errors report the rest). In a guide's
   // place, the right card replaces the guide, and a wrong one still counts but is lit red: a table error, not a language one.
   let wrong = 0;
-  if (cfg.vprog) for (const v of virtualProgram(L)) {
-    const c = occupant(v, cards);
+  if (cfg.vprog) for (const [i, v] of virtualProgram(L).entries()) {
+    const c = occupant(v, cards, `prog:${i}`);
     if (c && (cfg.vlook === 'ghost' || replaces(c, v))) { gone++; continue; }
     if (c) { drawWrong(g, c); wrong++; continue; }
     drawVirtual(g, v); shown++;
