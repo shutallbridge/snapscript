@@ -111,7 +111,7 @@ _Avoid_: binding, wrapper, FFI
 A name that every file has without an import: functions such as `[call(print)]` and `[call(sin)]`, and the value `[get(pi)]`. A local or a top-level declaration with the same name hides it.
 
 **Function color**:
-Which of four colors a function card is printed in: action (violet: `[call(p5.circle)]`), action 2 (fuchsia: `[call(p5.translate)]`), helper (sky: `[call(random)]`) or setting (rose: `[call(p5.fill)]`). Variable cards such as `[get(p5.width)]` are orange instead.
+Which of four colors a `[call]` card is printed in: primary (violet: `[call(p5.circle)]`), secondary (fuchsia: `[call(p5.translate)]`), helper (sky: `[call(random)]`) or setting (rose: `[call(p5.fill)]`). A library picks it with a `@color` tag, and every builtin is helper. Variable cards such as `[get(p5.width)]` are orange, and `[define(setup)]` is teal like your own functions.
 _Avoid_: role (a role is what an edge needs from the edge that faces it)
 
 **Official registry**:

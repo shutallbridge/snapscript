@@ -72,6 +72,18 @@ A library offers printed cards with `@card` tags in its doc comments. A `@card` 
  */
 ```
 
+A `@color` tag picks the color a `[call]` card is printed in: `primary`, `secondary`, `helper` or `setting`. A `[call]` card without one is `primary`. Builtins are `helper`. `@color` goes only beside a `@card` that offers a `[call]` card, and is ignored anywhere else.
+
+```
+/**
+ * Sets the color that shapes drawn after it are filled with.
+ * @param {color} color  the fill color
+ * @card
+ * @color setting
+ */
+[extern(fill)][required(color)]                             offers a rose [call(p5.fill)]
+```
+
 A `@table` tag says where a strip lies on the table. It goes in the doc comment of a card that stands alone (see 4.1), and does not change the program.
 
 | Tag                     | Meaning                                                                                          |
