@@ -7,8 +7,12 @@ import type { TableBridge } from "../../preload/table.ts";
 import type { Scene } from "../../session.ts";
 import { drawCalibration } from "./calibration.ts";
 import { drawMenu } from "./menu.ts";
-import { drawFeedback } from "./feedback.ts";
+import "@fontsource/geist-mono/500.css";
+import "@fontsource/kalam/400.css";
+import { bar, drawFeedback } from "./feedback.ts";
 import { drawHelp } from "./help.ts";
+import { drawPages } from "./pages.ts";
+import { drawVirtual } from "./virtual.ts";
 
 declare const table: TableBridge;
 
@@ -72,11 +76,18 @@ function draw(): void {
   }
   g.restore();
 
-  // The card feedback (#195).
-  if (scene) drawFeedback(g, scene.feedback, geometry);
+  // The virtual cards (#197), under the card feedback (#195), then the status bar.
+  if (scene) {
+    drawVirtual(g, scene.virtual, scene.feedback.keepClear, draw);
+    drawFeedback(g, scene.feedback, geometry);
+    bar(g, scene.status.map((text) => ({ text })), true, geometry);
+  }
 
   // The help box, beside the help corner.
   if (scene?.help) drawHelp(g, scene.help, px);
+
+  // Every page cut out, above the windows, corners and help box (#197).
+  if (scene) drawPages(g, scene.pages, scene.settings.pageBandMm);
 
   // The settings menu, above windows, corners and pages: draw it last.
   if (scene?.menu) drawMenu(g, geometry, scene.menu);
@@ -91,3 +102,5 @@ table.onScene((s) => {
   draw();
 });
 addEventListener("resize", draw);
+// Canvas text waits for its fonts to load.
+void document.fonts.ready.then(draw);

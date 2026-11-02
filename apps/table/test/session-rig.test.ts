@@ -13,6 +13,7 @@ const project: SessionProject = {
   lockfile,
   languageMarkers,
   cards: [],
+  pages: [],
 };
 
 /**
