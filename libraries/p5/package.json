@@ -15,6 +15,7 @@
   "devDependencies": {
     "@snapscript/checker": "workspace:*",
     "@snapscript/runtime": "workspace:*",
+    "@snapscript/table": "workspace:*",
     "@types/node": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",

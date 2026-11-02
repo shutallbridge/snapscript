@@ -102,6 +102,9 @@ importers:
       '@snapscript/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+      '@snapscript/table':
+        specifier: workspace:*
+        version: link:../../apps/table
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2

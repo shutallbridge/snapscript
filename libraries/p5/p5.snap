@@ -73,5 +73,6 @@
 [on(load)]
 [call(run)][root]
 
+// p5 calls draw by itself, after the run has stopped too: so a stopped run stops p5's loop.
 [on(stop)]
 [call(noLoop)]
