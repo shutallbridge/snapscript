@@ -100,7 +100,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'hatch', detLook: 'skipped', barTop: 'status', barBottom: 'errors', vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'hatch', detLook: 'skipped', ovSec: 1, barTop: 'status', barBottom: 'errors', vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -158,6 +158,7 @@ addEventListener('keydown', e => {
   if (e.key === 't') { const T = [0, 0.5, 1, 1.5, 2, 3]; cfg.vwrongEdge = T[(T.indexOf(cfg.vwrongEdge) + 1) % T.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdge ? cfg.vwrongEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'o') { const O = [20, 40, 60, 80, 100]; cfg.vwrongEdgeA = O[(O.indexOf(cfg.vwrongEdgeA) + 1) % O.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdgeA}%`); return; }
   if (e.key === 'p') { const P = ['auto', 'right', 'left']; cfg.msgAt = P[(P.indexOf(cfg.msgAt) + 1) % P.length]; save(); say(`error message: ${cfg.msgAt}`); return; }
+  if (e.key === 'v') { cfg.ovSec = [0, 1, 2][([0, 1, 2].indexOf(cfg.ovSec) + 1) % 3]; save(); say(cfg.ovSec ? `overloads take turns every ${cfg.ovSec} s` : 'first overload only'); return; }
   if (e.key === 'd') { cfg.detLook = cfg.detLook === 'skipped' ? 'none' : 'skipped'; save(); say(`detached cards: ${cfg.detLook === 'skipped' ? 'look skipped' : 'no look'}`); return; }
   if (e.key === 'k') { cfg.skipLook = SKIP_LOOKS[(SKIP_LOOKS.indexOf(cfg.skipLook) + 1) % SKIP_LOOKS.length]; save(); say(`skipped line: ${cfg.skipLook}`); return; }
   if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
@@ -304,6 +305,11 @@ const VPROG = `[define{setup}]
 const SIG = { createCanvas: [['width', '[num{…}]'], ['height', '[num{…}]']], background: [['colour', '[color(…)]']], fill: [['colour', '[color(…)]']],
   noStroke: [], circle: [['x', '[num{…}]'], ['y', '[num{…}]'], ['d', '[num{…}]']], rect: [['x', '[num{…}]'], ['y', '[num{…}]'], ['w', '[num{…}]'], ['h', '[num{…}]']],
   random: [['up to', '[num{…}]']] };
+// Mocked overloads, to try cycling them: random takes one or two values, fill a colour or r g b, rect a corner radius.
+const N = '[num{…}]';
+SIG.random = { ovs: [[['up to', N]], [['from', N], ['to', N]]] };
+SIG.fill = { ovs: [[['colour', '[color(…)]']], [['r', N], ['g', N], ['b', N]]] };
+SIG.rect = { ovs: [SIG.rect, [...SIG.rect, ['radius', N]]] };
 const sideOf = text => { const s = parseCard(text); if (s.sample === '…') s.sample = ''; if (s.label === '…') s.label = ''; return s; };
 const lenOf = side => minLength(side, CARD_S);
 const kindOf = text => text.replace(/[{(][^})]*[})]/, m => m[0] === '{' ? '{}' : m);  // [num{500}] -> [num{}]; [call(p5.rect)] stays
@@ -440,23 +446,32 @@ function virtualArgs(cards, attached = null) {
   }
   for (const c of cards) {
     const m = /^\[call\((?:p5\.)?(\w+)\)\]$/.exec(c.text), sig = m && SIG[m[1]];
-    if (!sig || !counts(c)) continue;  // a detached call card gets no argument guides. An overloaded [extern] would show its first overload
+    if (!sig || !counts(c)) continue;  // a detached call card gets no argument guides
     let end = c, endLen = CARD_LEN[c.id] || lenOf(sideOf(c.text));
     const real = [c]; lineCards.set(c, real);
-    for (const [i, [hint, text]] of sig.entries()) {
-      const d = [Math.cos(end.a), Math.sin(end.a)], reach = endLen * U * k;  // marker to marker: the end card's length
-      const slot = { text, side: sideOf(text), hint, a: end.a, m: [end.m[0] + d[0] * reach, end.m[1] + d[1] * reach] };
-      const filled = occupant(slot, cards, `arg:${c.id}:${i}`);
-      if (filled) {
-        const got = misfit(text, filled.text), gm = /^\[get\{(\w+)\}\]$/.exec(filled.text), from = gm && skippedNames[gm[1].toLowerCase()];
-        if (from) argErrors.push({ card: filled, call: c, kind: 'NameError', ref: from,  // its words name the skipped line's badge, once numbered
-          words: id => [`${gm[1]} comes from skipped ${id}`, `${gm[1]} is set on a line that's skipped (${id}), so it has no value here.`] });
-        else if (got) argErrors.push({ card: filled, call: c, kind: 'TypeError', msg: `${hint} needs ${KIND_NAME[kindOf(text)]}`,
-          long: `${m[1]}'s ${hint} needs ${KIND_NAME[kindOf(text)]}. Got ${got} instead.` });
-        real.push(filled); end = filled; endLen = CARD_LEN[filled.id] || lenOf(sideOf(filled.text)); continue;
-      }
-      out.push(slot);
-      end = slot; endLen = lenOf(slot.side);
+    const ovs = sig.ovs || [sig], laid = [];
+    const after = () => { const d = [Math.cos(end.a), Math.sin(end.a)], reach = endLen * U * k;  // marker to marker: the end card's length
+      return { a: end.a, m: [end.m[0] + d[0] * reach, end.m[1] + d[1] * reach] }; };
+    for (let i = 0; i < Math.max(...ovs.map(o => o.length)); i++) {  // the values laid, whichever overload they're for
+      const filled = occupant(after(), cards, `arg:${c.id}:${i}`); if (!filled) break;
+      laid.push(filled); real.push(filled); end = filled; endLen = CARD_LEN[filled.id] || lenOf(sideOf(filled.text));
+    }
+    // Overloads ([extern]s with different numbers of values): the ones that still fit what's laid take turns, one per
+    // cfg.ovSec (0: the first only). Errors are checked against the one with exactly as many values, else the first that fits.
+    const fit = ovs.filter(o => o.length >= laid.length), check = ovs.find(o => o.length === laid.length) || fit[0] || ovs[0];
+    laid.forEach((filled, i) => {
+      if (!check[i]) return;
+      const [hint, text] = check[i];
+      const got = misfit(text, filled.text), gm = /^\[get\{(\w+)\}\]$/.exec(filled.text), from = gm && skippedNames[gm[1].toLowerCase()];
+      if (from) argErrors.push({ card: filled, call: c, kind: 'NameError', ref: from,  // its words name the skipped line's badge, once numbered
+        words: id => [`${gm[1]} comes from skipped ${id}`, `${gm[1]} is set on a line that's skipped (${id}), so it has no value here.`] });
+      else if (got) argErrors.push({ card: filled, call: c, kind: 'TypeError', msg: `${hint} needs ${KIND_NAME[kindOf(text)]}`,
+        long: `${m[1]}'s ${hint} needs ${KIND_NAME[kindOf(text)]}. Got ${got} instead.` });
+    });
+    const shown = !fit.length ? [] : cfg.ovSec ? fit[Math.floor(performance.now() / 1000 / cfg.ovSec) % fit.length] : fit[0];
+    for (const [hint, text] of shown.slice(laid.length)) {
+      const slot = { text, side: sideOf(text), hint, ...after() };
+      out.push(slot); end = slot; endLen = lenOf(slot.side);
     }
     lineEnds.set(c, { m: end.m, a: end.a, len: endLen });  // where this line's last card (or guide) ends, for messages beside it
   }

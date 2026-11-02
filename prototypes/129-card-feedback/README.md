@@ -11,6 +11,7 @@ Throwaway, for [Prototype card feedback: error lighting, skipped lines, read-bac
   - `r` wrong card / error red fill (0–100 %), `t` its edge (none to 3 mm), `o` the edge's brightness
   - `p` where a line's short error messages go: auto (right, else left), right, left
   - `k` skipped line look: none, wash, hatch, strike, outline
+  - `v` overloads: take turns every 1 s, 2 s, or first only. Mocked: `random` (1 or 2 values), `fill` (colour, or r g b), `rect` (4 or 5)
   - `d` detached cards (not under a `[define]` or `[on]`): the skipped look, or no look
 - Error lighting is mocked, not checked: a wrong kind in a `circle`/`createCanvas`/… argument's place is a `TypeError`, a `[set{x}to]` with nothing after it is a `SyntaxError`, and a `[get{x}]` of a skipped `x` is a `NameError` naming the skipped line's badge.
 - Structure is mocked too: a line is a chain of cards, and it's part of the program if a line one row up (within 10 mm across, 1.2U along, for an indent) is, up to a `[define]` or `[on]`. `[import]`, `[extern]` and `[global]` stand alone. A detached line has no errors and no argument guides.
