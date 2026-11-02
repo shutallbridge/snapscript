@@ -9,6 +9,14 @@ const cv = document.getElementById('v'), g = cv.getContext('2d');
 cv.width = geo.W; cv.height = geo.H;
 const k = geo.pxMm, P = ([x, y]) => [x * k, y * k];
 const add = (p, d, s) => [p[0] + d[0] * s, p[1] + d[1] * s];
+// error look: 'face' (decided by card feedback): the face, never the marker zone (0-17 mm), red at 50% with a 3 mm red
+// edge inside it; 'outside': the first try, an outline 1.5 mm outside the card; '0': none
+const OUTLINE = new URLSearchParams(location.search).get('outline') || 'face';
+function faceRed(c) {
+  const quad = (x0, x1, y0, y1) => { g.beginPath(); [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].forEach(([x, y], i) => g[i ? 'lineTo' : 'moveTo'](...P(add(add(c.tl, c.u, x), c.v, y)))); g.closePath(); };
+  quad(17, c.L, 0, 30); g.fillStyle = 'rgba(239,68,68,0.5)'; g.fill();
+  quad(18.5, c.L - 1.5, 1.5, 28.5); g.strokeStyle = '#ef4444'; g.lineWidth = 3 * k; g.stroke();
+}
 let light = null, hud = {}, trips = [];
 
 function cardPath(c, grow = 0) {
@@ -47,7 +55,8 @@ function draw() {
       badge(head, no, errs.indexOf(e));
       msgs.push(`E${no}  ${e.kind}: ${e.message}`);
       const c = l.cards[e.card] || head;
-      cardPath(c, 1.5); g.strokeStyle = '#ef4444'; g.lineWidth = 3 * k; g.stroke();
+      if (OUTLINE === 'outside') { cardPath(c, 1.5); g.strokeStyle = '#ef4444'; g.lineWidth = 3 * k; g.stroke(); }
+      else if (OUTLINE !== '0') faceRed(c);
     });
   });
   light.detached.forEach(l => dot(l[0], null, true));

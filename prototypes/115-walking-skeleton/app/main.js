@@ -32,6 +32,8 @@ function finish(seq) {
 }
 setInterval(() => { for (const [s, r] of pending) if (now() - r.t_recv > 5) { r.timeout = true; pending.delete(s); latLog.write(JSON.stringify(r) + '\n'); } }, 1000);
 
+process.on('uncaughtException', e => fs.appendFileSync(path.join(runs, 'app-errors.log'), `${new Date().toISOString()} ${e.stack}\n`));
+
 function onState(st) {
   const r = { seq: st.seq, t_cap: st.t_cap, t_sent: st.t_sent, t_recv: now(), cards: st.cards.length };
   const rd = snap.read(st, NOTES, { split: geo.splitMm });
@@ -57,6 +59,8 @@ function onState(st) {
     r.t_compile = now();
     r.wantDrawn = true;
     sketch.webContents.send('run', st.seq, r.js);
+    module.exports.setLast && module.exports.setLast(r.js);
+    global.capture && global.capture(st.seq);
   }
   r.errors = ck.errors.map(e => `${e.kind} line ${e.line}`);
   pending.set(st.seq, r);
@@ -88,18 +92,38 @@ app.whenReady().then(() => {
 
   win = new BrowserWindow({ x: 0, y: 0, width: W, height: H, fullscreen: true, frame: false, backgroundColor: '#000',
     webPreferences: { preload: path.join(__dirname, 'preload-table.js') } });
-  win.loadFile(path.join(__dirname, 'table.html'), { query: { geo: JSON.stringify(geo) } });
+  win.loadFile(path.join(__dirname, 'table.html'), { query: { geo: JSON.stringify(geo), outline: process.env.OUTLINE || 'face' } });
 
   sketch = new WebContentsView({ webPreferences: { preload: path.join(__dirname, 'preload-sketch.js'), contextIsolation: false, sandbox: false, backgroundThrottling: false } });
   sketch.setBackgroundColor('#000');
   win.contentView.addChildView(sketch);
   sketch.setBounds({ x: geo.sketch.x, y: geo.sketch.y, width: geo.sketch.w, height: geo.sketch.h });
-  sketch.webContents.loadFile(path.join(__dirname, 'sketch.html'), { query: { stress: process.env.STRESS || '0' } });
-  sketch.webContents.on('did-finish-load', () => { sketch.webContents.setZoomFactor(zoom); win.webContents.once('did-finish-load', connect); if (!win.webContents.isLoading()) connect(); });
+  sketch.webContents.loadFile(path.join(__dirname, 'sketch.html'), { query: { stress: process.env.STRESS || '0', mode: process.env.SKETCH || 'a', scale: String(zoom) } });
+  sketch.webContents.on('did-finish-load', () => { sketch.webContents.setZoomFactor(process.env.SKETCH === 'b' ? 1 : zoom); win.webContents.once('did-finish-load', connect); if (!win.webContents.isLoading()) connect(); });
 
   ipcMain.on('lit', (_, seq, t) => { const r = pending.get(seq); if (r) { r.t_lit = t; finish(seq); } });
   ipcMain.on('drawn', (_, seq, t, err) => { const r = pending.get(seq); if (r) { r.t_drawn = t; if (err) r.run_error = err; finish(seq); } });
   ipcMain.on('fps', (_, f) => { fps = f; });
+  ipcMain.on('grab', (_, seq, ms, g) => {
+    if (!process.env.CAPTURE) return;
+    if (!g) return fs.appendFileSync(path.join(runs, 'grab.log'), `${seq} ${ms} no canvas\n`);
+    fs.appendFileSync(path.join(runs, 'grab.log'), `${seq} ${ms} ${g.w}x${g.h} css ${g.cssW} dpr ${g.dpr}\n`);
+    fs.writeFileSync(path.join(runs, `grab-${seq}-${String(ms).padStart(4, '0')}.png`), Buffer.from(g.url.split(',')[1], 'base64'));
+  });
+  // debug: touch runs/rerun to restart the sketch with the same program; CAPTURE=1 grabs the sketch view after each run
+  let lastJs = null;
+  sketch.webContents.on('ipc-message', () => {});
+  fs.watchFile(path.join(runs, 'rerun'), { interval: 200 }, () => { if (lastJs) sketch.webContents.send('run', -1, lastJs); capture(-1); });
+  global.capture = capture;
+  function capture(seq) {
+    if (!process.env.CAPTURE) return;
+    const t0 = Date.now();
+    for (const ms of [0, 30, 60, 100, 200, 400, 800]) setTimeout(async () => {
+      const img = await sketch.webContents.capturePage();
+      fs.writeFileSync(path.join(runs, `cap-${seq}-${String(Date.now() - t0).padStart(4, '0')}.png`), img.toPNG());
+    }, ms);
+  }
+  module.exports.setLast = js => { lastJs = js; };
 
   setTimeout(async () => {
     const info = { featureStatus: app.getGPUFeatureStatus(), gpu: await app.getGPUInfo('complete'), geo };

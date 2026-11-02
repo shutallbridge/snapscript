@@ -112,6 +112,7 @@ def main():
     ap.add_argument("--paper-lo", type=float, default=0.85)
     ap.add_argument("--paper-hi", type=float, default=1.5)
     ap.add_argument("--read-s", type=float, default=1.5, help="mocked cloud read time")
+    ap.add_argument("--exposure-ms", type=float, help="fixed exposure (with gain 1); default: auto")
     ap.add_argument("--flush", action="store_true", help="wait for a frame exposed after the loop asks (fresher, waits up to a frame)")
     a = ap.parse_args()
 
@@ -132,6 +133,8 @@ def main():
         cam.autofocus_cycle()
         lens = cam.capture_metadata()["LensPosition"]
     cam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": lens})
+    if a.exposure_ms:
+        cam.set_controls({"AeEnable": False, "ExposureTime": int(a.exposure_ms * 1000), "AnalogueGain": 1.0})
     det = Detector(families="tagStandard41h12", nthreads=a.threads, quad_decimate=a.decimate, refine_edges=1)
     print(f"vision: lens {lens:.2f}, {a.threads} threads, decimate {a.decimate}, port {a.port}", flush=True)
 
@@ -248,12 +251,24 @@ def main():
             seq += 1
             last_sent = key
             hub.send({"type": "state", "seq": seq, "t_cap": t_cap, "t_sent": time.time(), "cards": cards}, keep=True)
-        rec = {"t_cap": round(t_cap, 3), "age_s": round(age, 3), "search_s": round(search, 3), "hw_s": round(hw_s, 3),
+        rec = {"t_cap": round(t_cap, 3), "exp_ms": round(meta.get("ExposureTime", 0) / 1000, 2), "gain": round(meta.get("AnalogueGain", 0), 2), "age_s": round(age, 3), "search_s": round(search, 3), "hw_s": round(hw_s, 3),
                "loop_s": round(time.time() - now + age, 3), "markers": len(dets), "cards": len(cards),
-               "sent": seq if changed else None}
+               "sent": seq if changed else None, **({"state": cards} if changed else {}),
+               "seen": sorted(int(m) for m in seen)}
         log.write(json.dumps(rec) + "\n")
         log.flush()
         hub.send({"type": "frame", **rec})
+        snap = runs / "snap"
+        if snap.exists():  # debug: touch runs/snap to save this frame (quarter size) with the markers found
+            snap.unlink()
+            from PIL import Image, ImageDraw
+            im = Image.fromarray(gray).convert("RGB")
+            dr = ImageDraw.Draw(im)
+            for d in dets:
+                dr.polygon([tuple(c) for c in d.corners], outline=(0, 220, 0), width=8)
+                dr.text(tuple(d.corners[0]), str(d.tag_id), fill=(0, 220, 0), font_size=48)
+            im.resize((SIZE[0] // 3, SIZE[1] // 3)).save(runs / f"snap-{time.strftime('%H%M%S')}.jpg", quality=85)
+            im.crop((600, 850, 2150, 1850)).save(runs / f"crop-{time.strftime('%H%M%S')}.jpg", quality=90)
 
 
 if __name__ == "__main__":

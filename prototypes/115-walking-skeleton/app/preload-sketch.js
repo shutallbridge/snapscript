@@ -20,22 +20,33 @@ function addStress(p) {
   };
 }
 
+// SKETCH=a: one container, the old instance removed before the new one starts (what first showed half-drawn frames).
+// SKETCH=b: zoom 1 and the canvas scaled by CSS; the new instance draws in a hidden container and is swapped in
+// once its first frame is drawn, so a half-painted canvas is never on screen.
+const mode = new URLSearchParams(location.search).get('mode') || 'a';
+const scale = Number(new URLSearchParams(location.search).get('scale') || 1);
+
 window.addEventListener('DOMContentLoaded', () => {
-  const el = document.getElementById('c');
+  const root = document.getElementById('c');
+  if (mode === 'b') { root.style.transform = `scale(${scale})`; root.style.transformOrigin = '0 0'; root.style.position = 'relative'; }
   ipcRenderer.on('run', (_, seq, js) => {
-    if (inst) inst.remove();
+    let el = root;
+    if (mode === 'a') { if (inst) inst.remove(); }
+    else { el = document.createElement('div'); el.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden'; root.appendChild(el); }
+    const old = inst;
     let first = true, err = null;
+    const shown = () => {
+      if (mode === 'b') { el.style.visibility = 'visible'; if (old) old.remove(); [...root.children].filter(d => d !== el).forEach(d => d.remove()); }
+      requestAnimationFrame(() => ipcRenderer.send('drawn', seq, Date.now() / 1000, err));
+    };
     inst = new p5(p => {
       try { new Function('p', js)(p); } catch (e) { err = String(e); }
       const setup0 = p.setup, draw0 = p.draw;
-      p.setup = () => { try { setup0 && setup0(); } catch (e) { err = String(e); } if (!p._renderer || !p.canvas) p.createCanvas(500, 500); };
-      p.draw = () => {
-        try { draw0 && draw0(); } catch (e) { err = String(e); }
-        if (first) { first = false; requestAnimationFrame(() => ipcRenderer.send('drawn', seq, Date.now() / 1000, err)); }
-      };
+      p.setup = () => { if (mode === 'b') p.pixelDensity(1); try { setup0 && setup0(); } catch (e) { err = String(e); } };
+      p.draw = () => { try { draw0 && draw0(); } catch (e) { err = String(e); } };
       addStress(p);
       const d1 = p.draw;
-      p.draw = () => { d1(); if (first) { first = false; requestAnimationFrame(() => ipcRenderer.send('drawn', seq, Date.now() / 1000, err)); } };
+      p.draw = () => { d1(); if (first) { first = false; requestAnimationFrame(shown); } };
     }, el);
   });
   setInterval(() => inst && ipcRenderer.send('fps', Math.round(inst.frameRate())), 1000);

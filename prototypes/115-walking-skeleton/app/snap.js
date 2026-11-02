@@ -130,6 +130,7 @@ function check(text, skippedLines = []) {
     };
     let m, r = {};
     const head = t[0];
+    if (!head) return;  // an empty buffer
     if ((m = head.match(/^\[define\{(.*)\}\]$/))) p = 1;
     else if (head === '[repeat]') { p = 1; r = value('num') || { e: 'TypeError: [repeat] takes 1 value', at: 0 }; }
     else if ((m = head.match(/^\[set\{(.*)\}to\]$/))) { p = 1; r = value(null) || { e: 'SyntaxError: nothing to set', at: 0 }; if (!r.e) defined.add(m[1].toLowerCase()); }
