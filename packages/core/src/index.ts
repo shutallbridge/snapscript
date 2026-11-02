@@ -33,6 +33,9 @@ export const stagesOfKind: Readonly<Record<ErrorKind, readonly Stage[]>> = {
   RecursionError: ["runtime"],
 };
 
+/** The earliest stage a kind can be found at: where a stage that finds it reports it. */
+export const firstStage = (kind: ErrorKind): Stage => stagesOfKind[kind][0]!;
+
 /** The types (§3.2). */
 export type Type = "num" | "str" | "bool" | "color" | "none" | "list" | "dict" | "function" | "module";
 

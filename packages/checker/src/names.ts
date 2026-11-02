@@ -2,7 +2,7 @@
 // (§4.3, ADR 0004). A skipped line counts as absent: its names are not set,
 // a block head takes its body with it, an [if] or [elif] the rest of its
 // chain, and a declaration its strip.
-import { builtinNames } from "@snapscript/core";
+import { builtinNames, firstStage } from "@snapscript/core";
 import type { Branch, Declaration, Expr, Name, Program, Span, Statement } from "@snapscript/parser";
 import type { CheckError } from "./index.ts";
 import { closest } from "./suggest.ts";
@@ -343,7 +343,7 @@ function nameError(
   followsFrom: number | null,
   suggestion: CheckError["suggestion"],
 ): CheckError {
-  return { kind: "NameError", message, stage: "check", line, spans: [name.span], followsFrom, suggestion };
+  return { kind: "NameError", message, stage: firstStage("NameError"), line, spans: [name.span], followsFrom, suggestion };
 }
 
 /** The bare names a value reads: the first name of each `[get]` and of each `[call]` with no receiver. */

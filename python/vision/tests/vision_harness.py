@@ -13,6 +13,9 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
+from PIL import Image
+
 START_T = 1_000_000.0   # the drawn frames' first time stamp, s
 PERIOD_S = 0.125        # time between drawn frames, s (about the rig camera's 7.6 fps)
 PX_PER_MM = 4.0         # how the drawn camera sees the table
@@ -155,6 +158,22 @@ def run_service(d: Path, source: str, settings=None, lineup=None, reader=None, e
         if proc.poll() is None:
             proc.kill()
     return [json.loads(l) for l in buf.decode().splitlines() if l.strip()]
+
+
+# Committed camera pictures of the drawn table (PX_PER_MM, ORIGIN_MM, 420 x 300 mm), for recordings:
+# `one-card` has [createCanvas] (1001) at (150, 120); `two-cards` adds [circle] (0) at (300, 200), turned 45°.
+RECORDINGS = Path(__file__).parent / "recordings"
+
+
+def write_recording(d: Path, pictures, times) -> Path:
+    """A recording as the rig's record.py writes it, from committed pictures (one name per frame): NAME.json
+    (w, h, a time per frame) and NAME.y (grey planes back to back). Returns the recording's base path."""
+    frames = [np.asarray(Image.open(RECORDINGS / f"{name}.png").convert("L")) for name in pictures]
+    h, w = frames[0].shape
+    base = d / "clip"
+    (d / "clip.y").write_bytes(np.stack(frames).tobytes())
+    (d / "clip.json").write_text(json.dumps({"w": w, "h": h, "t": times}))
+    return base
 
 
 def run_drawn(d: Path, frames, period_s=PERIOD_S, **kw):

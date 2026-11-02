@@ -156,6 +156,24 @@ describe("unknown cards", () => {
     expect(out.map.cards[2]).toEqual({ track: 3, span: { line: 5, start: 10, end: 10 } });
   });
 
+  test.each([2, 3, 5, 7])(
+    "the cards after a %iU card missing from the lockfile stay in its line, one skipped line",
+    (length) => {
+      // The table doesn't know the unknown card's length, but every card is a whole number of U, at least 2U.
+      const t = table(
+        draw,
+        set,
+        card(3, 4321, 50 + 4 * U, 50 + U),
+        card(4, 1024, 50 + (4 + length) * U, 50 + U, { text: "3" }),
+      );
+      const out = runFrom(p5, t).last;
+      expect(out.text).toBe(`${p5}\n\n${TAG}[define{draw}]\n[set{x}to][num{3}]`);
+      expect(out.map.lines[1]).toEqual({ line: 5, tracks: [2, 3, 4] });
+      expect(out.skippedLines).toEqual([{ line: 5, reason: "unknown card" }]);
+      expect(out.detached).toEqual([]);
+    },
+  );
+
   test("a line with an unknown card and a card not read yet is skipped as unknown", () => {
     const t = table(draw, card(2, 1500, 50, 50 + U), { ...card(3, 1024, 50 + 3 * U, 50 + U), hw: { state: "not read yet" } });
     expect(runFrom(p5, t).last.skippedLines).toEqual([{ line: 5, reason: "unknown card" }]);

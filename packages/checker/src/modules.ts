@@ -2,7 +2,7 @@
 // the checker, which never touches disk or npm itself. Each module is loaded
 // and checked once, and its top-level declarations that count are its
 // attributes.
-import type { Signature } from "@snapscript/core";
+import { firstStage, type Signature } from "@snapscript/core";
 import { parse, type Declaration, type Program } from "@snapscript/parser";
 import type { CheckError } from "./index.ts";
 
@@ -115,7 +115,7 @@ export class Modules {
     for (const d of program.declarations) {
       if (d.type !== "import" || absent.has(d.line)) continue;
       const error = (message: string) =>
-        errors.push({ kind: "ImportError", message, stage: "check", line: d.line, spans: [d.card.span], followsFrom: null, suggestion: null });
+        errors.push({ kind: "ImportError", message, stage: firstStage("ImportError"), line: d.line, spans: [d.card.span], followsFrom: null, suggestion: null });
       const loaded = this.resolve(d.source, id);
       if (!loaded) {
         error(/^\.\.?\//.test(d.source) ? `${d.source} can't be found` : `${d.source} isn't installed`);
