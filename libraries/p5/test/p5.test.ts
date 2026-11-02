@@ -1,12 +1,15 @@
 // snapscript-p5 through the runtime's run-a-program seam (#188): its real
 // p5.snap and p5.js, against a recording stand-in for the p5 instance.
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, test } from "vitest";
 import { check, type CheckError } from "@snapscript/checker";
 import { diskLoader } from "@snapscript/checker/disk";
 import { compile } from "@snapscript/runtime/compiler";
 import { run, type NativeModule, type RunError } from "@snapscript/runtime";
+import { loadProject, type LibraryCard } from "@snapscript/table/project";
 // The source p5.js is built from: tests never need a build first.
 import * as p5Native from "../src/p5.ts";
 import type { P5Constructor } from "../src/p5.ts";
@@ -215,47 +218,50 @@ describe("the library's declarations", () => {
 });
 
 describe("p5.snap's cards (#156)", () => {
-  /** Each `@card` doc comment, with the declaration after it (if any). */
-  const cards = [...readFileSync(p5Snap, "utf8").matchAll(/\/\*\*([\s\S]*?)\*\/\n(\[[^\n]*)?/g)]
-    .map(([, body, declaration]) => ({
-      lines: body!.split("\n").map((l) => l.replace(/^\s*\*\s?/, "").trim()).filter(Boolean),
-      declaration: declaration ?? null,
-    }))
-    .filter((c) => c.lines.some((l) => l.startsWith("@card")));
-  const label = (c: (typeof cards)[number]): string =>
-    c.lines.find((l) => l.startsWith("@card "))?.slice("@card ".length) ?? `[call(p5.${/\[extern\((\w+)\)/.exec(c.declaration!)![1]})]`;
+  // As the table reads them: the project loader's cards, for a project that imports this library.
+  const project = mkdtempSync(join(tmpdir(), "p5-cards-"));
+  writeFileSync(join(project, "package.json"), JSON.stringify({ name: "cards", snapscript: "main.snap", dependencies: { "snapscript-p5": "workspace:*" } }));
+  writeFileSync(join(project, "main.snap"), "/** @table hidden */\n[import(snapscript-p5)as(p5)]\n");
+  writeFileSync(join(project, "snapscript.lock"), "");
+  mkdirSync(join(project, "node_modules"));
+  symlinkSync(library, join(project, "node_modules", "snapscript-p5"), "dir");
+  const cards = loadProject(project).cards.filter((c) => c.package === "snapscript-p5");
+  const label = (c: LibraryCard): string => c.text.replace("snapscript-p5.", "p5.");
+  /** Each `[extern(…)]`'s required values, by its name. */
+  const required = new Map(
+    check(readFileSync(p5Snap, "utf8"), []).program.declarations.flatMap((d) =>
+      d.type === "extern" && d.name ? [[d.name.text, d.params.filter((p) => p.type === "required").map((p) => p.name?.text)] as const] : [],
+    ),
+  );
 
   test("are the ones #156 lists, each call card with its function colour", () => {
-    const colorOf = (c: (typeof cards)[number]) => c.lines.find((l) => l.startsWith("@color "))?.slice("@color ".length) ?? null;
-    expect(Object.fromEntries(cards.map((c) => [label(c), colorOf(c)]))).toEqual({
+    expect(Object.fromEntries(cards.map((c) => [label(c), c.functionColor]))).toEqual({
       "[call(p5.createCanvas)]": "setting",
       "[call(p5.background)]": "primary",
       "[call(p5.noStroke)]": "setting",
       "[call(p5.fill)]": "setting",
       "[call(p5.rect)]": "primary",
       "[call(p5.circle)]": "primary",
-      // Printed define cards are teal, and take no @color.
+      // Printed define cards are teal: they have no function colour.
       "[define(setup)]": null,
       "[define(draw)]": null,
     });
   });
 
   test.each(cards.map((c) => [label(c), c] as const))("%s's help is one sentence, then a line per value with no type", (_, card) => {
-    const [sentence, ...rest] = card.lines;
+    const { sentence, values } = card.help;
     expect(sentence).toMatch(/^[A-Z].*\.$/);
-    expect(sentence!.length).toBeLessThanOrEqual(80);
-    const params = rest.filter((l) => l.startsWith("@param"));
-    const required = [...(card.declaration ?? "").matchAll(/\[required\((\w+)\)\]/g)].map((m) => m[1]);
-    expect(params.map((l) => /^@param \{\w+\} (\w+)/.exec(l)?.[1])).toEqual(required);
-    for (const param of params) {
-      const words = /^@param \{\w+\} \w+\s+(.+)$/.exec(param)?.[1] ?? "";
-      expect(words.length).toBeGreaterThan(0);
-      expect(words.length).toBeLessThanOrEqual(40);
+    expect(sentence.length).toBeLessThanOrEqual(80);
+    if (card.card === "call") expect(values.map((v) => v.name)).toEqual(required.get(card.name));
+    for (const { about } of values) {
+      expect(about.length).toBeGreaterThan(0);
+      expect(about.length).toBeLessThanOrEqual(40);
+      expect(about).not.toMatch(/^\{/);
     }
   });
 
   test("setup and draw say when they run", () => {
-    const sentence = (name: string) => cards.find((c) => label(c) === `[define(${name})]`)?.lines[0];
+    const sentence = (name: string) => cards.find((c) => label(c) === `[define(${name})]`)?.help.sentence;
     expect(sentence("setup")).toBe("Runs once when the program starts.");
     expect(sentence("draw")).toBe("Runs again and again, every frame, after setup.");
   });

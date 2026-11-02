@@ -14,7 +14,8 @@
     "smoke": "node test/smoke/smoke.ts",
     "lock": "pnpm --filter \"@snapscript/table^...\" build && node src/lock.ts",
     "print": "pnpm --filter \"@snapscript/table^...\" build && electron-vite build && node src/print/run.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc"
   },
   "dependencies": {
     "@fontsource/geist": "^5.3.0",

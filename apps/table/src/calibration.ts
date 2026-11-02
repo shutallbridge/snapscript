@@ -6,6 +6,7 @@
 //   3. The check view outlines every card's face and the ruler page. Enter saves; Esc keeps the old line-up.
 import { SHEET } from "@snapscript/faces";
 import type { Layout, TableCard } from "@snapscript/table-reader";
+import { centred, corners, onSheet } from "./pose.ts";
 
 /** A point on the table, in mm. */
 export type Point = [x: number, y: number];
@@ -85,29 +86,10 @@ const errorText = (e: { mean: number; max: number } | undefined): string =>
   e ? `${e.mean} mm on average, ${e.max} mm at worst` : "no error given";
 
 /** A rectangle `width` x `height` about a centre, turned `angle` degrees, as four corners clockwise from the top-left. */
-function rect(cx: number, cy: number, width: number, height: number, angle = 0): Point[] {
-  const r = (angle * Math.PI) / 180;
-  const u: Point = [Math.cos(r), Math.sin(r)];
-  const v: Point = [-u[1], u[0]];
-  return [
-    [-1, -1],
-    [1, -1],
-    [1, 1],
-    [-1, 1],
-  ].map(([a, b]) => [cx + (a! * width * u[0]) / 2 + (b! * height * v[0]) / 2, cy + (a! * width * u[1]) / 2 + (b! * height * v[1]) / 2]);
-}
+const rect = (cx: number, cy: number, width: number, height: number, angle = 0): Point[] => corners(centred(cx, cy, width, height, angle));
 
 /** A card's face, by its marker's centre and angle: from the marker zone's end to the card's, never on the marker zone. */
-function faceOutline(c: TableCard, length: number): Point[] {
-  const r = (c.angle * Math.PI) / 180;
-  const u: Point = [Math.cos(r), Math.sin(r)];
-  const v: Point = [-u[1], u[0]];
-  const along = SHEET.markerZoneMm / 2;
-  const down = SHEET.heightMm / 2;
-  const at = (x: number, y: number): Point => [c.x + (x - along) * u[0] + (y - down) * v[0], c.y + (x - along) * u[1] + (y - down) * v[1]];
-  const end = length * SHEET.unitMm;
-  return [at(SHEET.markerZoneMm, 0), at(end, 0), at(end, SHEET.heightMm), at(SHEET.markerZoneMm, SHEET.heightMm)];
-}
+const faceOutline = (c: TableCard, length: number): Point[] => corners(onSheet(c, SHEET.markerZoneMm, length * SHEET.unitMm - SHEET.markerZoneMm));
 
 export function createCalibration(aspect: number, settings: CalibrationSettings = defaultCalibrationSettings): Calibration {
   let state: State = { step: "off" };

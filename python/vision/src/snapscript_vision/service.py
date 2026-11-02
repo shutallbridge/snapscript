@@ -11,7 +11,7 @@ The marker data (which kind of card or page each marker is on, and the table's o
 from the table app: right after connecting, it sends one message
 
     {"type": "markers", "languageMarkers": {...}, "lockfile": {...},
-     "ruler": [2080, 2081], "ruler_mm": 257, "calibration": [300, ..., 311]}
+     "ruler": [312, 313], "ruler_mm": 257, "calibration": [300, ..., 311]}
 
 with the same content as a `--markers` file. Until it comes, no frames are read and no table states are sent.
 Tests may give `--markers` instead; then the service starts when the first client connects. A later `markers`

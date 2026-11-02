@@ -18,6 +18,12 @@ export interface StructureError {
   line: number;
   /** The text responsible: the cards, or the line, it blames. */
   spans: Span[];
+  /**
+   * Whether it is about what one card holds, written in its `{}` or `()` (`[num{4o}]`, a name that
+   * isn't one), rather than about how cards fit together: the table shows a handwritten card's
+   * read-back for it, since the handwriting may be misread.
+   */
+  aboutCardText: boolean;
 }
 
 /** One `[…]` in the text. */
@@ -97,7 +103,7 @@ export type Statement =
   /** A value that could not be read is `null`, and so is a name. */
   | (StatementBase & { type: "set"; name: Name | null; value: Expr | null })
   | (StatementBase & { type: "return"; value: Expr | null })
-  | (StatementBase & { type: "setProp"; target: Expr; name: Name | null; value: Expr | null })
+  | (StatementBase & { type: "setProp"; target: Expr; card: Card; name: Name | null; value: Expr | null })
   | (StatementBase & { type: "expression"; value: Expr | null })
   | (StatementBase & BlockBase & { type: "repeat"; count: Expr | null; body: Statement[] })
   | (StatementBase & BlockBase & { type: "for"; name: Name | null; iterable: Expr | null; body: Statement[] })

@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 import type { Layout, TableCard } from "@snapscript/table-reader";
 import { loadProject } from "../src/project.ts";
 import { createSession } from "../src/session.ts";
+import { defaultTableSettings, type CornerAction, type CornerName } from "../src/settings.ts";
 import { marker, NUM, onLoad, project, table, U } from "./session-helpers.ts";
 
 const confetti = loadProject(fileURLToPath(new URL("../../../projects/confetti/", import.meta.url)));
@@ -45,6 +46,17 @@ describe("what the help box says", () => {
       sentence: "Draws a rectangle. x and y are its top-left corner, and y grows downward.",
       values: [{ name: "x" }, { name: "y" }, { name: "width" }, { name: "height" }],
     });
+  });
+});
+
+describe("names ignore case (ADR 0008)", () => {
+  test("a lockfile line in another case still finds its card's help", () => {
+    const id = p5Card("call", "rect");
+    const entry = confetti.lockfile.get(id)!;
+    const lockfile = new Map(confetti.lockfile).set(id, { ...entry, name: "RECT" } as typeof entry);
+    const session = createSession({ project: { ...confetti, lockfile }, layout });
+    session.handle({ type: "table", now: 0, state: table(0, onCorner(1, id)) });
+    expect(session.scene.help).toMatchObject({ label: "rect", sentence: expect.stringMatching(/^Draws a rectangle/) });
   });
 });
 
@@ -155,5 +167,36 @@ describe("where the help box goes", () => {
     const session = createSession({ project, layout });
     session.handle({ type: "table", now: 0, state: table(0, at(1, marker("[call(random)]"), U, 600 - 1.5 * U)) });
     expect(session.scene.help!.x).toBeCloseTo(R + 0.5 * U);
+  });
+});
+
+describe("the Corners settings", () => {
+  const RANDOM = marker("[call(random)]");
+  const corners = (set: Partial<Record<CornerName, CornerAction>>) => ({ ...defaultTableSettings, corners: { ...defaultTableSettings.corners, ...set } });
+
+  test("with the bottom-left corner set to None, a card there shows no help", () => {
+    const session = createSession({ project, layout, tableSettings: corners({ "bottom-left": "none" }) });
+    session.handle({ type: "table", now: 0, state: table(0, onCorner(1, RANDOM)) });
+    expect(session.scene.help).toBeNull();
+  });
+
+  test("turning it to None from the menu closes the box at once", () => {
+    const session = createSession({ project, layout });
+    session.handle({ type: "table", now: 0, state: table(0, onCorner(1, RANDOM)) });
+    // Corners is the menu's second section; its third row is Bottom-left.
+    for (const key of [",", "ArrowDown", "Enter", "ArrowDown", "ArrowDown", "ArrowLeft"]) session.handle({ type: "key", now: 1, key });
+    expect(session.scene.settings.corners["bottom-left"]).toBe("none");
+    expect(session.scene.help).toBeNull();
+  });
+
+  test("a corner set to Help shows the box beside it, along its edge, growing away from the corner", () => {
+    const session = createSession({ project: confetti, layout, tableSettings: corners({ "bottom-left": "none", "top-right": "help" }) });
+    const c = at(1, p5Card("call", "createCanvas"), 800 - 2.5 * U, 1.5 * U, 0);
+    session.handle({ type: "table", now: 0, state: table(0, c) });
+    const box = session.scene.help!;
+    expect(box).toMatchObject({ label: "createCanvas", anchor: "top-right" });
+    expect(box.y).toBeCloseTo(0.5 * U);
+    // Its right edge: 0.5U clear of the circle, and 1U clear of the card's left end (half a marker zone back from its marker).
+    expect(box.x).toBeCloseTo(Math.min(800 - R - 0.5 * U, c.x - 8.5 - U));
   });
 });

@@ -1,6 +1,10 @@
 // The Electron smoke start (#194): the built app against a stand-in vision service, on this
-// machine's display. It needs a display, so it isn't part of `pnpm test`: `pnpm smoke` after
-// `pnpm table`'s build. It checks the app's log: each program shown, the frozen one killed.
+// machine's display. It needs a display, so it isn't part of `pnpm test`. It runs the built app
+// and `pnpm build` doesn't build it, so build it first:
+//
+//   pnpm --filter @snapscript/table build:app && pnpm --filter @snapscript/table smoke
+//
+// It checks the app's log: each program shown, the frozen one killed.
 //
 // Screenshots of each view at each shown run are written to out/smoke/.
 import { spawn } from "node:child_process";

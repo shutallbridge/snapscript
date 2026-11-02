@@ -20,7 +20,8 @@ import type { CalibrationResult } from "../calibration.ts";
 import { tableGeometry, type TableGeometry } from "../layout.ts";
 import { loadProject } from "../project.ts";
 import { createSession, type Session, type SessionEvent, type SketchCommand, type SketchMessage } from "../session.ts";
-import { loadSettings, saveSettings, type TableSettings } from "../settings.ts";
+import { loadSettings, saveSettings } from "../settings-file.ts";
+import type { TableSettings } from "../settings.ts";
 import type { SketchViewCommand } from "../sketch/host.ts";
 import { connectVision, markersMessage, visionCommand, type VisionLink } from "../vision.ts";
 

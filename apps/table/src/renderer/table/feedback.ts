@@ -2,11 +2,11 @@
 // faces, each line's gutter, print output right of its line, and the bottom status bar's errors.
 // It all goes on a layer of its own, with every card's marker zone cut out of it, so nothing it
 // draws covers a marker, a neighbour's included.
-import type { Feedback, Quad } from "../../feedback.ts";
-import type { TableGeometry } from "../../layout.ts";
+import type { Feedback } from "../../feedback.ts";
+import { APP_PX_PER_U, U_MM as U, type TableGeometry } from "../../layout.ts";
+import type { Quad } from "../../pose.ts";
+import { within } from "./within.ts";
 
-/** 1U, in mm. */
-const U = 30;
 const RED = "#ff0000";
 /** #129's badge and message reds, the ok dot's green, the skipped dot's grey, print output's green. */
 const BADGE = "#ef4444";
@@ -25,22 +25,15 @@ const GUTTER_GAP = 6;
 const DOT = 12;
 const DOT_GAP = 2;
 /** 16 app px (#114's text size), 1U being 50 app px. */
-const TEXT = (16 * U) / 50;
+const TEXT = (16 * U) / APP_PX_PER_U;
 /** The status bars: at most 24U wide, 4U in from each side (clear of the corners), wrapping into rows. */
 const BAR_MAX = 24 * U;
 const BAR_SIDE = 4 * U;
+/** A status bar's room from the help box on its edge. */
+const BAR_GAP = 0.5 * U;
 const FONT = (mm: number, weight = 500) => `${weight} ${mm}px "Geist Mono", monospace`;
 
 const layer = document.createElement("canvas");
-
-/** Draws in a quad's own frame: its top-left at (0, 0), along x. */
-function within(g: CanvasRenderingContext2D, q: Quad, draw: () => void): void {
-  g.save();
-  g.translate(q.x, q.y);
-  g.rotate((q.angle * Math.PI) / 180);
-  draw();
-  g.restore();
-}
 
 function badge(g: CanvasRenderingContext2D, label: string, x: number, cy: number, size: number): void {
   g.fillStyle = BADGE;
@@ -129,17 +122,28 @@ function print(g: CanvasRenderingContext2D, { text, at }: Feedback["prints"][num
   });
 }
 
-/** A status bar's items, wrapped into centred rows on a black band, at the top or bottom of the work area. */
+/** What a status bar keeps clear of on its edge: the help box's left and right x. */
+export type BarAvoid = { left: number; right: number } | null;
+
+/**
+ * A status bar's items, wrapped into centred rows on a black band, at the top or bottom of the
+ * work area. With the help box on its edge, the bar is centred in the room beside the box instead.
+ */
 export function bar(
   g: CanvasRenderingContext2D,
   items: { badge?: string; text: string }[],
   top: boolean,
   geometry: TableGeometry,
   color: string = MESSAGE,
+  avoid: BarAvoid = null,
 ): void {
   if (items.length === 0) return;
   const { width, height } = geometry.workArea;
-  const maxW = Math.min(width - 2 * BAR_SIDE, BAR_MAX);
+  let [from, to] = [BAR_SIDE, width - BAR_SIDE];
+  if (avoid && avoid.left < width / 2) from = Math.max(from, avoid.right + BAR_GAP);
+  else if (avoid) to = Math.min(to, avoid.left - BAR_GAP);
+  const mid = (from + to) / 2;
+  const maxW = Math.min(to - from, BAR_MAX);
   const size = TEXT * 1.5;
   const gap = TEXT * 0.4;
   const gapX = TEXT * 1.5;
@@ -166,10 +170,10 @@ export function bar(
   const y0 = top ? edge : height - edge - h;
   const w = Math.min(maxW, Math.max(...rows.map(rowW)));
   g.fillStyle = "#000";
-  g.fillRect(width / 2 - w / 2 - pad, y0 - pad, w + 2 * pad, h + 2 * pad);
+  g.fillRect(mid - w / 2 - pad, y0 - pad, w + 2 * pad, h + 2 * pad);
   rows.forEach((r, ri) => {
     const y = y0 + ri * (size + gapY) + size / 2;
-    let x = width / 2 - rowW(r) / 2;
+    let x = mid - rowW(r) / 2;
     for (const it of r) {
       let tx = x;
       if (it.badge) {
@@ -186,7 +190,7 @@ export function bar(
 }
 
 /** Draws the feedback onto `target`, whose transform is table mm; marker zones are left untouched. */
-export function drawFeedback(target: CanvasRenderingContext2D, feedback: Feedback, geometry: TableGeometry): void {
+export function drawFeedback(target: CanvasRenderingContext2D, feedback: Feedback, geometry: TableGeometry, avoid: BarAvoid = null): void {
   layer.width = target.canvas.width;
   layer.height = target.canvas.height;
   const g = layer.getContext("2d")!;
@@ -194,7 +198,7 @@ export function drawFeedback(target: CanvasRenderingContext2D, feedback: Feedbac
   for (const l of feedback.lit) lit(g, l.face);
   for (const gt of feedback.gutters) gutter(g, gt);
   for (const p of feedback.prints) print(g, p);
-  bar(g, feedback.errorBar, false, geometry);
+  bar(g, feedback.errorBar, false, geometry, MESSAGE, avoid);
   g.globalCompositeOperation = "destination-out";
   g.fillStyle = "#000";
   for (const q of feedback.keepClear) within(g, q, () => g.fillRect(0, 0, q.width, q.height));

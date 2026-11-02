@@ -2,17 +2,14 @@
 // around it with square corners, whose outer 2 mm is only dimmed (#114: 3 mm of margin for a
 // skewed or lifted page, plus 2 mm dim). Drawn over everything but the settings menu.
 import type { PageCut } from "../../guides.ts";
+import { within } from "./within.ts";
 
 /** The band's outer part, dimmed rather than dark, and how dark it is. */
 const DIM_MM = 2;
 const DIM_ALPHA = 0.6;
 
 function grown(g: CanvasRenderingContext2D, { outline: q }: PageCut, by: number): void {
-  g.save();
-  g.translate(q.x, q.y);
-  g.rotate((q.angle * Math.PI) / 180);
-  g.fillRect(-by, -by, q.width + 2 * by, q.height + 2 * by);
-  g.restore();
+  within(g, q, () => g.fillRect(-by, -by, q.width + 2 * by, q.height + 2 * by));
 }
 
 export function drawPages(g: CanvasRenderingContext2D, pages: readonly PageCut[], bandMm: number): void {

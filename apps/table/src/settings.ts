@@ -1,8 +1,7 @@
 // The table's settings (#181 "Settings menu", #114): what the facilitator changes from the settings
-// menu, kept in a file on the Pi across restarts. The session's timings aren't here: they are the
-// rig's to tune in code, as the reader's thresholds are.
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+// menu, kept in a file on the Pi across restarts (settings-file.ts). The session's timings aren't
+// here: they are the rig's to tune in code, as the reader's thresholds are. No Node here: the table
+// view reads the defaults too.
 
 export type CornerName = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type CornerAction = "none" | "help";
@@ -115,30 +114,3 @@ export const sections: Section[] = [
   // Read-back is the only Debug setting (#181).
   { name: "Debug", rows: [setting("readBack", "Read-back on every card", [false, true], onOff)] },
 ];
-
-/**
- * The settings in a file, over the defaults: a missing file, or one that isn't JSON, gives the
- * defaults, and a setting the file lacks or has a choice the menu doesn't offer keeps its default.
- */
-export function loadSettings(path: string): TableSettings {
-  let saved: unknown;
-  try {
-    saved = JSON.parse(readFileSync(path, "utf8"));
-  } catch {
-    return defaultTableSettings;
-  }
-  if (typeof saved !== "object" || saved === null) return defaultTableSettings;
-  let s = defaultTableSettings;
-  const file: TableSettings = { ...defaultTableSettings, ...saved, corners: { ...defaultTableSettings.corners, ...(saved as Partial<TableSettings>).corners } };
-  for (const row of sections.flatMap((x) => x.rows)) {
-    if (row.type === "setting" && row.choices.includes(row.get(file))) s = row.set(s, row.get(file));
-  }
-  return s;
-}
-
-/** Writes the settings to their file, whole: a new file is renamed over the old one. */
-export function saveSettings(path: string, settings: TableSettings): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(`${path}.tmp`, JSON.stringify(settings, null, 2) + "\n");
-  renameSync(`${path}.tmp`, path);
-}

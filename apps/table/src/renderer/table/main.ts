@@ -2,16 +2,21 @@
 // with every table state. Stacking, bottom to top (#114): the windows (the coding space here; the
 // canvas space is the sketch view below, left clear) < the corners, with the scene's card look
 // (#195-#197) < the help box < pages < the settings menu, drawn last.
-import type { TableGeometry } from "../../layout.ts";
+import { U_MM, type TableGeometry } from "../../layout.ts";
 import type { TableBridge } from "../../preload/table.ts";
 import type { Scene } from "../../session.ts";
+import { defaultTableSettings } from "../../settings.ts";
 import { drawCalibration } from "./calibration.ts";
 import { drawMenu } from "./menu.ts";
+// The fonts the view names, at the weights it draws them: Geist Mono for text, badges (700) and the
+// no-internet "!" (800), Kalam for read-back.
 import "@fontsource/geist-mono/500.css";
+import "@fontsource/geist-mono/700.css";
+import "@fontsource/geist-mono/800.css";
 import "@fontsource/kalam/400.css";
 import { bar, drawFeedback } from "./feedback.ts";
 import { drawHandwriting, STATUS } from "./handwriting.ts";
-import { drawHelp } from "./help.ts";
+import { drawHelp, helpExtent } from "./help.ts";
 import { drawPages } from "./pages.ts";
 import { drawVirtual } from "./virtual.ts";
 
@@ -43,7 +48,6 @@ function draw(): void {
   const px = 1 / geometry.pxPerMm;
   g.setTransform(k, 0, 0, k, 0, 0);
   const { codingSpace, corners } = geometry.layout;
-  const u = 30;
 
   // Calibration covers everything, the sketch too.
   if (scene?.calibration) return drawCalibration(g, geometry, scene.calibration);
@@ -51,14 +55,14 @@ function draw(): void {
   // The windows: the coding space filled, and the boundary a card counts by. In full screen the
   // canvas covers the table, and cards still count where the coding space would be.
   if (!geometry.fullScreen) {
-    const grey = scene?.settings.codingSpaceGrey ?? 12;
+    const grey = (scene?.settings ?? defaultTableSettings).codingSpaceGrey;
     g.fillStyle = `rgb(${grey}, ${grey}, ${grey})`;
     g.fillRect(codingSpace.x, codingSpace.y, codingSpace.width, codingSpace.height);
     g.strokeStyle = BOUNDARY;
     g.lineWidth = LINE_PX * px;
     g.beginPath();
-    g.moveTo(codingSpace.x + codingSpace.width, 0.5 * u);
-    g.lineTo(codingSpace.x + codingSpace.width, codingSpace.height - 0.5 * u);
+    g.moveTo(codingSpace.x + codingSpace.width, 0.5 * U_MM);
+    g.lineTo(codingSpace.x + codingSpace.width, codingSpace.height - 0.5 * U_MM);
     g.stroke();
   }
 
@@ -79,16 +83,18 @@ function draw(): void {
 
   // The virtual cards (#197), under the card feedback (#195) and handwriting's read-back (#196), then
   // the one top status bar (#196's no internet, #197's). A waiting line's spinner turns, so draw again next frame.
+  // Each status bar keeps clear of the help box on its edge.
   if (scene) {
+    const help = scene.help && helpExtent(scene.help);
     drawVirtual(g, scene.virtual, scene.feedback.keepClear, draw);
-    drawFeedback(g, scene.feedback, geometry);
+    drawFeedback(g, scene.feedback, geometry, help && !help.top ? help : null);
     drawHandwriting(g, scene.handwriting);
-    bar(g, scene.status.map((text) => ({ text })), true, geometry, STATUS);
+    bar(g, scene.status.map((text) => ({ text })), true, geometry, STATUS, help?.top ? help : null);
     if (scene.feedback.gutters.some((gt) => gt.dot === "waiting")) requestRedraw();
   }
 
-  // The help box, beside the help corner.
-  if (scene?.help) drawHelp(g, scene.help, px);
+  // The help box, beside its help corner, never on a marker.
+  if (scene?.help) drawHelp(g, scene.help, px, scene.feedback.keepClear);
 
   // Every page cut out, above the windows, corners and help box (#197).
   if (scene) drawPages(g, scene.pages, scene.settings.pageBandMm);
@@ -114,5 +120,6 @@ table.onScene((s) => {
   draw();
 });
 addEventListener("resize", draw);
-// Canvas text waits for its fonts to load.
-void document.fonts.ready.then(draw);
+// Canvas text doesn't ask for a font until it draws with it: load each one, then draw again.
+const FONTS = ['500 16px "Geist Mono"', '700 16px "Geist Mono"', '800 16px "Geist Mono"', "400 16px Kalam"];
+void Promise.all(FONTS.map((f) => document.fonts.load(f))).then(draw);

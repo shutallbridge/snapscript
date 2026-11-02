@@ -11,7 +11,8 @@
     "canvas-coordinates.png"
   ],
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc"
   },
   "dependencies": {
     "snapscript-p5": "workspace:*"

@@ -83,6 +83,22 @@ describe("ruler.pdf", () => {
     expect(ruler.html).toContain('data-part="marker" data-id="313"');
     expect(ruler.html).toContain('data-part="check-bar"');
   });
+
+  test("puts 312 left and 313 right on the middle line, as calibration expects (#199): centres at x 20 and 277, y 105 mm", () => {
+    /** A marker's centre on the page, from the black cells drawn for it. */
+    const centre = (id: number): [number, number] => {
+      const group = new RegExp(`data-part="marker" data-id="${id}"[^>]*>(.*?)</g>`).exec(ruler.html)![1]!;
+      const cells = [...group.matchAll(/x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/g)].map((m) => m.slice(1).map(Number));
+      const xs = cells.flatMap(([x, , w]) => [x!, x! + w! - 0.02]);
+      const ys = cells.flatMap(([, y, , h]) => [y!, y! + h! - 0.02]);
+      return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+    };
+    const [left, right] = [centre(312), centre(313)];
+    expect(left[0]).toBeCloseTo(20, 2);
+    expect(left[1]).toBeCloseTo(105, 2);
+    expect(right[0]).toBeCloseTo(277, 2);
+    expect(right[1]).toBeCloseTo(105, 2);
+  });
 });
 
 describe("what stops pnpm print", () => {

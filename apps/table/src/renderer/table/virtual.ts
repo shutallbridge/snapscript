@@ -5,8 +5,9 @@
 import { face } from "@snapscript/faces";
 import geistMono from "@fontsource/geist-mono/files/geist-mono-latin-500-normal.woff2?inline";
 import kalam from "@fontsource/kalam/files/kalam-latin-400-normal.woff2?inline";
-import type { Quad } from "../../feedback.ts";
+import type { Quad } from "../../pose.ts";
 import type { VirtualFace } from "../../guides.ts";
+import { within } from "./within.ts";
 
 /**
  * An SVG drawn as an image can't use the page's fonts, so each face carries the two it names
@@ -19,14 +20,6 @@ const FONTS =
 const layer = document.createElement("canvas");
 /** Each face's image by its SVG, made once: `null` until it has loaded. */
 const images = new Map<string, HTMLImageElement | null>();
-
-function within(g: CanvasRenderingContext2D, q: Quad, draw: () => void): void {
-  g.save();
-  g.translate(q.x, q.y);
-  g.rotate((q.angle * Math.PI) / 180);
-  draw();
-  g.restore();
-}
 
 /** A face's image, or `null` while it loads (`redraw` is called once it has). */
 function imageOf(v: VirtualFace, redraw: () => void): HTMLImageElement | null {

@@ -1,10 +1,10 @@
 // The settings menu's look (#114): centred on the work area, above everything else; square corners,
 // sentence case. Drawn in table mm, with its sizes in app px (1U = 30 mm = 50 app px).
-import type { TableGeometry } from "../../layout.ts";
+import { APP_PX_PER_U, U_MM, type TableGeometry } from "../../layout.ts";
 import type { MenuView } from "../../menu.ts";
 
 /** An app px, in mm. */
-const PX = 30 / 50;
+const PX = U_MM / APP_PX_PER_U;
 const FONT = "500 {size}px sans-serif";
 const TEXT_PX = 18;
 const TITLE_PX = 22;

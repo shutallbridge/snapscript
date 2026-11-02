@@ -121,6 +121,8 @@ export interface SceneError {
   followsFrom?: { line: number; name: string };
   /** A `NameError`'s suggested name: the cards that define it. */
   suggestion?: CardRef[];
+  /** A check error about what one card holds (`[num{4o}]`), not how the cards fit together. */
+  aboutCardText?: boolean;
 }
 
 /** What the table view draws. */
@@ -144,7 +146,7 @@ export interface Scene {
   /** Calibration's step, while it runs: drawn over everything, the sketch included. */
   calibration: CalibrationView | null;
   settings: TableSettings;
-  /** The help corner's box, while a card lies there and for 1 s after. */
+  /** The help corner's box, while a card lies on a corner set to Help and for 1 s after. */
   help: HelpBox | null;
   /** The card feedback's look: lit cards, gutters, badges, the error bar and print output (#195). */
   feedback: Feedback;
@@ -254,7 +256,7 @@ export function createSession(options: SessionOptions): Session {
 
   const onTable = (state: TableState, now: number, sketch: SketchCommand[]): void => {
     if (last?.state !== state) last = { state, offset: state.t - now };
-    help.see(state, layout, now);
+    help.see(state, layout, tableSettings.corners, now);
     handwriting.see(state, now);
     const input = { table: state, layout, lockfile: project.lockfile, languageMarkers: project.languageMarkers, now: now + last.offset };
     let r = step(reader, { ...input, guideSources: guides.sources(state, now) });
@@ -270,6 +272,7 @@ export function createSession(options: SessionOptions): Session {
       skippedLines = checked.program.skippedLines;
       checkErrors = checked.errors.map((e) => {
         const error: SceneError = { from: "check", kind: e.kind, message: e.message, cards: cardsAt(buffer, e.spans) };
+        if (e.aboutCardText) error.aboutCardText = true;
         const name = e.spans[0] && buffer.text.slice(e.spans[0].start, e.spans[0].end);
         if (e.followsFrom !== null && name) error.followsFrom = { line: e.followsFrom, name };
         if (e.suggestion) error.suggestion = cardsAt(buffer, e.suggestion.spans);
@@ -391,7 +394,10 @@ export function createSession(options: SessionOptions): Session {
         if (calibrating) vision = calibration.key(event.key);
         else {
           const r = menu.key(event.key, tableSettings);
-          if (r?.settings) tableSettings = changed = r.settings;
+          if (r?.settings) {
+            tableSettings = changed = r.settings;
+            if (last) help.see(last.state, layout, tableSettings.corners, event.now);
+          }
           if (r?.action === "calibrate") {
             menu.close();
             calibration.start();

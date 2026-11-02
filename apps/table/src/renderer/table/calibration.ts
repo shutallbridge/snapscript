@@ -3,10 +3,10 @@
 // so a projector height is the work area's height.
 import { markerPattern } from "@snapscript/faces";
 import type { CalibrationView, Point } from "../../calibration.ts";
-import type { TableGeometry } from "../../layout.ts";
+import { APP_PX_PER_U, U_MM, type TableGeometry } from "../../layout.ts";
 
 /** An app px, in mm. */
-const PX = 30 / 50;
+const PX = U_MM / APP_PX_PER_U;
 const TEXT_PX = 18;
 const OUTLINE = "#22d3ee";
 const PAGE = "#e879f9";

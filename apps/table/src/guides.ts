@@ -5,14 +5,14 @@ import type { CheckResult, ExpectedOverload, ExpectedValue } from "@snapscript/c
 import type { FunctionColor } from "@snapscript/core";
 import { sideOf } from "@snapscript/faces";
 import {
-  defaultSettings as readerDefaults,
   type CardMap,
   type GuideSources,
   type StepOutput,
   type TableState,
   type ValueGuideSource,
 } from "@snapscript/table-reader";
-import type { Quad } from "./feedback.ts";
+import { nameKey, sameName } from "./names.ts";
+import { cardQuad, pointOn, type Quad } from "./pose.ts";
 import type { Project } from "./project.ts";
 
 /** What the guides need of a loaded project. */
@@ -77,7 +77,7 @@ function valueCard(value: ExpectedValue): string {
   }
 }
 
-/** A form's guides: its values, and a slot that takes any number while nothing is laid in it. */
+/** A form's guides: its values, and a value slot that takes any number while nothing is laid in it. */
 function guidesOf(form: ExpectedOverload, laid: number): ExpectedValue[] {
   return form.variadic && laid <= form.values.length ? [...form.values, form.variadic] : form.values;
 }
@@ -111,23 +111,13 @@ function laidValues(program: CheckResult["program"]): Map<number, number> {
 
 /** The packages a program's import lines name, by their local names. */
 function importsOf(text: string): Map<string, string> {
-  return new Map([...text.matchAll(/\[import\(([^()]+)\)as\(([^()]+)\)\]/gi)].map((m) => [m[2]!.toLowerCase(), m[1]!]));
-}
-
-/** A card the marker of which lies at (x, y), turned `angle`: the whole card, from its top-left corner. */
-function cardQuad(x: number, y: number, angle: number, length: number): Quad {
-  const a = (angle * Math.PI) / 180;
-  const [ux, uy] = [Math.cos(a), Math.sin(a)];
-  const { markerAlongMm: along, markerDownMm: down, unitMm } = readerDefaults;
-  return { x: x - along * ux + down * uy, y: y - along * uy - down * ux, angle, width: length * unitMm, height: unitMm };
+  return new Map([...text.matchAll(/\[import\(([^()]+)\)as\(([^()]+)\)\]/gi)].map((m) => [nameKey(m[2]!), m[1]!]));
 }
 
 /** A page whose marker lies at (x, y), turned `angle`: its paper, from its top-left corner. */
 function pageQuad(x: number, y: number, angle: number): Quad {
-  const a = (angle * Math.PI) / 180;
-  const [ux, uy] = [Math.cos(a), Math.sin(a)];
-  const { markerX: along, markerY: down } = PAGE_MM;
-  return { x: x - along * ux + down * uy, y: y - along * uy - down * ux, angle, width: PAGE_MM.width, height: PAGE_MM.height };
+  const [px, py] = pointOn({ x, y, angle }, [PAGE_MM.markerX, PAGE_MM.markerY], 0, 0);
+  return { x: px, y: py, angle, width: PAGE_MM.width, height: PAGE_MM.height };
 }
 
 export interface Guides {
@@ -180,8 +170,8 @@ export function createGuides(project: GuidesProject, options: { settings?: Parti
   const functionColorOf = (text: string, imports: Map<string, string>): FunctionColor | null => {
     const m = /^\[call\(([^().]+)\.([^().]+)\)\]$/i.exec(text);
     if (!m) return null;
-    const pkg = imports.get(m[1]!.toLowerCase());
-    const found = project.cards.find((c) => c.card === "call" && c.package === pkg && c.name.toLowerCase() === m[2]!.toLowerCase());
+    const pkg = imports.get(nameKey(m[1]!));
+    const found = project.cards.find((c) => c.card === "call" && c.package === pkg && sameName(c.name, m[2]!));
     return found?.functionColor ?? null;
   };
 
@@ -223,7 +213,7 @@ export function createGuides(project: GuidesProject, options: { settings?: Parti
       const onPage = new Set(output.places.filter((p) => p.virtual.startsWith("g")).map((p) => `t${p.track}`));
       const laidOf = new Map(calls.map((c) => [c.key, c.laid]));
       virtual = output.virtualCards.flatMap((v): VirtualFace[] => {
-        const at = cardQuad(v.x, v.y, v.angle, v.length);
+        const at = cardQuad(v, v.length);
         if (v.kind !== "value") {
           const imports = v.kind === "guide" ? pageImports : entryImports;
           return [{ id: v.id, kind: v.kind, text: v.card, functionColor: functionColorOf(v.card, imports), value: null, length: v.length, at }];

@@ -6,7 +6,7 @@ import type { Span } from "@snapscript/checker";
 import { run, type Host, type RunError } from "@snapscript/runtime";
 import type { TableCard } from "@snapscript/table-reader";
 import { loadProject } from "../src/project.ts";
-import type { Quad } from "../src/feedback.ts";
+import type { Quad } from "../src/pose.ts";
 import type { SessionProject } from "../src/session.ts";
 import { card, U, type Laid } from "./session-helpers.ts";
 

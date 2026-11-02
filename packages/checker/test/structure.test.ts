@@ -25,4 +25,18 @@ describe("check", () => {
       expect(text.slice(span.start, span.end)).toBe("[set{x}to]");
     }
   });
+
+  test.each([
+    ["[num{4o}]", "a number that isn't one"],
+    ["[get{my_score!}]", "a name that isn't one"],
+    ["[get{}]", "no name written"],
+  ])("a SyntaxError about what %s holds says it's about the card's text (%s)", (card) => {
+    const { errors } = check(`[on(load)]\n[call(print)]${card}\n`, []);
+    expect(errors.map((e) => [e.kind, e.aboutCardText])).toEqual([["SyntaxError", true]]);
+  });
+
+  test("a SyntaxError about how cards fit together doesn't", () => {
+    const { errors } = check("[on(load)]\n[num{1}][num{2}]\n", []);
+    expect(errors.map((e) => [e.kind, e.aboutCardText])).toEqual([["SyntaxError", false]]);
+  });
 });

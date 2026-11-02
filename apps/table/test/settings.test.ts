@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { createSession } from "../src/session.ts";
-import { defaultTableSettings, loadSettings, saveSettings } from "../src/settings.ts";
+import { loadSettings, saveSettings } from "../src/settings-file.ts";
+import { defaultTableSettings } from "../src/settings.ts";
 import { layout, project } from "./session-helpers.ts";
 
 const file = (): string => join(mkdtempSync(join(tmpdir(), "settings-")), "state", "settings.json");

@@ -2,17 +2,10 @@
 // line's gutter marks and badges, the bottom status bar's errors, and where `print` output goes. All
 // in table mm, from where the cards lie now. Nothing projected may cover a card's marker zone: the
 // table view cuts `keepClear` out of everything it draws for this.
+import { SHEET } from "@snapscript/faces";
 import type { CardMap, DetachedLine, SkippedLine, TableCard, TableState } from "@snapscript/table-reader";
+import { axes, corners, onSheet, type Quad, type Vec } from "./pose.ts";
 import type { CardRef, SceneError } from "./session.ts";
-
-/** A rectangle on the table: its top-left corner at (x, y) in table mm, turned `angle` degrees about it, `width` along and `height` across. */
-export interface Quad {
-  x: number;
-  y: number;
-  angle: number;
-  width: number;
-  height: number;
-}
 
 /** A card the feedback lights: its face (the card less its marker zone), filled red with a red edge. */
 export interface LitCard {
@@ -48,17 +41,15 @@ export interface Feedback {
   keepClear: Quad[];
 }
 
-/** The look's sizes, in mm (#129): the decided starting values. */
+/** The look's sizes, in mm (#129): the decided starting values. A card's own sizes are `SHEET`'s. */
 export interface FeedbackSettings {
-  unitMm: number;
-  markerZoneMm: number;
   /** A gutter's gap to its line's first card; print output's gap after its line's last card. */
   gapMm: number;
   /** At most this much room for print output. */
   printMaxMm: number;
 }
 
-export const defaultFeedbackSettings: FeedbackSettings = { unitMm: 30, markerZoneMm: 17, gapMm: 6, printMaxMm: 720 };
+export const defaultFeedbackSettings: FeedbackSettings = { gapMm: 6, printMaxMm: 720 };
 
 export interface FeedbackInput {
   /** The table as it is now, for where each card lies. */
@@ -79,26 +70,13 @@ export interface FeedbackInput {
   settings?: Partial<FeedbackSettings>;
 }
 
-type Vec = [number, number];
-
 export function feedback(input: FeedbackInput): Feedback {
   const s = { ...defaultFeedbackSettings, ...input.settings };
-  const H = s.unitMm;
+  const { heightMm: H, markerZoneMm, unitMm } = SHEET;
   const poses = new Map<number, TableCard>((input.state?.cards ?? []).map((c) => [c.track, c]));
-  const axes = (angle: number): [Vec, Vec] => {
-    const a = (angle * Math.PI) / 180;
-    return [
-      [Math.cos(a), Math.sin(a)],
-      [-Math.sin(a), Math.cos(a)],
-    ];
-  };
   /** A quad `along` mm along a card from its left end, `width` long, all the way across. */
-  const onCard = (c: TableCard, along: number, width: number): Quad => {
-    const [u, v] = axes(c.angle);
-    const tl: Vec = [c.x - (s.markerZoneMm / 2) * u[0] - (H / 2) * v[0], c.y - (s.markerZoneMm / 2) * u[1] - (H / 2) * v[1]];
-    return { x: tl[0] + along * u[0], y: tl[1] + along * u[1], angle: c.angle, width, height: H };
-  };
-  const lengthMm = (c: TableCard) => input.lengthOf(c.marker) * s.unitMm;
+  const onCard = (c: TableCard, along: number, width: number): Quad => onSheet(c, along, width);
+  const lengthMm = (c: TableCard) => input.lengthOf(c.marker) * unitMm;
 
   const lineOf = new Map<number, { line: number; column: number }>();
   for (const c of input.map.cards) if ("track" in c) lineOf.set(c.track, { line: c.span.line, column: c.span.start });
@@ -137,7 +115,7 @@ export function feedback(input: FeedbackInput): Feedback {
       const c = poses.get(t);
       if (!c || litTracks.has(t)) continue;
       litTracks.add(t);
-      lit.push({ card: { track: t }, face: onCard(c, s.markerZoneMm, lengthMm(c) - s.markerZoneMm) });
+      lit.push({ card: { track: t }, face: onCard(c, markerZoneMm, lengthMm(c) - markerZoneMm) });
     }
 
   const gutters: Gutter[] = [];
@@ -157,7 +135,7 @@ export function feedback(input: FeedbackInput): Feedback {
     if (head) gutters.push({ track: head.track, at: onCard(head, 0, lengthMm(head)), dot: "skipped", badges: [] });
   }
 
-  const keepClear = [...poses.values()].map((c) => onCard(c, 0, s.markerZoneMm));
+  const keepClear = [...poses.values()].map((c) => onCard(c, 0, markerZoneMm));
 
   // Print output starts after its line's last card and runs on until the first marker zone in its way.
   const prints: PrintOutput[] = [];
@@ -178,20 +156,10 @@ export function feedback(input: FeedbackInput): Feedback {
  * quad: each quad is taken by its extent in the frame, so a turned one blocks a little early.
  */
 function roomAhead(frame: Quad, start: number, quads: readonly Quad[], height: number, max: number): number {
-  const a = (frame.angle * Math.PI) / 180;
-  const u: Vec = [Math.cos(a), Math.sin(a)];
-  const v: Vec = [-u[1], u[0]];
+  const [u, v] = axes(frame.angle);
   let room = max;
   for (const q of quads) {
-    const b = (q.angle * Math.PI) / 180;
-    const qu: Vec = [Math.cos(b), Math.sin(b)];
-    const qv: Vec = [-qu[1], qu[0]];
-    const pts = [
-      [0, 0],
-      [q.width, 0],
-      [q.width, q.height],
-      [0, q.height],
-    ].map(([i, j]): Vec => [q.x + i! * qu[0] + j! * qv[0] - frame.x, q.y + i! * qu[1] + j! * qv[1] - frame.y]);
+    const pts = corners(q).map(([x, y]): Vec => [x - frame.x, y - frame.y]);
     const along = pts.map((p) => p[0] * u[0] + p[1] * u[1]);
     const across = pts.map((p) => p[0] * v[0] + p[1] * v[1]);
     if (Math.max(...across) <= 0 || Math.min(...across) >= height || Math.max(...along) <= start) continue;

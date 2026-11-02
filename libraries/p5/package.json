@@ -10,11 +10,13 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc"
   },
   "devDependencies": {
     "@snapscript/checker": "workspace:*",
     "@snapscript/runtime": "workspace:*",
+    "@snapscript/table": "workspace:*",
     "@types/node": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
