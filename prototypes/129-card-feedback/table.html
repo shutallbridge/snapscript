@@ -634,30 +634,40 @@ function drawOver(L) {
 }
 // #129 status bars: centred along the top and bottom edges, between the corners' circles. Each shows 'status' (the
 // prototype's status line), 'errors' (each error's long message with its badge, one line each) or nothing.
-function statusLine(L) {
+function statusItems(L) {
   const [sw, sh] = sketchSize(), u = UPX(), cur = state.current && book && book.pages.find(q => q.key === state.current);
-  return `1U = ${PX_PER_U} px (${u.toFixed(1)} projector px) · ${cfg.full ? 'canvas full screen (split ' + cfg.split + '% kept)' : 'split ' + cfg.split + '%'} · sketch ${sw} × ${sh} px = ${(L.sketch.w / mm()).toFixed(0)} × ${(L.sketch.h / mm()).toFixed(0)} mm · ` +
-    `text ${cfg.textPx} px = ${(cfg.textPx * S() / mm()).toFixed(1)} mm · page ${cur ? cur.name : '-'} · cards ${(state.cards || []).length}` +
-    (vstat ? ' · ' + vstat : '') + (state.calibrated === false ? ' · NOT CALIBRATED' : '') + (state.t ? '' : ' · no vision');
+  return [`1U = ${PX_PER_U} px (${u.toFixed(1)} projector px)`, cfg.full ? 'canvas full screen (split ' + cfg.split + '% kept)' : 'split ' + cfg.split + '%',
+    `sketch ${sw} × ${sh} px = ${(L.sketch.w / mm()).toFixed(0)} × ${(L.sketch.h / mm()).toFixed(0)} mm`, `text ${cfg.textPx} px = ${(cfg.textPx * S() / mm()).toFixed(1)} mm`,
+    `page ${cur ? cur.name : '-'}`, `cards ${(state.cards || []).length}`, vstat, state.calibrated === false ? 'NOT CALIBRATED' : '', state.t ? '' : 'no vision'].filter(Boolean);
 }
+// A bar is like `flex flex-wrap items-center justify-center gap-x gap-y` with a max width: items fill rows, each row
+// centred; on a black band (drawn over the windows, so the split line doesn't run through it), between the corners.
+const BAR_MAX_U = 24;  // max width, in U (720 mm)
 function drawBars(g, L) {
-  const u = UPX(), x0 = 4 * u, x1 = VW() - 4 * u, cx = (x0 + x1) / 2;  // clear of the 3.5U corners, plus 0.5U
+  const u = UPX(), maxW = Math.min(VW() - 8 * u, BAR_MAX_U * u), cx = VW() / 2, pad = 0.2 * u;  // 8U: the corners' 3.5U, plus 0.5U, each side
   for (const [what, top] of [[cfg.barTop, true], [cfg.barBottom, false]]) {
-    if (what === 'status') {
-      g.save(); g.font = font(14 * S()); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#71717a';
-      g.fillText(statusLine(L), cx, top ? 0.4 * u : VH() - 0.4 * u, x1 - x0); g.restore();
-    } else if (what === 'errors' && cfg.vargs && argErrors.length) {
-      const px = cfg.textPx * S(), bs = px * 1.5, gap = px * 0.4, lh = bs * 1.25;
-      const lines = argErrors.map(e => ({ e, t: `${e.kind}: ${e.long}` }));
-      g.save(); g.font = font(px);
-      lines.forEach(({ e, t }, i) => {
-        const w = bs + gap + g.measureText(t).width, x = cx - w / 2;
-        const y = top ? 0.4 * u + bs / 2 + i * lh : VH() - 0.4 * u - bs / 2 - (lines.length - 1 - i) * lh;
-        badge(g, e.id, x, y, bs);
-        g.font = font(px); g.fillStyle = '#f87171'; g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillText(t, x + bs + gap, y);
-      });
-      g.restore();
-    }
+    let items, h, gapX, gapY, col;
+    if (what === 'status') { const px = 14 * S(); h = px * 1.3; gapX = px * 1.2; gapY = px * 0.4; col = '#71717a';
+      items = statusItems(L).map(t => ({ t, px, w: (g.font = font(px), g.measureText(t).width) })); }
+    else if (what === 'errors' && cfg.vargs && argErrors.length) { const px = cfg.textPx * S(), bs = px * 1.5, gap = px * 0.4; h = bs; gapX = px * 1.5; gapY = px * 0.5; col = '#f87171';
+      items = argErrors.map(e => { const t = `${e.kind}: ${e.long}`; g.font = font(px); return { t, px, e, bs, gap, w: bs + gap + g.measureText(t).width }; }); }
+    else continue;
+    const rows = [[]]; let rw = 0;  // pack items into rows
+    for (const it of items) { const add = (rows.at(-1).length ? gapX : 0) + it.w;
+      if (rows.at(-1).length && rw + add > maxW) { rows.push([it]); rw = it.w; } else { rows.at(-1).push(it); rw += add; } }
+    const H_ = rows.length * h + (rows.length - 1) * gapY, y0 = top ? 0.15 * u : VH() - 0.15 * u - H_;
+    const widest = Math.max(...rows.map(r => r.reduce((a, it, i) => a + it.w + (i ? gapX : 0), 0)));
+    g.fillStyle = '#000'; g.fillRect(cx - Math.min(maxW, widest) / 2 - pad, y0 - pad / 2, Math.min(maxW, widest) + 2 * pad, H_ + pad);
+    rows.forEach((r, ri) => {
+      const w = r.reduce((a, it, i) => a + it.w + (i ? gapX : 0), 0), y = y0 + ri * (h + gapY) + h / 2;
+      let x = cx - w / 2;
+      for (const it of r) {
+        g.save(); g.textBaseline = 'middle'; g.textAlign = 'left';
+        if (it.e) { badge(g, it.e.id, x, y, it.bs); g.font = font(it.px); g.fillStyle = col; g.fillText(it.t, x + it.bs + it.gap, y); }
+        else { g.font = font(it.px); g.fillStyle = col; g.fillText(it.t, x, y); }
+        g.restore(); x += it.w + gapX;
+      }
+    });
   }
 }
 function drawCalib(g) {
