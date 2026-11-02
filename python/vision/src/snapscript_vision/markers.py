@@ -7,15 +7,15 @@ The file format of the lockfile and the language markers belongs to #157. Until 
 reader's loaded shape (`@snapscript/table-reader`'s `LanguageMarkers` and `Lockfile`) as JSON, plus the ruler
 page's two markers, so a #157 loader can fill both sides the same way:
 
-    {"languageMarkers": {"1027": {"card": "[num{}]", "length": 4}, "1009": {"card": "[repeat]", "length": 2}},
-     "lockfile": {"0": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "circle", "length": 3},
-                  "1900": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 3}},
-     "ruler": [2080, 2081], "ruler_mm": 257, "calibration": [300, 301, ..., 311]}
+    {"languageMarkers": {"65": {"card": "[num{}]", "length": 4}, "19": {"card": "[repeat]", "length": 2}},
+     "lockfile": {"402": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "circle", "length": 3},
+                  "403": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 3}},
+     "ruler": [312, 313], "ruler_mm": 257, "calibration": [300, 301, ..., 311]}
 
 A language marker's card is handwritten when its notation has braces (`[num{}]`, `[set{}to]`); library cards are
 printed. Lengths are in U.
 
-The table's own markers (#157 puts them in the language markers, 300-399; their IDs aren't given out yet) are the
+The table's own markers (in `language/markers.yaml`, 300-399: calibration's 300-311, the ruler's 312 and 313) are the
 ruler page's two, `ruler_mm` apart on the printed page, and the twelve the projector shows in calibration's first
 step (#172).
 """

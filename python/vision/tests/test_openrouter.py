@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from vision_harness import Card, hw_of, run_drawn, written
 
-NUM = 1027
+NUM = 65
 REPO = Path(__file__).resolve().parents[3]
 
 
@@ -91,7 +91,7 @@ def test_a_server_error_is_a_connection_error(tmp_path, stand_in):
 
 def test_the_reader_wont_start_without_its_key(tmp_path):
     with pytest.raises(AssertionError, match="OPENROUTER_API_KEY"):
-        run_drawn(tmp_path, [[Card(1001, 150, 120)]] * 3, reader="openrouter", env=env_with())
+        run_drawn(tmp_path, [[Card(400, 150, 120)]] * 3, reader="openrouter", env=env_with())
 
 
 def test_no_openrouter_key_is_in_the_repo():

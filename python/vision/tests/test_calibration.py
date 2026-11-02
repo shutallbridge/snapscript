@@ -119,7 +119,7 @@ def test_the_ruler_step_fails_without_the_page(tmp_path):
 
 # A 2U card near the picture's corner, where the lens bends most, clear of the ruler page: (marker, x, y) in true
 # table mm.
-CORNER_CARD = (1009, 330.0, 248.0)
+CORNER_CARD = (19, 330.0, 248.0)
 
 
 def lay(world, card):

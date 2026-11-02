@@ -1,23 +1,44 @@
 import { describe, expect, test } from "vitest";
 import { defaultSettings, initialState, step } from "../src/index.ts";
-import { card, code, languageMarkers, layout, lockfile, run, table, textOf, U } from "./fixtures.ts";
+import {
+  card,
+  CIRCLE,
+  code,
+  DEDENT,
+  DEFINE,
+  GET,
+  GLOBAL,
+  IF,
+  languageMarkers,
+  layout,
+  lockfile,
+  NUM,
+  ON_LOAD,
+  PAGE,
+  REPEAT,
+  run,
+  SET,
+  table,
+  textOf,
+  U,
+} from "./fixtures.ts";
 
 describe("strips", () => {
   test("a [define{…}] on its own is a strip of one line", () => {
-    expect(textOf(table(card(1, 1000, 50, 50, { text: "setup" })))).toBe("[define{setup}]");
+    expect(textOf(table(card(1, DEFINE, 50, 50, { text: "setup" })))).toBe("[define{setup}]");
   });
 });
 
 // [define{setup}] at (50, 50), [set{x}to] (4U) right under it, and [num{…}] beside that, `along` mm
 // past its end and `across` mm down, turned `angle` degrees about its marker.
-const head = card(1, 1000, 50, 50, { text: "setup" });
-const set = card(2, 1011, 50, 50 + U, { text: "x" });
+const head = card(1, DEFINE, 50, 50, { text: "setup" });
+const set = card(2, SET, 50, 50 + U, { text: "x" });
 const num = (along: number, across: number, angle = 0) => {
   // Measured along the line the two cards' angles average to.
   const r = (angle / 2) * (Math.PI / 180);
   const reach = 4 * U + along;
   return {
-    ...card(3, 1024, 50, 50 + U, { text: "250" }),
+    ...card(3, NUM, 50, 50 + U, { text: "250" }),
     x: set.x + reach * Math.cos(r) - across * Math.sin(r),
     y: set.y + reach * Math.sin(r) + across * Math.cos(r),
     angle,
@@ -81,9 +102,9 @@ describe("joins", () => {
     };
     const r = run(
       table(
-        card(1, 1000, ...at(0, 0), { angle: a, text: "setup" }),
-        card(2, 1011, ...at(0, U), { angle: a, text: "x" }),
-        card(3, 1024, ...at(4 * U + 3, U + 5), { angle: a, text: "250" }),
+        card(1, DEFINE, ...at(0, 0), { angle: a, text: "setup" }),
+        card(2, SET, ...at(0, U), { angle: a, text: "x" }),
+        card(3, NUM, ...at(4 * U + 3, U + 5), { angle: a, text: "250" }),
       ),
     );
     expect(code(r.last.text)).toBe("[define{setup}]\n[set{x}to][num{250}]");
@@ -94,12 +115,12 @@ describe("line to line", () => {
   // [define{draw}] / [repeat][num{3}] / indented [set{x}to][num{1}] / [dedent], laid on a 1U grid.
   const lines = (indentShift = 0, dedentShift = 0) =>
     table(
-      card(1, 1000, 50, 50, { text: "draw" }),
-      card(2, 1009, 50, 50 + U),
-      card(3, 1024, 50 + 2 * U, 50 + U, { text: "3" }),
-      card(4, 1011, 50 + U + indentShift, 50 + 2 * U, { text: "x" }),
-      card(5, 1025, 50 + 5 * U + indentShift, 50 + 2 * U, { text: "1" }),
-      card(6, 1022, 50 + dedentShift, 50 + 3 * U),
+      card(1, DEFINE, 50, 50, { text: "draw" }),
+      card(2, REPEAT, 50, 50 + U),
+      card(3, NUM, 50 + 2 * U, 50 + U, { text: "3" }),
+      card(4, SET, 50 + U + indentShift, 50 + 2 * U, { text: "x" }),
+      card(5, NUM, 50 + 5 * U + indentShift, 50 + 2 * U, { text: "1" }),
+      card(6, DEDENT, 50 + dedentShift, 50 + 3 * U),
     );
 
   test("line heads at +1U and −1U across read as an indent and a dedent", () => {
@@ -119,42 +140,42 @@ describe("line to line", () => {
 
   test("a line under a dedented line keeps counting columns from the strip head", () => {
     const t = table(
-      card(1, 1000, 50, 50, { text: "draw" }),
-      card(2, 1009, 50, 50 + U),
-      card(3, 1032, 50 + U, 50 + 2 * U),
-      card(4, 1011, 50 + 2 * U, 50 + 3 * U, { text: "x" }),
-      card(5, 1022, 50 + U, 50 + 4 * U),
-      card(6, 1022, 50, 50 + 5 * U),
+      card(1, DEFINE, 50, 50, { text: "draw" }),
+      card(2, REPEAT, 50, 50 + U),
+      card(3, IF, 50 + U, 50 + 2 * U),
+      card(4, SET, 50 + 2 * U, 50 + 3 * U, { text: "x" }),
+      card(5, DEDENT, 50 + U, 50 + 4 * U),
+      card(6, DEDENT, 50, 50 + 5 * U),
     );
     expect(textOf(t)).toBe("[define{draw}]\n[repeat]\n  [if]\n    [set{x}to]\n  [dedent]\n[dedent]");
   });
 
   test("a line head 2U across isn't linked", () => {
-    const t = table(card(1, 1000, 50, 50, { text: "draw" }), card(2, 1011, 50 + 2 * U, 50 + U, { text: "x" }));
+    const t = table(card(1, DEFINE, 50, 50, { text: "draw" }), card(2, SET, 50 + 2 * U, 50 + U, { text: "x" }));
     expect(textOf(t)).toBe("[define{draw}]");
   });
 });
 
 describe("cards that stand alone", () => {
   test.each([
-    ["[define{…}]", 1000, "[define{f}]"],
-    ["[on(…)]", 1030, "[on(load)]"],
-    ["[global{…}]", 1031, "[global{f}]"],
+    ["[define{…}]", DEFINE, "[define{f}]"],
+    ["[on(…)]", ON_LOAD, "[on(load)]"],
+    ["[global{…}]", GLOBAL, "[global{f}]"],
   ])("%s right under a line starts its own strip", (_, marker, written) => {
     const t = table(
-      card(1, 1000, 50, 50, { text: "setup" }),
-      card(2, 1011, 50, 50 + U, { text: "x" }),
+      card(1, DEFINE, 50, 50, { text: "setup" }),
+      card(2, SET, 50, 50 + U, { text: "x" }),
       card(3, marker, 50, 50 + 2 * U, { text: "f" }),
-      card(4, 1018, 50, 50 + 3 * U, { text: "y" }),
+      card(4, GET, 50, 50 + 3 * U, { text: "y" }),
     );
     expect(textOf(t)).toBe(`[define{setup}]\n[set{x}to]\n\n${written}\n[get{y}]`);
   });
 
   test("a [define{…}] butted against a line's end doesn't join it", () => {
     const t = table(
-      card(1, 1000, 50, 50, { text: "setup" }),
-      card(2, 1011, 50, 50 + U, { text: "x" }),
-      card(3, 1000, 50 + 4 * U, 50 + U, { text: "f" }),
+      card(1, DEFINE, 50, 50, { text: "setup" }),
+      card(2, SET, 50, 50 + U, { text: "x" }),
+      card(3, DEFINE, 50 + 4 * U, 50 + U, { text: "f" }),
     );
     expect(textOf(t)).toBe("[define{setup}]\n[set{x}to]\n\n[define{f}]");
   });
@@ -164,31 +185,31 @@ describe("windows and corners", () => {
   test("a card whose marker is in the canvas space is ignored, even if its card reaches back", () => {
     // The [num{1}] butts against [set{x}to] but starts 5 mm left of the split at 400 mm, so its
     // marker lies in the canvas space.
-    const t = table(card(1, 1000, 280, 50, { text: "setup" }), card(2, 1011, 280, 50 + U, { text: "x" }), card(3, 1024, 395, 50 + U, { text: "1" }));
+    const t = table(card(1, DEFINE, 280, 50, { text: "setup" }), card(2, SET, 280, 50 + U, { text: "x" }), card(3, NUM, 395, 50 + U, { text: "1" }));
     expect(textOf(t)).toBe("[define{setup}]\n[set{x}to]");
   });
 
   test("a strip head in the canvas space reads nothing", () => {
-    expect(textOf(table(card(1, 1000, 450, 50, { text: "setup" })))).toBe("");
+    expect(textOf(table(card(1, DEFINE, 450, 50, { text: "setup" })))).toBe("");
   });
 
   test("a card in a corner is ignored", () => {
     // The help corner is the 100 mm quarter circle about the table's bottom-left corner (0, 600).
-    const t = table(card(1, 1000, 10, 530, { text: "setup" }), card(2, 1000, 10, 50, { text: "draw" }));
+    const t = table(card(1, DEFINE, 10, 530, { text: "setup" }), card(2, DEFINE, 10, 50, { text: "draw" }));
     expect(textOf(t)).toBe("[define{draw}]");
   });
 
   test("markers that are pages make no cards", () => {
-    const t = table(card(1, 1000, 50, 50, { text: "setup" }), card(2, 1900, 50, 50 + U));
+    const t = table(card(1, DEFINE, 50, 50, { text: "setup" }), card(2, PAGE, 50, 50 + U));
     expect(textOf(t)).toBe("[define{setup}]");
   });
 });
 
 describe("library cards", () => {
   test("take their length from the lockfile", () => {
-    // ID 0 is the 3U [call(p5.circle)]: a [num{…}] 3U along joins it, and one 4U along doesn't.
+    // CIRCLE is the 3U [call(p5.circle)]: a [num{…}] 3U along joins it, and one 4U along doesn't.
     const line = (along: number) =>
-      table(card(1, 1000, 50, 50, { text: "draw" }), card(2, 0, 50, 50 + U), card(3, 1024, 50 + along, 50 + U, { text: "5" }));
+      table(card(1, DEFINE, 50, 50, { text: "draw" }), card(2, CIRCLE, 50, 50 + U), card(3, NUM, 50 + along, 50 + U, { text: "5" }));
     expect(run(line(3 * U)).last.map.lines[1].tracks).toEqual([2, 3]);
     expect(run(line(4 * U)).last.map.lines[1].tracks).toEqual([2]);
   });
@@ -196,11 +217,11 @@ describe("library cards", () => {
 
 describe("the card-to-text map", () => {
   const t = table(
-    card(1, 1000, 50, 50, { text: "draw" }),
-    card(2, 1009, 50, 50 + U),
-    card(3, 1024, 50 + 2 * U, 50 + U, { text: "3" }),
-    card(4, 1011, 50 + U, 50 + 2 * U, { text: "x" }),
-    card(5, 1031, 50, 300, { text: "n" }),
+    card(1, DEFINE, 50, 50, { text: "draw" }),
+    card(2, REPEAT, 50, 50 + U),
+    card(3, NUM, 50 + 2 * U, 50 + U, { text: "3" }),
+    card(4, SET, 50 + U, 50 + 2 * U, { text: "x" }),
+    card(5, GLOBAL, 50, 300, { text: "n" }),
   );
 
   test("maps every card to its span and every line to its cards", () => {

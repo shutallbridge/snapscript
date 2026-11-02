@@ -14,10 +14,10 @@ A table state is sent only when a card counts, goes, moves past the dead band, o
 lists every card:
 
     {"type": "state", "seq": 42, "t": 1793598123.41, "mm_per_projector_height": 781.0,
-     "cards": [{"track": 17, "marker": 1027, "x": 412.3, "y": 288.1, "angle": -1.2,
+     "cards": [{"track": 17, "marker": 65, "x": 412.3, "y": 288.1, "angle": -1.2,
                 "hw": {"state": "read", "text": "400"}},
-               {"track": 3, "marker": 1001, "x": 300.0, "y": 210.5, "angle": 0.4},
-               {"track": 5, "marker": 2000, "x": 120.0, "y": 80.0, "angle": 0.0}],
+               {"track": 3, "marker": 400, "x": 300.0, "y": 210.5, "angle": 0.4},
+               {"track": 5, "marker": 403, "x": 120.0, "y": 80.0, "angle": 0.0}],
      "page": 5}
 
 `x` and `y` are the marker's centre in table mm, and `angle` is in degrees (ADR 0007). `t` is the frame's time.

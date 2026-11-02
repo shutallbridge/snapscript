@@ -4,9 +4,10 @@
 // through the reader's card-to-text map. The checker is a devDependency only: the reader never
 // imports it.
 import { check, type CheckError, type CheckResult, type ModuleLoader } from "@snapscript/checker";
+import { lineColumnAt, type LineColumn } from "@snapscript/core";
 import { describe, expect, test } from "vitest";
 import type { Span, StepOutput } from "../src/index.ts";
-import { type Replayed, replay } from "./rig/replay.ts";
+import { BACKGROUND, RECT, type Replayed, replay } from "./rig/replay.ts";
 
 // A made-up snapscript-p5 with just the functions the recorded cards call, as the real one declares
 // them in batch 2. `random` is a builtin.
@@ -40,21 +41,13 @@ function endToEnd(name: string): Checked[] {
 const between = (run: Checked[], from: number, to = Infinity) =>
   run.filter((r) => r.replayed.t >= from && r.replayed.t < to);
 
-/**
- * A text offset as the reader's text positions give it: line from 1, column from 0. The checker's
- * spans are offsets into the text, the reader's card spans are lines and columns.
- */
-function position(text: string, offset: number): { line: number; column: number } {
-  const before = text.slice(0, offset).split("\n");
-  return { line: before.length, column: before[before.length - 1].length };
-}
-
 /** The tracks of the cards an error's spans cover, through the reader's card-to-text map. */
 function tracksOf(error: CheckError, output: StepOutput): number[] {
   const tracks: number[] = [];
   for (const s of error.spans) {
-    const from = position(output.text, s.start);
-    const to = position(output.text, s.end);
+    // The checker's spans are offsets into the text, the reader's card spans lines and columns.
+    const from = lineColumnAt(output.text, s.start);
+    const to = lineColumnAt(output.text, s.end);
     for (const c of output.map.cards) {
       if (!("track" in c)) continue;
       if (covers(c.span, from, to)) tracks.push(c.track);
@@ -63,8 +56,8 @@ function tracksOf(error: CheckError, output: StepOutput): number[] {
   return tracks;
 }
 
-function covers(card: Span, from: { line: number; column: number }, to: { line: number; column: number }): boolean {
-  const after = (a: { line: number; column: number }, line: number, column: number) =>
+function covers(card: Span, from: LineColumn, to: LineColumn): boolean {
+  const after = (a: LineColumn, line: number, column: number) =>
     a.line < line || (a.line === line && a.column <= column);
   return after(from, card.line, card.start) && after({ line: card.line, column: card.end }, to.line, to.column);
 }
@@ -96,8 +89,8 @@ describe("the steady table's run (#147)", () => {
     }
   });
 
-  test("the error lights the [call(p5.background)] card, marker 1004", () => {
-    for (const r of between(run, 3.8)) expect(markersOf(r.result.errors[0], r)).toEqual([1004]);
+  test("the error lights the [call(p5.background)] card", () => {
+    for (const r of between(run, 3.8)) expect(markersOf(r.result.errors[0], r)).toEqual([BACKGROUND]);
   });
 });
 
@@ -107,7 +100,7 @@ describe("the steady table's lift run (#147)", () => {
   test("ends, the cards put back, on the same error and skip", () => {
     const last = run[run.length - 1];
     expect(summary(last)).toEqual({ errors: [BACKGROUND_ERROR], skipped: [6] });
-    expect(markersOf(last.result.errors[0], last)).toEqual([1004]);
+    expect(markersOf(last.result.errors[0], last)).toEqual([BACKGROUND]);
   });
 });
 
@@ -119,10 +112,10 @@ const RECT_ERROR = { kind: "TypeError", line: 12, message: "rect takes 4 values"
 describe("the walking skeleton's run (#115)", () => {
   const run = endToEnd("snap-115-vision-20261102-224407");
 
-  test("ends on rect's missing values, lighting the [call(p5.rect)] card, marker 1017", () => {
+  test("ends on rect's missing values, lighting the [call(p5.rect)] card", () => {
     const last = run[run.length - 1];
     expect(summary(last)).toEqual({ errors: [RECT_ERROR], skipped: [12] });
-    expect(markersOf(last.result.errors[0], last)).toEqual([1017]);
+    expect(markersOf(last.result.errors[0], last)).toEqual([RECT]);
   });
 
   test("a line the camera hasn't read yet is skipped with no error, and a skipped [repeat] takes its body and [dedent]", () => {
@@ -148,7 +141,7 @@ describe("the walking skeleton's run (#115)", () => {
     for (const r of held) {
       const rect = r.result.errors.filter((e) => e.kind === "TypeError");
       expect(rect.map(({ kind, line, message }) => ({ kind, line, message }))).toEqual([RECT_ERROR]);
-      expect(markersOf(rect[0], r)).toEqual([1017]);
+      expect(markersOf(rect[0], r)).toEqual([RECT]);
       const others = r.result.errors.filter((e) => e !== rect[0]);
       if (others.length === 0) onlyRect += 1;
       // This run's vision service sent `blank` for a card not read yet at times. Blank goes in as `{}`

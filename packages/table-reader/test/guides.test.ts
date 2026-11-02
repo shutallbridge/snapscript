@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { ReaderState } from "../src/index.ts";
-import { at, card, code, ids, play, U } from "./fixtures.ts";
+import { at, card, CIRCLE, code, DEFINE, GOLD, ids, NUM, play, U } from "./fixtures.ts";
 
 // The project imports snapscript-p5 as p5, and the page as sketch: guides match by marker, so the
 // names needn't agree.
@@ -16,8 +16,8 @@ const page = [
   "[call(sketch.circle)][num{250}]",
 ].join("\n");
 
-const setup = card(1, 1000, 60, 40, { text: "Setup" });
-const draw = card(2, 1000, 60, 300, { text: "draw" });
+const setup = card(1, DEFINE, 60, 40, { text: "Setup" });
+const draw = card(2, DEFINE, 60, 300, { text: "draw" });
 
 describe("page guides", () => {
   test("fasten to the real strip that starts with the same card, its handwriting matched ignoring case", () => {
@@ -30,7 +30,7 @@ describe("page guides", () => {
   });
 
   test("follow their real strip's turn", () => {
-    const turned = card(1, 1000, 60, 40, { text: "setup", angle: 10 });
+    const turned = card(1, DEFINE, 60, 40, { text: "setup", angle: 10 });
     const out = play(entry, [{ t: 0, cards: [turned] }], { page }).last;
     const r = (10 * Math.PI) / 180;
     expect(out.virtualCards[0].x).toBeCloseTo(at(60 - U * Math.sin(r), 40 + U * Math.cos(r), 10).x);
@@ -38,7 +38,7 @@ describe("page guides", () => {
   });
 
   test("a strip head with other handwriting doesn't fasten them", () => {
-    const other = card(1, 1000, 60, 40, { text: "setUp2" });
+    const other = card(1, DEFINE, 60, 40, { text: "setUp2" });
     expect(play(entry, [{ t: 0, cards: [other] }], { page }).last.virtualCards).toEqual([]);
   });
 
@@ -66,8 +66,8 @@ describe("places and mismatches on guides", () => {
     const r = play(
       entry,
       [
-        { t: 0, cards: [setup, second(1024)] },
-        { t: 0.5, cards: [setup, second(1024)] },
+        { t: 0, cards: [setup, second(NUM)] },
+        { t: 0.5, cards: [setup, second(NUM)] },
       ],
       { page },
     );
@@ -82,8 +82,8 @@ describe("places and mismatches on guides", () => {
     const r = play(
       entry,
       [
-        { t: 0, cards: [setup, card(4, 1040, 60 + U * 0, 40 + U), second(1024), third(1040)] },
-        { t: 1, cards: [setup, card(4, 1040, 60 + U * 0, 40 + U), second(1024), third(1040)] },
+        { t: 0, cards: [setup, card(4, GOLD, 60 + U * 0, 40 + U), second(NUM), third(GOLD)] },
+        { t: 1, cards: [setup, card(4, GOLD, 60 + U * 0, 40 + U), second(NUM), third(GOLD)] },
       ],
       { page },
     );
@@ -101,7 +101,7 @@ describe("places and mismatches on guides", () => {
   });
 
   test("a library card is the right card whatever name the page imports its library as", () => {
-    const circle = card(7, 0, 60, 300 + U);
+    const circle = card(7, CIRCLE, 60, 300 + U);
     const r = play(
       entry,
       [
@@ -115,15 +115,15 @@ describe("places and mismatches on guides", () => {
   });
 
   test("a card keeps a guide's place until it moves past 15 mm or 20°", () => {
-    const laid = [setup, second(1024)];
+    const laid = [setup, second(NUM)];
     const r = play(
       entry,
       [
         { t: 0, cards: laid },
         { t: 1, cards: laid },
-        { t: 2, cards: [setup, second(1024, 14)] },
-        { t: 3, cards: [setup, { ...second(1024, 14), angle: 19 }] },
-        { t: 4, cards: [setup, second(1024, 16)] },
+        { t: 2, cards: [setup, second(NUM, 14)] },
+        { t: 3, cards: [setup, { ...second(NUM, 14), angle: 19 }] },
+        { t: 4, cards: [setup, second(NUM, 16)] },
       ],
       { page },
     );
@@ -138,7 +138,7 @@ describe("places and mismatches on guides", () => {
   });
 
   test("a card slid across a row of guides takes none of their places", () => {
-    const slide = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ t: i * 0.1, cards: [setup, second(1024, i * 15 - 60)] }));
+    const slide = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ t: i * 0.1, cards: [setup, second(NUM, i * 15 - 60)] }));
     const r = play(entry, slide, { page });
     expect(r.outputs.every((o) => o.places.length === 0)).toBe(true);
   });
@@ -167,7 +167,7 @@ describe("value guides", () => {
   });
 
   test("never give a mismatch: any card in their place takes it", () => {
-    const gold = card(8, 1040, 50 + 2 * U, 80);
+    const gold = card(8, GOLD, 50 + 2 * U, 80);
     const r = play(
       program,
       [
@@ -182,12 +182,12 @@ describe("value guides", () => {
   });
 
   test("follow a real call card", () => {
-    // ID 0 is the 3U [call(p5.circle)].
+    // CIRCLE is the 3U [call(p5.circle)].
     const r = play(
       "/** @table hidden */\n[import(snapscript-p5)as(p5)]",
       [
-        { t: 0, cards: [card(1, 1000, 50, 50, { text: "draw" }), card(3, 0, 50, 50 + U)] },
-        { t: 1, cards: [card(1, 1000, 50, 50, { text: "draw" }), card(3, 0, 50, 50 + U)] },
+        { t: 0, cards: [card(1, DEFINE, 50, 50, { text: "draw" }), card(3, CIRCLE, 50, 50 + U)] },
+        { t: 1, cards: [card(1, DEFINE, 50, 50, { text: "draw" }), card(3, CIRCLE, 50, 50 + U)] },
       ],
       // The buffer: the import (lines 1–2), a blank line, the @table tag, [define{draw}], then the call.
       (prev) => ({ values: [{ version: prev.version, at: { line: 6, start: 0 }, values: ["x"] }] }),
