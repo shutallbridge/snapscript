@@ -48,7 +48,8 @@ function draw() {
   light.lines.forEach((l, i) => {
     const n = i + 1, head = l.cards[0], errs = light.errors.filter(e => e.line === n);
     const skipped = light.skipped.includes(n);
-    if (i === 0) dot(head, '#22c55e');
+    if (light.unread.includes(n)) dot(head, '#ffffff');  // not read yet (the decided look is a white spinner)
+    else if (i === 0) dot(head, '#22c55e');
     else if (skipped) dot(head, null, true);
     errs.forEach(e => {
       const no = light.errors.indexOf(e) + 1;

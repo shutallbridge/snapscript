@@ -140,6 +140,11 @@ function check(text, skippedLines = []) {
     if (r.e === 'unread') { skip.add(n); return; }
     if (r.e) { const [kind, ...msg] = r.e.split(': '); err(n, r.at, kind, msg.join(': ')); }
   });
+  // a skipped [define] skips its body (the rest of its strip, up to the next standalone card)
+  src.forEach((s, i) => {
+    if (!skip.has(i + 1) || !/^\[define/.test(tok(s)[0] || '')) return;
+    for (let j = i + 1; j < src.length && !STANDALONE.test(tok(src[j])[0] || ''); j++) skip.add(j + 1);
+  });
   // a skipped block head skips its body, and the [dedent] that closes it
   src.forEach((s, i) => {
     if (!skip.has(i + 1) || tok(s)[0] !== '[repeat]') return;
@@ -160,6 +165,7 @@ function compile(program) {
   program.forEach(s => {
     if (s === null) return;
     const t = tok(s);
+    if (!t.length) return;
     let p = 0;
     const value = () => {
       const c = t[p++]; let m;

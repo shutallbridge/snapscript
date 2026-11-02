@@ -20,6 +20,8 @@ const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
 const latLog = fs.createWriteStream(path.join(runs, `latency-${stamp}.jsonl`), { flags: 'a' });
 const now = () => Date.now() / 1000;
 
+const WAIT_S = 5;
+let waitSince = null, waitTimer = null, lastRun = null;
 let win, sketch, geo, lastText = null, lastLight = null, lastFrame = {}, fps = 0;
 const pending = new Map();  // seq -> trip record, until the views report
 
@@ -53,8 +55,19 @@ function onState(st) {
   r.light_changed = lightKey !== lastLight;
   lastLight = lightKey;
   r.wantLit = true;  // the table view redraws on every state (marker rings follow the cards)
-  if (r.text_changed) {
-    lastText = text;
+  lastText = text;
+  // "Handwriting in the loop": a card not read yet updates the check at once, but the run waits for it, up to
+  // WAIT_S, before its line is skipped. A false re-read comes back with the same text, so nothing restarts.
+  clearTimeout(waitTimer);
+  if (rd.unread.length) {
+    waitSince = waitSince || now();
+    const left = WAIT_S - (now() - waitSince);
+    if (left > 0) { r.held = true; waitTimer = setTimeout(() => onState(st), left * 1000 + 10); }
+  } else waitSince = null;
+  const runKey = JSON.stringify(ck.program);
+  r.run_changed = !r.held && runKey !== lastRun;
+  if (r.run_changed) {
+    lastRun = runKey;
     r.js = snap.compile(ck.program);
     r.t_compile = now();
     r.wantDrawn = true;
