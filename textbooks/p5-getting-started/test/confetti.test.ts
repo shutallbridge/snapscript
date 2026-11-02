@@ -6,76 +6,52 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 import { check } from "@snapscript/checker";
 import { diskLoader } from "@snapscript/checker/disk";
+import { loadKit } from "@snapscript/table/kit";
+import { loadProject, type Page as LoadedPage } from "@snapscript/table/project";
 
 const textbook = fileURLToPath(new URL("../", import.meta.url));
 const volume = readFileSync(`${textbook}confetti.md`, "utf8");
 
+/** The one PoC project, which depends on this textbook. */
+const project = loadProject(fileURLToPath(new URL("../../../projects/confetti/", import.meta.url)));
+
 interface Page {
   number: number;
   heading: string;
-  /** Each ```snap block's text, in order. */
-  programs: string[];
-  /** The page's text outside code blocks. */
+  /** Its ```snap block's text, if it has one. */
+  program: string | null;
+  /** The page's markdown below its heading, without its program. */
   prose: string;
+  /** Its images' files. */
+  images: string[];
 }
 
-/**
- * The volume split into pages, the minimal way: a `#` heading outside a code
- * block starts a page. The project loader (#190) owns the real split; switch
- * to it once it has landed.
- */
-function pages(markdown: string): Page[] {
-  const found: Page[] = [];
-  let fence: { snap: boolean; lines: string[] } | null = null;
-  for (const line of markdown.split("\n")) {
-    const page = found.at(-1);
-    if (fence !== null) {
-      if (line.startsWith("```")) {
-        if (fence.snap) page?.programs.push(`${fence.lines.join("\n")}\n`);
-        fence = null;
-      } else fence.lines.push(line);
-    } else if (line.startsWith("```")) {
-      fence = { snap: line.trim() === "```snap", lines: [] };
-    } else if (/^# /.test(line)) {
-      found.push({ number: found.length + 1, heading: line.slice(2).trim(), programs: [], prose: "" });
-    } else if (page !== undefined) page.prose += `${line}\n`;
-  }
-  return found;
-}
+type Node = LoadedPage["content"]["children"][number];
+const nodes = (node: Node): Node[] => [node, ...("children" in node ? (node.children as Node[]).flatMap(nodes) : [])];
 
-const all = pages(volume);
-const withPrograms = all.filter((p) => p.programs.length > 0);
+/** The volume's pages as the project loader splits it (#190). Loading it already refuses a page with two snap blocks. */
+const all: Page[] = project.pages
+  .filter((p) => p.textbook === "snapscript-p5-getting-started" && p.volume === "confetti")
+  .map(({ page, heading, program, content }) => ({
+    number: page,
+    heading,
+    program,
+    prose: content.children.map((n) => volume.slice(n.position!.start.offset, n.position!.end.offset)).join("\n\n"),
+    images: content.children.flatMap(nodes).flatMap((n) => (n.type === "image" ? [n.url] : [])),
+  }));
+const withPrograms = all.filter((p): p is Page & { program: string } => p.program !== null);
 
-/**
- * Program 1's kit, from #158's table (the Stage 1 bases), in card notation
- * with handwriting as `…`. Swap to `projects/confetti/kit.yaml` once #192 has
- * landed it.
- */
-const kit = new Set([
-  "[call(p5.fill)]",
-  "[call(p5.rect)]",
-  "[call(random)]",
-  "[call(p5.circle)]",
-  "[call(p5.background)]",
-  "[call(p5.noStroke)]",
-  "[call(p5.createCanvas)]",
-  "[define(setup)]",
-  "[num{…}]",
-  "[set{…}to]",
-  "[get{…}]",
-  ...["mediumblue", "deepskyblue", "gold", "yellow", "hotpink", "tomato", "aquamarine", "limegreen"].map((c) => `[color(${c})]`),
-  "[repeat]",
-  "[dedent]",
-]);
+/** Every side of every card in the project's kit (#192), handwriting as `{}`. */
+const kit = new Set(loadKit(project).flatMap(({ sides }) => sides.map(({ card }) => card)));
 
-/** The cards a program lays on the table, handwriting as `…`. Imports are never on the table. */
+/** The cards a program lays on the table, handwriting as `{}`. Imports are never on the table. */
 const tableCards = (program: string): string[] =>
   program
     .split("\n")
     .filter((line) => !/^\s*(\/\*\*|\*)/.test(line))
     .flatMap((line) => line.match(/\[[^\]]*\]/g) ?? [])
     .filter((card) => !card.startsWith("[import("))
-    .map((card) => card.replace(/\{[^}]*\}/g, "{…}"));
+    .map((card) => card.replace(/\{[^}]*\}/g, "{}"));
 
 describe("confetti.md", () => {
   test("is the textbook's one volume", () => {
@@ -85,20 +61,16 @@ describe("confetti.md", () => {
   });
 
   test("starts with Before We Get Started, a page with no program", () => {
-    expect(all[0]).toMatchObject({ heading: "Before We Get Started", programs: [] });
+    expect(all[0]).toMatchObject({ number: 1, heading: "Before We Get Started", program: null });
   });
 
   test("every other page has a program, one per program state", () => {
-    expect(all.slice(1).every((p) => p.programs.length > 0)).toBe(true);
-    const programs = withPrograms.map((p) => p.programs[0]);
+    expect(all.slice(1).every((p) => p.program !== null)).toBe(true);
+    const programs = withPrograms.map((p) => p.program);
     expect(new Set(programs).size).toBe(programs.length);
   });
 
-  test.each(all.map((p) => [p.number, p.heading, p] as const))("page %i (%s) has at most one snap block", (_, __, page) => {
-    expect(page.programs.length).toBeLessThanOrEqual(1);
-  });
-
-  test.each(withPrograms.map((p) => [p.number, p.heading, p.programs[0]!] as const))(
+  test.each(withPrograms.map((p) => [p.number, p.heading, p.program] as const))(
     "page %i (%s) checks clean against snapscript-p5",
     (_, __, program) => {
       // The page's program stands alone: its own hidden import finds snapscript-p5 beside the volume.
@@ -109,7 +81,7 @@ describe("confetti.md", () => {
     },
   );
 
-  test.each(withPrograms.map((p) => [p.number, p.heading, p.programs[0]!] as const))(
+  test.each(withPrograms.map((p) => [p.number, p.heading, p.program] as const))(
     "page %i (%s) lays only the kit's cards",
     (_, __, program) => {
       expect(tableCards(program).filter((card) => !kit.has(card))).toEqual([]);
@@ -125,7 +97,7 @@ describe("confetti.md", () => {
       "  [call(p5.rect)][get{xPos}][get{yPos}][num{10}][num{16}]",
       "[dedent]",
     ];
-    expect(withPrograms.at(-1)?.programs[0]).toBe(
+    expect(withPrograms.at(-1)?.program).toBe(
       [
         "/** @table hidden */",
         "[import(snapscript-p5)as(p5)]",
@@ -136,7 +108,6 @@ describe("confetti.md", () => {
         "[call(p5.noStroke)]",
         ...confetti("gold"),
         ...confetti("hotpink"),
-        "",
       ].join("\n"),
     );
   });
@@ -153,15 +124,15 @@ describe("confetti.md", () => {
   });
 
   test("shows the canvas coordinate diagram on the page that first draws on the canvas, from beside the volume", () => {
-    const images = all.map((p) => [...p.prose.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)].map((m) => m[1]));
-    expect(images.flat()).toEqual(["canvas-coordinates.png"]);
-    const firstDrawingPage = all.findIndex((p) => p.prose.includes("[call(p5.rect)]"));
-    expect(images[firstDrawingPage]).toEqual(["canvas-coordinates.png"]);
-    expect(existsSync(`${textbook}canvas-coordinates.png`)).toBe(true);
+    const image = `${textbook}canvas-coordinates.png`;
+    expect(all.flatMap((p) => p.images)).toEqual([image]);
+    const firstDrawingPage = all.find((p) => p.prose.includes("[call(p5.rect)]"));
+    expect(firstDrawingPage?.images).toEqual([image]);
+    expect(existsSync(image)).toBe(true);
   });
 
   test.each(all.map((p) => [p.number, p.heading, p] as const))("page %i (%s) has every part a page has", (_, __, page) => {
-    if (page.programs.length === 0) return;
+    if (page.program === null) return;
     expect(page.prose).toContain("> ✴️ See the virtual cards on the table");
     expect(page.prose).toContain("**You should see:**");
   });

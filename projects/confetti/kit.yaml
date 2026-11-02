@@ -1,0 +1,45 @@
+# The kit: the cards made for this project, one line per card in card notation,
+# with how many sheets of it. It matches the Stage 1 bases printed (#121, #158):
+# one sheet per base the PoC has a card for, 57 sheets.
+#
+# A flip pair is its two sides, front first: "[num{}] / [str{}]". Handwriting
+# goes in empty braces, and every card is at its shortest length, so the
+# handwritten cards are all 4U. pnpm print looks each side's marker up in
+# language/markers.yaml or snapscript.lock.
+#
+# Left bare: get 2U ×6 and get 3U ×1 (p5.width, p5.height and p5.windowWidth
+# aren't in snapscript-p5 for the PoC) and block_head 4U ×1 ([for{}in] is for
+# program 2).
+
+# call 2U ×13 (the circle is for "Try these", on the base meant for list)
+"[call(p5.fill)]": 3
+"[call(p5.rect)]": 3
+"[call(random)]": 6
+"[call(p5.circle)]": 1
+
+# call 3U ×2, call 4U ×1
+"[call(p5.background)]": 1
+"[call(p5.noStroke)]": 1
+"[call(p5.createCanvas)]": 1
+
+# define 4U ×1
+"[define(setup)]": 1
+
+# literal 4U ×17
+"[num{}] / [str{}]": 17
+
+# simple_head 4U ×6
+"[set{}to]": 6
+
+# get 4U ×7 (6 for program 1, a spare on the base meant for windowHeight)
+"[get{}]": 7
+
+# color 4U ×4
+"[color(mediumblue)] / [color(deepskyblue)]": 1
+"[color(gold)] / [color(yellow)]": 1
+"[color(hotpink)] / [color(tomato)]": 1
+"[color(aquamarine)] / [color(limegreen)]": 1
+
+# block_head 2U ×3, dedent 2U ×3
+"[repeat]": 3
+"[dedent]": 3

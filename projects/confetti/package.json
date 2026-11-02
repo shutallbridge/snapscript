@@ -1,0 +1,11 @@
+{
+  "name": "confetti",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "snapscript": "main.snap",
+  "dependencies": {
+    "snapscript-p5": "workspace:*",
+    "snapscript-p5-getting-started": "workspace:*"
+  }
+}
