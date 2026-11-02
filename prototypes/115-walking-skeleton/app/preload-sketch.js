@@ -28,7 +28,7 @@ const scale = Number(new URLSearchParams(location.search).get('scale') || 1);
 
 window.addEventListener('DOMContentLoaded', () => {
   const root = document.getElementById('c');
-  if (mode === 'b') { root.style.transform = `scale(${scale})`; root.style.transformOrigin = '0 0'; root.style.position = 'relative'; }
+  if (mode === 'b') { root.style.transform = `scale(${scale})`; root.style.transformOrigin = '0 0'; root.style.position = 'relative'; root.style.width = root.style.height = '500px'; }  // sized: absolute children alone give it no height, and the page clips
   ipcRenderer.on('run', (_, seq, js) => {
     let el = root;
     if (mode === 'a') { if (inst) inst.remove(); }
