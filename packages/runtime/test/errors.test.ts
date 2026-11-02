@@ -84,6 +84,37 @@ describe("runtime errors", () => {
   });
 });
 
+describe("errors the checker can't see", () => {
+  test("a function value given the wrong number of values says how many it takes, as the checker does", async () => {
+    const seen = await runProgram(
+      lines(
+        "[define{add}][required{a}][required{b}]",
+        "[return][get{a}][+][get{b}]",
+        "",
+        "[on(load)]",
+        "[set{f}to][get{add}]",
+        "[call{f}][num{1}]",
+        "[set{g}to][get{random}]",
+        "[call{g}][num{1}][num{2}][num{3}]",
+      ),
+    );
+    expect(seen.checkErrors).toEqual([]);
+    expect(seen.errors).toEqual([{ type: "runtime", kind: "TypeError", message: "add takes 2 values", at: { line: 6, card: "[call{f}]" } }]);
+    const builtin = await runProgram(lines("[on(load)]", "[set{g}to][get{random}]", "[call{g}][num{1}][num{2}][num{3}]"));
+    expect(builtin.errors).toEqual([{ type: "runtime", kind: "TypeError", message: "random takes 0 to 2 values", at: { line: 3, card: "[call{g}]" } }]);
+  });
+
+  test("setting an attribute of a value that has none lights the [setProp] card, not the call that led there", async () => {
+    const seen = await runProgram(
+      lines("[define{poke}][required{thing}]", "[get{thing}][setProp{size}to][num{2}]", "", "[on(load)]", "[call{poke}][num{1}]"),
+    );
+    expect(seen.checkErrors).toEqual([]);
+    expect(seen.errors).toEqual([
+      { type: "runtime", kind: "AttributeError", message: "num attributes can't be set here", at: { line: 2, card: "[setProp{size}to]" } },
+    ]);
+  });
+});
+
 describe("stopping", () => {
   const program = lines(
     "[import(./checks.snap)as(checks)]",

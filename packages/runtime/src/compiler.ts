@@ -175,7 +175,7 @@ class ModuleCompiler {
       case "set":
         return s.name ? this.assign(s.name, value(s.value), scope) : "";
       case "setProp":
-        return s.name ? `rt.setProp(${this.expr(s.target, scope)}, ${str(s.name.key)}, ${str(s.name.text)}, ${value(s.value)}, ${this.module});` : "";
+        return s.name ? `rt.setProp(${this.expr(s.target, scope)}, ${str(s.name.key)}, ${str(s.name.text)}, ${value(s.value)}, ${this.module}, ${s.card.span.start}, ${s.card.span.end});` : "";
       case "expression":
         return s.value ? `${this.expr(s.value, scope)};` : "";
       case "return":

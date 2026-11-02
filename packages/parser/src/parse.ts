@@ -267,7 +267,7 @@ class Parser {
                 throw new Fail(`${next.text} needs the value it sets an attribute of directly to its left`, [next.span]);
               }
               const name = readName(next, next.slots[0]);
-              return { ...base, type: "setProp", target: value, name, value: r.oneValue(next) };
+              return { ...base, type: "setProp", target: value, card: next, name, value: r.oneValue(next) };
             }
             r.end(card, "a line holds one value, and this card starts another");
             return { ...base, type: "expression", value };

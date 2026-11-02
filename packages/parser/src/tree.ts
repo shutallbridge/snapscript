@@ -103,7 +103,7 @@ export type Statement =
   /** A value that could not be read is `null`, and so is a name. */
   | (StatementBase & { type: "set"; name: Name | null; value: Expr | null })
   | (StatementBase & { type: "return"; value: Expr | null })
-  | (StatementBase & { type: "setProp"; target: Expr; name: Name | null; value: Expr | null })
+  | (StatementBase & { type: "setProp"; target: Expr; card: Card; name: Name | null; value: Expr | null })
   | (StatementBase & { type: "expression"; value: Expr | null })
   | (StatementBase & BlockBase & { type: "repeat"; count: Expr | null; body: Statement[] })
   | (StatementBase & BlockBase & { type: "for"; name: Name | null; iterable: Expr | null; body: Statement[] })

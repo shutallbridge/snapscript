@@ -112,6 +112,31 @@ export interface Signature {
   gives: Type | "any";
 }
 
+/** How many values one way to call a function takes: `params`, or at least that many when `variadic`. */
+export interface Count {
+  params: number;
+  variadic: boolean;
+}
+
+/** A function's counts, for messages: `no values`, `1 value`, `3 values`, `1 to 3 values`, `1 or 3 values`, `at least 2 values`. */
+export function describeCounts(counts: readonly Count[]): string {
+  const variadic = counts.filter((c) => c.variadic).map((c) => c.params);
+  if (variadic.length > 0) {
+    const least = Math.min(...variadic);
+    return least === 0 ? "any number of values" : `at least ${least} value${least === 1 ? "" : "s"}`;
+  }
+  const sorted = [...new Set(counts.map((c) => c.params))].sort((a, b) => a - b);
+  const plural = (n: number) => (n === 1 ? "value" : "values");
+  const first = sorted[0]!;
+  const last = sorted[sorted.length - 1]!;
+  if (sorted.length === 1) return first === 0 ? "no values" : `${first} ${plural(first)}`;
+  if (last - first === sorted.length - 1) return `${first} to ${last} values`;
+  return `${sorted.slice(0, -1).join(", ")} or ${last} values`;
+}
+
+/** A signature's count. */
+export const countOf = (s: Signature): Count => ({ params: s.params.length, variadic: s.variadic !== null });
+
 const sig = (params: Param[], gives: Type | "any", variadic: Param | null = null): Signature => ({ params, variadic, gives });
 const num = (name: string): Param => ({ name, takes: ["num"] });
 const anything = (name: string): Param => ({ name, takes: "any" });

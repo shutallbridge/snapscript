@@ -2,7 +2,7 @@
 // sketch process, which never loads the parser or the checker. The host (the
 // sketch process, or a test's Node host) gives it the native modules and an
 // output sink, and reads the text position it keeps.
-import { builtins, methods, operators, type ErrorKind, type Operator, type Signature, type Takes, type Type } from "@snapscript/core";
+import { builtins, countOf, describeCounts, methods, operators, type Count, type ErrorKind, type Operator, type Signature, type Takes, type Type } from "@snapscript/core";
 
 /** A stretch of the entry program's text, as offsets. */
 export interface Span {
@@ -48,10 +48,15 @@ export class Module {
 export class SnapFunction {
   constructor(
     readonly name: string,
-    /** Whether it takes `n` values. */
-    readonly takes: (n: number) => boolean,
+    /** How many values each way to call it takes. */
+    readonly counts: readonly Count[],
     readonly impl: (...args: Value[]) => Value,
   ) {}
+
+  /** Whether it takes `n` values. */
+  takes(n: number): boolean {
+    return this.counts.some((c) => (c.variadic ? n >= c.params : n === c.params));
+  }
 }
 
 /** Every value a program can hold. A list is a JS array, `none` is `null`. */
@@ -190,10 +195,8 @@ export function show(value: Value, nested = false, seen: Set<object> = new Set()
 
 const truthy = (v: Value): boolean => !(v === null || v === false || v === 0 || v === "" || (isList(v) && v.length === 0));
 
-const takesCounts = (counts: readonly { params: number; variadic: boolean }[]) => (n: number) =>
-  counts.some((c) => (c.variadic ? n >= c.params : n === c.params));
-
-const takesMessage = (fn: SnapFunction): string => `${fn.name} can't take those values`;
+/** What a function value given the wrong number of values says, as the checker says it of a function it knows. */
+const takesMessage = (fn: SnapFunction): string => `${fn.name} takes ${describeCounts(fn.counts)}`;
 
 class Runtime {
   readonly UNSET: typeof UNSET = UNSET;
@@ -238,7 +241,8 @@ class Runtime {
   }
 
   define(m: Module, key: string, text: string, required: number, all: number, impl: (...args: Value[]) => Value): void {
-    const fn = new SnapFunction(text, (n) => n >= required && n <= all, (...args) => {
+    const counts = Array.from({ length: all - required + 1 }, (_, i): Count => ({ params: required + i, variadic: false }));
+    const fn = new SnapFunction(text, counts, (...args) => {
       const full = [...args];
       while (full.length < all) full.push(MISSING as unknown as Value);
       return impl(...full);
@@ -249,12 +253,8 @@ class Runtime {
   /** One `[extern(…)]` form: the name's function calls the native module's function of that name. */
   extern(m: Module, key: string, text: string, params: number): void {
     const found = m.attributes.get(key)?.value;
-    const counts = found instanceof SnapFunction ? [...((found as ExternFunction).counts ?? []), params] : [params];
-    const fn: ExternFunction = Object.assign(
-      new SnapFunction(text, (n) => counts.includes(n), (...args) => this.callNative(m, text, args)),
-      { counts },
-    );
-    this.setAttr(m, key, text, fn);
+    const counts: Count[] = [...(found instanceof SnapFunction ? found.counts : []), { params, variadic: false }];
+    this.setAttr(m, key, text, new SnapFunction(text, counts, (...args) => this.callNative(m, text, args)));
   }
 
   /**
@@ -442,13 +442,14 @@ class Runtime {
     this.fail("AttributeError", `${typeName(object)} has no attributes`, module, start, end);
   }
 
-  setProp(target: Value, key: string, text: string, value: Value, own: Module): void {
+  /** `[setProp{…}to]`: its error is at the card, in the module `own` it is in. */
+  setProp(target: Value, key: string, text: string, value: Value, own: Module, start: number, end: number): void {
     if (target instanceof Dict || (target instanceof Module && target === own)) {
       const found = target.attributes.get(key);
       target.attributes.set(key, { text: found?.text ?? text, value });
       return;
     }
-    throw new SnapscriptError("AttributeError", `${typeName(target)} attributes can't be set here`);
+    this.fail("AttributeError", `${typeName(target)} attributes can't be set here`, own.index, start, end);
   }
 
   truthy(v: Value): boolean {
@@ -533,8 +534,6 @@ const RECURSION_LIMIT = 1000;
 /** Each error a run meets, and the card it was at. */
 const blamed = new WeakMap<object, Span | null>();
 
-type ExternFunction = SnapFunction & { counts?: number[] };
-
 function typeName(v: Value): Type {
   if (v === null) return "none";
   if (isList(v)) return "list";
@@ -584,8 +583,7 @@ function describeTakes(overloads: readonly Signature[], takes: Takes): string {
  * checker does for the values whose types it knows, then runs it.
  */
 function checked(name: string, overloads: readonly Signature[], impl: (...args: Value[]) => Value): SnapFunction {
-  const counts = overloads.map((s) => ({ params: s.params.length, variadic: s.variadic !== null }));
-  return new SnapFunction(name, takesCounts(counts), (...args) => {
+  return new SnapFunction(name, overloads.map(countOf), (...args) => {
     const signature = overloads.find((s) => s.params.length === args.length || (s.variadic !== null && args.length >= s.params.length))!;
     args.forEach((arg, i) => {
       const takes = (signature.params[i] ?? signature.variadic)!.takes;

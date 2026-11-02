@@ -5,6 +5,8 @@
 // them fails. A value it knows nothing about can be any type.
 import {
   builtins,
+  countOf,
+  describeCounts,
   firstStage,
   forTakes,
   leafTypes,
@@ -45,21 +47,6 @@ function describeTakes(of: Types, many: boolean): string {
   const list = [...of];
   if (many && list.length === 1 && list[0] !== "none") return `${list[0]}s`;
   return describe(of);
-}
-
-/** `no values`, `1 value`, `3 values`, `1 to 3 values`, `1 or 3 values`, `at least 2 values`. */
-function describeCounts(overloads: readonly Signature[]): string {
-  const variadic = overloads.filter((s) => s.variadic !== null).map((s) => s.params.length);
-  if (variadic.length > 0) {
-    const least = Math.min(...variadic);
-    return least === 0 ? "any number of values" : `at least ${least} value${least === 1 ? "" : "s"}`;
-  }
-  const counts = [...new Set(overloads.map((s) => s.params.length))].sort((a, b) => a - b);
-  const plural = (n: number) => (n === 1 ? "value" : "values");
-  if (counts.length === 1) return counts[0] === 0 ? "no values" : `${counts[0]} ${plural(counts[0])}`;
-  const last = counts[counts.length - 1];
-  if (last - counts[0] === counts.length - 1) return `${counts[0]} to ${last} values`;
-  return `${counts.slice(0, -1).join(", ")} or ${last} values`;
 }
 
 /**
@@ -485,7 +472,7 @@ class TypeChecker {
       (s) => s.params.length === args.length || (s.variadic !== null && args.length >= s.params.length),
     );
     if (!signature) {
-      this.report("TypeError", `${text} takes ${describeCounts(overloads)}`, span);
+      this.report("TypeError", `${text} takes ${describeCounts(overloads.map(countOf))}`, span);
       return NOTHING;
     }
     const all = signature.params.map((p) => takesOf(p.takes));
