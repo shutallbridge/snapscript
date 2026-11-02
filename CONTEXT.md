@@ -379,6 +379,16 @@ _Avoid_: help spot, hot corner
 **Settings menu**:
 The table app's menu for whoever runs the table, opened from a keyboard. It holds the table's settings, including calibration.
 
+**Line-up**:
+How the camera's picture maps onto the projector's, so whatever the camera sees can be lit where it lies, and how many mm the projector's picture spans. The vision service keeps it. There is one, at the table's height: the camera and projector sit side by side, so the projected light still lands on a raised card.
+_Avoid_: calibration (that makes it), homography
+
+**Calibration**:
+Making the line-up from the settings menu: clear the table while the projector shows markers, lay the ruler page, then check the outlines it draws. It also fixes the camera's exposure for the room. It is redone by hand whenever the projection looks off; a stand moved as a whole needs nothing.
+
+**Ruler page**:
+A sheet the instructor tool prints with two markers a known distance apart. Laid flat during calibration, it gives the table its real size in mm.
+
 ## Textbooks
 
 **Textbook**:
