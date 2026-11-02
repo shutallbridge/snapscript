@@ -36,17 +36,22 @@ export const GLOBAL: number = marker("[global{}]", 5);
 export const IF: number = marker("[if]");
 export const GOLD: number = marker("[color(gold)]");
 
-/** The 3U `[call(p5.circle)]`, `[call(p5.createCanvas)]`, a library the programs don't import, and a page. */
+/**
+ * The 3U `[call(p5.circle)]`, `[call(p5.createCanvas)]`, a library the programs don't import, a
+ * page, and the printed `[define(setup)]`.
+ */
 export const CIRCLE: number = 400;
 export const CREATE_CANVAS: number = 401;
 export const PLAY: number = 402;
 export const PAGE: number = 403;
+export const SETUP: number = 404;
 
 export const lockfile: Lockfile = new Map([
   [CIRCLE, { kind: "library", card: "call", package: "snapscript-p5", name: "circle", length: 3 }],
   [CREATE_CANVAS, { kind: "library", card: "call", package: "snapscript-p5", name: "createCanvas", length: 4 }],
   [PLAY, { kind: "library", card: "call", package: "snapscript-sound", name: "play", length: 3 }],
   [PAGE, { kind: "page", textbook: "snapscript-p5-getting-started", volume: "confetti", page: 3 }],
+  [SETUP, { kind: "library", card: "define", package: "snapscript-p5", name: "setup", length: 4 }],
 ]);
 
 // The coding space is the left half of an 800 x 600 mm table, with a 100 mm help corner bottom-left.

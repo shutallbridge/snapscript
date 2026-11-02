@@ -16,11 +16,12 @@ import {
   typesWithAttributes,
   type ErrorKind,
   type Operator,
+  type Param as CoreParam,
   type Signature,
   type Takes,
   type Type,
 } from "@snapscript/core";
-import type { Declaration, Expr, Name, Param, Program, Span, Statement } from "@snapscript/parser";
+import type { Declaration, DocComment, Expr, Name, Param, Program, Span, Statement } from "@snapscript/parser";
 import type { CheckError } from "./index.ts";
 import type { ImportedModules, Member, ModuleInfo } from "./modules.ts";
 
@@ -61,10 +62,32 @@ function describeCounts(overloads: readonly Signature[]): string {
   return `${counts.slice(0, -1).join(", ")} or ${last} values`;
 }
 
-/** The ways a `[define{…}]` or an `[extern(…)]` can be called: with every count from its required values to all of them. */
-export function signaturesOf(params: readonly Param[]): Signature[] {
+/**
+ * A declared function's value: it takes anything, and `declared` is the type its doc comment's
+ * `@param {…}` gives it, when that is one of the language's types. The declared type is for value
+ * guides only; it isn't checked.
+ */
+export interface DeclaredParam extends CoreParam {
+  declared: Type | null;
+}
+
+/** The one type a `@param {…}` declares, or `null` for none, several, or one the language doesn't have. */
+function declaredType(name: string, doc: DocComment | null): Type | null {
+  const found = doc?.params.find((p) => p.name.toLowerCase() === name.toLowerCase());
+  const [only, ...more] = found?.types ?? [];
+  return only !== undefined && more.length === 0 && (types as readonly string[]).includes(only) ? (only as Type) : null;
+}
+
+/**
+ * The ways a `[define{…}]` or an `[extern(…)]` can be called: with every count from its required
+ * values to all of them.
+ */
+export function signaturesOf(params: readonly Param[], doc: DocComment | null = null): Signature[] {
   const required = params.filter((p) => p.type === "required").length;
-  const all = params.map((p) => ({ name: p.name?.text ?? "", takes: "any" as const }));
+  const all = params.map((p): DeclaredParam => {
+    const name = p.name?.text ?? "";
+    return { name, takes: "any", declared: declaredType(name, doc) };
+  });
   const signatures: Signature[] = [];
   for (let n = required; n <= all.length; n += 1) signatures.push({ params: all.slice(0, n), variadic: null, gives: "any" });
   return signatures;
@@ -158,14 +181,14 @@ class TypeChecker {
             this.topLevel.set(declaration.name.key, {
               type: "function",
               text: declaration.name.text,
-              overloads: signaturesOf(declaration.params),
+              overloads: signaturesOf(declaration.params, declaration.doc),
             });
           }
           break;
         case "extern":
           if (declaration.name) {
             const found = externs.get(declaration.name.key) ?? { text: declaration.name.text, overloads: [] };
-            found.overloads.push(...signaturesOf(declaration.params));
+            found.overloads.push(...signaturesOf(declaration.params, declaration.doc));
             externs.set(declaration.name.key, found);
             this.topLevel.set(declaration.name.key, { type: "function", ...found });
           }
