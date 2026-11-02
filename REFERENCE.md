@@ -72,6 +72,36 @@ A library offers printed cards with `@card` tags in its doc comments. A `@card` 
  */
 ```
 
+A `@table` tag says where a strip lies on the table. It goes in the doc comment of a card that stands alone (see 4.1), and does not change the program.
+
+| Tag                     | Meaning                                                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `@table <x> <y>`        | the top-left corner of the strip's first card, in whole mm from the top-left of the coding space            |
+| `@table <x> <y> <turn>` | the same, turned clockwise by whole degrees about that corner                                               |
+| `@table auto`           | laid out by the system                                                                                      |
+| `@table hidden`         | not on the table; it still runs                                                                             |
+
+x runs right and y runs down. `[import(…)as(…)]` and `[extern(…)]` are never on the table: they are always `@table hidden`. Every other card that stands alone is `@table auto` without the tag. The other cards of a strip sit in their places from its first card, each at the shortest length that holds its text.
+
+```
+/** @table 120 40 */
+[define{setup}]
+[call(p5.createCanvas)][num{500}][num{500}]
+
+/**
+ * Draws the confetti.
+ * @table 40 210 15
+ */
+[define{draw}]
+[call(p5.circle)][num{250}][num{250}][num{5}]
+
+/** @table hidden */
+[define{helper}]
+[return][num{1}]
+```
+
+A `@table` the system cannot read counts as `@table auto`.
+
 ### 1.2. A first sketch
 
 ```

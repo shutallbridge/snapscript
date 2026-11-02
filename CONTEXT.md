@@ -316,7 +316,7 @@ Every track on the table at one moment, with its marker, where it lies, how it i
 What turns a table state into program text, and program text back into the cards it needs. Errors that only the camera makes, such as a read error, never enter the text.
 
 **Buffer**:
-The table program's text as the table app holds it now, rewritten whenever the table changes. A `.snap` file is what the buffer is saved as.
+The table program's text as the table app holds it now, rewritten whenever the table changes. It holds where each strip lies, in `@table` tags, but a change to those alone does not restart the sketch. A `.snap` file is what the buffer is saved as; detached cards are left out of it.
 
 **Virtual card**:
 A card the projector draws where a real card is not. It is a stand-in card or a guide card, and it disappears when a real card is laid in its place.
