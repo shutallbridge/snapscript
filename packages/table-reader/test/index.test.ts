@@ -273,6 +273,12 @@ describe("settings", () => {
       joinKeepAcrossMm: 9,
       lineMakeMm: 10,
       lineKeepMm: 15,
+      placeStillS: 0.4,
+      placeMakeMm: 10,
+      placeMakeDeg: 15,
+      placeKeepMm: 15,
+      placeKeepDeg: 20,
+      valueGuideLength: 4,
     });
   });
 
