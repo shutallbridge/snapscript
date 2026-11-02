@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { shortestLength } from "@snapscript/faces";
 import { parse, readCard } from "@snapscript/parser";
 import { parse as parseYaml } from "yaml";
+import { nameKey, sameName } from "./names.ts";
 import { ProjectError, type Project } from "./project.ts";
 
 export const KIT = "kit.yaml";
@@ -49,13 +50,13 @@ export function loadKit(project: Project): KitCard[] {
   });
 }
 
-/** The entry module's imports: the name each binds → its package. */
+/** The entry module's imports: the name each binds, by its name key → its package. */
 export function importsOf(project: Project): Map<string, string> {
   const manifest = JSON.parse(readFileSync(join(project.dir, "package.json"), "utf8")) as { snapscript?: unknown };
   const libraries = new Map<string, string>();
   if (typeof manifest.snapscript !== "string") return libraries;
   for (const d of parse(readFileSync(join(project.dir, manifest.snapscript), "utf8")).program.declarations) {
-    if (d.type === "import" && d.binding) libraries.set(d.binding.text, d.source);
+    if (d.type === "import" && d.binding) libraries.set(d.binding.key, d.source);
   }
   return libraries;
 }
@@ -65,15 +66,18 @@ function kitSide(card: string, project: Project, libraries: Map<string, string>)
   if (named) {
     const [, kind, name] = named;
     const dot = name!.lastIndexOf(".");
-    const library = dot > 0 ? libraries.get(name!.slice(0, dot)) : undefined;
+    const library = dot > 0 ? libraries.get(nameKey(name!.slice(0, dot))) : undefined;
     const offered = project.cards.find((c) =>
-      kind === "define" ? c.card === "define" && c.name === name : library !== undefined && c.card === kind && c.package === library && c.name === name!.slice(dot + 1),
+      kind === "define"
+        ? c.card === "define" && sameName(c.name, name!)
+        : library !== undefined && c.card === kind && c.package === library && sameName(c.name, name!.slice(dot + 1)),
     );
     if (offered) return { card, length: offered.length, marker: offered.marker };
   }
   const length = shortestLength(card);
   for (const [id, marker] of project.languageMarkers) {
-    if (marker.card === card && marker.length === length) return { card, length, marker: id };
+    const same = named ? sameName(marker.card, card) : marker.card === card;
+    if (same && marker.length === length) return { card, length, marker: id };
   }
   return { card, length, marker: null };
 }

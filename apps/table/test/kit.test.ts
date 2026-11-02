@@ -25,6 +25,10 @@ describe("the kit", () => {
     ]);
   });
 
+  test("a library card's module and name ignore case (ADR 0008), and keep the kit's spelling", () => {
+    expect(loadKit(withKit('"[call(Shapes.SQUARE)]": 1'))).toEqual([{ sides: [{ card: "[call(Shapes.SQUARE)]", length: 2, marker: 400 }], sheets: 1 }]);
+  });
+
   test("a flip pair is its two sides, front first", () => {
     expect(loadKit(withKit('"[bool(true)] / [bool(false)]": 2'))).toEqual([
       { sides: [{ card: "[bool(true)]", length: 2, marker: 24 }, { card: "[bool(false)]", length: 2, marker: 25 }], sheets: 2 },

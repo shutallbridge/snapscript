@@ -5,6 +5,7 @@ import { builtins } from "@snapscript/core";
 import { sideOf } from "@snapscript/faces";
 import type { Layout, TableCard, TableState } from "@snapscript/table-reader";
 import { U_MM } from "./layout.ts";
+import { sameName } from "./names.ts";
 import { cardQuad, corners } from "./pose.ts";
 import type { Project } from "./project.ts";
 
@@ -50,7 +51,7 @@ function labelOf(card: string): string {
 function contentOf(marker: number, project: HelpProject): (Content & { length: number }) | null {
   const entry = project.lockfile.get(marker);
   if (entry?.kind === "library") {
-    const card = project.cards.find((c) => c.card === entry.card && c.package === entry.package && c.name === entry.name);
+    const card = project.cards.find((c) => c.card === entry.card && c.package === entry.package && sameName(c.name, entry.name));
     const label = card?.label ?? labelOf(`[${entry.card}(${entry.name})]`);
     const help = card?.help.sentence ? card.help : null;
     return { label, sentence: help?.sentence ?? NO_HELP, values: help?.values ?? [], length: entry.length };
@@ -58,7 +59,7 @@ function contentOf(marker: number, project: HelpProject): (Content & { length: n
   const language = project.languageMarkers.get(marker);
   if (!language) return null;
   const named = language.card.match(/^\[(?:call|get)\(([^()]+)\)\]$/)?.[1];
-  const builtin = named === undefined ? undefined : builtins.find((b) => b.name === named);
+  const builtin = named === undefined ? undefined : builtins.find((b) => sameName(b.name, named));
   if (builtin) return { label: builtin.name, ...builtin.help, length: language.length };
   return { label: labelOf(language.card), sentence: NO_HELP, values: [], length: language.length };
 }

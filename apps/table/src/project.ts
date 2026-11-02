@@ -8,6 +8,7 @@ import { shortestLength, sideOf } from "@snapscript/faces";
 import { readCard } from "@snapscript/parser";
 import type { Node, Parent, Root, RootContent } from "mdast";
 import { fromMarkdown } from "mdast-util-from-markdown";
+import { sameName } from "./names.ts";
 import type { LanguageMarkers, LibraryCardEntry, Lockfile, PageEntry } from "@snapscript/table-reader";
 
 /** A project, loaded. */
@@ -187,7 +188,7 @@ function cardNamed(text: string): { card: LibraryCard["card"]; name: string } | 
 
 function markerOf(lockfile: Lockfile, card: string, library: string, name: string): number | null {
   for (const [id, entry] of lockfile) {
-    if (entry.kind === "library" && entry.card === card && entry.package === library && entry.name === name) return id;
+    if (entry.kind === "library" && entry.card === card && entry.package === library && sameName(entry.name, name)) return id;
   }
   return null;
 }

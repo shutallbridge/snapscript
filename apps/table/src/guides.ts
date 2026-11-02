@@ -11,6 +11,7 @@ import {
   type TableState,
   type ValueGuideSource,
 } from "@snapscript/table-reader";
+import { nameKey, sameName } from "./names.ts";
 import { cardQuad, pointOn, type Quad } from "./pose.ts";
 import type { Project } from "./project.ts";
 
@@ -110,7 +111,7 @@ function laidValues(program: CheckResult["program"]): Map<number, number> {
 
 /** The packages a program's import lines name, by their local names. */
 function importsOf(text: string): Map<string, string> {
-  return new Map([...text.matchAll(/\[import\(([^()]+)\)as\(([^()]+)\)\]/gi)].map((m) => [m[2]!.toLowerCase(), m[1]!]));
+  return new Map([...text.matchAll(/\[import\(([^()]+)\)as\(([^()]+)\)\]/gi)].map((m) => [nameKey(m[2]!), m[1]!]));
 }
 
 /** A page whose marker lies at (x, y), turned `angle`: its paper, from its top-left corner. */
@@ -169,8 +170,8 @@ export function createGuides(project: GuidesProject, options: { settings?: Parti
   const functionColorOf = (text: string, imports: Map<string, string>): FunctionColor | null => {
     const m = /^\[call\(([^().]+)\.([^().]+)\)\]$/i.exec(text);
     if (!m) return null;
-    const pkg = imports.get(m[1]!.toLowerCase());
-    const found = project.cards.find((c) => c.card === "call" && c.package === pkg && c.name.toLowerCase() === m[2]!.toLowerCase());
+    const pkg = imports.get(nameKey(m[1]!));
+    const found = project.cards.find((c) => c.card === "call" && c.package === pkg && sameName(c.name, m[2]!));
     return found?.functionColor ?? null;
   };
 

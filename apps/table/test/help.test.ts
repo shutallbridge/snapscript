@@ -48,6 +48,17 @@ describe("what the help box says", () => {
   });
 });
 
+describe("names ignore case (ADR 0008)", () => {
+  test("a lockfile line in another case still finds its card's help", () => {
+    const id = p5Card("call", "rect");
+    const entry = confetti.lockfile.get(id)!;
+    const lockfile = new Map(confetti.lockfile).set(id, { ...entry, name: "RECT" } as typeof entry);
+    const session = createSession({ project: { ...confetti, lockfile }, layout });
+    session.handle({ type: "table", now: 0, state: table(0, onCorner(1, id)) });
+    expect(session.scene.help).toMatchObject({ label: "rect", sentence: expect.stringMatching(/^Draws a rectangle/) });
+  });
+});
+
 describe("what the help box says, for language cards", () => {
   test("a builtin's help comes from core's table", () => {
     const session = createSession({ project, layout });

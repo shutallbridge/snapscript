@@ -80,6 +80,13 @@ describe("library cards", () => {
   });
 });
 
+describe("names ignore case (ADR 0008)", () => {
+  test("a lockfile line names a library card in any case", () => {
+    const project = loadProject(fixtureProject({ lock: "400 = call fixture-shapes.SQUARE 2\n" }));
+    expect(project.cards.find((c) => c.name === "square")?.marker).toBe(400);
+  });
+});
+
 describe("textbook pages", () => {
   const program = [
     "/** @table hidden */",
