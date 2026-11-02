@@ -8,7 +8,11 @@ import type { Scene } from "../../session.ts";
 import { defaultTableSettings } from "../../settings.ts";
 import { drawCalibration } from "./calibration.ts";
 import { drawMenu } from "./menu.ts";
+// The fonts the view names, at the weights it draws them: Geist Mono for text, badges (700) and the
+// no-internet "!" (800), Kalam for read-back.
 import "@fontsource/geist-mono/500.css";
+import "@fontsource/geist-mono/700.css";
+import "@fontsource/geist-mono/800.css";
 import "@fontsource/kalam/400.css";
 import { bar, drawFeedback } from "./feedback.ts";
 import { drawHandwriting, STATUS } from "./handwriting.ts";
@@ -116,5 +120,6 @@ table.onScene((s) => {
   draw();
 });
 addEventListener("resize", draw);
-// Canvas text waits for its fonts to load.
-void document.fonts.ready.then(draw);
+// Canvas text doesn't ask for a font until it draws with it: load each one, then draw again.
+const FONTS = ['500 16px "Geist Mono"', '700 16px "Geist Mono"', '800 16px "Geist Mono"', "400 16px Kalam"];
+void Promise.all(FONTS.map((f) => document.fonts.load(f))).then(draw);
