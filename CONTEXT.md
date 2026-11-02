@@ -54,8 +54,11 @@ A flap on each edge of a sheet that folds under the face plate and holds the she
 A card with a different card on each side, changed by flipping it over. Both sides take the same roles: `[num{…}]` / `[str{…}]`, `[bool(true)]` / `[bool(false)]`, `[color(…)]` / `[color(…)]` (two different colors, such as `[color(yellow)]` / `[color(purple)]`), `[+]` / `[-]`, `[*]` / `[/]`, `[<]` / `[>]`, `[<=]` / `[>=]`, `[==]` / `[!=]`, `[and]` / `[or]`. Every other card has one side, `[%]`, `[set{x}to]`, `[get{x}]`, `[define{f}]` and `[call{f}]` among them.
 
 **Marker**:
-The printed pattern on a card's side that the camera reads to learn which side it is, where it lies and how it is turned. A marker names a keyword (`[repeat]`), a handwritten kind and its length (`[get{…}]` at 4U), or a library card (`[call(p5.fill)]`); it does not name the physical card. Two `[get{x}]` cards of the same length carry the same marker and are told apart by where they lie.
+The printed pattern on a card's side that the camera reads to learn which side it is, where it lies and how it is turned. A marker names a keyword (`[repeat]`), a handwritten kind and its length (`[get{…}]` at 4U), or a library card (`[call(p5.fill)]`); it does not name the physical card. Two `[get{x}]` cards of the same length carry the same marker and are told apart by where they lie. A marker's ID is looked up in the language markers or the project's lockfile, never guessed from the number.
 _Avoid_: fiducial, tag, code
+
+**Language markers**:
+The marker IDs the language gives its own cards and the table's own markers: keywords such as `[repeat]`, each handwritten kind at each length from its shortest up to 8U (`[get{…}]` at 4U, 5U, …), printed cards such as `[color(gold)]` and `[call(random)]` at their label's length (IDs 0–299), and the ruler page's and calibration's markers (300–399). They read the same in every project. IDs are only added across minor and patch versions, never changed or reused.
 
 **Printed / handwritten**:
 A card's label is either printed on it (`[call(print)]`) or written by hand on its whiteboard (`[call{print}]`); both mean the same thing. In text, `{}` holds handwriting and `()` holds everything else, including text that is only ever typed in a file, such as `[import(snapscript-p5)as(p5)]`.
@@ -118,7 +121,17 @@ _Avoid_: role (a role is what an edge needs from the edge that faces it)
 An endorsed list that gives popular libraries their marker IDs, so that library cards printed for one project read the same in another. A project may assign IDs differently.
 
 **Lockfile**:
-A project's list of which marker ID stands for which library card or textbook page, such as `1293 = call snapscript-p5.circle` or `1900 = page snapscript-p5-getting-started/confetti 3`. The camera reads library cards and pages through it.
+A project's list of which marker ID stands for which library card or textbook page, such as `1293 = call snapscript-p5.circle 3` (a 3U card) or `1900 = page snapscript-p5-getting-started/confetti 3` (page 3 of `confetti.md`). The camera reads library cards and pages through it. Its IDs start at 400, after the language markers. A new card or page takes the next free ID; an entry is never renumbered and an ID is never reused, so cards and pages already printed keep reading the same.
+
+**Project**:
+The folder a program lives in on the table's computer: a `package.json` that lists its libraries and textbooks and names its entry module, the entry module itself, and its lockfile. The table app opens one project.
+
+**Entry module**:
+The one `.snap` file a package names in its `package.json` (`"snapscript": "main.snap"`). A project's entry module is the table program: its hidden `[import]`s give library cards their names. Other `.snap` files are reached only by importing them.
+
+**Kit**:
+The cards made for a project: each card and how many sheets of it, matching the bases printed for it. A card whose bases exist but which the project has no marker for is left out, and its bases stay bare.
+_Avoid_: set, deck
 
 ## Errors
 
@@ -387,7 +400,7 @@ _Avoid_: calibration (that makes it), homography
 Making the line-up from the settings menu: clear the table while the projector shows markers, lay the ruler page, then check the outlines it draws. It also fixes the camera's exposure for the room. It is redone by hand whenever the projection looks off; a stand moved as a whole needs nothing.
 
 **Ruler page**:
-A sheet the instructor tool prints with two markers a known distance apart. Laid flat during calibration, it gives the table its real size in mm.
+An A4 page printed with two of the table's own markers a known distance apart, and a 50 mm bar to check the print's scale. Laid flat during calibration, it gives the table its real size in mm.
 
 ## Textbooks
 
