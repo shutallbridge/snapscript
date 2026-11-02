@@ -119,6 +119,19 @@ def crop(frame, corners, box):
     return track.crop(np.ascontiguousarray(frame[y0:y1, x0:x1]), np.asarray(corners) - [x0, y0], box)
 
 
+def face(frame, corners, mid):
+    """#147: the whole card's look at 1 px/mm (grey, mean 0, unit norm), from its marker corners, for --face-check."""
+    L = (LEN.get(mid) or length_u(CARDS[mid])) * 30
+    pts = apply(similarity(corners), [[0, 0], [L, 0], [L, 30], [0, 30]])
+    x0, y0 = np.maximum(pts.min(0).astype(int) - 20, 0)
+    x1, y1 = pts.max(0).astype(int) + 20
+    win = np.ascontiguousarray(frame[y0:y1, x0:x1])
+    im = track.warp(win, similarity(np.asarray(corners) - [x0, y0]), (0, 0, L, 30)).resize((int(L), 30))
+    a = np.asarray(im, float)
+    a -= a.mean()
+    return a / max(np.linalg.norm(a), 1e-6)
+
+
 def wrap(d):
     return (d + 180) % 360 - 180
 
@@ -157,6 +170,7 @@ def main():
     ap.add_argument("--change-hold", type=int, default=1, help="calm cycles in a row a crop must differ from the read one")
     ap.add_argument("--light-tol", type=float, help="share the paper may differ from its brightness at the read before a rewrite isn't judged")
     ap.add_argument("--keep-text", action="store_true", help="a card read again keeps its last text while the read runs")
+    ap.add_argument("--face-check", type=float, help="#147: a missed card whose spot still looks like it (correlation >= this) counts as seen")
     ap.add_argument("--flush", action="store_true", help="wait for a frame exposed after the loop asks (fresher, waits up to a frame)")
     a = ap.parse_args()
 
@@ -251,6 +265,25 @@ def main():
                 if np.linalg.norm(tr["c"] - c0) > a.band_mm or abs(wrap(tr["a"] - a0)) > a.band_deg:
                     tr["pose"] = (tr["c"], tr["a"])
 
+        faced = []
+        if a.face_check is not None:  # #147: a missed marker on a card that's still there isn't a lifted card
+            for tr in tracks:
+                if not tr["live"]:
+                    continue
+                if tr["last"] == now:
+                    if now - tr.get("face_t", -1e9) > 1.0:
+                        tr["face"], tr["face_t"] = face(gray, tr["corners"], tr["mid"]), now
+                elif tr.get("face") is not None:
+                    f = face(gray, tr["corners"], tr["mid"])
+                    r = float((f * tr["face"]).sum()) if f.shape == tr["face"].shape else 0.0
+                    if r >= a.face_check:
+                        tr.update(last=now, missed=0)
+                        if tr.get("run") is None:
+                            tr["run"] = now
+                        faced.append((int(tr["mid"]), round(r, 2)))
+                    else:
+                        tr.setdefault("face_miss", []).append(round(r, 2))
+
         def gone(tr):
             if not tr["live"]:
                 return tr["last"] != now
@@ -323,7 +356,7 @@ def main():
                "sent": seq if changed else None, **({"state": cards} if changed else {}),
                "seen": sorted(int(m) for m in seen),
                "raw": {int(m): [round(float(c[0]), 2), round(float(c[1]), 2), round(ang, 2)] for m, (c, ang, _) in seen.items()},
-               "dm": margins,
+               "dm": margins, "faced": faced,
                "paper": {int(tr["mid"]): round(tr["paper"], 3) for tr in tracks if tr.get("paper") is not None}}
         log.write(json.dumps(rec) + "\n")
         log.flush()
