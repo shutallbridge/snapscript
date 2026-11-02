@@ -14,7 +14,12 @@ for (const f of process.argv.slice(2)) {
   const rows = fs.readFileSync(f, 'utf8').trim().split('\n').map(l => JSON.parse(l)).filter(r => r.state);
   let prevJoins = new Set(), last = null, changes = 0, joinFlips = 0, unreadFlips = 0, errFlips = 0, lastJ = null, lastU = null, lastE = null;
   const span = {};
+  const lastText = {};  // track -> last read text (old logs clear it on a re-read; KEEP_TEXT puts it back)
   for (const r of rows) {
+    if (process.env.KEEP_TEXT) for (const c of r.state) if (c.hw) {
+      if (c.hw.text !== undefined) lastText[c.track] = c.hw.text;
+      else if (c.hw.state === 'reading' && lastText[c.track] !== undefined) c.hw = { ...c.hw, text: lastText[c.track] };
+    }
     const rd = snap.read({ cards: r.state }, cj.cards, { split: SPLIT, prevJoins });
     prevJoins = rd.joined;
     const ck = snap.check(rd.text, rd.unread);
