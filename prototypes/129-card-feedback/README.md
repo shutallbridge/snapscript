@@ -14,7 +14,7 @@ Throwaway, for [Prototype card feedback: error lighting, skipped lines, read-bac
   - `i` a missing `[dedent]`: margin (guide left of the line, caret at the gap), bar (a bar where it goes), both
   - `d` detached cards (not under a `[define]` or `[on]`): the skipped look, or no look
 - Error lighting is mocked, not checked: a wrong kind in a `circle`/`createCanvas`/… argument's place is a `TypeError`, a `[set{x}to]` with nothing after it is a `SyntaxError`, and a `[get{x}]` of a skipped `x` is a `NameError` naming the skipped line's badge.
-- Each line has a **gutter** on its left: a status dot (green: a recognised strip head; grey crossed out: skipped or detached), then each error's badge and short message, right-aligned. Nothing goes right of a line.
+- Each line has a **gutter** on its left: a status dot (green: a recognised strip head; grey crossed out: skipped or detached), then each error's badge, all one size, 6 mm clear of the line. Messages are only in the bottom bar. Nothing goes right of a line.
 - Structure is mocked too: a line is a chain of cards, and it's part of the program if a line one row up (within 10 mm across, 1.2U along, for an indent) is, up to a `[define]` or `[on]`. `[import]`, `[extern]` and `[global]` stand alone. A detached line has no errors and no argument guides.
 - `cards.json` can give a card's real length under `len` (ID 0 is a 3D-printed 3U `[call(p5.circle)]`).
 
