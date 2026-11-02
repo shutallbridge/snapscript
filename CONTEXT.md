@@ -285,14 +285,14 @@ _Avoid_: release (on its own), arrangement version
 ## The table
 
 **Instructor**:
-The person who sets up a table: prints and assembles the bases and sheets, sets up libraries, and calibrates the camera and projector.
+The person who sets up a table: prints and assembles the bases and sheets, and sets up libraries.
 _Avoid_: builder
 
 **Instructor tool**:
-What the instructor runs on their own computer to set up a table. It talks to the table app for anything on the table.
+What the instructor runs on their own computer to set up a table: libraries, bases, assembly pages and sheets. It never talks to the table app.
 
 **Table app**:
-The program on the table's computer whose screen is projected onto the table. It joins the vision service to the language: it keeps the table program, checks and runs it, and draws the sketch, errors, read-back text and virtual cards. People use it only through the cards and the instructor tool.
+The program on the table's computer whose screen is projected onto the table. It joins the vision service to the language: it keeps the table program, checks and runs it, and draws the sketch, errors, read-back text and virtual cards. People use it only through the cards and its settings menu.
 _Avoid_: IDE, desk app
 
 **Vision service**:
@@ -329,5 +329,21 @@ A bar of text along the top or bottom edge of the table. The errors bar holds ea
 **Read-back**:
 What the handwriting reader saw, drawn on the card's whiteboard. A debug view, also shown on a card with a `NameError`.
 
-**Help spot**:
-A place on the table where putting a card shows its doc comment.
+**Window**:
+A region of the table that owns the markers in it and what is drawn there. A card belongs to the window its marker is in, even if its tail reaches into the next one.
+
+**Coding space**:
+The window where cards are laid and their feedback is drawn, on the left by default. Only cards whose marker is in it count.
+
+**Canvas space**:
+The window where the sketch runs. A card whose marker is in it is ignored.
+
+**Full screen**:
+The canvas space shown over the whole table. The windows keep their places, so cards still count by where the coding space would be.
+
+**Corner**:
+A fixed quarter circle in a corner of the table that takes an action when a card is laid in it. The help corner, bottom-left, shows the card's doc comment.
+_Avoid_: help spot, hot corner
+
+**Settings menu**:
+The table app's menu for whoever runs the table, opened from a keyboard. It holds the table's settings, including calibration.
