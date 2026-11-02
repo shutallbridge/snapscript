@@ -43,13 +43,25 @@ class Card:
     x: float
     y: float
     angle: float = 0.0
+    smudged: bool = False  # a smudge on the marker's corner: the camera misses it, but the card looks the same
 
     def json(self):
-        return {"marker": self.marker, "x": self.x, "y": self.y, "angle": self.angle}
+        out = {"marker": self.marker, "x": self.x, "y": self.y, "angle": self.angle}
+        return out | ({"smudged": True} if self.smudged else {})
 
 
-def frame_t(i):
-    return START_T + i * PERIOD_S
+@dataclass
+class Hand:
+    """A hand lying flat on the table, its palm centred at (x, y) table mm, fingers pointing up the table."""
+    x: float
+    y: float
+
+    def json(self):
+        return {"hand": [self.x, self.y]}
+
+
+def frame_t(i, period_s=PERIOD_S):
+    return START_T + i * period_s
 
 
 def write_markers(d: Path) -> Path:
@@ -68,11 +80,11 @@ def write_lineup(d: Path, mm_per_ph=MM_PER_PH) -> Path:
     return p
 
 
-def write_scene(d: Path, frames, size_mm=(420, 300)) -> Path:
-    """frames: one list of Cards per frame."""
+def write_scene(d: Path, frames, size_mm=(420, 300), period_s=PERIOD_S) -> Path:
+    """frames: one list of Cards (and Hands) per frame, drawn in order, later ones on top."""
     p = d / "scene.json"
     p.write_text(json.dumps({
-        "start_t": START_T, "period_s": PERIOD_S,
+        "start_t": START_T, "period_s": period_s,
         "camera": {"px_per_mm": PX_PER_MM, "origin_mm": list(ORIGIN_MM), "size_mm": list(size_mm)},
         "frames": [[c.json() for c in f] for f in frames],
     }))
@@ -106,8 +118,8 @@ def run_service(d: Path, source: str, settings=None, lineup=None, timeout=120):
     return [json.loads(l) for l in buf.decode().splitlines() if l.strip()]
 
 
-def run_drawn(d: Path, frames, **kw):
-    return run_service(d, f"drawn:{write_scene(d, frames)}", **kw)
+def run_drawn(d: Path, frames, period_s=PERIOD_S, **kw):
+    return run_service(d, f"drawn:{write_scene(d, frames, period_s=period_s)}", **kw)
 
 
 def states(msgs):

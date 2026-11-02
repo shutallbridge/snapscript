@@ -39,7 +39,7 @@ def sightings(dets, lineup: Lineup, known):
         if m is not None and m.kind == "ruler":
             continue  # the ruler page is for calibration (#172), not the table state
         c, a, _ = marker_pose(lineup.to_mm(d.corners))
-        out.append(Sighting(int(d.tag_id), c, a))
+        out.append(Sighting(int(d.tag_id), c, a, d.corners))
     return out
 
 
@@ -64,14 +64,14 @@ def run(args):
     frames = sources.make(args.source, known)
     det = Detector(families=settings.tag_family, nthreads=settings.threads,
                    quad_decimate=settings.quad_decimate, refine_edges=1)
-    tracker = Tracker(settings)
+    tracker = Tracker(settings, lambda marker: sources.sheet(marker, known))
     hub = Hub(args.port)
     print(f"snapscript-vision: listening on {hub.host}:{hub.port}", flush=True)
     hub.first.wait()
 
     seq, last = 0, ([], None)  # an empty table: nothing to send until something counts
     for t, grey in frames:
-        live = tracker.step(t, sightings(det.detect(grey), lineup, known))
+        live = tracker.step(t, sightings(det.detect(grey), lineup, known), grey)
         cards, page = table_state(live, known)
         if (cards, page) != last:
             last = (cards, page)
