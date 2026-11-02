@@ -113,6 +113,22 @@ describe("read-back", () => {
     ]);
   });
 
+  test("a SyntaxError about a card's handwriting shows its read-back; one about where the card sits doesn't", () => {
+    const session = createSession({ project, layout });
+    session.handle({ type: "table", now: 0, state: table(0, ...strip(1, 30, 30, [ON_LOAD], [[PRINT], [NUM, "4o"]])) });
+    session.handle({ type: "sketch", now: 0.1, message: { type: "frame", run: 1 } });
+    session.handle({ type: "tick", now: 3 });
+    expect(session.scene.errors.map((e) => e.kind)).toEqual(["SyntaxError"]);
+    expect(session.scene.handwriting.readBack.map(({ track, text }) => ({ track, text }))).toEqual([{ track: 3, text: "4o" }]);
+
+    const other = createSession({ project, layout });
+    other.handle({ type: "table", now: 0, state: table(0, ...strip(1, 30, 30, [ON_LOAD], [[NUM, "1"], [NUM, "2"]])) });
+    other.handle({ type: "sketch", now: 0.1, message: { type: "frame", run: 1 } });
+    other.handle({ type: "tick", now: 3 });
+    expect(other.scene.errors.map((e) => [e.kind, e.cards])).toEqual([["SyntaxError", [{ track: 3 }]]]);
+    expect(other.scene.handwriting.readBack).toEqual([]);
+  });
+
   test("with the Debug setting on, every handwritten card shows read-back", () => {
     const session = createSession({ project, layout, tableSettings: { ...defaultTableSettings, readBack: true } });
     session.handle({ type: "table", now: 0, state: table(0, ...onLoad(1, 30, 30, "1", "2")) });

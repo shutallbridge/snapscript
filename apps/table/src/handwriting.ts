@@ -50,8 +50,12 @@ const unread = (hw: Handwriting | undefined): boolean =>
 const textOf = (hw: Handwriting | undefined): string | null =>
   hw?.state === "read" || hw?.state === "reading" ? (hw.text ?? null) : hw?.state === "blank" ? "" : null;
 
-/** Error kinds that show read-back on the cards they blame: the handwriting may be misread. */
-const MISREAD_KINDS = new Set(["SyntaxError", "NameError", "AttributeError"]);
+/**
+ * Errors that show read-back on the cards they blame, as the handwriting may be misread: a
+ * `SyntaxError` on what a card holds (not one on where it sits), a `NameError`, an `AttributeError`.
+ */
+const misread = (e: SceneError): boolean =>
+  e.kind === "NameError" || e.kind === "AttributeError" || (e.kind === "SyntaxError" && e.aboutCardText === true);
 
 export interface HandwritingTracker {
   /** Takes the newest table state. */
@@ -100,7 +104,7 @@ export function createHandwriting(languageMarkers: LanguageMarkers, settings?: P
     view({ state, map, errors, readBackAll, lengthOf, now }) {
       const inBuffer = new Set(map.cards.flatMap((c) => ("track" in c ? [c.track] : [])));
       const tracksOf = (refs: readonly CardRef[]) => refs.flatMap((r) => ("track" in r ? [r.track] : []));
-      const blamed = new Set(errors.flatMap((e) => (e.kind && MISREAD_KINDS.has(e.kind) ? [...tracksOf(e.cards), ...tracksOf(e.suggestion ?? [])] : [])));
+      const blamed = new Set(errors.flatMap((e) => (misread(e) ? [...tracksOf(e.cards), ...tracksOf(e.suggestion ?? [])] : [])));
       const readBack: ReadBack[] = [];
       let offline = false;
       for (const c of state?.cards ?? []) {

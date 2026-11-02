@@ -121,6 +121,8 @@ export interface SceneError {
   followsFrom?: { line: number; name: string };
   /** A `NameError`'s suggested name: the cards that define it. */
   suggestion?: CardRef[];
+  /** A check error about what one card holds (`[num{4o}]`), not how the cards fit together. */
+  aboutCardText?: boolean;
 }
 
 /** What the table view draws. */
@@ -270,6 +272,7 @@ export function createSession(options: SessionOptions): Session {
       skippedLines = checked.program.skippedLines;
       checkErrors = checked.errors.map((e) => {
         const error: SceneError = { from: "check", kind: e.kind, message: e.message, cards: cardsAt(buffer, e.spans) };
+        if (e.aboutCardText) error.aboutCardText = true;
         const name = e.spans[0] && buffer.text.slice(e.spans[0].start, e.spans[0].end);
         if (e.followsFrom !== null && name) error.followsFrom = { line: e.followsFrom, name };
         if (e.suggestion) error.suggestion = cardsAt(buffer, e.suggestion.spans);
