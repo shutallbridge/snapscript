@@ -308,10 +308,14 @@ const lenOf = side => minLength(side, CARD_S);
 const kindOf = text => text.replace(/[{(][^})]*[})]/, m => m[0] === '{' ? '{}' : m);  // [num{500}] -> [num{}]; [call(p5.rect)] stays
 
 // Real cards, kept for a moment after their last read (vision.py sends only what one frame saw, ~0.7 s apart).
-const KEEP_S = 1.5, real = {};
+const KEEP_S = 1.5, real = {}, STILL_MM = 2, STILL_DEG = 1.5;
 function realCards(L) {
   const now = performance.now() / 1000;
-  for (const c of state.cards || []) real[c.id] = { ...c, seen: now };
+  for (const c of state.cards || []) {  // a card that moved less than STILL_MM and STILL_DEG keeps its last pose: reads wobble
+    const was = real[c.id], moved = !was || Math.hypot(c.c[0] - was.c[0], c.c[1] - was.c[1]) * cfg.tableMm > STILL_MM ||
+      Math.abs(Math.atan2(Math.sin(c.a - was.a), Math.cos(c.a - was.a))) > STILL_DEG * Math.PI / 180;
+    real[c.id] = moved ? { ...c, seen: now } : { ...was, seen: now };
+  }
   return Object.values(real).filter(c => now - c.seen < KEEP_S && CARD_TEXT[c.id] && inside(L.code, toPx(c.c)))
     .map(c => ({ ...c, text: CARD_TEXT[c.id], m: toPx(c.c) }));
 }
