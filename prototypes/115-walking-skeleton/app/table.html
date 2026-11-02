@@ -1,0 +1,76 @@
+<!doctype html>
+<!-- PROTOTYPE (#115), throwaway: the table view. Draws, in table mm through px/mm: the two windows, a ring on each
+card marker, each line's gutter (green dot on a strip head, crossed dot on a skipped or detached line, E1 E2 badges),
+a red outline on the card an error blames, the status bar, and a small timing HUD. Reports 'lit' once it has drawn. -->
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000;overflow:hidden;cursor:none}canvas{display:block}</style></head>
+<body><canvas id="v"></canvas><script>
+const geo = JSON.parse(new URLSearchParams(location.search).get('geo'));
+const cv = document.getElementById('v'), g = cv.getContext('2d');
+cv.width = geo.W; cv.height = geo.H;
+const k = geo.pxMm, P = ([x, y]) => [x * k, y * k];
+const add = (p, d, s) => [p[0] + d[0] * s, p[1] + d[1] * s];
+let light = null, hud = {}, trips = [];
+
+function cardPath(c, grow = 0) {
+  const a = add(add(c.tl, c.u, -grow), c.v, -grow), b = add(a, c.u, c.L + 2 * grow), d = add(b, c.v, 30 + 2 * grow), e = add(a, c.v, 30 + 2 * grow);
+  g.beginPath(); [a, b, d, e].forEach((p, i) => g[i ? 'lineTo' : 'moveTo'](...P(p))); g.closePath();
+}
+function dot(c, fill, crossed) {
+  const [x, y] = P(add(add(c.tl, c.u, -12), c.v, 15)), r = 6 * k;
+  g.beginPath(); g.arc(x, y, r, 0, 7);
+  if (crossed) { g.strokeStyle = '#888'; g.lineWidth = 1.2 * k; g.stroke(); g.beginPath(); g.moveTo(x - r * .7, y + r * .7); g.lineTo(x + r * .7, y - r * .7); g.stroke(); }
+  else { g.fillStyle = fill; g.fill(); }
+}
+function badge(c, n, i) {
+  const [x, y] = P(add(add(c.tl, c.u, -12 - (i + 1) * 14), c.v, 15)), r = 6 * k;
+  g.fillStyle = '#ef4444'; g.fillRect(x - r, y - r, 2 * r, 2 * r);
+  g.fillStyle = '#fff'; g.font = `bold ${7 * k}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('E' + n, x, y);
+}
+
+function draw() {
+  g.fillStyle = '#000'; g.fillRect(0, 0, geo.W, geo.H);
+  g.strokeStyle = '#333'; g.lineWidth = 2; g.strokeRect(1, 1, geo.splitPx - 2, geo.H - 2); g.strokeRect(geo.splitPx + 1, 1, geo.AW - geo.splitPx - 2, geo.H - 2);
+  const s = geo.sketch; g.strokeStyle = '#555'; g.strokeRect(s.x - 2, s.y - 2, s.w + 4, s.h + 4);
+  if (!light) return;
+  if (new URLSearchParams(location.search).get('rings')) for (const c of light.cards) {  // marker rings (debug; off: nothing is drawn on a marker zone): green counts (coding space), grey ignored
+    const [x, y] = P([c.x, c.y]); g.beginPath(); g.arc(x, y, 11 * k, 0, 7);
+    g.strokeStyle = c.x * k < geo.splitPx ? '#22c55e' : '#666'; g.lineWidth = 1; g.stroke();
+  }
+  const msgs = [];
+  light.lines.forEach((l, i) => {
+    const n = i + 1, head = l.cards[0], errs = light.errors.filter(e => e.line === n);
+    const skipped = light.skipped.includes(n);
+    if (i === 0) dot(head, '#22c55e');
+    else if (skipped) dot(head, null, true);
+    errs.forEach(e => {
+      const no = light.errors.indexOf(e) + 1;
+      badge(head, no, errs.indexOf(e));
+      msgs.push(`E${no}  ${e.kind}: ${e.message}`);
+      const c = l.cards[e.card] || head;
+      cardPath(c, 1.5); g.strokeStyle = '#ef4444'; g.lineWidth = 3 * k; g.stroke();
+    });
+  });
+  light.detached.forEach(l => dot(l[0], null, true));
+  // status bar, bottom of the coding space
+  const bh = 14 * k;
+  g.fillStyle = '#111'; g.fillRect(0, geo.H - bh, geo.splitPx, bh);
+  g.fillStyle = msgs.length ? '#fca5a5' : '#86efac'; g.font = `${6.5 * k}px monospace`; g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.fillText(msgs.length ? msgs.join('    ') : `${light.lines.length} lines, no errors`, 6 * k, geo.H - bh / 2);
+  // HUD, top of the canvas window
+  const t = trips.at(-1), f = hud.frame || {};
+  g.fillStyle = '#9ca3af'; g.font = `${5 * k}px monospace`; g.textBaseline = 'top';
+  const ms = (a, b) => (a && b) ? Math.round((b - a) * 1000) : '-';
+  [`seq ${light.seq} · search ${f.search_s}s · hw ${f.hw_s}s · frame age ${f.age_s}s · sketch ${hud.fps} fps`,
+   t ? `last trip: cap→sent ${ms(t.t_cap, t.t_sent)} · →check ${ms(t.t_sent, t.t_check)} · →lit ${ms(t.t_check, t.t_lit)} · →drawn ${ms(t.t_check, t.t_drawn)} · total ${ms(t.t_cap, t.t_drawn || t.t_lit)} ms` : '']
+    .forEach((line, i) => g.fillText(line, geo.splitPx + 6 * k, 4 * k + i * 7 * k));
+}
+
+table.onState((l, h) => {
+  light = l; hud = h;
+  draw();
+  requestAnimationFrame(() => table.lit(l.seq, Date.now() / 1000));
+});
+table.onTrip(r => { trips.push(r); if (trips.length > 50) trips.shift(); });
+setInterval(draw, 1000);
+draw();
+</script></body></html>
