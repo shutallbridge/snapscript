@@ -70,6 +70,11 @@ const SECTIONS = [  // name, [key, label, choices, unit]
   ['Virtual cards', [  // #129
     ['vlook', 'Look', ['ghost', 'outline', 'footprint']],
     ['vdim', 'Stand-in brightness', [25, 35, 45, 60, 75, 100], '%'],
+    ['vmzLit', 'Stand-in marker zone', ['white', 'dark']],  // white blinds the camera to a real card laid on it
+    ['vsFill', 'Stand-in marker zone fill (dark)', [0, 10, 20, 30, 40, 50], '% white'],
+    ['vsBracket', 'Stand-in marker zone edge on', [true, false]],
+    ['vsEdge', 'Stand-in marker zone edge', [0, 0.5, 1, 1.5, 2, 2.5, 3], ' mm'],
+    ['vsAlpha', 'Stand-in marker zone edge brightness', [20, 30, 50, 75, 100], '%'],
     ['vedge', 'Guide edge thickness', [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2], ' mm'],
     ['vdash', 'Guide edge dashes', [2, 4, 6, 8, 12], ' mm'],
     ['vfill', 'Guide background', [0, 5, 10, 15, 20, 30, 40, 60], '%'],
@@ -94,7 +99,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmatch: 'same card', vtol: 10, vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'white', vsFill: 0, vsBracket: true, vsEdge: 1, vsAlpha: 20, vmatch: 'same card', vtol: 10, vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -148,6 +153,8 @@ addEventListener('keydown', e => {
   const LOOKS = ['ghost', 'outline', 'footprint'];
   if (e.key === 'b') { const B = [0, 5, 10, 15, 20, 30, 40]; cfg.vfill = B[(B.indexOf(cfg.vfill) + 1) % B.length]; save(); say(`guide background: ${cfg.vfill ? cfg.vfill + '%' : 'off'}`); return; }  // off, 5, 10, 15, 20, 30, 40 %
   if (e.key === 'e') { const E = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75]; cfg.vedge = E[(E.indexOf(cfg.vedge) + 1) % E.length]; save(); say(`guide edge: ${cfg.vedge ? cfg.vedge + ' mm' : 'none'}`); return; }  // none to 1.75 mm
+  if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
+  if (e.key === 'm') { cfg.vsBracket = !cfg.vsBracket; save(); say(`stand-in marker zone edge: ${cfg.vsBracket ? 'on' : 'off'}`); return; }
   if (e.key === 'w') { cfg.vwb = !cfg.vwb; save(); say(`guide whiteboard edge: ${cfg.vwb ? 'on' : 'off'}`); return; }
   if (LOOKS[+e.key - 1]) { cfg.vlook = LOOKS[+e.key - 1]; save(); say(`${e.key}: ${cfg.vlook === 'ghost' ? 'stand-in' : 'guide, ' + cfg.vlook}`); return; }
   // menu closed: ←→ resize the two windows
@@ -309,6 +316,12 @@ function occupant(v, cards) {
 }
 const replaces = (c, v) => cfg.vmatch === 'same kind' ? kindOf(c.text) === kindOf(v.text) : c.text === v.text;
 
+// The marker zone's faint white bracket (top, left, bottom; open to the card), cfg.vmzEdge mm at cfg.vmzAlpha %. Drawn in mm.
+function mzBracket(g, edge = cfg.vmzEdge, alpha = cfg.vmzAlpha) {
+  if (!edge) return;
+  const t = edge / 2; g.save(); g.setLineDash([]); g.lineCap = 'butt'; g.lineJoin = 'miter'; g.globalAlpha = alpha / 100; g.strokeStyle = '#fff'; g.lineWidth = edge;
+  g.beginPath(); g.moveTo(MZ, t); g.lineTo(t, t); g.lineTo(t, H - t); g.lineTo(MZ, H - t); g.stroke(); g.restore();
+}
 function drawVirtual(g, v) {
   const k = mm(), side = v.side, L = lenOf(side), w = L * U, look = cfg.vlook;
   g.save(); g.translate(v.m[0], v.m[1]); g.rotate(v.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);  // now in mm, card's top-left at 0,0
@@ -323,7 +336,7 @@ function drawVirtual(g, v) {
   const value = side.sample || side.label;  // a handwritten value, or a colour's name
   g.textBaseline = 'middle';
   if (look === 'ghost') {  // the face drawn solid, then dimmed as a whole, so a whiteboard stays white whatever the card's colour
-    g.fillStyle = '#fff'; g.fillRect(0, 0, MZ, H);  // the marker zone, white like the real card's
+    g.fillStyle = cfg.vmzLit === 'dark' ? `rgb(${Array(3).fill(Math.round(cfg.vsFill * 2.55)).join()})` : '#fff'; g.fillRect(0, 0, MZ, H);  // the marker zone, white like the real card's, or dark so a real card's marker can still be read
     g.fillStyle = side.k === 'color' && !side.label ? '#3f3f46' : side.c.bg; g.fillRect(MZ, 0, w - MZ, H);
     g.fillStyle = side.c.stripe; g.fillRect(MZ, 0, STRIPE, H);
     if (side.k === 'hw') { g.fillStyle = '#fff'; g.fillRect(wbX, CARD_S.wbPad, wbW, H - 2 * CARD_S.wbPad); }
@@ -333,7 +346,9 @@ function drawVirtual(g, v) {
     if (side.after) g.fillText(side.after, w - CARD_S.margin - measure(side.after, f), H / 2);
     icon(side.c.text);
     if (side.k === 'hw') { g.fillStyle = side.sample ? '#000' : '#71717a'; g.font = side.sample ? `400 17px Kalam` : font(11); g.fillText(side.sample || v.hint || '', wbX + 2.5, H / 2 + (side.sample ? 1 : 0)); }
-    g.globalAlpha = 1; g.fillStyle = '#3f3f46'; g.beginPath(); g.arc(MZ / 2, H / 2, 2.5, 0, 2 * Math.PI); g.fill();
+    g.globalAlpha = 1;
+    if (cfg.vmzLit === 'dark' && cfg.vsBracket) mzBracket(g, cfg.vsEdge, cfg.vsAlpha);  // a dark marker zone: the guide's white bracket instead of the dot
+    else { g.fillStyle = '#3f3f46'; g.beginPath(); g.arc(MZ / 2, H / 2, 2.5, 0, 2 * Math.PI); g.fill(); }
     g.restore(); return;
   } else if (look === 'outline') {  // a guide card: dashed edges (cfg.vedge mm thick, cfg.vdash mm dashes), the card's colour dimmed to cfg.vfill %, the label and value solid
     const col = side.k === 'color' ? '#a1a1aa' : side.c.stripe;  // a colour card's edge is grey: its colour is the bar
@@ -342,8 +357,7 @@ function drawVirtual(g, v) {
     const e = cfg.vedge / 2;
     if (cfg.vedge) { g.strokeRect(e, e, w - 2 * e, H - 2 * e); g.beginPath(); g.moveTo(MZ, e); g.lineTo(MZ, H - e); g.stroke(); }  // lineWidth 0 is ignored, so skip
     else if (cfg.vmzEdge) {  // no edge: the marker zone gets a faint white bracket (top, left, bottom; open to the card), to give it shape
-      const t = cfg.vmzEdge / 2; g.save(); g.setLineDash([]); g.lineCap = 'butt'; g.lineJoin = 'miter'; g.globalAlpha = cfg.vmzAlpha / 100; g.strokeStyle = '#fff'; g.lineWidth = cfg.vmzEdge;
-      g.beginPath(); g.moveTo(MZ, t); g.lineTo(t, t); g.lineTo(t, H - t); g.lineTo(MZ, H - t); g.stroke(); g.restore();
+      mzBracket(g);
     }
     if (side.k === 'hw' && cfg.vwb) { g.lineWidth = cfg.vedge * 0.6; g.setLineDash([0, cfg.vedge * 2.2]); g.strokeRect(wbX, CARD_S.wbPad, wbW, H - 2 * CARD_S.wbPad); }
     g.setLineDash([]); g.lineCap = 'butt';
