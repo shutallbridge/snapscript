@@ -173,12 +173,12 @@ class ModuleCompiler {
       case "repeat": {
         const n = `t${this.temps++}`;
         const i = `t${this.temps++}`;
-        return `for (let ${n} = rt.count(${value(s.count)}), ${i} = 0; ${i} < ${n}; ${i}++) {\n${this.body(s.body, scope)}\n}`;
+        return `for (let ${n} = rt.count(${value(s.count)}, ${this.atValue(s.count)}), ${i} = 0; ${i} < ${n}; ${i}++) {\n${this.body(s.body, scope)}\n}`;
       }
       case "for": {
         const item = `t${this.temps++}`;
         const assign = s.name ? this.assign(s.name, item, scope) : "";
-        return `for (const ${item} of rt.items(${value(s.iterable)})) {\n${assign}\n${this.body(s.body, scope)}\n}`;
+        return `for (const ${item} of rt.items(${value(s.iterable)}, ${this.atValue(s.iterable)})) {\n${assign}\n${this.body(s.body, scope)}\n}`;
       }
       case "if": {
         const parts: string[] = [];
@@ -203,6 +203,11 @@ class ModuleCompiler {
   /** A position the runtime keeps: the module and the card's span in its text. */
   private at_(span: Span): string {
     return `${this.at}, ${span.start}, ${span.end}`;
+  }
+
+  /** A value's position, where a statement that takes it blames its errors. */
+  private atValue(e: Expr | null): string {
+    return e ? this.at_(e.span) : `${this.at}, 0, 0`;
   }
 
   /** A bare name, where the cards are written: the function's own names, the file's top level, then the builtins. */

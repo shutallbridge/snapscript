@@ -2,7 +2,7 @@
 // sketch process, which never loads the parser or the checker. The host (the
 // sketch process, or a test's Node host) gives it the native modules and an
 // output sink, and reads the text position it keeps.
-import { builtins, type ErrorKind } from "@snapscript/core";
+import { builtins, methods, operators, type ErrorKind, type Operator, type Signature, type Takes, type Type } from "@snapscript/core";
 
 /** A stretch of the entry program's text, as offsets. */
 export interface Span {
@@ -272,8 +272,8 @@ class Runtime {
   }
 
   call(fn: Value, args: Value[], module: number, start: number, end: number): Value {
-    if (!(fn instanceof SnapFunction)) throw new SnapscriptError("TypeError", `${show(fn)} is not a function`);
-    if (!fn.takes(args.length)) throw new SnapscriptError("TypeError", takesMessage(fn));
+    if (!(fn instanceof SnapFunction)) this.fail("TypeError", `${show(fn)} is not a function`, module, start, end);
+    if (!fn.takes(args.length)) this.fail("TypeError", takesMessage(fn), module, start, end);
     this.enter(module, start, end);
     try {
       return fn.impl(...args);
@@ -289,19 +289,19 @@ class Runtime {
   callMethod(receiver: Value, key: string, text: string, args: Value[], module: number, start: number, end: number): Value {
     if (receiver instanceof Module) return this.call(this.getAttr(receiver, key, text), args, module, start, end);
     if (isList(receiver)) {
-      const method = listMethods[key];
-      if (method) return this.call(new SnapFunction(text, (n) => n === method.length - 1, (...a) => method(receiver, ...a)), args, module, start, end);
+      const method = listMethods.get(key);
+      if (method) return this.call(method(receiver), args, module, start, end);
     }
-    throw new SnapscriptError("AttributeError", `${typeName(receiver)} has no method ${text}`);
+    this.fail("AttributeError", `${typeName(receiver)} has no method ${text}`, module, start, end);
   }
 
-  getProp(object: Value, key: string, text: string, _module: number, _start: number, _end: number): Value {
+  getProp(object: Value, key: string, text: string, module: number, start: number, end: number): Value {
     if (object instanceof Module || object instanceof Dict) {
       const found = object.attributes.get(key);
-      if (!found) throw new SnapscriptError("AttributeError", `${show(object)} has no attribute ${text}`);
+      if (!found) this.fail("AttributeError", `${show(object)} has no attribute ${text}`, module, start, end);
       return found.value;
     }
-    throw new SnapscriptError("AttributeError", `${typeName(object)} has no attributes`);
+    this.fail("AttributeError", `${typeName(object)} has no attributes`, module, start, end);
   }
 
   setProp(target: Value, key: string, text: string, value: Value, own: Module): void {
@@ -317,20 +317,36 @@ class Runtime {
     return truthy(v);
   }
 
-  op(op: string, a: Value, b: Value, _module: number, _start: number, _end: number): Value {
+  /**
+   * A two-value operator card (§6.3), with what core's table says it takes.
+   * Its errors are at the operator card, or at the table's card that led into a library.
+   */
+  op(op: string, a: Value, b: Value, module: number, start: number, end: number): Value {
+    if (op === "==") return equal(a, b);
+    if (op === "!=") return !equal(a, b);
+    const card = `[${op}]`;
+    const rules = operators[op as Operator];
+    const [left, right] = [typeName(a), typeName(b)];
+    if (!rules.some((r) => (r.left === "any" || r.left === left) && (r.right === "any" || r.right === right))) {
+      const takes = rules.map((r) => (r.left === r.right ? `two ${r.left}s` : `a ${r.left} and a ${r.right}`)).join(" or ");
+      this.fail("TypeError", `${card} takes ${takes}, not ${article(left)} and ${article(right)}`, module, start, end);
+    }
     const x = a as number;
     const y = b as number;
     switch (op) {
       case "+":
-        return (x as unknown as string) + (y as unknown as string);
+        return typeof a === "string" ? a + (b as string) : x + y;
       case "-":
         return x - y;
       case "*":
         return x * y;
       case "/":
+        if (y === 0) this.fail("ZeroDivisionError", `${card} can't divide by 0`, module, start, end);
         return x / y;
       case "%":
-        return x % y;
+        // Python's %: the result takes the sign of the right value.
+        if (y === 0) this.fail("ZeroDivisionError", `${card} can't divide by 0`, module, start, end);
+        return x - y * Math.floor(x / y);
       case "<":
         return x < y;
       case ">":
@@ -339,20 +355,27 @@ class Runtime {
         return x <= y;
       case ">=":
         return x >= y;
-      case "==":
-        return a === b;
-      case "!=":
-        return a !== b;
     }
     throw new Error(`unknown operator ${op}`);
   }
 
-  count(v: Value): number {
-    return v as number;
+  /** Throws a runtime error at a card: one on the table is where it happened, one in a library keeps the table's card that led there. */
+  fail(kind: ErrorKind, message: string, module: number, start: number, end: number): never {
+    const error = new SnapscriptError(kind, message);
+    blamed.set(error, module === this.root?.index ? { start, end } : this.here());
+    throw error;
   }
 
-  items(v: Value): Value[] {
-    if (!isList(v)) throw new SnapscriptError("TypeError", `${typeName(v)} can't be looped over`);
+  /** `[repeat]`'s value (§8.2): a whole number. Its errors are at the value. */
+  count(v: Value, module: number, start: number, end: number): number {
+    if (typeof v !== "number") this.fail("TypeError", `[repeat] takes a num, not ${article(typeName(v))}`, module, start, end);
+    if (!Number.isInteger(v)) this.fail("ValueError", `[repeat] takes a whole number, not ${show(v)}`, module, start, end);
+    return v;
+  }
+
+  /** `[for{…}in]`'s value (§8.2): a list. Dicts are not iterable. */
+  items(v: Value, module: number, start: number, end: number): Value[] {
+    if (!isList(v)) this.fail("TypeError", `[for{…}in] takes a list, not ${article(typeName(v))}`, module, start, end);
     return v;
   }
 }
@@ -362,7 +385,7 @@ const blamed = new WeakMap<object, Span | null>();
 
 type ExternFunction = SnapFunction & { counts?: number[] };
 
-function typeName(v: Value): string {
+function typeName(v: Value): Type {
   if (v === null) return "none";
   if (isList(v)) return "list";
   if (v instanceof Color) return "color";
@@ -372,20 +395,134 @@ function typeName(v: Value): string {
   return typeof v === "number" ? "num" : typeof v === "string" ? "str" : "bool";
 }
 
-const listMethods: Readonly<Record<string, (list: Value[], ...args: Value[]) => Value>> = {
-  getat: (list, i) => list[(i as number) < 0 ? list.length + (i as number) : (i as number)] ?? null,
-  setat: (list, i, item) => {
-    list[(i as number) < 0 ? list.length + (i as number) : (i as number)] = item;
+/** `a num`, `none`: a type as messages name it. */
+const article = (type: Type): string => (type === "none" ? "none" : `a ${type}`);
+
+/**
+ * `[==]` (§6.3): numbers, strings, bools and colors by value, lists by their
+ * items, dicts by their attributes, functions and modules by identity. Values
+ * of different types are not equal.
+ */
+function equal(a: Value, b: Value, seen: Map<object, object> = new Map()): boolean {
+  if (a === b) return true;
+  if (typeName(a) !== typeName(b)) return false;
+  if (a instanceof Color) return a.name.toLowerCase() === (b as Color).name.toLowerCase();
+  if (!isList(a) && !(a instanceof Dict)) return false;
+  // A list that holds itself is equal where the comparison comes back round.
+  if (seen.get(a) === b) return true;
+  seen.set(a, b as object);
+  if (isList(a)) {
+    const other = b as Value[];
+    return a.length === other.length && a.every((item, i) => equal(item, other[i]!, seen));
+  }
+  const other = (b as Dict).attributes;
+  if (a.attributes.size !== other.size) return false;
+  return [...a.attributes].every(([key, { value }]) => other.has(key) && equal(value, other.get(key)!.value, seen));
+}
+
+/** What a function's values must be, said as the checker says it: `a num`, `a list or a str`, `nums`. */
+function describeTakes(overloads: readonly Signature[], takes: Takes): string {
+  const text = (t: Takes): string => (t === "any" ? "any value" : t.map(article).join(" or "));
+  const params = overloads.flatMap((s) => [...s.params, ...(s.variadic ? [s.variadic] : [])]);
+  const many = overloads.some((s) => s.params.length > 1 || s.variadic !== null);
+  const same = params.every((p) => text(p.takes) === text(takes));
+  return many && same && takes !== "any" && takes.length === 1 && takes[0] !== "none" ? `${takes[0]}s` : text(takes);
+}
+
+/**
+ * A builtin or a method: checks its values against core's table, as the
+ * checker does for the values whose types it knows, then runs it.
+ */
+function checked(name: string, overloads: readonly Signature[], impl: (...args: Value[]) => Value): SnapFunction {
+  const counts = overloads.map((s) => ({ params: s.params.length, variadic: s.variadic !== null }));
+  return new SnapFunction(name, takesCounts(counts), (...args) => {
+    const signature = overloads.find((s) => s.params.length === args.length || (s.variadic !== null && args.length >= s.params.length))!;
+    args.forEach((arg, i) => {
+      const takes = (signature.params[i] ?? signature.variadic)!.takes;
+      if (takes !== "any" && !takes.includes(typeName(arg))) {
+        throw new SnapscriptError("TypeError", `${name} takes ${describeTakes(overloads, takes)}, not ${article(typeName(arg))}`);
+      }
+    });
+    return impl(...args);
+  });
+}
+
+/** A list position (§3.3): a whole number, a negative one counting from the end. */
+function position(list: Value[], name: string, i: Value): number {
+  const at = i as number;
+  if (!Number.isInteger(at)) throw new SnapscriptError("ValueError", `${name} takes a whole number, not ${show(at)}`);
+  const index = at < 0 ? list.length + at : at;
+  if (index < 0 || index >= list.length) {
+    throw new SnapscriptError("IndexError", `${name} position ${show(at)} is outside a list of ${list.length} item${list.length === 1 ? "" : "s"}`);
+  }
+  return index;
+}
+
+const listImpls: Readonly<Record<string, (list: Value[], ...args: Value[]) => Value>> = {
+  getAt: (list, i) => list[position(list, "getAt", i!)]!,
+  setAt: (list, i, item) => {
+    list[position(list, "setAt", i!)] = item!;
     return null;
   },
   append: (list, item) => {
-    list.push(item);
+    list.push(item!);
     return null;
   },
-  pop: (list) => list.pop() ?? null,
+  pop: (list) => {
+    if (list.length === 0) throw new SnapscriptError("IndexError", "pop from an empty list");
+    return list.pop()!;
+  },
 };
 
+/** A list's methods (§3.3), by name key: each makes the method of one list. */
+const listMethods = new Map(
+  Object.entries(methods.list!).map(([name, overloads]) => [
+    name.toLowerCase(),
+    (list: Value[]) => checked(name, overloads, (...args) => listImpls[name]!(list, ...args)),
+  ]),
+);
+
 const radians = (degrees: number): number => (degrees * Math.PI) / 180;
+
+/** The sines that are whole or a half, exact, by the angle in degrees from 0 up to 360. */
+const exactSines: ReadonlyMap<number, number> = new Map([
+  [0, 0],
+  [30, 0.5],
+  [90, 1],
+  [150, 0.5],
+  [180, 0],
+  [210, -0.5],
+  [270, -1],
+  [330, -0.5],
+]);
+
+/** The sine of an angle in degrees (ADR 0007): `[call(sin)][num{30}]` is 0.5, not 0.49999999999999994. */
+function sine(degrees: number): number {
+  const angle = ((degrees % 360) + 360) % 360;
+  return exactSines.get(angle) ?? Math.sin(radians(angle));
+}
+
+/** The smallest or the largest of a builtin's values, or of one list's items. */
+function extreme(name: string, values: Value[], larger: boolean): Value {
+  const all = values.length === 1 && isList(values[0]) ? values[0] : values;
+  if (all.length === 0) {
+    throw new SnapscriptError("ValueError", values.length === 0 ? `${name} takes at least one value` : `${name} of an empty list`);
+  }
+  const first = typeName(all[0]!);
+  for (const v of all) {
+    const type = typeName(v);
+    if (type !== first || (type !== "num" && type !== "str")) {
+      throw new SnapscriptError("TypeError", `${name} can't compare ${article(first)} and ${article(type)}`);
+    }
+  }
+  let best = all[0] as number | string;
+  for (const v of all as (number | string)[]) if (larger ? v > best : v < best) best = v;
+  return best;
+}
+
+const whole = (name: string, values: Value[]): void => {
+  for (const v of values) if (!Number.isInteger(v)) throw new SnapscriptError("ValueError", `${name} takes whole numbers, not ${show(v)}`);
+};
 
 /** The builtins' values (REFERENCE.md §9), by name key. Each takes what core's table says. */
 function builtinValues(print: (line: string) => void): Map<string, Value> {
@@ -395,7 +532,9 @@ function builtinValues(print: (line: string) => void): Map<string, Value> {
       return null;
     },
     range: (...a) => {
+      whole("range", a);
       const [start, stop, step] = (a.length === 1 ? [0, a[0], 1] : [a[0], a[1], a[2] ?? 1]) as number[];
+      if (step === 0) throw new SnapscriptError("ValueError", "range's step can't be 0");
       const out: number[] = [];
       for (let i = start!; step! > 0 ? i < stop! : i > stop!; i += step!) out.push(i);
       return out;
@@ -404,12 +543,17 @@ function builtinValues(print: (line: string) => void): Map<string, Value> {
     list: (...items) => items,
     dict: () => new Dict(),
     abs: (x) => Math.abs(x as number),
-    min: (...a) => Math.min(...((a.length === 1 && isList(a[0]) ? a[0] : a) as number[])),
-    max: (...a) => Math.max(...((a.length === 1 && isList(a[0]) ? a[0] : a) as number[])),
-    round: (x) => Math.sign(x as number) * Math.round(Math.abs(x as number)),
-    sqrt: (x) => Math.sqrt(x as number),
-    sin: (x) => Math.sin(radians(x as number)),
-    cos: (x) => Math.cos(radians(x as number)),
+    min: (...a) => extreme("min", a, false),
+    max: (...a) => extreme("max", a, true),
+    // A half rounds away from zero (ADR 0007), where Python rounds it to even.
+    round: (x) => Math.sign(x as number) * Math.round(Math.abs(x as number)) || 0,
+    sqrt: (x) => {
+      if ((x as number) < 0) throw new SnapscriptError("ValueError", `sqrt takes a num not below 0, not ${show(x)}`);
+      return Math.sqrt(x as number);
+    },
+    sin: (x) => sine(x as number),
+    cos: (x) => sine((x as number) + 90),
+    // No values is 0 to 1, one is 0 to it: the first end can come out, the second never does.
     random: (...a) => {
       const [start, end] = (a.length === 0 ? [0, 1] : a.length === 1 ? [0, a[0]] : a) as number[];
       return start! + Math.random() * (end! - start!);
@@ -421,8 +565,7 @@ function builtinValues(print: (line: string) => void): Map<string, Value> {
       if (b.name === "pi") values.set("pi", Math.PI);
       continue;
     }
-    const counts = b.overloads.map((s) => ({ params: s.params.length, variadic: s.variadic !== null }));
-    values.set(b.name.toLowerCase(), new SnapFunction(b.name, takesCounts(counts), impls[b.name]!));
+    values.set(b.name.toLowerCase(), checked(b.name, b.overloads, impls[b.name]!));
   }
   return values;
 }
