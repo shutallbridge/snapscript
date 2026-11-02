@@ -34,10 +34,10 @@ Lengths on the table are measured in U. Every card is 1U tall and a whole number
 
 Initial direction:
 
-- Errors light up the cards responsible, with a message in plain words and the kind beside it: "circle needs 3 numbers but got 1 · TypeError".
+- Errors light up the cards responsible, with a numbered badge (E1) in the line's gutter, left of the line. The message, in plain words with its kind, is in a status bar along the table's edge: "E1 TypeError: circle's x needs a number. Got a string instead."
 - Errors other than runtime errors show as soon as the cards are placed, whether or not the program is running.
 - Skipped lines look skipped. An error that comes from a skipped line points to it.
-- Cards that are not part of the program are dimmed.
+- Cards that are not part of the program look like skipped lines.
 - The grouping the system inferred is outlined in light, including operator precedence and how far each card grabbed.
-- Virtual blocks show where cards can be placed, and where a missing value or `[dedent]` goes.
+- Virtual cards show where cards can be placed: a program opened from a file, a textbook page's cards, and the values a call card expects after it.
 - Picking up a card projects its doc comment.

@@ -91,6 +91,10 @@ _Avoid_: if statement, branch (a branch is one block of a chain)
 **Strip**:
 A free-standing group of lines that snap together, such as one function, and can be moved around the table as a whole.
 
+**Detached card**:
+A card that is not part of the program: not connected to a `[define]` or an `[on(…)]`, and not one of the cards that stand alone (`[import(…)as(…)]`, `[extern(…)]`, `[global{…}]`). It is not checked and has no errors. The table shows its line like a skipped line.
+_Avoid_: loose card, orphan
+
 ## Libraries
 
 **Library**:
@@ -125,12 +129,19 @@ _Avoid_: error type (say "kind"), error class
 When an error is found: **structure** (cards that cannot form a program), **check** (found before running, by looking at names and types) or **runtime** (found while running). The same kind can be found at the check stage or at runtime.
 _Avoid_: layer (a layer is a level of a magnet pocket), phase
 
+**Table error**:
+An error that belongs to the table, not the language: a read error or a mismatch. It has no kind and no stage, a text file never has one, and it never goes into a `.snap` file. The table shows it like any other error.
+
 **Read error**:
-The camera is not sure what a card's handwriting says. It is a mark the physical system puts on a card, not an error of the language: it has no kind and no stage, and a text file never has one.
+A table error: the camera is not sure what a card's handwriting says. The card's line is skipped.
 _Avoid_: OCR error
 
+**Mismatch**:
+A table error: a real card lies in a guide card's place but is not the card the guide asks for, such as `[color(gold)]` where a textbook page's guide shows `[num{500}]`. The card still counts and runs.
+_Avoid_: wrong card
+
 **Skipped line**:
-A line left out of a run because it has a structure or check error, or holds a card with a read error. It is lit up and the rest of its function runs. Skipping a block head skips its body, and in a chain, every later block of the chain too; skipping a `[define{…}]` header skips its strip.
+A line left out of a run because it has a structure or check error, or holds a card with a read error. Its gutter marks it, and the rest of its function runs. Skipping a block head skips its body, and in a chain, every later block of the chain too; skipping a `[define{…}]` header skips its strip.
 _Avoid_: ignored line, disabled line
 
 **Follow-on error**:
@@ -300,8 +311,23 @@ What turns a table state into program text, and program text back into the cards
 The table program's text as the table app holds it now, rewritten whenever the table changes. A `.snap` file is what the buffer is saved as.
 
 **Virtual card**:
-An outline the projector draws where a card is not: where a missing card goes, or a card of a program loaded from a file.
+A card the projector draws where a real card is not. It is a stand-in card or a guide card, and it disappears when a real card is laid in its place.
 _Avoid_: virtual block, ghost card
+
+**Stand-in card**:
+A virtual card that is part of the program: it counts in the buffer and runs, such as a card of a program opened from a `.snap` file. Any real card laid in its place replaces it, as an edit.
+
+**Guide card**:
+A virtual card that only suggests: a textbook page's cards, or the values a call card expects after it. The right card laid in its place replaces it; any other card still counts, as a mismatch.
+
+**Gutter**:
+The space left of a line's first card where the table marks the line: a green dot on a strip's head, a crossed-out grey dot on a skipped or detached line, and a numbered badge (E1, E2, …) for each error. Nothing is drawn right of a line, where the next card would be laid.
+
+**Status bar**:
+A bar of text along the top or bottom edge of the table. The errors bar holds each error's full message beside its badge.
+
+**Read-back**:
+What the handwriting reader saw, drawn on the card's whiteboard. A debug view, also shown on a card with a `NameError`.
 
 **Help spot**:
 A place on the table where putting a card shows its doc comment.
