@@ -1,0 +1,5 @@
+{
+  "name": "fixture-bad-page",
+  "private": true,
+  "volumes": ["bad.md"]
+}

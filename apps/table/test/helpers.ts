@@ -12,6 +12,8 @@ const packages: Record<string, string> = {
   "fixture-shapes": join(fixtures, "shapes"),
   "fixture-lessons": join(fixtures, "lessons"),
   "fixture-two-programs": join(fixtures, "two-programs"),
+  "fixture-bad-page": join(fixtures, "bad-page"),
+  "fixture-long-page": join(fixtures, "long-page"),
   "snapscript-p5": fileURLToPath(new URL("../../../libraries/p5", import.meta.url)),
 };
 
