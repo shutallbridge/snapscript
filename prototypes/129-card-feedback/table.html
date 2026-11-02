@@ -100,7 +100,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'wash', barTop: 'status', barBottom: 'errors', vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'hatch', barTop: 'status', barBottom: 'errors', vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
