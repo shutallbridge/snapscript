@@ -64,7 +64,16 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['textPx', 'Text size', [12, 14, 16, 18, 20, 24, 28, 32], ' px'],
     ['bg', 'Coding space brightness', [0, 6, 12, 20, 32, 48]]]],
   ['Rig', [
-    ['tableMm', 'Work area depth', [700, 750, 780, 792, 800, 850, 900], ' mm']]],
+    ['tableMm', 'Work area depth', [700, 750, 780, 790, 792, 800, 850, 900], ' mm'],
+    ['nudgeX', 'Trim right', [-4, -3, -2, -1, 0, 1, 2, 3, 4], ' mm'],
+    ['nudgeY', 'Trim down', [-4, -3, -2, -1, 0, 1, 2, 3, 4], ' mm']]],
+  ['Virtual cards', [  // #129
+    ['vlook', 'Look', ['ghost', 'outline', 'footprint']],
+    ['vprog', 'Virtual program (demo 1)', [true, false]],
+    ['vargs', 'Virtual arguments', [false, true]],
+    ['vmatch', 'A real card replaces it when', ['same card', 'same kind']],
+    ['vtol', 'Within', [5, 10, 15, 20, 30], ' mm'],
+    ['vgap', 'Gap between lines', [0, 1, 2, 4], ' mm']]],
   ['Debug', [
     ['marks', 'Show marker reads', [true, false]],
     ['outline', 'Page outline (red)', [true, false]],
@@ -72,11 +81,13 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['fake', 'Pretend a card is in a corner', ['off', ...CORNERS]],
     ['program', 'Mock program', [true, false]],
     ['test', 'Highlight test', [false, true]],
+    ['frame', 'Work area edge (white)', [false, true]],
     ['cardU', 'Card length when unknown', [2, 3, 4, 5, 6], 'U']]],
 ];
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
-  full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 792 };
+  full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
+  vlook: 'ghost', vprog: true, vargs: false, vmatch: 'same card', vtol: 10, vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -138,7 +149,7 @@ const AW = () => Math.min(VW(), (state.aspect || 1.5) * VH());  // work area: th
 const mm = () => VH() / cfg.tableMm;                              // projector px per mm on the table
 const UPX = () => 30 * mm();                                        // projector px per U
 const S = () => UPX() / PX_PER_U;                                   // projector px per app px
-const toPx = ([x, y]) => [x * VH(), y * VH()];                     // projector space (units of height) -> projector px
+const toPx = ([x, y]) => [x * VH() + (cfg.nudgeX || 0) * mm(), y * VH() + (cfg.nudgeY || 0) * mm()];  // projector space (units of height) -> projector px, plus #129's trim
 function size() { for (const c of [base, over]) { c.width = VW(); c.height = VH(); } }
 addEventListener('resize', size); size();
 // The sketch's size in app px comes from the program's createCanvas (the current page's, else the mock's).
@@ -166,6 +177,7 @@ const inside = (r, [x, y]) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y
 const CORNER_TITLE = { help: 'Card Help' };
 // A card's length in U, by marker ID. There's no lockfile yet, so fill in the cards on the table; others use cfg.cardU.
 const CARD_LEN = {};
+const CARD_S = { pt: 26, margin: 3, gap: 3, wbPad: 3, wbMin: 60, colorLen: 4, iconSize: 12, iconStroke: 1.5 };  // #129: the card sheet's settings
 // The card's outline on the table, from its marker: the marker sits in the card's left end (centre MZ/2 in), upright,
 // and the card runs along the marker's bottom edge. Returns 4 corners in projector px.
 function cardOutline(card) {
@@ -243,6 +255,128 @@ function drawProgram(g, prog, x0, y0, style) {
   }
   return ends;
 }
+// ======================= #129: virtual cards =======================
+// Three looks (cfg.vlook), each with a grey dot where the marker goes, never a marker the camera could read:
+//   ghost     the card's face, dimmed: colours, label and the value on its whiteboard
+//   outline   only the edge and the label, in the card's stripe colour, the inside left dark
+//   footprint a dashed grey outline and a small label: where a card goes, not what it looks like
+// A virtual card is a side (parseCard) placed by its marker centre m (projector px) and angle a, plus an optional hint
+// (an argument's name) shown where a handwritten card's value would go.
+const CARD_TEXT = {};  // marker ID -> card notation, from cards.json
+const VPROG = `[define{setup}]
+[call(p5.createCanvas)][num{500}][num{500}]
+[call(p5.background)][color(mediumblue)]
+[call(p5.noStroke)]
+[call(p5.fill)][color(gold)]
+[repeat][num{30}]
+  [set{x}to][call(random)][num{500}]
+  [set{y}to][call(random)][num{500}]
+  [call(p5.rect)][get{x}][get{y}][num{10}][num{16}]
+[dedent]`;
+// What each function expects after its card: [name, card]. Stands in for the library's declarations.
+const SIG = { createCanvas: [['width', '[num{…}]'], ['height', '[num{…}]']], background: [['colour', '[color(…)]']], fill: [['colour', '[color(…)]']],
+  noStroke: [], circle: [['x', '[num{…}]'], ['y', '[num{…}]'], ['d', '[num{…}]']], rect: [['x', '[num{…}]'], ['y', '[num{…}]'], ['w', '[num{…}]'], ['h', '[num{…}]']],
+  random: [['up to', '[num{…}]']] };
+const sideOf = text => { const s = parseCard(text); if (s.sample === '…') s.sample = ''; if (s.label === '…') s.label = ''; return s; };
+const lenOf = side => minLength(side, CARD_S);
+const kindOf = text => text.replace(/[{(][^})]*[})]/, m => m[0] === '{' ? '{}' : m);  // [num{500}] -> [num{}]; [call(p5.rect)] stays
+
+// Real cards, kept for a moment after their last read (vision.py sends only what one frame saw, ~0.7 s apart).
+const KEEP_S = 1.5, real = {};
+function realCards(L) {
+  const now = performance.now() / 1000;
+  for (const c of state.cards || []) real[c.id] = { ...c, seen: now };
+  return Object.values(real).filter(c => now - c.seen < KEEP_S && CARD_TEXT[c.id] && inside(L.code, toPx(c.c)))
+    .map(c => ({ ...c, text: CARD_TEXT[c.id], m: toPx(c.c) }));
+}
+// Is there a real card in this virtual card's place? Place: marker within vtol mm, angle within 15°.
+function occupant(v, cards) {
+  return cards.find(c => Math.hypot(c.m[0] - v.m[0], c.m[1] - v.m[1]) <= cfg.vtol * mm() &&
+    Math.abs(Math.atan2(Math.sin(c.a - v.a), Math.cos(c.a - v.a))) < 15 * Math.PI / 180);
+}
+const replaces = (c, v) => cfg.vmatch === 'same kind' ? kindOf(c.text) === kindOf(v.text) : c.text === v.text;
+
+function drawVirtual(g, v) {
+  const k = mm(), side = v.side, L = lenOf(side), w = L * U, look = cfg.vlook;
+  g.save(); g.translate(v.m[0], v.m[1]); g.rotate(v.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);  // now in mm, card's top-left at 0,0
+  const f = fsz(CARD_S), x0 = labelX(CARD_S), label = side.k === 'hw' ? side.word : side.k === 'icon' ? '↵' : side.label;
+  const wbX = x0 + measure(side.word || '', f) + CARD_S.gap, wbW = (side.after ? w - CARD_S.margin - measure(side.after, f) - CARD_S.gap : w - CARD_S.margin) - wbX;
+  const value = side.sample || side.label;  // a handwritten value, or a colour's name
+  g.textBaseline = 'middle';
+  if (look === 'ghost') {
+    g.globalAlpha = 0.45;
+    g.fillStyle = side.k === 'color' && !side.label ? '#3f3f46' : side.c.bg; g.fillRect(MZ, 0, w - MZ, H);
+    g.fillStyle = side.c.stripe; g.fillRect(MZ, 0, STRIPE, H);
+    g.fillStyle = '#52525b'; g.fillRect(0, 0, MZ, H);
+    if (side.k === 'hw') { g.fillStyle = '#fff'; g.fillRect(wbX, CARD_S.wbPad, wbW, H - 2 * CARD_S.wbPad); }
+    g.globalAlpha = 0.9;
+    g.fillStyle = side.k === 'color' && !side.label ? '#d4d4d8' : side.c.text; g.font = font(f); g.fillText(side.k === 'hw' ? side.word : label || v.hint || '', x0, H / 2);
+    if (side.after) g.fillText(side.after, w - CARD_S.margin - measure(side.after, f), H / 2);
+    if (side.k === 'hw') { g.fillStyle = side.sample ? '#1d3f8f' : '#71717a'; g.font = font(side.sample ? 17 : 11, side.sample ? 'Caveat' : '"Geist Mono"'); g.fillText(side.sample || v.hint || '', wbX + 2.5, H / 2); }
+  } else if (look === 'outline') {
+    const col = side.k === 'color' ? (side.label ? side.c.bg : '#a1a1aa') : side.c.stripe;
+    g.strokeStyle = col; g.lineWidth = 0.8; g.strokeRect(0.4, 0.4, w - 0.8, H - 0.8);
+    g.beginPath(); g.moveTo(MZ, 0); g.lineTo(MZ, H); g.stroke();
+    if (side.k === 'hw') { g.lineWidth = 0.4; g.strokeRect(wbX, CARD_S.wbPad, wbW, H - 2 * CARD_S.wbPad); }
+    g.fillStyle = col; g.font = font(f); g.fillText((side.k === 'hw' ? side.word : label) || v.hint || '', x0, H / 2);
+    if (side.after) g.fillText(side.after, w - CARD_S.margin - measure(side.after, f), H / 2);
+    if (side.k === 'hw') { g.font = font(side.sample ? 17 : 11, side.sample ? 'Caveat' : '"Geist Mono"'); g.fillStyle = side.sample ? '#e4e4e7' : '#a1a1aa'; g.fillText(side.sample || v.hint || '', wbX + 2.5, H / 2); }
+  } else {  // footprint
+    g.strokeStyle = '#a1a1aa'; g.lineWidth = 0.6; g.setLineDash([2.5, 2]); g.strokeRect(0.3, 0.3, w - 0.6, H - 0.6); g.setLineDash([]);
+    g.fillStyle = '#a1a1aa'; g.font = font(f * 0.6); g.textAlign = 'center';
+    const what = side.k === 'hw' ? side.word + (side.after ? ' … ' + side.after : '') + (side.sample ? ' ' + side.sample : v.hint ? ' ' + v.hint : '')
+      : side.k === 'color' ? (value || v.hint || 'colour') : label;
+    g.fillText(what, (MZ + w) / 2, H / 2); g.textAlign = 'left';
+  }
+  g.globalAlpha = 1; g.fillStyle = '#71717a'; g.beginPath(); g.arc(MZ / 2, H / 2, 2.5, 0, 2 * Math.PI); g.fill();  // the dot: a marker goes here
+  g.restore();
+}
+
+// The virtual program, laid from the coding space's top-left: cards touching, lines cfg.vgap apart, an indent is 1U.
+function virtualProgram(L) {
+  const k = mm(), x0 = L.code.x + 1.5 * UPX(), out = [];
+  VPROG.split('\n').forEach((line, i) => {
+    let x = x0 + ((line.match(/^ */)[0].length / 2) | 0) * U * k, y = 1.5 * UPX() + i * (H + cfg.vgap) * k;
+    for (const text of line.trim().match(/\[[^\[\]]*\]/g) || []) {
+      const side = sideOf(text);
+      out.push({ text, side, m: [x + MZ / 2 * k, y + H / 2 * k], a: 0 });
+      x += lenOf(side) * U * k;
+    }
+  });
+  return out;
+}
+// Virtual arguments: after each real function card, a slot per value it expects. A slot is filled by whatever real card
+// sits in it (wrong kinds too: that's error lighting's job), and the next slot starts after the filling card's end.
+function virtualArgs(cards) {
+  const k = mm(), out = [];
+  for (const c of cards) {
+    const m = /^\[call\((?:p5\.)?(\w+)\)\]$/.exec(c.text), sig = m && SIG[m[1]];
+    if (!sig) continue;
+    let end = c, endLen = lenOf(sideOf(c.text));
+    for (const [hint, text] of sig) {
+      const d = [Math.cos(end.a), Math.sin(end.a)], reach = endLen * U * k;  // marker to marker: the end card's length
+      const slot = { text, side: sideOf(text), hint, a: end.a, m: [end.m[0] + d[0] * reach, end.m[1] + d[1] * reach] };
+      const filled = occupant(slot, cards);
+      if (filled) { end = filled; endLen = lenOf(sideOf(filled.text)); continue; }
+      out.push(slot);
+      end = slot; endLen = lenOf(slot.side);
+    }
+  }
+  return out;
+}
+function drawVirtualCards(g, L) {
+  const cards = realCards(L);
+  let shown = 0, gone = 0;
+  if (cfg.vprog) for (const v of virtualProgram(L)) {
+    const c = occupant(v, cards);
+    if (c && replaces(c, v)) { gone++; continue; }
+    drawVirtual(g, v); shown++;
+  }
+  if (cfg.vargs) for (const v of virtualArgs(cards)) { drawVirtual(g, v); shown++; }
+  vstat = `virtual ${cfg.vlook}: ${shown} shown, ${gone} replaced`;
+}
+let vstat = '';
+
 // the mock program: one line prints, so its output shows inline to the right of the card, like Quokka
 const MOCK = `[define{setup}]\n[call(p5.createCanvas)][num{500}][num{500}]\n[call(print)][str{hello}]\n\n[define{draw}]\n[call(p5.background)][color(mediumblue)]\n[call(print)][get{x}]`;
 const PRINTS = { 2: () => 'hello', 6: () => 'x = ' + (Math.floor(performance.now() / 50) % 500) };
@@ -262,6 +396,7 @@ function drawBase(L) {
   const prog = state.current && program(state.current);
   const px0 = L.code.x + 1.5 * u;
   if (prog) drawProgram(g, prog, px0, 1.5 * u, 'virtual');
+  else if (cfg.vprog || cfg.vargs) drawVirtualCards(g, L);  // #129
   else if (cfg.program) {
     const ends = drawProgram(g, MOCK, px0, 1.5 * u, 'mock');
     for (const [i, f] of Object.entries(PRINTS)) { const [x, y] = ends[i]; text(g, '→ ' + f(), x + 0.4 * u, y, '#86efac'); }
@@ -329,6 +464,7 @@ function grow(pts, d) {
 function drawOver(L) {
   const g = over.getContext('2d'), u = UPX();
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, VW(), VH());
+  if (cfg.frame) { g.strokeStyle = '#fff'; g.lineWidth = 4; g.strokeRect(2, 2, VW() - 4, VH() - 4); }  // #129: the work area's edge, to measure its depth
   if (state.mode === 'calibrate') return drawCalib(g);
   // stacking, bottom to top: windows (base canvas, sketch) < corners < textbook pages < settings menu (its own element)
   updateCorners(L); drawCorners(g, L);
@@ -357,7 +493,7 @@ function drawOver(L) {
     const cur = state.current && book && book.pages.find(q => q.key === state.current);
     text(g, `1U = ${PX_PER_U} px (${u.toFixed(1)} projector px) · ${cfg.full ? 'canvas full screen (split ' + cfg.split + '% kept)' : 'split ' + cfg.split + '%'} · sketch ${sw} × ${sh} px = ${(L.sketch.w / mm()).toFixed(0)} × ${(L.sketch.h / mm()).toFixed(0)} mm · ` +
       `text ${cfg.textPx} px = ${(cfg.textPx * S() / mm()).toFixed(1)} mm · page ${cur ? cur.name : '-'} · cards ${(state.cards || []).length}` +
-      (state.calibrated === false ? ' · NOT CALIBRATED' : '') + (state.t ? '' : ' · no vision'), 0.5 * u, 0.4 * u, '#71717a', 14);
+      (vstat ? ' · ' + vstat : '') + (state.calibrated === false ? ' · NOT CALIBRATED' : '') + (state.t ? '' : ' · no vision'), 0.5 * u, 0.4 * u, '#71717a', 14);
   }
 }
 function drawCalib(g) {
@@ -379,6 +515,10 @@ async function poll(file, apply, ms) {
 }
 (async () => {
   try { book = await (await fetch('pages.json', { cache: 'no-store' })).json(); } catch (e) { book = null; }
+  try {  // #129: the paper test cards' lengths, from their card notation
+    const { cards } = await (await fetch('cards.json', { cache: 'no-store' })).json();
+    for (const [id, text] of Object.entries(cards)) { const s = parseCard(text); if (s.sample === '…') s.sample = ''; CARD_LEN[id] = minLength(s, CARD_S); CARD_TEXT[id] = text; }
+  } catch (e) { /* no cards.json */ }
   let rev = null, applied = null;
   poll('state.json', s => { state = s; }, 150);
   // control.json (over SSH) can still set anything the menu can: {"rev": n, "cfg": {"split": 60, ...}}

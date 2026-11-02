@@ -51,7 +51,7 @@ for f in pages.json table.html sheets.js tags.js p5.min.js vision.py geometry.py
 ./pi.sh 'cp ~/snap-128/calib.json ~/snap-129/'   # reuse the line-up, if the stand hasn't moved
 ./pi.sh 'bash ~/snap-129/start-http.sh'
 ./pi.sh 'bash ~/snap-129/start-chrome.sh'
-./pi.sh 'bash ~/snap-129/start-vision.sh rig --aspect 1.5 --table-mm 792 --rule inview'
+./pi.sh 'bash ~/snap-129/start-vision.sh rig --aspect 1.5 --table-mm 790 --rule inview'
 ```
 
 `vision.py` is the textbook page prototype's, plus a `cards` list in `state.json`: every marker that isn't a page or calibration tag, with its centre (`c`) and angle (`a`, radians, along the marker's bottom edge) in projector space.
