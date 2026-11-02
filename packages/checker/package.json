@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs"
+    ".": "./dist/index.mjs",
+    "./disk": "./dist/disk.mjs"
   },
   "files": [
     "dist"
@@ -18,6 +19,7 @@
     "@snapscript/parser": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

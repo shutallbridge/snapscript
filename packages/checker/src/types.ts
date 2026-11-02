@@ -21,6 +21,7 @@ import {
 } from "@snapscript/core";
 import type { Declaration, Expr, Name, Param, Program, Span, Statement } from "@snapscript/parser";
 import type { CheckError } from "./index.ts";
+import type { ImportedModules, Member, ModuleInfo } from "./modules.ts";
 
 type Types = ReadonlySet<Type>;
 
@@ -60,7 +61,7 @@ function describeCounts(overloads: readonly Signature[]): string {
 }
 
 /** The ways a `[define{…}]` or an `[extern(…)]` can be called: with every count from its required values to all of them. */
-function signaturesOf(params: readonly Param[]): Signature[] {
+export function signaturesOf(params: readonly Param[]): Signature[] {
   const required = params.filter((p) => p.type === "required").length;
   const all = params.map((p) => ({ name: p.name?.text ?? "", takes: "any" as const }));
   const signatures: Signature[] = [];
@@ -71,7 +72,18 @@ function signaturesOf(params: readonly Param[]): Signature[] {
 /** What a bare name names. */
 type Named =
   | { type: "value"; types: Types }
-  | { type: "function"; text: string; overloads: readonly Signature[] };
+  | { type: "function"; text: string; overloads: readonly Signature[] }
+  /** An imported module: `module` is `null` when it isn't loaded, and then its attributes can be anything. */
+  | { type: "module"; text: string; module: ModuleInfo | null };
+
+const namedOfMember = (member: Member): Named => (member.type === "value" ? { type: "value", types: ANY } : member);
+
+/** A call card's function and the ways it can be called, found while checking. */
+export interface CallExpects {
+  card: Span;
+  name: string;
+  overloads: readonly Signature[];
+}
 
 /** One `[define]`'s or `[on(…)]`'s names. */
 interface Scope {
@@ -122,6 +134,9 @@ class TypeChecker {
   private readonly scopes = new Map<Declaration, Scope>();
   /** Errors are kept only while checking, not while working out what names hold. */
   private reporting = false;
+  /** The ways each call card's function can be called, by the card's start; kept in the last pass, which goes over every line. */
+  readonly expects = new Map<number, CallExpects>();
+  private collecting = false;
   private line = 0;
 
   constructor(
@@ -130,6 +145,8 @@ class TypeChecker {
     private readonly absent: ReadonlySet<number>,
     /** Lines found with a type error by the last check: what they set doesn't count. */
     private readonly lastFailed: ReadonlySet<number>,
+    /** The module each import line loads. */
+    modules: ImportedModules,
   ) {
     const externs = new Map<string, { text: string; overloads: Signature[] }>();
     for (const declaration of program.declarations) {
@@ -153,7 +170,13 @@ class TypeChecker {
           }
           break;
         case "import":
-          if (declaration.binding) this.topLevel.set(declaration.binding.key, { type: "value", types: only("module") });
+          if (declaration.binding) {
+            this.topLevel.set(declaration.binding.key, {
+              type: "module",
+              text: declaration.binding.text,
+              module: modules.get(declaration) ?? null,
+            });
+          }
           break;
         case "global":
           if (declaration.name) {
@@ -164,7 +187,7 @@ class TypeChecker {
       }
     }
     for (const declaration of program.declarations) {
-      if (absent.has(declaration.line) || (declaration.type !== "define" && declaration.type !== "on")) continue;
+      if (declaration.type !== "define" && declaration.type !== "on") continue;
       const params = new Set(declaration.type === "define" ? declaration.params.flatMap((p) => (p.name ? [p.name.key] : [])) : []);
       const locals = new Map<string, Set<Type>>();
       walk(declaration.body, (line) => absent.has(line), (statement) => {
@@ -178,6 +201,10 @@ class TypeChecker {
   check(): void {
     this.settle();
     this.reporting = true;
+    this.pass();
+    this.reporting = false;
+    // Every call card's expected values, on every line, skipped or not: a half-built line needs them most.
+    this.collecting = true;
     this.pass();
   }
 
@@ -205,12 +232,14 @@ class TypeChecker {
    * with an error takes its block with it.
    */
   private pass(assign: (scope: Scope | null, name: Name, of: Types) => void = () => {}): void {
-    const gone = this.reporting
-      ? (line: number) => this.absent.has(line) || this.failed.has(line)
-      : (line: number) => this.absent.has(line) || this.lastFailed.has(line);
+    const gone = this.collecting
+      ? () => false
+      : this.reporting
+        ? (line: number) => this.absent.has(line) || this.failed.has(line)
+        : (line: number) => this.absent.has(line) || this.lastFailed.has(line);
     const global = (key: string): Set<Type> | undefined => this.globals.get(key);
     for (const declaration of this.program.declarations) {
-      if (this.absent.has(declaration.line)) continue;
+      if (this.absent.has(declaration.line) && !this.collecting) continue;
       if (declaration.type === "global") {
         this.line = declaration.line;
         if (declaration.name && declaration.value) assign(null, declaration.name, this.typeOf(declaration.value, null));
@@ -229,7 +258,12 @@ class TypeChecker {
             }
             break;
           case "setProp": {
-            const target = this.typeOf(statement.target, scope);
+            const named = this.namedOf(statement.target, scope);
+            if (named.type === "module") {
+              this.report("AttributeError", `${named.text} is another file's module: its attributes are written only in its own file`, statement.span);
+              break;
+            }
+            const target = this.typesOfNamed(named);
             this.attributes(target, statement.span);
             if (statement.value) this.typeOf(statement.value, scope);
             // A module's attributes are its top-level declarations: setting one may change a global.
@@ -285,11 +319,40 @@ class TypeChecker {
     return { type: "value", types: ANY };
   }
 
-  private typesOfName(name: Name, scope: Scope | null): Types {
-    const named = this.named(name, scope);
+  private typesOfNamed(named: Named): Types {
     if (named.type === "function") return only("function");
+    if (named.type === "module") return only("module");
     // A name with nothing it can hold yet is worked out later, or set nowhere.
     return named.types.size === 0 ? NOTHING : named.types;
+  }
+
+  /** What a value names: a module or a function through a namespace or a receiver (§5), or a value of some types. */
+  private namedOf(expr: Expr, scope: Scope | null): Named {
+    switch (expr.type) {
+      case "get": {
+        let named = this.named(expr.path[0], scope);
+        for (const name of expr.path.slice(1)) named = this.member(named, name, name.span);
+        return named;
+      }
+      case "getProp":
+        return this.member(this.namedOf(expr.object, scope), expr.name, expr.card.span);
+      case "group":
+        return this.namedOf(expr.value, scope);
+      default:
+        return { type: "value", types: this.typeOf(expr, scope) };
+    }
+  }
+
+  /** What an attribute of `named` is: a module's own declaration, or anything, for a value with attributes. */
+  private member(named: Named, name: Name, span: Span): Named {
+    if (named.type !== "module") return { type: "value", types: this.attributes(this.typesOfNamed(named), span) };
+    if (!named.module) return { type: "value", types: ANY };
+    const member = named.module.attributes.get(name.key);
+    if (!member) {
+      this.report("AttributeError", `${named.text} has no ${name.text}`, span);
+      return { type: "value", types: NOTHING };
+    }
+    return namedOfMember(member);
   }
 
   /** The types a value can have. A value with an error has none, so it gives no more errors. */
@@ -302,13 +365,9 @@ class TypeChecker {
       case "none":
       case "root":
         return only(leafTypes[expr.type]);
-      case "get": {
-        let of = this.typesOfName(expr.path[0], scope);
-        for (const name of expr.path.slice(1)) of = this.attributes(of, name.span);
-        return of;
-      }
+      case "get":
       case "getProp":
-        return this.attributes(this.typeOf(expr.object, scope), expr.card.span);
+        return this.typesOfNamed(this.namedOf(expr, scope));
       case "group":
         return this.typeOf(expr.value, scope);
       case "not":
@@ -355,18 +414,27 @@ class TypeChecker {
   private call(expr: Expr & { type: "call" }, scope: Scope | null): Types {
     const args: Value[] = expr.args.map((arg) => ({ types: this.typeOf(arg, scope), span: arg.span }));
     const last = expr.path[expr.path.length - 1];
-    if (expr.receiver === null && expr.path.length === 1) {
-      const named = this.named(last, scope);
-      if (named.type === "function") return this.overloads(named.text, named.overloads, args, expr.card.span);
-      if (named.types.size > 0 && !named.types.has("function")) {
-        this.report("TypeError", `${last.text} is ${describe(named.types)}, not a function`, expr.card.span);
-        return NOTHING;
-      }
-      return ANY;
+    const span = expr.card.span;
+    if (expr.receiver === null && expr.path.length === 1) return this.callNamed(this.named(last, scope), last, args, span);
+    // A namespace on the card and a receiver to its left are the same thing (§5).
+    let holder = expr.receiver ? this.namedOf(expr.receiver, scope) : this.named(expr.path[0], scope);
+    for (const name of expr.path.slice(expr.receiver ? 0 : 1, -1)) holder = this.member(holder, name, name.span);
+    if (holder.type === "module") return this.callNamed(this.member(holder, last, span), last, args, span);
+    return this.method(this.typesOfNamed(holder), last, args, span);
+  }
+
+  /** Calls what a name names. */
+  private callNamed(named: Named, name: Name, args: Value[], span: Span): Types {
+    if (named.type === "function") return this.overloads(named.text, named.overloads, args, span);
+    if (named.type === "module") {
+      this.report("TypeError", `${name.text} is a module, not a function`, span);
+      return NOTHING;
     }
-    let of = expr.receiver ? this.typeOf(expr.receiver, scope) : this.typesOfName(expr.path[0], scope);
-    for (const name of expr.path.slice(expr.receiver ? 0 : 1, -1)) of = this.attributes(of, name.span);
-    return this.method(of, last, args, expr.card.span);
+    if (named.types.size > 0 && !named.types.has("function")) {
+      this.report("TypeError", `${name.text} is ${describe(named.types)}, not a function`, span);
+      return NOTHING;
+    }
+    return ANY;
   }
 
   /** Calls a function in a module, or a method of a value's type (§6.2). */
@@ -388,6 +456,7 @@ class TypeChecker {
 
   /** Checks a call's values against the ways the function can be called, and gives what it gives. */
   private overloads(text: string, overloads: readonly Signature[], args: Value[], span: Span): Types {
+    if (this.collecting) this.expects.set(span.start, { card: span, name: text, overloads });
     const signature = overloads.find(
       (s) => s.params.length === args.length || (s.variadic !== null && args.length >= s.params.length),
     );
@@ -435,8 +504,9 @@ export function checkTypes(
   program: Program,
   absent: ReadonlySet<number>,
   lastFailed: ReadonlySet<number> = new Set(),
-): { errors: CheckError[]; failed: Set<number> } {
-  const checker = new TypeChecker(program, absent, lastFailed);
+  modules: ImportedModules = new Map(),
+): { errors: CheckError[]; failed: Set<number>; expects: CallExpects[] } {
+  const checker = new TypeChecker(program, absent, lastFailed, modules);
   checker.check();
-  return { errors: checker.errors, failed: checker.failed };
+  return { errors: checker.errors, failed: checker.failed, expects: [...checker.expects.values()] };
 }
