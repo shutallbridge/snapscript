@@ -321,7 +321,7 @@ class TypeChecker {
 
   private report(kind: ErrorKind, message: string, span: Span): void {
     if (!this.reporting) return;
-    this.errors.push({ kind, message, stage: firstStage(kind), line: this.line, spans: [span], followsFrom: null, suggestion: null });
+    this.errors.push({ kind, message, stage: firstStage(kind), line: this.line, spans: [span], aboutCardText: false, followsFrom: null, suggestion: null });
     this.failed.add(this.line);
   }
 

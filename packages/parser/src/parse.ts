@@ -42,8 +42,8 @@ interface Cursor {
 class Parser {
   readonly errors: (StructureError & { content: boolean })[] = [];
 
-  error(kind: ErrorKind, line: number, message: string, spans: StructureError["spans"], content: boolean): void {
-    this.errors.push({ kind, message, stage: "structure", line, spans, content });
+  error(kind: ErrorKind, line: number, message: string, spans: StructureError["spans"], content: boolean, aboutCardText = false): void {
+    this.errors.push({ kind, message, stage: "structure", line, spans, aboutCardText, content });
   }
 
   /**
@@ -56,7 +56,7 @@ class Parser {
       return read(new LineReader(line.cards));
     } catch (e) {
       if (!(e instanceof Fail)) throw e;
-      this.error("SyntaxError", line.number, e.message, e.spans, true);
+      this.error("SyntaxError", line.number, e.message, e.spans, true, e.aboutCardText);
       return fallback;
     }
   }

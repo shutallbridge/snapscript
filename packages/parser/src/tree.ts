@@ -18,6 +18,12 @@ export interface StructureError {
   line: number;
   /** The text responsible: the cards, or the line, it blames. */
   spans: Span[];
+  /**
+   * Whether it is about what one card holds, written in its `{}` or `()` (`[num{4o}]`, a name that
+   * isn't one), rather than about how cards fit together: the table shows a handwritten card's
+   * read-back for it, since the handwriting may be misread.
+   */
+  aboutCardText: boolean;
 }
 
 /** One `[…]` in the text. */

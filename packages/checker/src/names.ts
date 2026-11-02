@@ -343,7 +343,7 @@ function nameError(
   followsFrom: number | null,
   suggestion: CheckError["suggestion"],
 ): CheckError {
-  return { kind: "NameError", message, stage: firstStage("NameError"), line, spans: [name.span], followsFrom, suggestion };
+  return { kind: "NameError", message, stage: firstStage("NameError"), line, spans: [name.span], aboutCardText: false, followsFrom, suggestion };
 }
 
 /** The bare names a value reads: the first name of each `[get]` and of each `[call]` with no receiver. */

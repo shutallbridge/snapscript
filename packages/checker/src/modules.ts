@@ -116,7 +116,7 @@ export class Modules {
     for (const d of program.declarations) {
       if (d.type !== "import" || absent.has(d.line)) continue;
       const error = (message: string) =>
-        errors.push({ kind: "ImportError", message, stage: firstStage("ImportError"), line: d.line, spans: [d.card.span], followsFrom: null, suggestion: null });
+        errors.push({ kind: "ImportError", message, stage: firstStage("ImportError"), line: d.line, spans: [d.card.span], aboutCardText: false, followsFrom: null, suggestion: null });
       const loaded = this.resolve(d.source, id);
       if (!loaded) {
         error(/^\.\.?\//.test(d.source) ? `${d.source} can't be found` : `${d.source} isn't installed`);
