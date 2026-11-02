@@ -1,5 +1,6 @@
 import type {
   CardSpan,
+  DetachedLine,
   Layout,
   LineCards,
   ReaderSettings,
@@ -25,8 +26,9 @@ export const defaultSettings: ReaderSettings = {
   lineKeepMm: 15,
 };
 
-export function initialState(): ReaderState {
-  return { joins: new Set(), links: new Set(), version: 0, text: "" };
+/** The reader's state before the first step, starting from the project's entry text. */
+export function initialState(entryText = ""): ReaderState {
+  return { entryText, joins: new Set(), links: new Set(), strips: [], version: 0, text: entryText };
 }
 
 type Vec = readonly [number, number];
@@ -78,6 +80,21 @@ function cardOf(c: TableCard, input: StepInput): { notation: string; length: num
   }
   return undefined;
 }
+
+/** Where a strip lies: its first card's top-left corner from the coding space's top-left, and its turn. */
+function tableTag(head: Placed, layout: Layout): string {
+  const x = Math.round(head.tl[0] - layout.codingSpace.x);
+  const y = Math.round(head.tl[1] - layout.codingSpace.y);
+  const turn = Math.round(angleDiff(0, head.angle)) || 0;
+  return `/** @table ${x} ${y} ${turn} */`;
+}
+
+const TABLE_TAG_LINE = /^\/\*\* @table [^*]* \*\/$/;
+const withoutTableTags = (text: string): string =>
+  text
+    .split("\n")
+    .filter((l) => !TABLE_TAG_LINE.test(l))
+    .join("\n");
 
 export function step(prev: ReaderState, input: StepInput): StepResult {
   const s: ReaderSettings = { ...defaultSettings, ...input.settings };
@@ -162,9 +179,14 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
     return best && { next: best.next, shift: best.shift };
   };
 
-  const stripHeads = heads
-    .filter((h) => h.standsAlone)
+  // Strip order is stable: a strip keeps its place while its head stays, and new strips go at the end
+  // (several new in one step go top to bottom, then left to right).
+  const headOf = new Map(heads.filter((h) => h.standsAlone).map((h) => [h.track, h]));
+  const kept = prev.strips.filter((t) => headOf.has(t)).map((t) => headOf.get(t)!);
+  const added = [...headOf.values()]
+    .filter((h) => !prev.strips.includes(h.track))
     .sort((a, b) => a.tl[1] - b.tl[1] || a.tl[0] - b.tl[0]);
+  const stripHeads = [...kept, ...added];
   const strips: { column: number; cards: Placed[] }[][] = [];
   const links = new Set<string>();
   for (const sh of stripHeads) {
@@ -183,12 +205,14 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
     strips.push(lines);
   }
 
-  // The buffer: strips one after another with a blank line between, two spaces per U of indent.
-  const textLines: string[] = [];
+  // The buffer: the starting text's strips as written, then the table's strips one after another, with
+  // a blank line between and two spaces per U of indent.
+  const textLines: string[] = prev.entryText ? prev.entryText.split("\n") : [];
   const spans: CardSpan[] = [];
   const lineCards: LineCards[] = [];
   for (const lines of strips) {
     if (textLines.length) textLines.push("");
+    textLines.push(tableTag(lines[0].cards[0], input.layout));
     for (const l of lines) {
       const lineNo = textLines.length + 1;
       let t = "  ".repeat(l.column);
@@ -201,13 +225,28 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
     }
   }
   const text = textLines.join("\n");
+
+  // Detached lines: every line whose head no strip reached, top to bottom, then left to right. They
+  // stay out of the buffer.
+  const detached: DetachedLine[] = heads
+    .filter((h) => !used.has(h))
+    .sort((a, b) => a.tl[1] - b.tl[1] || a.tl[0] - b.tl[0])
+    .map((h) => {
+      const line = lineFrom(h);
+      return { tracks: line.map((c) => c.track), text: line.map((c) => c.notation).join("") };
+    });
   const version = text === prev.text ? prev.version : prev.version + 1;
+  const placementOnly = text !== prev.text && withoutTableTags(text) === withoutTableTags(prev.text);
 
   const joins = new Set<string>();
   for (const [l, r] of rightOf) joins.add(pairKey(l.track, r.track));
 
   return {
-    state: { joins, links, version, text },
-    output: { version, text, map: { version, cards: spans, lines: lineCards } },
+    state: { entryText: prev.entryText, joins, links, strips: stripHeads.map((h) => h.track), version, text },
+    output: { version, text, map: { version, cards: spans, lines: lineCards },
+      stripHeads: stripHeads.map((h) => h.track),
+      detached,
+      placementOnly,
+    },
   };
 }
