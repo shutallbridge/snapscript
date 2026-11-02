@@ -1,0 +1,144 @@
+# Found by `magnets search`, lengths up to 6U.
+# Search (goal no_snap): optimal, objective 0.74, bound 0.74, in 17.2s
+# classes simple_head, get, define, call, set_prop, get_prop, required, optional, literal, bool, color, none, block_head, elif, else, dedent, on, operator, modulo, not, open_paren, close_paren, import, extern, global; seed 0, 8 workers, time limit 300s
+flip: top_bottom
+classes:
+  simple_head:
+    top:
+    - {from: left, at: 1/6, layers: N/-}
+    bottom:
+    - {from: left, at: 1/6, layers: S/-}
+    right:
+    - {at: 5/6, layers: -/S}
+  get:
+    top:
+    - {from: left, at: 1/6, layers: N/-}
+    bottom:
+    - {from: left, at: 1/6, layers: S/-}
+    left:
+    - {at: 5/6, layers: -/N}
+    right:
+    - {at: 5/6, layers: S/S}
+  define:
+    bottom:
+    - {from: left, at: 1/6, layers: S/-}
+    right:
+    - {at: 1/2, layers: -/S}
+  call:
+    top:
+    - {from: left, at: 1/6, layers: N/-}
+    bottom:
+    - {from: left, at: 1/6, layers: S/-}
+    left:
+    - {at: 5/6, layers: -/N}
+    right:
+    - {at: 5/6, layers: S/S}
+  set_prop:
+    left:
+    - {at: 5/6, layers: N/-}
+    right:
+    - {at: 5/6, layers: -/S}
+  get_prop:
+    left:
+    - {at: 5/6, layers: N/-}
+    right:
+    - {at: 5/6, layers: S/S}
+  required:
+    left:
+    - {at: 1/2, layers: -/N}
+    right:
+    - {at: 1/2, layers: -/S}
+  optional:
+    left:
+    - {at: 1/2, layers: S/N}
+    - {at: 5/6, layers: N/-}
+    right:
+    - {at: 1/2, layers: N/-}
+    - {at: 5/6, layers: -/S}
+  literal:
+    left:
+    - {at: 1/6, layers: N/-}
+    - {at: 5/6, layers: -/N}
+    right:
+    - {at: 1/6, layers: S/S}
+    - {at: 5/6, layers: S/S}
+  bool:
+    left:
+    - {at: 1/6, layers: N/-}
+    - {at: 5/6, layers: -/N}
+    right:
+    - {at: 1/6, layers: S/S}
+    - {at: 5/6, layers: S/S}
+  color:
+    left:
+    - {at: 1/6, layers: N/-}
+    - {at: 5/6, layers: -/N}
+    right:
+    - {at: 1/6, layers: S/S}
+    - {at: 5/6, layers: S/S}
+  none:
+    left:
+    - {at: 5/6, layers: -/N}
+    right:
+    - {at: 5/6, layers: S/S}
+  block_head:
+    top:
+    - {from: left, at: 1/6, layers: N/-}
+    bottom:
+    - {from: left, at: 7/6, layers: S/-}
+    right:
+    - {at: 5/6, layers: -/S}
+  elif:
+    top:
+    - {from: left, at: 7/6, layers: N/-}
+    bottom:
+    - {from: left, at: 7/6, layers: S/-}
+    right:
+    - {at: 5/6, layers: -/S}
+  else:
+    top:
+    - {from: left, at: 7/6, layers: N/-}
+    bottom:
+    - {from: left, at: 7/6, layers: S/-}
+  dedent:
+    top:
+    - {from: left, at: 7/6, layers: N/-}
+    bottom:
+    - {from: left, at: 1/6, layers: S/-}
+  'on':
+    bottom:
+    - {from: left, at: 1/6, layers: S/-}
+  operator:
+    left:
+    - {at: 1/6, layers: -/N}
+    - {at: 5/6, layers: N/-}
+    right:
+    - {at: 1/6, layers: S/-}
+    - {at: 5/6, layers: -/S}
+  modulo:
+    left:
+    - {at: 5/6, layers: N/-}
+    right:
+    - {at: 5/6, layers: -/S}
+  not:
+    left:
+    - {at: 5/6, layers: -/N}
+    right:
+    - {at: 5/6, layers: -/S}
+  open_paren:
+    left:
+    - {at: 5/6, layers: -/N}
+    right:
+    - {at: 5/6, layers: -/S}
+  close_paren:
+    left:
+    - {at: 5/6, layers: N/-}
+    right:
+    - {at: 5/6, layers: S/S}
+  import: {}
+  extern:
+    right:
+    - {at: 1/2, layers: -/S}
+  global:
+    right:
+    - {at: 5/6, layers: -/S}

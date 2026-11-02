@@ -270,7 +270,14 @@ class Arrangement:
         return {"flip": self.flip, "classes": classes}
 
 
-def _data():
+def _data_dir() -> Path:
+    """The language files (`classes.yaml`, `rules.yaml`, `arrangements/`):
+    `language/` in the clone that `magnets` runs from."""
+    return Path(__file__).resolve().parents[4] / "language"
+
+
+def _own_data():
+    """`magnets`' own data: its test programs and the `example` arrangement."""
     return resources.files("magnets") / "data"
 
 
@@ -307,7 +314,7 @@ def _bundled_classes() -> Mapping[str, CardClass]:
 
 
 def _bundled(name: str) -> Any:
-    return _read_yaml(_data() / f"{name}.yaml")
+    return _read_yaml(_data_dir() / f"{name}.yaml")
 
 
 def _read_data(source: str | Path | Mapping, what: str) -> Any:
@@ -626,13 +633,14 @@ def _arrangement_source(source: str | Path | Mapping | Arrangement) -> tuple[Any
     if isinstance(source, Mapping):
         return source, "<mapping>"
     path = Path(source)
-    bundled = _data() / "arrangements" / f"{source}.yaml"
     if path.is_file():
         return _read_arrangement(path), path.stem
     if path.suffix.lower() in (".yaml", ".yml"):
         raise ArrangementError(f"arrangement file not found: {path}")
-    if bundled.is_file():
-        return _read_arrangement(bundled), str(source)
+    for folder in (_data_dir(), _own_data()):
+        bundled = folder / "arrangements" / f"{source}.yaml"
+        if bundled.is_file():
+            return _read_arrangement(bundled), str(source)
     raise ArrangementError(f"no arrangement file or bundled arrangement named {source!r}")
 
 
@@ -789,7 +797,7 @@ class BundledProgram:
 @cache
 def bundled_programs() -> tuple[BundledProgram, ...]:
     """The bundled test programs, in file order."""
-    raw = _bundled("programs")
+    raw = _read_yaml(_own_data() / "programs.yaml")
     if not isinstance(raw, Mapping) or not raw:
         raise DataError("programs must be a mapping of program names to programs")
     programs = []
