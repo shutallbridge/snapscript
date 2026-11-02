@@ -21,14 +21,15 @@ import type {
   VirtualCard,
 } from "./types.ts";
 import { hiddenLines, importedNames } from "./entry.ts";
-import { shortestLength, STANDS_ALONE, textStrips } from "./program.ts";
-import { SHEET } from "./sheet.ts";
+import { SHEET, shortestLength } from "@snapscript/faces";
+import { STANDS_ALONE, textStrips } from "./program.ts";
 
 /** The prototypes' measured starting values (#147, #111). */
 export const defaultSettings: ReaderSettings = {
   unitMm: SHEET.unitMm,
-  markerAlongMm: SHEET.markerAlongMm,
-  markerDownMm: SHEET.markerDownMm,
+  // The marker is centred in the marker zone.
+  markerAlongMm: SHEET.markerZoneMm / 2,
+  markerDownMm: SHEET.heightMm / 2,
   maxAngleDeg: 15,
   joinMakeAlongMinMm: -8,
   joinMakeAlongMaxMm: 10,
