@@ -86,6 +86,14 @@ export function run(...tables: TableState[]): { outputs: StepOutput[]; state: Re
   return { outputs, state, last: outputs[outputs.length - 1] };
 }
 
+/** The buffer's program lines, without its `/** @table … *\/` lines, for tests about what the cards say. */
+export function code(text: string): string {
+  return text
+    .split("\n")
+    .filter((l) => !/^\/\*\* @table .* \*\/$/.test(l))
+    .join("\n");
+}
+
 export function textOf(...tables: TableState[]): string {
-  return run(...tables).last.text;
+  return code(run(...tables).last.text);
 }
