@@ -13,6 +13,10 @@
     "build": "tsdown",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@snapscript/core": "workspace:*",
+    "@snapscript/parser": "workspace:*"
+  },
   "devDependencies": {
     "tsdown": "catalog:",
     "typescript": "catalog:",

@@ -6,5 +6,9 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "vitest": "catalog:",
+    "yaml": "catalog:"
   }
 }
