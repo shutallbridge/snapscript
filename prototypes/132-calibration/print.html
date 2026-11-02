@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- PROTOTYPE (#132), throwaway. What to print for calibration, on A4 at 100%:
+     page 1: six calibration cards (4U, 120 x 30 mm): a 13 mm marker in the 17 mm marker zone, and a blank white face
+             the projector shows tags on. Cut on the grey line and lay each on a 4U base.
+     page 2: the ruler page (A4 landscape): two markers whose centres are exactly RULER_MM apart, for the real-world size. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PROTOTYPE #132: calibration cards and ruler page</title>
+<style>
+  @page { size: a4; margin: 0; }
+  body { margin: 0; font: 9px/1.3 ui-monospace, Menlo, monospace; color: #555; }
+  .sheet { width: 210mm; height: 297mm; position: relative; break-after: page; overflow: hidden; }
+  .land { width: 297mm; height: 210mm; }
+  svg { position: absolute; }
+  p { position: absolute; margin: 0; }
+</style>
+</head>
+<body>
+<div class="sheet" id="cards"></div>
+<div class="sheet land" id="ruler" style="page: land"></div>
+<style>@page land { size: a4 landscape; margin: 0; }</style>
+<script src="tags.js"></script>
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+// ruler page: marker centres at (RULER.x0, RULER.y) and (RULER.x1, RULER.y) in page mm, A4 landscape
+const RULER = { x0: 20, x1: 277, y: 105 };
+function tag(id, x, y, size) {  // the real marker, top-left at (x, y) mm
+  const c = size / 9; let d = '';
+  TAGS[id].forEach((row, j) => [...row].forEach((b, i) => { if (b === '1') d += `M${x + i * c} ${y + j * c}h${c}v${c}h${-c}z`; }));
+  return `<path d="${d}" fill="#000" shape-rendering="crispEdges"/>`;
+}
+const svg = (w, h, body, x = 0, y = 0) => `<svg xmlns="${NS}" viewBox="0 0 ${w} ${h}" style="left:${x}mm;top:${y}mm;width:${w}mm;height:${h}mm">${body}</svg>`;
+
+let cards = `<p style="left:15mm;top:10mm">Calibration cards (#132). Print at 100%, margins none. Cut on the grey line; lay each on a 4U base. The bar is 50 mm.</p>` +
+  svg(52, 4, `<path d="M1 2 H51 M1 0 V4 M51 0 V4" stroke="#000" stroke-width=".3"/>`, 15, 16);
+[1100, 1101, 1102, 1103, 1104, 1105].forEach((id, i) => {
+  const x = 15 + (i % 1) * 0, y = 30 + i * 40;
+  cards += svg(120.4, 30.4, `<g transform="translate(.2 .2)"><rect width="120" height="30" fill="#fff" stroke="#aaa" stroke-width=".2"/>` +
+    tag(id, 2, 8.5, 13) + `<text x="118" y="28" font-size="2.2" fill="#ccc" text-anchor="end" font-family="monospace">cal ${id}</text></g>`, x, y);
+});
+document.getElementById('cards').innerHTML = cards;
+
+const dx = RULER.x1 - RULER.x0;
+document.getElementById('ruler').innerHTML = svg(297, 210,
+  tag(2080, RULER.x0 - 6.5, RULER.y - 6.5, 13) + tag(2081, RULER.x1 - 6.5, RULER.y - 6.5, 13) +
+  `<path d="M${RULER.x0 + 10} ${RULER.y} H${RULER.x1 - 10}" stroke="#ddd" stroke-width=".3"/>` +
+  `<text x="148.5" y="${RULER.y - 4}" font-size="4" fill="#999" text-anchor="middle" font-family="monospace">ruler page (#132): marker centres ${dx} mm apart. Lay it flat.</text>` +
+  `<path d="M20 190 H70 M20 188 V192 M70 188 V192" stroke="#000" stroke-width=".3"/><text x="45" y="196" font-size="3" fill="#999" text-anchor="middle" font-family="monospace">50 mm: check the print</text>`);
+document.body.dataset.ready = 1;
+</script>
+</body>
+</html>

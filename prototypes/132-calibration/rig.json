@@ -1,0 +1,12 @@
+{
+ "_": "PROTOTYPE (#132), throwaway. What vision.py and the table app share about the projected things. ph = units of the projector's height (x 0 .. aspect, y 0 .. 1). mm are table mm.",
+ "aspect": 1.5,
+ "typed_depth_mm": 790,
+ "grid": {"ids": [2100, 2101, 2102, 2103, 2104, 2105, 2106, 2107, 2108, 2109, 2110, 2111], "cols": 4, "rows": 3, "size": 0.12, "inset": 0.1},
+ "drift": {"ids": [2050, 2051, 2052, 2053], "size": 0.035, "inset": 0.04},
+ "face": {"ids": [2060, 2061, 2062, 2063, 2064, 2065, 2066, 2067, 2068, 2069, 2070, 2071], "size_mm": 20, "at_mm": [[51, 15], [86, 15]]},
+ "ruler": {"ids": [2080, 2081], "mm": 257, "page_mm": [297, 210], "centres_mm": [[20, 105], [277, 105]]},
+ "cal_cards": [1100, 1101, 1102, 1103, 1104, 1105],
+ "boxes_mm": [[90, 80], [532, 80], [975, 80], [90, 680], [532, 680], [975, 680]],
+ "ruler_box_mm": [444, 290]
+}

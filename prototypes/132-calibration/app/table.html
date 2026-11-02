@@ -1,0 +1,274 @@
+<!doctype html>
+<!-- PROTOTYPE (#132, from #147 and #115), throwaway: the table view, with the settings menu (`,`) and calibration.
+#132 adds: the settings menu, the three calibration steps (bare table, calibration cards and ruler page, check), the
+check view (card outlines, the ruler page's outline, a guide slot past each line's end from the last card's own angle
+and from the strip's), the corner tags that notice a knocked stand, and a warning when they have moved.
+From #115: the table view. Draws, in table mm through px/mm: the two windows, a ring on each
+card marker, each line's gutter (green dot on a strip head, crossed dot on a skipped or detached line, E1 E2 badges),
+a red outline on the card an error blames, the status bar, and a small timing HUD. Reports 'lit' once it has drawn. -->
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000;overflow:hidden;cursor:none}canvas{display:block}</style></head>
+<body><canvas id="v"></canvas><script src="../tags.js"></script><script>
+let geo = JSON.parse(new URLSearchParams(location.search).get('geo'));
+const RIG = JSON.parse(new URLSearchParams(location.search).get('rig'));
+const cv = document.getElementById('v'), g = cv.getContext('2d');
+cv.width = geo.W; cv.height = geo.H;
+let k = geo.pxMm;
+const P = ([x, y]) => [x * k, y * k];
+const add = (p, d, s) => [p[0] + d[0] * s, p[1] + d[1] * s];
+// error look: 'face' (decided by card feedback): the face, never the marker zone (0-17 mm), red at 50% with a 3 mm red
+// edge inside it; 'outside': the first try, an outline 1.5 mm outside the card; '0': none
+const OUTLINE = new URLSearchParams(location.search).get('outline') || 'face';
+function faceRed(c) {
+  const quad = (x0, x1, y0, y1) => { g.beginPath(); [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].forEach(([x, y], i) => g[i ? 'lineTo' : 'moveTo'](...P(add(add(c.tl, c.u, x), c.v, y)))); g.closePath(); };
+  quad(17, c.L, 0, 30); g.fillStyle = 'rgba(239,68,68,0.5)'; g.fill();
+  quad(18.5, c.L - 1.5, 1.5, 28.5); g.strokeStyle = '#ef4444'; g.lineWidth = 3 * k; g.stroke();
+}
+let light = null, hud = {}, trips = [];
+
+function cardPath(c, grow = 0) {
+  const a = add(add(c.tl, c.u, -grow), c.v, -grow), b = add(a, c.u, c.L + 2 * grow), d = add(b, c.v, 30 + 2 * grow), e = add(a, c.v, 30 + 2 * grow);
+  g.beginPath(); [a, b, d, e].forEach((p, i) => g[i ? 'lineTo' : 'moveTo'](...P(p))); g.closePath();
+}
+function dot(c, fill, crossed) {
+  const [x, y] = P(add(add(c.tl, c.u, -12), c.v, 15)), r = 6 * k;
+  g.beginPath(); g.arc(x, y, r, 0, 7);
+  if (crossed) { g.strokeStyle = '#888'; g.lineWidth = 1.2 * k; g.stroke(); g.beginPath(); g.moveTo(x - r * .7, y + r * .7); g.lineTo(x + r * .7, y - r * .7); g.stroke(); }
+  else { g.fillStyle = fill; g.fill(); }
+}
+function spinner(c) {  // a white arc, turning once a second
+  const [x, y] = P(add(add(c.tl, c.u, -12), c.v, 15)), r = 5 * k, a = (performance.now() / 1000) * 2 * Math.PI;
+  g.beginPath(); g.arc(x, y, r, a, a + 1.5 * Math.PI); g.strokeStyle = '#fff'; g.lineWidth = 2 * k; g.lineCap = 'round'; g.stroke();
+}
+function badge(c, n, i) {
+  const [x, y] = P(add(add(c.tl, c.u, -12 - (i + 1) * 14), c.v, 15)), r = 6 * k;
+  g.fillStyle = '#ef4444'; g.fillRect(x - r, y - r, 2 * r, 2 * r);
+  g.fillStyle = '#fff'; g.font = `bold ${7 * k}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('E' + n, x, y);
+}
+
+function draw() {
+  g.fillStyle = '#000'; g.fillRect(0, 0, geo.W, geo.H);
+  if (mode.startsWith('cal')) return drawCal();
+  drawMain();
+  if (set.corners) cornerTags();
+  if (set.check) checkView();
+  if (mode === 'menu') drawMenu();
+}
+function drawMain() {
+  g.strokeStyle = '#333'; g.lineWidth = 2; g.strokeRect(1, 1, geo.splitPx - 2, geo.H - 2); g.strokeRect(geo.splitPx + 1, 1, geo.AW - geo.splitPx - 2, geo.H - 2);
+  const s = geo.sketch; g.strokeStyle = '#555'; g.strokeRect(s.x - 2, s.y - 2, s.w + 4, s.h + 4);
+  if (!light) return;
+  if (new URLSearchParams(location.search).get('rings')) for (const c of light.cards) {  // marker rings (debug; off: nothing is drawn on a marker zone): green counts (coding space), grey ignored
+    const [x, y] = P([c.x, c.y]); g.beginPath(); g.arc(x, y, 11 * k, 0, 7);
+    g.strokeStyle = c.x * k < geo.splitPx ? '#22c55e' : '#666'; g.lineWidth = 1; g.stroke();
+  }
+  const msgs = [];
+  light.lines.forEach((l, i) => {
+    const n = i + 1, head = l.cards[0], errs = light.errors.filter(e => e.line === n);
+    const skipped = light.skipped.includes(n);
+    if (light.unread.includes(n)) spinner(head);  // not read yet
+    else if (i === 0) dot(head, '#22c55e');
+    else if (skipped) dot(head, null, true);
+    errs.forEach(e => {
+      const no = light.errors.indexOf(e) + 1;
+      badge(head, no, errs.indexOf(e));
+      msgs.push(`E${no}  ${e.kind}: ${e.message}`);
+      const c = l.cards[e.card] || head;
+      if (OUTLINE === 'outside') { cardPath(c, 1.5); g.strokeStyle = '#ef4444'; g.lineWidth = 3 * k; g.stroke(); }
+      else if (OUTLINE !== '0') faceRed(c);
+    });
+  });
+  light.detached.forEach(l => dot(l[0], null, true));
+  // status bar, bottom of the coding space
+  const bh = 14 * k;
+  g.fillStyle = '#111'; g.fillRect(0, geo.H - bh, geo.splitPx, bh);
+  const lu = frame.lineup || {};
+  if (lu.drift_mm != null && lu.drift_mm > DRIFT_WARN && lu.drift !== 'off')  // #132: a knocked stand
+    msgs.unshift(lu.drift === 'fix' ? `The line-up moved ${lu.drift_mm.toFixed(1)} mm; corrected.` : `The line-up has moved ${lu.drift_mm.toFixed(1)} mm. Recalibrate: press , then Calibrate.`);
+  g.fillStyle = msgs.length ? '#fca5a5' : '#86efac'; g.font = `${6.5 * k}px monospace`; g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.fillText(msgs.length ? msgs.join('    ') : `${light.lines.length} lines, no errors`, 6 * k, geo.H - bh / 2);
+  // HUD, top of the canvas window
+  const t = trips.at(-1), f = hud.frame || {};
+  g.fillStyle = '#9ca3af'; g.font = `${5 * k}px monospace`; g.textBaseline = 'top';
+  const ms = (a, b) => (a && b) ? Math.round((b - a) * 1000) : '-';
+  [`seq ${light.seq} · search ${f.search_s}s · hw ${f.hw_s}s · frame age ${f.age_s}s · sketch ${hud.fps} fps`,
+   t ? `last trip: cap→sent ${ms(t.t_cap, t.t_sent)} · →check ${ms(t.t_sent, t.t_check)} · →lit ${ms(t.t_check, t.t_lit)} · →drawn ${ms(t.t_check, t.t_drawn)} · total ${ms(t.t_cap, t.t_drawn || t.t_lit)} ms` : '']
+    .forEach((line, i) => g.fillText(line, geo.splitPx + 6 * k, 4 * k + i * 7 * k));
+}
+
+// ======================= #132: settings menu, calibration, check view =======================
+const DRIFT_WARN = 3;  // mm the corner tags may move before the status bar says so
+let mode = 'run', frame = {}, res = {}, prep = null, calErr = null, menuAt = 0;
+const set = { check: false, corners: true, drift: 'warn', planes: 'two', scale: 'typed' };
+const PH = ([x, y]) => [x * geo.H, y * geo.H];  // projector heights -> px
+const CAL_CARDS = new Set(RIG.cal_cards);
+
+function tagAt(id, cx, cy, s, ang = 0, border = 1.4) {  // a projected marker, centre (cx, cy) px, side s px
+  g.save(); g.translate(cx, cy); g.rotate(ang * Math.PI / 180);
+  g.fillStyle = '#fff'; g.fillRect(-s * border / 2, -s * border / 2, s * border, s * border);
+  g.fillStyle = '#000'; const c = s / 9;
+  TAGS[id].forEach((r, y) => [...r].forEach((b, x) => { if (b === '1') g.fillRect(-s / 2 + x * c, -s / 2 + y * c, c + 0.5, c + 0.5); }));
+  g.restore();
+}
+function cornerTags() {
+  const d = RIG.drift, a = RIG.aspect, e = d.inset;
+  [[e, e], [a - e, e], [e, 1 - e], [a - e, 1 - e]].forEach((p, i) => { const [x, y] = PH(p); tagAt(d.ids[i], x, y, d.size * geo.H); });
+}
+function text(lines, x, y, size = 9, col = '#e5e7eb') {  // mm
+  g.font = `${size * k}px sans-serif`; g.textAlign = 'left'; g.textBaseline = 'top';
+  lines.forEach((l, i) => { g.fillStyle = Array.isArray(l) ? l[1] : col; g.fillText(Array.isArray(l) ? l[0] : l, x * k, (y + i * size * 1.45) * k); });
+}
+function poly(pts, col, w = 0.8, dash) {  // pts in mm
+  g.beginPath(); pts.forEach((p, i) => g[i ? 'lineTo' : 'moveTo'](...P(p))); g.closePath();
+  g.setLineDash(dash ? dash.map(d => d * k) : []); g.strokeStyle = col; g.lineWidth = w * k; g.stroke(); g.setLineDash([]);
+}
+const at = (tl, u, v, x, y) => [tl[0] + u[0] * x + v[0] * y, tl[1] + u[1] * x + v[1] * y];
+const box = (tl, u, v, x0, x1) => [at(tl, u, v, x0, 0), at(tl, u, v, x1, 0), at(tl, u, v, x1, 30), at(tl, u, v, x0, 30)];
+function uvOf(angle) { const r = angle * Math.PI / 180, u = [Math.cos(r), Math.sin(r)]; return [u, [-u[1], u[0]]]; }
+
+function checkView() {
+  // every card: its face's outline, on the card's edge (never on the marker zone)
+  for (const c of (light && light.cards) || []) poly(box(c.tl, c.u, c.v, 17, c.L), '#22d3ee');
+  // calibration cards (4U) and the ruler page, from frame.cal
+  const cal = frame.cal || {};
+  for (const [id, [x, y, a]] of Object.entries(cal)) {
+    if (!CAL_CARDS.has(+id)) continue;
+    const [u, v] = uvOf(a), tl = at([x, y], u, v, -8.5, -15);
+    poly(box(tl, u, v, 17, 120), '#22d3ee');
+  }
+  const r = RIG.ruler, m0 = cal[r.ids[0]], m1 = cal[r.ids[1]];
+  if (m0 && m1) {  // the page's corners from its two markers: angle from the line between them, its length from the line-up
+    const d = [m1[0] - m0[0], m1[1] - m0[1]], len = Math.hypot(...d), u = [d[0] / len, d[1] / len], v = [-u[1], u[0]];
+    const [W, Hh] = r.page_mm, [cx, cy] = r.centres_mm[0], tl = at([m0[0], m0[1]], u, v, -cx, -cy);
+    poly([at(tl, u, v, 0, 0), at(tl, u, v, W, 0), at(tl, u, v, W, Hh), at(tl, u, v, 0, Hh)], '#e879f9');
+    text([`${len.toFixed(1)} mm between markers (printed ${r.mm})`], tl[0] + 30, tl[1] + Hh - 30, 6, '#e879f9');
+  }
+  // a guide slot past each line's end: yellow from the last card's own angle, magenta from the strip's
+  for (const l of (light && light.lines) || []) {
+    const cs = l.cards, c = cs[cs.length - 1];
+    poly(box(c.tl, c.u, c.v, c.L, c.L + 120), '#facc15', 0.8, [3, 2]);
+    if (cs.length < 2) continue;
+    const mk = x => at(x.tl, x.u, x.v, 8.5, 15), a = mk(cs[0]), b = mk(c), d = [b[0] - a[0], b[1] - a[1]], n = Math.hypot(...d);
+    const u = [d[0] / n, d[1] / n], v = [-u[1], u[0]], tl = at(b, u, v, -8.5, -15);
+    poly(box(tl, u, v, c.L, c.L + 120), '#e879f9', 0.8, [1.5, 1.5]);
+  }
+}
+
+const MENU = [
+  ['Calibrate…', () => startCal()],
+  [() => `Check view: ${set.check ? 'on' : 'off'}`, () => { set.check = !set.check; }],
+  [() => `Corner tags: ${set.corners ? 'on' : 'off'}`, () => { set.corners = !set.corners; }],
+  [() => `Knocked stand: ${set.drift}`, () => { set.drift = { warn: 'fix', fix: 'off', off: 'warn' }[set.drift]; table.cmd({ cmd: 'set', drift: set.drift }); }],
+  [() => `Card height: ${set.planes === 'two' ? 'own line-up' : 'table line-up only'}`, () => { set.planes = set.planes === 'two' ? 'table' : 'two'; table.cmd({ cmd: 'set', planes: set.planes }); }],
+  [() => `Real-world size: ${set.scale === 'ruler' ? 'ruler page' : `typed depth ${RIG.typed_depth_mm} mm`}`, () => { set.scale = set.scale === 'ruler' ? 'typed' : 'ruler'; table.cmd({ cmd: 'set', scale: set.scale }); }],
+  ['Reset the corner tags here', () => table.cmd({ cmd: 'set', drift_ref: 'now' })],
+  ['Close', () => { mode = 'run'; }],
+];
+function drawMenu() {
+  const x = geo.splitMm + 40, y = 60, w = 420;
+  g.fillStyle = '#111'; g.fillRect(x * k, y * k, w * k, (MENU.length * 13 + 75) * k);
+  text([['Settings', '#9ca3af']], x + 10, y + 8, 10);
+  MENU.forEach(([l], i) => text([[(i === menuAt ? '› ' : '  ') + (typeof l === 'function' ? l() : l), i === menuAt ? '#fff' : '#9ca3af']], x + 10, y + 26 + i * 13, 9));
+  const lu = frame.lineup || {};
+  text([`line-up: ${lu.table ? 'table' : 'NO table'}${lu.card ? ' + card height' : ''}${lu.trying ? ' (trying, not saved)' : ''}`,
+        `size: ${lu.scale} mm per projector height (${lu.scale_from}${lu.scale_ruler ? `; ruler ${lu.scale_ruler}` : ''})`,
+        `corner tags: ${lu.drift_n || 0} seen, moved ${lu.drift_mm ?? '-'} mm${lu.drift_ref ? '' : ' (no reference yet)'} · exposure ${frame.exp_ms} ms gain ${frame.gain}`],
+       x + 10, y + 32 + MENU.length * 13, 6, '#6b7280');
+}
+
+// ---- the calibration steps ----
+const STEP = (n, l) => [[`Calibrate · step ${n} of 3`, '#9ca3af'], ...l];
+function startCal() { mode = 'cal1'; res = {}; calErr = null; table.sketch(false); }
+function endCal(save) { table.cmd({ cmd: save ? 'save' : 'cancel' }); mode = 'run'; table.sketch(true); }
+function panel(lines, size = 9) {  // the step's words, in the canvas space, clear of the boxes
+  const x = geo.splitMm + 40, y = 140;
+  text(lines, x, y, size);
+}
+function seenCal() {
+  const cal = frame.cal || {}, ids = Object.keys(cal).map(Number);
+  return { cards: ids.filter(i => CAL_CARDS.has(i)), ruler: RIG.ruler.ids.every(i => cal[i]) };
+}
+function drawCal() {
+  const fmt = e => e ? `${e[0]} mm on average, ${e[1]} mm at worst` : '-';
+  if (mode === 'cal1') panel(STEP(1, ['Clear the table: take every card and page off.', 'Then press Enter.', ...(calErr ? [['', '#000'], [calErr, '#fca5a5']] : [])]));
+  else if (mode === 'cal1go') {
+    const gr = RIG.grid, a = RIG.aspect;
+    gr.ids.forEach((id, i) => {
+      const col = i % gr.cols, row = (i / gr.cols) | 0;
+      const [x, y] = PH([gr.inset + col / (gr.cols - 1) * (a - 2 * gr.inset), gr.inset + row / (gr.rows - 1) * (1 - 2 * gr.inset)]);
+      tagAt(id, x, y, gr.size * geo.H, 0, 1.5);
+    });
+  } else if (mode === 'cal2') {
+    const s = seenCal(), cal = frame.cal || {}, near = (p, ids) => ids.some(i => cal[i] && Math.hypot(cal[i][0] - p[0], cal[i][1] - p[1]) < 60);
+    RIG.boxes_mm.forEach(([x, y]) => { const ok = near([x + 8.5, y + 15], s.cards); poly([[x, y], [x + 120, y], [x + 120, y + 30], [x, y + 30]], ok ? '#22c55e' : '#6b7280', 1, ok ? null : [3, 2]); });
+    const [rx, ry] = RIG.ruler_box_mm, [W, Hh] = RIG.ruler.page_mm;
+    poly([[rx, ry], [rx + W, ry], [rx + W, ry + Hh], [rx, ry + Hh]], s.ruler ? '#22c55e' : '#6b7280', 1, s.ruler ? null : [3, 2]);
+    panel(STEP(2, [`Step 1: ${res.table.n} of ${res.table.of} tags, ${fmt(res.table.err_mm)}.`, '',
+      'Lay the ruler page flat in the big box, and a calibration card', 'on a base in each small box. Then press Enter.', '',
+      [`seen: ${s.cards.length} of ${RIG.cal_cards.length} cards, ruler page ${s.ruler ? 'yes' : 'no'}`, s.cards.length >= 4 ? '#86efac' : '#9ca3af'],
+      ...(calErr ? [[calErr, '#fca5a5']] : [])]));
+  } else if (mode === 'cal2go') { /* dark: the exposure is set from the cards' paper */ }
+  else if (mode === 'cal2tags') {
+    for (const t of prep.tags) {
+      g.beginPath(); t.face.forEach((p, i) => g[i ? 'lineTo' : 'moveTo'](...PH(p))); g.closePath(); g.fillStyle = '#fff'; g.fill();
+    }
+    for (const t of prep.tags) { const [x, y] = PH(t.c); tagAt(t.id, x, y, t.size * geo.H, t.angle, 1.25); }
+  } else if (mode === 'cal3') {
+    drawMain(); checkView();
+    const c = res.card, p = res.prep, sz = p.scale_ruler ? `ruler page ${p.scale_ruler} mm per projector height, typed ${p.scale_typed}` : 'ruler page not seen: typed depth';
+    panel(STEP(3, [
+      `Table: ${fmt(res.table.err_mm)} (${res.table.n} tags).`,
+      `Card height: ${c.n} of ${c.of} face tags. With the table's line-up only: ${fmt(c.table_only_mm)}.`,
+      `  One plane plus a height: ${fmt(c.plane_plus_height_mm)} (each card left out: ${fmt(c.plane_plus_height_loo_mm)}).`,
+      ...(c.two_planes_mm ? [`  Two planes: ${fmt(c.two_planes_mm)} (each card left out: ${fmt(c.two_planes_loo_mm)}). Using: ${c.used}.`] : []),
+      `Size: ${sz}.`, `Exposure: ${p.exposure.ms} ms, gain ${p.exposure.gain} (paper ${p.exposure.paper} of 255).`, '',
+      'Check: each cyan line should sit on its card\'s edge, and the pink one on the page\'s.',
+      'Move cards to see them follow. Enter saves, Escape cancels.'], 7));
+  }
+}
+function after(ms, f) { requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(f, ms))); }
+function calKey(key) {
+  if (key === 'Escape') return endCal(false);
+  if (key !== 'Enter') return;
+  if (mode === 'cal1') { mode = 'cal1go'; draw(); after(300, () => table.cmd({ cmd: 'table' })); }
+  else if (mode === 'cal2') { mode = 'cal2go'; calErr = null; draw(); after(500, () => table.cmd({ cmd: 'prep' })); }
+  else if (mode === 'cal3') endCal(true);
+}
+table.onCalib(m => {
+  if (m.step === 'table') {
+    if (m.ok) { res.table = m; table.cmd({ cmd: 'try' }); mode = 'cal2'; } else { calErr = `Step 1 failed: ${m.why}. Clear the table and press Enter.`; mode = 'cal1'; }
+  } else if (m.step === 'prep') {
+    if (m.ok && m.tags.length >= 4) {
+      res.prep = m; prep = m; mode = 'cal2tags'; draw();
+      after(400, () => table.cmd({ cmd: 'card', tags: Object.fromEntries(prep.tags.map(t => [t.id, t.c])) }));
+    } else { calErr = `Not yet: ${m.why || `only ${m.tags.length / 2} cards seen`}.`; mode = 'cal2'; }
+  } else if (m.step === 'card') {
+    if (m.ok) { res.card = m; table.cmd({ cmd: 'try' }); mode = 'cal3'; } else { calErr = `The card step failed: ${m.why}.`; mode = 'cal2'; }
+  }
+  draw();
+});
+table.onFrame(m => { frame = m; if (mode === 'cal2' || mode === 'cal3' || mode === 'menu' || set.check) draw(); });
+table.onGeo(gg => { geo = gg; k = geo.pxMm; draw(); });
+function onKey(key) {
+  if (mode.startsWith('cal')) return calKey(key), draw();
+  if (key === ',') mode = mode === 'menu' ? 'run' : 'menu';
+  else if (mode === 'menu') {
+    if (key === 'ArrowDown') menuAt = (menuAt + 1) % MENU.length;
+    else if (key === 'ArrowUp') menuAt = (menuAt + MENU.length - 1) % MENU.length;
+    else if (key === 'Enter' || key === 'ArrowRight' || key === 'ArrowLeft') MENU[menuAt][1]();
+    else if (key === 'Escape') mode = 'run';
+  }
+  draw();
+}
+document.addEventListener('keydown', e => onKey(e.key));
+table.onKey(onKey);
+
+table.onState((l, h) => {
+  light = l; hud = h;
+  draw();
+  requestAnimationFrame(() => table.lit(l.seq, Date.now() / 1000));
+});
+table.onTrip(r => { trips.push(r); if (trips.length > 50) trips.shift(); });
+(function spin() { if (light && light.unread.length) draw(); requestAnimationFrame(spin); })();
+setInterval(draw, 1000);
+draw();
+</script></body></html>
