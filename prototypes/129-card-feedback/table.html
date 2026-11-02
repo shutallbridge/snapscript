@@ -440,14 +440,13 @@ function virtualArgs(cards, attached = null) {
   }
   for (const c of cards) {
     const m = /^\[call\((?:p5\.)?(\w+)\)\]$/.exec(c.text), sig = m && SIG[m[1]];
-    if (!sig) continue;
+    if (!sig || !counts(c)) continue;  // a detached call card gets no argument guides. An overloaded [extern] would show its first overload
     let end = c, endLen = CARD_LEN[c.id] || lenOf(sideOf(c.text));
     const real = [c]; lineCards.set(c, real);
     for (const [i, [hint, text]] of sig.entries()) {
       const d = [Math.cos(end.a), Math.sin(end.a)], reach = endLen * U * k;  // marker to marker: the end card's length
       const slot = { text, side: sideOf(text), hint, a: end.a, m: [end.m[0] + d[0] * reach, end.m[1] + d[1] * reach] };
       const filled = occupant(slot, cards, `arg:${c.id}:${i}`);
-      if (filled && !counts(c)) { real.push(filled); end = filled; endLen = CARD_LEN[filled.id] || lenOf(sideOf(filled.text)); continue; }
       if (filled) {
         const got = misfit(text, filled.text), gm = /^\[get\{(\w+)\}\]$/.exec(filled.text), from = gm && skippedNames[gm[1].toLowerCase()];
         if (from) argErrors.push({ card: filled, call: c, kind: 'NameError', ref: from,  // its words name the skipped line's badge, once numbered
