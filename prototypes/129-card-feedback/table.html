@@ -458,9 +458,12 @@ function virtualArgs(cards, attached = null) {
       const filled = occupant(after(), cards, `arg:${c.id}:${i}`); if (!filled) break;
       laid.push(filled); real.push(filled); end = filled; endLen = CARD_LEN[filled.id] || lenOf(sideOf(filled.text));
     }
-    // Overloads ([extern]s with different numbers of values): the ones that still fit what's laid take turns, one per
-    // cfg.ovSec (0: the first only). Errors are checked against the one with exactly as many values, else the first that fits.
-    const fit = ovs.filter(o => o.length >= laid.length), check = ovs.find(o => o.length === laid.length) || fit[0] || ovs[0];
+    // Overloads ([extern]s with different numbers of values): with nothing laid yet, each one's guides take turns, one per
+    // cfg.ovSec (0: the first only). Once a value is laid, it settles on one: of those whose kinds fit what's laid, the one
+    // with exactly that many values, else the shortest longer one; if none fits, the first long enough (for its errors).
+    const kindsFit = o => o.length >= laid.length && laid.every((f, i) => !misfit(o[i][1], f.text));
+    const fitting = ovs.filter(kindsFit).sort((x, y) => x.length - y.length);
+    const check = laid.length ? fitting[0] || ovs.find(o => o.length >= laid.length) || ovs[0] : ovs[0];
     laid.forEach((filled, i) => {
       if (!check[i]) return;
       const [hint, text] = check[i];
@@ -470,7 +473,7 @@ function virtualArgs(cards, attached = null) {
       else if (got) argErrors.push({ card: filled, call: c, kind: 'TypeError', msg: `${hint} needs ${KIND_NAME[kindOf(text)]}`,
         long: `${m[1]}'s ${hint} needs ${KIND_NAME[kindOf(text)]}. Got ${got} instead.` });
     });
-    const shown = !fit.length ? [] : cfg.ovSec ? fit[Math.floor(performance.now() / 1000 / cfg.ovSec) % fit.length] : fit[0];
+    const shown = laid.length ? check : cfg.ovSec ? ovs[Math.floor(performance.now() / 1000 / cfg.ovSec) % ovs.length] : ovs[0];
     for (const [hint, text] of shown.slice(laid.length)) {
       const slot = { text, side: sideOf(text), hint, ...after() };
       out.push(slot); end = slot; endLen = lenOf(slot.side);
@@ -630,7 +633,8 @@ function structure(cards) {
   return { attached, detached, lines, below, roots };
 }
 // #129 a missing [dedent], mocked: down each strip, a line back in (or left of) an open block head's column, with no
-// [dedent] before it, is an IndentationError: the block closes there anyway (REFERENCE 8). Not skipped. The [dedent] goes
+// [dedent] before it, is an IndentationError. Assumed skipped, like any other error (REFERENCE 8 says the block just closes
+// there; a spec change for the map to pick up). The block closes above it. The [dedent] goes
 // in the head's column on that line's row, which is where the line's first card already is, so its guide can't go there
 // (nothing may cover a card's marker). cfg.dedLook (key i):
 //   margin  the guide card in the margin left of the line, with a caret at the gap above the line
@@ -702,8 +706,8 @@ function drawVirtualCards(g, L) {
       drawDedentGuide(g, d);
       const name = /^\[(\w+)/.exec(d.head.text)[1], l = st.lines.get(d.line), last = l.at(-1);
       lineEnds.set(d.line, { m: last.m, a: last.a, len: CARD_LEN[last.id] || lenOf(sideOf(last.text)) });
-      argErrors.push({ card: d.line, call: d.line, kind: 'IndentationError', noSkip: true, msg: `no [dedent] for ${name} above`,
-        long: `${name} has no [dedent]. Its block closes here anyway.` });
+      argErrors.push({ card: d.line, call: d.line, kind: 'IndentationError', msg: `no [dedent] for ${name} above`,
+        long: `${name} has no [dedent], so this line is skipped. The block closes above it.` });
     }
     const blockers = [...ded.flatMap(dedentQuads), ...cards.map(c => quad(c, 0, 0, (CARD_LEN[c.id] || lenOf(sideOf(c.text))) * U, H)), ...shownArgs.map(v => quad(v, 0, 0, lenOf(v.side) * U, H))];
     // each error belongs to its line (the line's first card), numbered in program order: lines top to bottom, then along each line
