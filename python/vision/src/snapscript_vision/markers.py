@@ -3,14 +3,16 @@
 It knows a card's length, whether it's handwritten, and where its whiteboard is on the sheet; and which markers are
 on textbook pages and on the ruler page. Nothing else.
 
-The file format of the lockfile and the language markers belongs to #157. Until it settles, this loads the table
-reader's loaded shape (`@snapscript/table-reader`'s `LanguageMarkers` and `Lockfile`) as JSON, plus the ruler
-page's two markers, so a #157 loader can fill both sides the same way:
+The service reads no project files: the table app sends the marker data in a `markers` message when it connects
+(#184), and tests may give the same data as a `--markers` file. Either way it is the table reader's loaded shape
+(`@snapscript/table-reader`'s `LanguageMarkers` and `Lockfile`) as JSON, plus the table's own markers:
 
     {"languageMarkers": {"1027": {"card": "[num{}]", "length": 4}, "1009": {"card": "[repeat]", "length": 2}},
      "lockfile": {"0": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "circle", "length": 3},
                   "1900": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 3}},
      "ruler": [2080, 2081], "ruler_mm": 257, "calibration": [300, 301, ..., 311]}
+
+The message is that object with `"type": "markers"` added.
 
 A language marker's card is handwritten when its notation has braces (`[num{}]`, `[set{}to]`); library cards are
 printed. Lengths are in U.
@@ -50,8 +52,12 @@ def whiteboard(card: str, length: int):
     return (x0, WHITEBOARD_TOP_MM, x1, WHITEBOARD_BOTTOM_MM)
 
 
-def load(path) -> dict[int, Marker]:
-    raw = json.loads(Path(path).read_text())
+def read(path) -> dict:
+    """The marker data in a `--markers` file."""
+    return json.loads(Path(path).read_text())
+
+
+def parse(raw: dict) -> dict[int, Marker]:
     out = {}
     for k, v in raw.get("languageMarkers", {}).items():
         card, length = v["card"], int(v["length"])
@@ -78,8 +84,7 @@ class TableMarkers:
     calibration: tuple      # the markers projected in calibration's first step
 
 
-def load_table(path) -> TableMarkers:
-    raw = json.loads(Path(path).read_text())
+def parse_table(raw: dict) -> TableMarkers:
     mm = raw.get("ruler_mm")
     return TableMarkers(tuple(int(k) for k in raw.get("ruler", [])), float(mm) if mm is not None else None,
                         tuple(int(k) for k in raw.get("calibration", [])))
