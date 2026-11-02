@@ -100,7 +100,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', barTop: 'status', barBottom: 'errors', vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'wash', barTop: 'status', barBottom: 'errors', vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -158,6 +158,7 @@ addEventListener('keydown', e => {
   if (e.key === 't') { const T = [0, 0.5, 1, 1.5, 2, 3]; cfg.vwrongEdge = T[(T.indexOf(cfg.vwrongEdge) + 1) % T.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdge ? cfg.vwrongEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'o') { const O = [20, 40, 60, 80, 100]; cfg.vwrongEdgeA = O[(O.indexOf(cfg.vwrongEdgeA) + 1) % O.length]; save(); say(`wrong card red edge: ${cfg.vwrongEdgeA}%`); return; }
   if (e.key === 'p') { const P = ['auto', 'right', 'left']; cfg.msgAt = P[(P.indexOf(cfg.msgAt) + 1) % P.length]; save(); say(`error message: ${cfg.msgAt}`); return; }
+  if (e.key === 'k') { cfg.skipLook = SKIP_LOOKS[(SKIP_LOOKS.indexOf(cfg.skipLook) + 1) % SKIP_LOOKS.length]; save(); say(`skipped line: ${cfg.skipLook}`); return; }
   if (e.key === 'f') { const F = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; cfg.vsFill = F[(F.indexOf(cfg.vsFill) + 1) % F.length]; save(); say(`stand-in marker zone: ${cfg.vsFill}% white`); return; }
   if (e.key === 'm') { const M = [0, 0.5, 1, 1.5, 2]; cfg.vsEdge = M[(M.indexOf(cfg.vsEdge) + 1) % M.length]; save(); say(`stand-in marker zone edge: ${cfg.vsEdge ? cfg.vsEdge + ' mm' : 'none'}`); return; }
   if (e.key === 'w') { cfg.vwb = !cfg.vwb; save(); say(`guide whiteboard edge: ${cfg.vwb ? 'on' : 'off'}`); return; }
@@ -401,7 +402,7 @@ function virtualProgram(L) {
 // sits in it (wrong kinds too: that's error lighting's job), and the next slot starts after the filling card's end.
 // #129 error lighting, mocked: a card of the wrong kind in an argument's place is a TypeError. The real checker decides
 // this; here a num takes num, get and call cards, and a colour takes color, get and call cards.
-let argErrors = [], lineEnds = new Map();
+let argErrors = [], lineEnds = new Map(), lineCards = new Map();  // lineCards: a line's first card -> its real cards, in order
 const KIND_NAME = { '[num{}]': 'a number', '[color(…)]': 'a colour' };
 const GOT_NAME = { str: 'a string', num: 'a number', color: 'a colour', define: 'a define', set: 'a set', repeat: 'a repeat', dedent: 'a dedent' };
 function misfit(want, got) {
@@ -412,11 +413,12 @@ function misfit(want, got) {
 }
 function virtualArgs(cards) {
   const k = mm(), out = [];
-  argErrors = []; lineEnds = new Map();
+  argErrors = []; lineEnds = new Map(); lineCards = new Map();
   for (const c of cards) {
     const m = /^\[call\((?:p5\.)?(\w+)\)\]$/.exec(c.text), sig = m && SIG[m[1]];
     if (!sig) continue;
     let end = c, endLen = CARD_LEN[c.id] || lenOf(sideOf(c.text));
+    const real = [c]; lineCards.set(c, real);
     for (const [hint, text] of sig) {
       const d = [Math.cos(end.a), Math.sin(end.a)], reach = endLen * U * k;  // marker to marker: the end card's length
       const slot = { text, side: sideOf(text), hint, a: end.a, m: [end.m[0] + d[0] * reach, end.m[1] + d[1] * reach] };
@@ -425,7 +427,7 @@ function virtualArgs(cards) {
         const got = misfit(text, filled.text);
         if (got) argErrors.push({ card: filled, call: c, kind: 'TypeError', msg: `${hint} needs ${KIND_NAME[kindOf(text)]}`,
           long: `${m[1]}'s ${hint} needs ${KIND_NAME[kindOf(text)]}. Got ${got} instead.` });
-        end = filled; endLen = CARD_LEN[filled.id] || lenOf(sideOf(filled.text)); continue;
+        real.push(filled); end = filled; endLen = CARD_LEN[filled.id] || lenOf(sideOf(filled.text)); continue;
       }
       out.push(slot);
       end = slot; endLen = lenOf(slot.side);
@@ -487,6 +489,33 @@ function drawMessages(g, errs, L, blockers) {  // one line's errors: their short
     badge(g, e.id, x, y, bs); g.font = font(f); g.fillStyle = '#f87171'; g.textBaseline = 'middle'; g.fillText(e.msg, x + bs + bgap, y); });
   g.restore();
 }
+// A skipped line (cfg.skipLook, key k). The projector can only add light, so it can't dim a real card: each look adds
+// something over the line's card faces (never their marker zones).
+//   wash    the faces washed out with white at 25 %
+//   hatch   diagonal white lines over the faces
+//   strike  one grey line through the middle of the whole line, like struck-out text
+//   outline a dashed grey outline round the whole line
+const SKIP_LOOKS = ['none', 'wash', 'hatch', 'strike', 'outline'];
+function drawSkipped(g, cards) {
+  const look = cfg.skipLook; if (!cards || look === 'none') return;
+  const k = mm(), lens = cards.map(c => CARD_LEN[c.id] || lenOf(sideOf(c.text)));
+  const inFrame = (c, fn) => { g.save(); g.translate(c.m[0], c.m[1]); g.rotate(c.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k); fn(); g.restore(); };
+  if (look === 'wash' || look === 'hatch') cards.forEach((c, i) => inFrame(c, () => {
+    const w = lens[i] * U;
+    if (look === 'wash') { g.globalAlpha = 0.25; g.fillStyle = '#fff'; g.fillRect(MZ, 0, w - MZ, H); return; }
+    g.beginPath(); g.rect(MZ, 0, w - MZ, H); g.clip(); g.strokeStyle = '#fff'; g.globalAlpha = 0.5; g.lineWidth = 1;
+    for (let x = MZ - H; x < w; x += 4) { g.beginPath(); g.moveTo(x, H); g.lineTo(x + H, 0); g.stroke(); }
+  }));
+  else {  // the whole line, in the first card's frame: from its marker zone's edge to the last card's end
+    const c0 = cards[0], last = cards.at(-1), d = [Math.cos(c0.a), Math.sin(c0.a)];
+    const endAlong = ((last.m[0] - c0.m[0]) * d[0] + (last.m[1] - c0.m[1]) * d[1]) / k + lens.at(-1) * U;  // mm from the first marker zone's left
+    inFrame(c0, () => {
+      g.strokeStyle = '#a1a1aa'; g.lineWidth = 1.5;
+      if (look === 'strike') { g.beginPath(); g.moveTo(MZ, H / 2); g.lineTo(endAlong, H / 2); g.stroke(); }
+      else { g.setLineDash([3, 2]); g.strokeRect(-2, -2, endAlong + 4, H + 4); }
+    });
+  }
+}
 function drawVirtualCards(g, L) {
   const cards = realCards(L);
   let shown = 0, gone = 0;
@@ -506,6 +535,7 @@ function drawVirtualCards(g, L) {
     // numbered in program order: lines top to bottom (by their first card), then along each line
     const along = e => (e.card.m[0] - e.call.m[0]) * Math.cos(e.call.a) + (e.card.m[1] - e.call.m[1]) * Math.sin(e.call.a);
     argErrors.sort((a, b) => a.call.m[1] - b.call.m[1] || a.call.m[0] - b.call.m[0] || along(a) - along(b)).forEach((e, i) => e.id = 'E' + (i + 1));
+    for (const call of new Set(argErrors.map(e => e.call))) drawSkipped(g, lineCards.get(call));  // a line with an error is skipped
     for (const e of argErrors) drawWrong(g, e.card);
     for (const call of new Set(argErrors.map(e => e.call))) drawMessages(g, argErrors.filter(e => e.call === call), L, blockers);
   }
