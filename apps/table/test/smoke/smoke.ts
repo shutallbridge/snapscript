@@ -23,7 +23,7 @@ vision.stderr.on("data", echo("[vision]"));
 // A shell started from an Electron app may say to run Electron as plain Node.
 const { ELECTRON_RUN_AS_NODE: _, ...env } = process.env;
 const table = spawn(electron as unknown as string, [app], {
-  env: { ...env, SNAPSCRIPT_VISION: "off", SNAPSCRIPT_VISION_PORT: String(port), SNAPSCRIPT_SMOKE: `${app}out/smoke` },
+  env: { ...env, SNAPSCRIPT_VISION: "off", SNAPSCRIPT_VISION_PORT: String(port), SNAPSCRIPT_SMOKE: `${app}out/smoke`, SNAPSCRIPT_SETTINGS: `${app}out/smoke/settings.json` },
 });
 table.stdout.on("data", echo("[table]"));
 table.stderr.on("data", echo("[table]"));

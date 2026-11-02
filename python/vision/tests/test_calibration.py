@@ -106,6 +106,17 @@ def test_a_dim_room_gets_a_longer_exposure(tmp_path):
     assert abs(ex["ms"] * ex["gain"] - 150 / (0.94 * ROOM / 2)) <= 6.0
 
 
+def test_the_ruler_step_says_where_the_page_lies_by_the_new_line_up(tmp_path):
+    """The table app's check view outlines the ruler page from it: its centre in table mm, and its angle."""
+    world = World(tmp_path, k1=0.04)
+    with Service(tmp_path, f"world:{world.path}", old_lineup(tmp_path)) as svc:
+        _, _, res = through_step_2(svc, world, ruler=(190.0, 120.0, 1.0))
+
+    page = res["ruler_page"]
+    assert abs(page["x"] - 190.0) <= 1.0 and abs(page["y"] - 120.0) <= 1.0, page
+    assert abs(page["angle"] - 1.0) <= 0.5, page
+
+
 def test_the_ruler_step_fails_without_the_page(tmp_path):
     world = World(tmp_path)
     with Service(tmp_path, f"world:{world.path}", old_lineup(tmp_path)) as svc:
