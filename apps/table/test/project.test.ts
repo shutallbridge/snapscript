@@ -133,3 +133,27 @@ function inline(page: Page): ({ cards: string[] } | { code: string })[] {
     return [];
   });
 }
+
+describe("snapscript-p5's cards", () => {
+  test("the real library's cards, with define setup at 4U and define draw at 3U", () => {
+    const project = loadProject(fixtureProject({ dependencies: ["snapscript-p5"], lock: null }));
+    expect(project.cards.map(({ text, label, functionColor, length }) => ({ text, label, functionColor, length }))).toEqual([
+      { text: "[call(snapscript-p5.createCanvas)]", label: "createCanvas", functionColor: "setting", length: 4 },
+      { text: "[call(snapscript-p5.background)]", label: "background", functionColor: "primary", length: 3 },
+      { text: "[call(snapscript-p5.noStroke)]", label: "noStroke", functionColor: "setting", length: 3 },
+      { text: "[call(snapscript-p5.fill)]", label: "fill", functionColor: "setting", length: 2 },
+      { text: "[call(snapscript-p5.rect)]", label: "rect", functionColor: "primary", length: 2 },
+      { text: "[call(snapscript-p5.circle)]", label: "circle", functionColor: "primary", length: 2 },
+      { text: "[define(setup)]", label: "define setup", functionColor: null, length: 4 },
+      { text: "[define(draw)]", label: "define draw", functionColor: null, length: 3 },
+    ]);
+    expect(project.cards.find((c) => c.name === "circle")!.help).toEqual({
+      sentence: "Draws a circle. x and y are its middle, and y grows downward.",
+      values: [
+        { name: "x", about: "how far from the left edge" },
+        { name: "y", about: "how far down from the top edge" },
+        { name: "d", about: "how wide across" },
+      ],
+    });
+  });
+});

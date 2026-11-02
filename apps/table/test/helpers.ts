@@ -7,11 +7,12 @@ import { fileURLToPath } from "node:url";
 
 export const fixtures: string = fileURLToPath(new URL("./fixtures/", import.meta.url));
 
-/** The packages in `fixtures/`, by package name. */
+/** The packages a fixture project can depend on, by package name: the ones in `fixtures/`, and the real snapscript-p5. */
 const packages: Record<string, string> = {
-  "fixture-shapes": "shapes",
-  "fixture-lessons": "lessons",
-  "fixture-two-programs": "two-programs",
+  "fixture-shapes": join(fixtures, "shapes"),
+  "fixture-lessons": join(fixtures, "lessons"),
+  "fixture-two-programs": join(fixtures, "two-programs"),
+  "snapscript-p5": fileURLToPath(new URL("../../../libraries/p5", import.meta.url)),
 };
 
 export interface FixtureOptions {
@@ -32,6 +33,6 @@ export function fixtureProject(options: FixtureOptions = {}): string {
   if (options.lock === null) writeFileSync(join(dir, "snapscript.lock"), "");
   else if (options.lock !== undefined) writeFileSync(join(dir, "snapscript.lock"), options.lock);
   mkdirSync(join(dir, "node_modules"));
-  for (const name of dependencies) symlinkSync(join(fixtures, packages[name]!), join(dir, "node_modules", name), "dir");
+  for (const name of dependencies) symlinkSync(packages[name]!, join(dir, "node_modules", name), "dir");
   return dir;
 }
