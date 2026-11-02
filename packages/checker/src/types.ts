@@ -5,6 +5,7 @@
 // them fails. A value it knows nothing about can be any type.
 import {
   builtins,
+  firstStage,
   forTakes,
   leafTypes,
   methods,
@@ -297,7 +298,7 @@ class TypeChecker {
 
   private report(kind: ErrorKind, message: string, span: Span): void {
     if (!this.reporting) return;
-    this.errors.push({ kind, message, stage: "check", line: this.line, spans: [span], followsFrom: null, suggestion: null });
+    this.errors.push({ kind, message, stage: firstStage(kind), line: this.line, spans: [span], followsFrom: null, suggestion: null });
     this.failed.add(this.line);
   }
 
