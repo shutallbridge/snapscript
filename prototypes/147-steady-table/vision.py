@@ -308,6 +308,8 @@ def main():
             others = [o for o in tracks if o is not tr]
             if any(o["mid"] != tr["mid"] and o["last"] == now and np.linalg.norm(o["c"] - c) < a.replace_mm for o in others):
                 return True
+            if a.empty_ratio is not None and tr.get("face") is not None:
+                return False  # #147: with the look check, only a bare spot means lifted; anything else over it is a cover
             if a.near == "outline":
                 q = outline(c, tr["pose"][1], tr["mid"])
                 near = [o for o in others if o["live"] and outline_gap(q, outline(o["pose"][0], o["pose"][1], o["mid"])) < a.near_gap_mm]
