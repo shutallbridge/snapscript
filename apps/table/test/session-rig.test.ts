@@ -12,6 +12,7 @@ const project: SessionProject = {
   loader: loadProject(fixtureProject({ dependencies: ["snapscript-p5"], lock: null })).loader,
   lockfile,
   languageMarkers,
+  cards: [],
 };
 
 /**
