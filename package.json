@@ -7,6 +7,7 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lock": "pnpm --filter @snapscript/table lock",
+    "print": "pnpm --filter @snapscript/table print",
     "table": "pnpm --filter @snapscript/table table"
   },
   "devDependencies": {

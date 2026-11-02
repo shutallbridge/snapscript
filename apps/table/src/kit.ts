@@ -50,7 +50,7 @@ export function loadKit(project: Project): KitCard[] {
 }
 
 /** The entry module's imports: the name each binds → its package. */
-function importsOf(project: Project): Map<string, string> {
+export function importsOf(project: Project): Map<string, string> {
   const manifest = JSON.parse(readFileSync(join(project.dir, "package.json"), "utf8")) as { snapscript?: unknown };
   const libraries = new Map<string, string>();
   if (typeof manifest.snapscript !== "string") return libraries;
