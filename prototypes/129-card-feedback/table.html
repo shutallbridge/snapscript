@@ -509,7 +509,9 @@ function drawVirtualCards(g, L) {
   if (cfg.vargs) {
     const shownArgs = virtualArgs(cards);  // recomputed: the slots on show, as blockers for messages
     const blockers = [...cards.map(c => quad(c, 0, 0, (CARD_LEN[c.id] || lenOf(sideOf(c.text))) * U, H)), ...shownArgs.map(v => quad(v, 0, 0, lenOf(v.side) * U, H))];
-    argErrors.sort((a, b) => a.card.m[1] - b.card.m[1] || a.card.m[0] - b.card.m[0]).forEach((e, i) => e.id = 'E' + (i + 1));
+    // numbered in program order: lines top to bottom (by their first card), then along each line
+    const along = e => (e.card.m[0] - e.call.m[0]) * Math.cos(e.call.a) + (e.card.m[1] - e.call.m[1]) * Math.sin(e.call.a);
+    argErrors.sort((a, b) => a.call.m[1] - b.call.m[1] || a.call.m[0] - b.call.m[0] || along(a) - along(b)).forEach((e, i) => e.id = 'E' + (i + 1));
     for (const e of argErrors) drawWrong(g, e.card);
     for (const call of new Set(argErrors.map(e => e.call))) drawMessages(g, argErrors.filter(e => e.call === call), L, blockers);
   }
