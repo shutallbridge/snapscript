@@ -89,6 +89,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
     ['vtol', 'Within', [5, 10, 15, 20, 30], ' mm'],
     ['vgap', 'Gap between lines', [0, 1, 2, 4], ' mm']]],
   ['Debug', [
+    ['readBack', 'Read-back (what the reader saw)', [false, true]],
     ['marks', 'Show marker reads', [true, false]],
     ['outline', 'Page outline (red)', [true, false]],
     ['fake', 'Pretend a card is in a corner', ['off', ...CORNERS]],
@@ -100,7 +101,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'none', gutter: true, gutGap: 6, readBack: true, rbLook: 'over', dotMm: 12, detLook: 'skipped', ovSec: 1, dedLook: 'none', barTop: 'status', barBottom: 'errors', vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 0, vdash: 6, vfill: 20, vmzEdge: 1, vmzAlpha: 20, vwb: false, vprog: true, vargs: false, vmzLit: 'dark', vsFill: 20, vsEdge: 1.5, vsAlpha: 100, vmatch: 'same card', vtol: 10, vwrong: 50, vwrongEdge: 3, vwrongEdgeA: 100, msgAt: 'auto', skipLook: 'none', gutter: true, gutGap: 6, readBack: false, rbLook: 'over', dotMm: 12, detLook: 'skipped', ovSec: 1, dedLook: 'none', barTop: 'status', barBottom: 'errors', vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -559,10 +560,11 @@ function drawGutter(g, h, dot, errs) {
   for (const e of errs) { badge(g, e.id, x - ds, cy, ds); x -= ds + gap; }
   g.restore();
 }
-// #129 read-back, a debug view (cfg.readBack, key h cycles cfg.rbLook): what the handwriting reader saw, on the card's own
+// #129 read-back, a debug view (cfg.readBack, key h cycles cfg.rbLook), also shown on any card with a NameError (a misread
+// name is a likely cause): what the handwriting reader saw, on the card's own
 // whiteboard, in cyan. Mocked: the reading is the card's value in cards.json. A blank whiteboard ({…}) stands in for a read
 // error: the reader isn't sure, so its line is skipped (the gutter says so) and the bar says why.
-//   over    the reading over the handwriting, as big as it
+//   over    the reading as big as the handwriting, at the whiteboard's bottom-left (chosen)
 //   corner  small, in the whiteboard's top-right corner
 //   under   small, along the whiteboard's bottom edge
 const RB_LOOKS = ['over', 'corner', 'under'];
@@ -573,7 +575,7 @@ function drawReadBack(g, c) {
   const top = CARD_S.wbPad, bot = H - CARD_S.wbPad, text = side.sample || '?';
   g.save(); g.translate(c.m[0], c.m[1]); g.rotate(c.a); g.translate(-MZ / 2 * k, -H / 2 * k); g.scale(k, k);
   g.fillStyle = side.sample ? '#22d3ee' : '#f87171';
-  if (cfg.rbLook === 'over') { g.font = font(9); g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillText(text, wbX + 2.5, H / 2); }
+  if (cfg.rbLook === 'over') { g.font = font(9); g.textBaseline = 'bottom'; g.textAlign = 'left'; g.fillText(text, wbX + 1.5, bot - 0.5); }  // chosen
   else if (cfg.rbLook === 'corner') { g.font = font(4.5); g.textBaseline = 'top'; g.textAlign = 'right'; g.fillText(text, wbX + wbW - 1, top + 1); }
   else { g.font = font(4.5); g.textBaseline = 'bottom'; g.textAlign = 'left'; g.fillText(text, wbX + 1.5, bot - 0.5); }
   g.restore();
@@ -701,7 +703,8 @@ function drawVirtualCards(g, L) {
       const l = [...st.lines.values()].find(l => l.includes(c)), last = l.at(-1);
       lineEnds.set(c, { m: last.m, a: last.a, len: CARD_LEN[last.id] || lenOf(sideOf(last.text)) });
       argErrors.push({ card: c, call: c, kind: '', msg: `can't read ${sd.word}`, long: `Can't read this ${sd.word} card's handwriting. Write it again more clearly.` }); } }
-    if (cfg.readBack) for (const c of cards) drawReadBack(g, c);
+    const named = new Set(argErrors.filter(e => e.kind === 'NameError').map(e => e.card));
+    for (const c of cards) if (cfg.readBack || named.has(c)) drawReadBack(g, c);
     const ded = missingDedents(st);
     for (const d of ded) {
       if (cfg.dedLook !== 'none') drawDedentGuide(g, d);
