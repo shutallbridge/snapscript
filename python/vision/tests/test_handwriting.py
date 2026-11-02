@@ -57,8 +57,8 @@ def test_a_rewrite_is_reading_with_the_old_text_and_then_read_with_the_new(tmp_p
 
 
 # A hand lying still over the whiteboard of a card laid at (120, 120): the whiteboard is table mm x 152-228,
-# y 108-132, and the marker (x 114-126) stays in view.
-OVER_WHITEBOARD = Hand(140, 100, 240, 140)
+# y 108-132, the palm covers x 150-230, y 95-155, and the marker (x 114-126) stays in view.
+OVER_WHITEBOARD = Hand(190, 125)
 
 
 def test_a_covered_whiteboard_is_never_judged_blank(tmp_path):

@@ -43,26 +43,14 @@ class Card:
     x: float
     y: float
     angle: float = 0.0
+    smudged: bool = False  # a smudge on the marker's corner: the camera misses it, but the card looks the same
     ink: tuple = ()     # strokes written on the sheet: (x0, y0, x1, y1) rectangles in sheet mm
 
     def json(self):
         out = {"marker": self.marker, "x": self.x, "y": self.y, "angle": self.angle}
         if self.ink:
             out["ink"] = [list(r) for r in self.ink]
-        return out
-
-
-@dataclass
-class Hand:
-    """Something lying over the table, such as a hand: a plain grey rectangle in table mm, drawn over the cards."""
-    x0: float
-    y0: float
-    x1: float
-    y1: float
-    grey: int = 160     # a hand reads about 0.7x the paper (#105)
-
-    def json(self):
-        return {"hand": [self.x0, self.y0, self.x1, self.y1], "grey": self.grey}
+        return out | ({"smudged": True} if self.smudged else {})
 
 
 # Digits as seven-segment strokes 1 mm wide, 6 mm wide and 12 mm tall: each segment is 6 mm² of ink.
@@ -82,8 +70,18 @@ def written(text, x0=45.0, y0=9.0):
     return tuple(out)
 
 
-def frame_t(i):
-    return START_T + i * PERIOD_S
+@dataclass
+class Hand:
+    """A hand lying flat on the table, its palm centred at (x, y) table mm, fingers pointing up the table."""
+    x: float
+    y: float
+
+    def json(self):
+        return {"hand": [self.x, self.y]}
+
+
+def frame_t(i, period_s=PERIOD_S):
+    return START_T + i * period_s
 
 
 def write_markers(d: Path) -> Path:
@@ -102,11 +100,11 @@ def write_lineup(d: Path, mm_per_ph=MM_PER_PH) -> Path:
     return p
 
 
-def write_scene(d: Path, frames, size_mm=(420, 300)) -> Path:
-    """frames: one list of Cards per frame."""
+def write_scene(d: Path, frames, size_mm=(420, 300), period_s=PERIOD_S) -> Path:
+    """frames: one list of Cards (and Hands) per frame, drawn in order, later ones on top."""
     p = d / "scene.json"
     p.write_text(json.dumps({
-        "start_t": START_T, "period_s": PERIOD_S,
+        "start_t": START_T, "period_s": period_s,
         "camera": {"px_per_mm": PX_PER_MM, "origin_mm": list(ORIGIN_MM), "size_mm": list(size_mm)},
         "frames": [[c.json() for c in f] for f in frames],
     }))
@@ -159,8 +157,8 @@ def run_service(d: Path, source: str, settings=None, lineup=None, reader=None, e
     return [json.loads(l) for l in buf.decode().splitlines() if l.strip()]
 
 
-def run_drawn(d: Path, frames, **kw):
-    return run_service(d, f"drawn:{write_scene(d, frames)}", **kw)
+def run_drawn(d: Path, frames, period_s=PERIOD_S, **kw):
+    return run_service(d, f"drawn:{write_scene(d, frames, period_s=period_s)}", **kw)
 
 
 def states(msgs):
