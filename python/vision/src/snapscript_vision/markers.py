@@ -1,0 +1,65 @@
+"""What the service knows of the language: which kind of thing each marker is on.
+
+It knows a card's length, whether it's handwritten, and where its whiteboard is on the sheet; and which markers are
+on textbook pages and on the ruler page. Nothing else.
+
+The file format of the lockfile and the language markers belongs to #157. Until it settles, this loads the table
+reader's loaded shape (`@snapscript/table-reader`'s `LanguageMarkers` and `Lockfile`) as JSON, plus the ruler
+page's two markers, so a #157 loader can fill both sides the same way:
+
+    {"languageMarkers": {"1027": {"card": "[num{}]", "length": 4}, "1009": {"card": "[repeat]", "length": 2}},
+     "lockfile": {"0": {"kind": "library", "card": "call", "package": "snapscript-p5", "name": "circle", "length": 3},
+                  "1900": {"kind": "page", "textbook": "snapscript-p5-getting-started", "volume": "confetti", "page": 3}},
+     "ruler": [2080, 2081]}
+
+A language marker's card is handwritten when its notation has braces (`[num{}]`, `[set{}to]`); library cards are
+printed. Lengths are in U.
+"""
+
+import json
+from dataclasses import dataclass
+from pathlib import Path
+
+# The card sheet's layout (#101), in mm on the sheet from its top-left corner: the printed word starts after the
+# marker, each letter is 5.5 mm wide, and the whiteboard is 24 mm tall between the words.
+WORD_START_MM = 17 + 1.5 + 3
+LETTER_MM = 5.5
+WORD_GAP_MM = 3
+EDGE_MM = 3
+WHITEBOARD_TOP_MM, WHITEBOARD_BOTTOM_MM = 3, 27
+
+
+@dataclass(frozen=True)
+class Marker:
+    id: int
+    kind: str                         # "card", "page" or "ruler"
+    length: int | None = None         # U, for cards
+    handwritten: bool = False
+    whiteboard: tuple | None = None   # (x0, y0, x1, y1) sheet mm, for handwritten cards
+
+
+def whiteboard(card: str, length: int):
+    """Where a handwritten card's whiteboard is on its sheet, from its notation (`[set{}to]`) and length."""
+    word, close = card[1:card.index("{")], card[card.index("}") + 1:-1]
+    x0 = WORD_START_MM + len(word) * LETTER_MM + WORD_GAP_MM
+    x1 = length * 30 - EDGE_MM - (len(close) * LETTER_MM + WORD_GAP_MM if close else 0)
+    return (x0, WHITEBOARD_TOP_MM, x1, WHITEBOARD_BOTTOM_MM)
+
+
+def load(path) -> dict[int, Marker]:
+    raw = json.loads(Path(path).read_text())
+    out = {}
+    for k, v in raw.get("languageMarkers", {}).items():
+        card, length = v["card"], int(v["length"])
+        hw = "{" in card
+        out[int(k)] = Marker(int(k), "card", length, hw, whiteboard(card, length) if hw else None)
+    for k, v in raw.get("lockfile", {}).items():
+        if v["kind"] == "library":
+            out[int(k)] = Marker(int(k), "card", int(v["length"]))
+        elif v["kind"] == "page":
+            out[int(k)] = Marker(int(k), "page")
+        else:
+            raise ValueError(f"lockfile marker {k}: unknown kind {v['kind']!r}")
+    for k in raw.get("ruler", []):
+        out[int(k)] = Marker(int(k), "ruler")
+    return out
