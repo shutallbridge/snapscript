@@ -129,7 +129,8 @@ def face(frame, corners, mid):
     im = track.warp(win, similarity(np.asarray(corners) - [x0, y0]), (0, 0, L, 30)).resize((int(L), 30))
     a = np.asarray(im, float)
     a -= a.mean()
-    return a / max(np.linalg.norm(a), 1e-6)
+    sd = float(a.std())
+    return a / max(np.linalg.norm(a), 1e-6), sd
 
 
 def wrap(d):
@@ -171,6 +172,8 @@ def main():
     ap.add_argument("--light-tol", type=float, help="share the paper may differ from its brightness at the read before a rewrite isn't judged")
     ap.add_argument("--keep-text", action="store_true", help="a card read again keeps its last text while the read runs")
     ap.add_argument("--face-check", type=float, help="#147: a missed card whose spot still looks like it (correlation >= this) counts as seen")
+    ap.add_argument("--empty-ratio", type=float, help="#147: a missed card whose spot is this plain (its contrast / the card's) counts as lifted")
+    ap.add_argument("--gone-empty", type=float, default=0.5, help="#147: s before a card whose spot looks empty goes")
     ap.add_argument("--flush", action="store_true", help="wait for a frame exposed after the loop asks (fresher, waits up to a frame)")
     a = ap.parse_args()
 
@@ -265,17 +268,24 @@ def main():
                 if np.linalg.norm(tr["c"] - c0) > a.band_mm or abs(wrap(tr["a"] - a0)) > a.band_deg:
                     tr["pose"] = (tr["c"], tr["a"])
 
-        faced = []
+        faced, empties = [], []
         if a.face_check is not None:  # #147: a missed marker on a card that's still there isn't a lifted card
             for tr in tracks:
                 if not tr["live"]:
                     continue
                 if tr["last"] == now:
                     if now - tr.get("face_t", -1e9) > 1.0:
-                        tr["face"], tr["face_t"] = face(gray, tr["corners"], tr["mid"]), now
+                        (tr["face"], tr["face_sd"]), tr["face_t"] = face(gray, tr["corners"], tr["mid"]), now
+                    tr["empty_since"] = None
                 elif tr.get("face") is not None:
-                    f = face(gray, tr["corners"], tr["mid"])
+                    f, sd = face(gray, tr["corners"], tr["mid"])
                     r = float((f * tr["face"]).sum()) if f.shape == tr["face"].shape else 0.0
+                    plain = sd / max(tr["face_sd"], 1e-6)
+                    empties.append((int(tr["mid"]), round(r, 2), round(plain, 2)))
+                    if a.empty_ratio is not None and r < a.face_check and plain <= a.empty_ratio:
+                        tr["empty_since"] = tr.get("empty_since") or now
+                    else:
+                        tr["empty_since"] = None
                     if r >= a.face_check:
                         tr.update(last=now, missed=0)
                         if tr.get("run") is None:
@@ -292,6 +302,8 @@ def main():
             out = now - tr["last"]
             if out > a.hold:
                 return True
+            if tr.get("empty_since") is not None and now - tr["empty_since"] >= a.gone_empty - 1e-6:
+                return True  # #147: its spot looks like bare table: lifted
             c = tr["pose"][0]
             others = [o for o in tracks if o is not tr]
             if any(o["mid"] != tr["mid"] and o["last"] == now and np.linalg.norm(o["c"] - c) < a.replace_mm for o in others):
@@ -356,7 +368,7 @@ def main():
                "sent": seq if changed else None, **({"state": cards} if changed else {}),
                "seen": sorted(int(m) for m in seen),
                "raw": {int(m): [round(float(c[0]), 2), round(float(c[1]), 2), round(ang, 2)] for m, (c, ang, _) in seen.items()},
-               "dm": margins, "faced": faced,
+               "dm": margins, "faced": faced, "missed_look": empties,
                "paper": {int(tr["mid"]): round(tr["paper"], 3) for tr in tracks if tr.get("paper") is not None}}
         log.write(json.dumps(rec) + "\n")
         log.flush()
