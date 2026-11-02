@@ -22,12 +22,13 @@ import type {
 } from "./types.ts";
 import { hiddenLines, importedNames } from "./entry.ts";
 import { shortestLength, STANDS_ALONE, textStrips } from "./program.ts";
+import { SHEET } from "./sheet.ts";
 
 /** The prototypes' measured starting values (#147, #111). */
 export const defaultSettings: ReaderSettings = {
-  unitMm: 30,
-  markerAlongMm: 8.5,
-  markerDownMm: 15,
+  unitMm: SHEET.unitMm,
+  markerAlongMm: SHEET.markerAlongMm,
+  markerDownMm: SHEET.markerDownMm,
   maxAngleDeg: 15,
   joinMakeAlongMinMm: -8,
   joinMakeAlongMaxMm: 10,
@@ -62,13 +63,13 @@ export function initialState(entryText = ""): ReaderState {
       continue;
     }
     let head: string | undefined;
-    strip.lines.forEach((line, row) => {
+    strip.lines.forEach((line, lineIndex) => {
       let along = line.column;
       for (const card of line.cards) {
         const id = `s${standIns.length + 1}`;
         head ??= id;
         const length = shortestLength(card);
-        standIns.push({ id, card, length, strip: place, along, row });
+        standIns.push({ id, card, length, strip: place, along, lineIndex });
         along += length;
       }
     });
@@ -333,7 +334,7 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
     const head = add(origin, [si.strip.x, si.strip.y]);
     const u = unit(si.strip.turn);
     const v: Vec = [-u[1], u[0]];
-    return frame(add(add(head, u, si.along * s.unitMm), v, si.row * s.unitMm), si.strip.turn, s);
+    return frame(add(add(head, u, si.along * s.unitMm), v, si.lineIndex * s.unitMm), si.strip.turn, s);
   };
   const standIns = prev.standIns.map((si) => ({ si, at: standInAt(si) }));
   const replaced = assignPlaces(
@@ -530,18 +531,18 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
       if (!start) return;
       const u = unit(start.angle);
       const v: Vec = [-u[1], u[0]];
-      strip.lines.forEach((line, row) => {
+      strip.lines.forEach((line, lineIndex) => {
         let along = line.column;
         line.cards.forEach((card, i) => {
           const length = shortestLength(card);
-          if (start.withHead || row > 0 || i > 0) {
+          if (start.withHead || lineIndex > 0 || i > 0) {
             guides.push({
-              id: `g${n + 1}.${row + 1}.${i + 1}`,
+              id: `g${n + 1}.${lineIndex + 1}.${i + 1}`,
               kind: "guide",
               text: card,
               cardKind: textKind(card, packages),
               length,
-              at: frame(add(add(start.tl, u, along * s.unitMm), v, row * s.unitMm), start.angle, s),
+              at: frame(add(add(start.tl, u, along * s.unitMm), v, lineIndex * s.unitMm), start.angle, s),
             });
           }
           along += length;

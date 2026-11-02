@@ -138,9 +138,9 @@ export interface StandIn {
   length: number;
   /** Its strip's `@table` position, from the coding space's top-left. */
   strip: { x: number; y: number; turn: number };
-  /** U along the strip from its head's left end, and rows down from its head. */
+  /** U along the strip from its head's left end, and its line's index in the strip (its head's line is 0). */
   along: number;
-  row: number;
+  lineIndex: number;
 }
 
 /** Where a track last lay, and since when, to tell a card lying still from one sliding past. */

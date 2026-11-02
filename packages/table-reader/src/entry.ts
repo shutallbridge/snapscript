@@ -1,6 +1,6 @@
 // What the reader keeps from the project's entry text: its hidden lines, and the names they import.
 
-import { HIDDEN } from "./program.ts";
+import { codeLines, HIDDEN } from "./program.ts";
 
 /**
  * The entry text's `[import]` and `[extern]` lines, each with the comment lines just above it,
@@ -10,36 +10,8 @@ import { HIDDEN } from "./program.ts";
 export function hiddenLines(entryText: string): string {
   const lines = entryText.split("\n");
   const chunks: { first: number; last: number }[] = [];
-  let pending: number | undefined; // the first comment line just above, if any
-  let inComment = false;
-
-  const declaration = (code: string, i: number): void => {
-    if (HIDDEN.test(code)) chunks.push({ first: pending ?? i, last: i });
-    pending = undefined;
-  };
-
-  lines.forEach((line, i) => {
-    if (inComment) {
-      const end = line.indexOf("*/");
-      if (end < 0) return;
-      inComment = false;
-      const rest = line.slice(end + 2);
-      if (rest.trim()) declaration(rest, i);
-      return;
-    }
-    const t = line.trim();
-    if (!t) {
-      pending = undefined;
-    } else if (t.startsWith("//")) {
-      pending ??= i;
-    } else if (t.startsWith("/*")) {
-      pending ??= i;
-      const end = t.indexOf("*/", 2);
-      if (end < 0) inComment = true;
-      else if (t.slice(end + 2).trim()) declaration(t.slice(end + 2), i);
-    } else {
-      declaration(line, i);
-    }
+  codeLines(lines, (code, i, commentFrom) => {
+    if (HIDDEN.test(code.replace(/\/\*.*?\*\//g, ""))) chunks.push({ first: commentFrom ?? i, last: i });
   });
 
   let out = "";

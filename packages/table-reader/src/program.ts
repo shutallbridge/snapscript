@@ -1,5 +1,7 @@
 // Text → cards: reading a program text's strips back into the cards they are made of.
 
+import { SHEET } from "./sheet.ts";
+
 /** Where a strip's `@table` tag puts it. */
 export type TablePlace = { x: number; y: number; turn: number } | "auto" | "hidden";
 
@@ -28,6 +30,46 @@ export const STANDS_ALONE: RegExp = /^\[(define|on|global)[{(]/;
 /** Every card on a line, in order: brackets can't be written inside a card. */
 const CARD = /\[[^\]]*\]/g;
 
+/**
+ * Calls `code` for each line of a program text that has code outside comments, with its index and
+ * the first of the comment lines just above it, if any. A line that starts with a one-line comment
+ * comes whole; a line that ends a longer comment comes from just after it.
+ */
+export function codeLines(
+  lines: readonly string[],
+  code: (text: string, i: number, commentFrom: number | undefined) => void,
+): void {
+  let pending: number | undefined;
+  let inComment = false;
+  const found = (text: string, i: number): void => {
+    if (!text.trim()) return;
+    code(text, i, pending);
+    pending = undefined;
+  };
+  lines.forEach((line, i) => {
+    if (inComment) {
+      const end = line.indexOf("*/");
+      if (end < 0) return;
+      inComment = false;
+      found(line.slice(end + 2), i);
+      return;
+    }
+    const t = line.trim();
+    if (!t) {
+      pending = undefined;
+    } else if (t.startsWith("//")) {
+      pending ??= i;
+    } else if (t.startsWith("/*")) {
+      pending ??= i;
+      const end = t.indexOf("*/", 2);
+      if (end < 0) inComment = true;
+      else if (t.slice(end + 2).trim()) found(line, i);
+    } else {
+      found(line, i);
+    }
+  });
+}
+
 /** What a `@table` tag says, from a doc comment: one it can't read counts as `auto`. */
 function tablePlace(doc: string | undefined): TablePlace {
   const m = doc?.match(/@table\b([^\n]*?)(?:\*\/|$)/m);
@@ -48,11 +90,9 @@ function tablePlace(doc: string | undefined): TablePlace {
 export function textStrips(text: string): TextStrip[] {
   const lines = text.split("\n");
   const strips: (TextStrip & { first: number; last: number })[] = [];
-  let pending: number | undefined; // the first comment line just above, if any
-  let inComment = false;
   let current: (TextStrip & { first: number; last: number }) | undefined;
 
-  const code = (raw: string, i: number): void => {
+  const code = (raw: string, i: number, pending: number | undefined): void => {
     const body = raw.replace(/\/\/.*$/, "").replace(/\/\*.*?\*\//g, "");
     const cards = body.match(CARD) ?? [];
     if (!cards.length) return;
@@ -71,43 +111,13 @@ export function textStrips(text: string): TextStrip[] {
       current.lines.push({ column: Math.floor(indent / 2), cards });
       current.last = i;
     }
-    pending = undefined;
   };
 
-  lines.forEach((line, i) => {
-    if (inComment) {
-      const end = line.indexOf("*/");
-      if (end < 0) return;
-      inComment = false;
-      code(line.slice(end + 2), i);
-      return;
-    }
-    const t = line.trim();
-    if (!t) {
-      pending = undefined;
-    } else if (t.startsWith("//")) {
-      pending ??= i;
-    } else if (t.startsWith("/*")) {
-      const end = t.indexOf("*/", 2);
-      if (end < 0) {
-        pending ??= i;
-        inComment = true;
-      } else if (t.slice(end + 2).trim()) {
-        pending ??= i;
-        code(line, i);
-      } else {
-        pending ??= i;
-      }
-    } else {
-      code(line, i);
-    }
-  });
+  codeLines(lines, code);
 
   return strips.map(({ first, last, ...s }) => ({ ...s, verbatim: lines.slice(first, last + 1).join("\n") }));
 }
 
-/** The card sheet (#101): 30 mm per U, Geist Mono at 5.50 mm a letter. */
-const SHEET = { unitMm: 30, letterMm: 5.5, chromeMm: 24.5, minPrinted: 2, color: 4, handwritten: 4, longHandwritten: 5 };
 const LONG_HANDWRITTEN = new Set(["define", "global", "getProp", "setProp"]);
 
 /** What a printed card's label says: function cards print only the name. */
@@ -124,7 +134,8 @@ function label(card: string): string {
 /**
  * A card's shortest length in U, by the card sheet's letters-per-length rule (#101): a printed card
  * the shortest length whose room holds its label, never under 2U. Handwritten cards are at least 4U
- * ([define{…}], [global{…}], [getProp{…}] and [setProp{…}to] 5U), and color cards 4U.
+ * ([define{…}], [global{…}], [getProp{…}] and [setProp{…}to] 5U), and color cards 4U. A length is
+ * fixed when the card is printed, so it follows the sheet as printed, not a unitMm the rig tunes.
  */
 export function shortestLength(card: string): number {
   const keyword = card.slice(1).match(/^[^({]*/)![0];
