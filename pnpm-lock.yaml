@@ -47,6 +47,9 @@ importers:
       '@snapscript/parser':
         specifier: workspace:*
         version: link:../../packages/parser
+      '@snapscript/runtime':
+        specifier: workspace:*
+        version: link:../../packages/runtime
       '@snapscript/table-reader':
         specifier: workspace:*
         version: link:../../packages/table-reader

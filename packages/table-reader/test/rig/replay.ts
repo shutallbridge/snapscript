@@ -2,7 +2,7 @@
 // tests and the end-to-end fixture (#173).
 import { readFileSync } from "node:fs";
 import { languageMarkers } from "@snapscript/core";
-import type { Layout, Lockfile, StepOutput, TableCard } from "../../src/index.ts";
+import type { Layout, Lockfile, StepOutput, TableCard, TableState } from "../../src/index.ts";
 import { initialState, step } from "../../src/index.ts";
 
 // The recordings were made with the prototypes' paper cards (their `cards.json`), which carry the
@@ -71,12 +71,12 @@ export interface Replayed {
 }
 
 /**
- * Feeds a recording through the step function. A recording row holds the vision service's cards in
- * `state` and its capture time in `t_cap`. These runs predate the rule that a card being read again
- * keeps its last text (#147), so the adapter puts the last text back, as the service now does.
- * The cards returned carry today's marker IDs.
+ * A recording's table states, as the vision service sends them now. A recording row holds the
+ * service's cards in `state` and its capture time in `t_cap`. These runs predate the rule that a
+ * card being read again keeps its last text (#147), so the adapter puts the last text back, as the
+ * service now does. The cards carry today's marker IDs.
  */
-export function replay(name: string): Replayed[] {
+export function recording(name: string): TableState[] {
   const rows: { t_cap: number; state: TableCard[] }[] = readFileSync(
     new URL(`./${name}.jsonl`, import.meta.url),
     "utf8",
@@ -85,7 +85,6 @@ export function replay(name: string): Replayed[] {
     .split("\n")
     .map((l) => JSON.parse(l));
   const lastText = new Map<number, string>();
-  let state = initialState(ENTRY);
   return rows.map((row, seq) => {
     const cards = row.state.map((recorded) => {
       const marker = printed.get(recorded.marker);
@@ -95,14 +94,17 @@ export function replay(name: string): Replayed[] {
       else if (c.hw?.state === "reading" && lastText.has(c.track)) return { ...c, hw: { ...c.hw, text: lastText.get(c.track) } };
       return c;
     });
-    const r = step(state, {
-      table: { type: "state", seq, t: row.t_cap, mm_per_projector_height: 781, cards },
-      layout,
-      lockfile,
-      languageMarkers,
-    });
-    state = r.state;
-    return { t: row.t_cap - rows[0].t_cap, cards, output: r.output };
+    return { type: "state", seq, t: row.t_cap, mm_per_projector_height: 781, cards };
   });
 }
 
+/** Feeds a recording's table states through the step function. */
+export function replay(name: string): Replayed[] {
+  const states = recording(name);
+  let state = initialState(ENTRY);
+  return states.map((table) => {
+    const r = step(state, { table, layout, lockfile, languageMarkers });
+    state = r.state;
+    return { t: table.t - states[0]!.t, cards: table.cards, output: r.output };
+  });
+}

@@ -15,6 +15,8 @@ export interface Project {
   dir: string;
   /** Loads what the project's programs import: its libraries from its node_modules. */
   loader: ModuleLoader;
+  /** The entry module its `package.json` names in `"snapscript"`: the buffer starts from it, and `check` knows it by `id`. */
+  entry: { id: string; text: string };
   lockfile: Lockfile;
   languageMarkers: LanguageMarkers;
   /** Every card the project's libraries offer, library by library in the order the project lists them. */
@@ -121,6 +123,10 @@ export function loadProject(dir: string): Project {
   const manifest = readJson(join(dir, "package.json"));
   if (manifest === null) throw new ProjectError(`${dir} has no package.json`);
   const loader = diskLoader(dir);
+  if (typeof manifest.snapscript !== "string") throw new ProjectError(`${dir}/package.json names no "snapscript" entry module`);
+  const entryId = join(dir, manifest.snapscript);
+  const entryText = read(entryId);
+  if (entryText === null) throw new ProjectError(`${entryId} isn't there`);
   const lockfile = readLockfile(read(join(dir, LOCKFILE)) ?? "");
   const cards: LibraryCard[] = [];
   const pages: Page[] = [];
@@ -130,7 +136,7 @@ export function loadProject(dir: string): Project {
     if (typeof found.manifest.snapscript === "string") cards.push(...libraryCards(name, loader, lockfile));
     if (Array.isArray(found.manifest.volumes)) pages.push(...textbookPages(name, found.root, found.manifest.volumes, lockfile));
   }
-  return { dir, loader, lockfile, languageMarkers, cards, pages };
+  return { dir, loader, entry: { id: entryId, text: entryText }, lockfile, languageMarkers, cards, pages };
 }
 
 const FUNCTION_COLORS: readonly string[] = ["primary", "secondary", "helper", "setting"];
