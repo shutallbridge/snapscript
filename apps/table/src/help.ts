@@ -1,13 +1,14 @@
-// The help corner (#181 "Corners", "Help content", #156): a card laid on the bottom-left corner shows
-// what it does in a box beside the corner, until it has been gone for about 1 s. Cards in a corner never
-// count for the program (the reader leaves them out), so laying one there restarts nothing.
+// The help corner (#181 "Corners", "Help content", #156): a card laid on a corner set to Help (the
+// bottom-left, unless the settings menu says otherwise) shows what it does in a box beside the corner,
+// until it has been gone for about 1 s. Cards in a corner never count for the program (the reader
+// leaves them out), so laying one there restarts nothing.
 import { builtins } from "@snapscript/core";
-import { sideOf } from "@snapscript/faces";
+import { SHEET, sideOf } from "@snapscript/faces";
 import type { Layout, TableCard, TableState } from "@snapscript/table-reader";
-import { U_MM } from "./layout.ts";
 import { sameName } from "./names.ts";
 import { cardQuad, corners } from "./pose.ts";
 import type { Project } from "./project.ts";
+import type { CornerAction, CornerName } from "./settings.ts";
 
 /** What the help corner needs of a loaded project. */
 export type HelpProject = Pick<Project, "lockfile" | "languageMarkers" | "cards">;
@@ -22,20 +23,29 @@ export interface HelpBox {
   sentence: string;
   /** A line per value, in the order the cards sit, with no types. */
   values: readonly { name: string; about: string }[];
-  /** The box's bottom-left corner: the table view draws it upward and rightward from there, as big as its text. */
+  /** The help corner it is beside, and so which of the box's own corners is at (x, y): the table view draws it away from there, as tall as its text. */
+  anchor: CornerName;
   x: number;
   y: number;
+  /** Its width, in mm. */
+  width: number;
 }
 
 export const NO_HELP = "No help for this card";
-/** The help corner's name in the layout. */
-export const HELP_CORNER = "bottom-left";
-/** How long the box stays once its card is gone: the vision service takes about 0.85 s a frame (#114). */
-export const HELP_GONE_S = 1;
-/** The box clears the corner's circle by 0.5U, the card by 1U, and sits 0.5U above the table's edge. */
-const CIRCLE_CLEAR_MM = 0.5 * U_MM;
-const CARD_CLEAR_MM = U_MM;
-const EDGE_CLEAR_MM = 0.5 * U_MM;
+
+/** The help corner's timing and gaps: the decided starting values (#181), for the rig to tune. */
+export interface HelpSettings {
+  /** How long the box stays once its card is gone, in s: the vision service takes about 0.85 s a frame (#114). */
+  goneS: number;
+  /** The box clears the corner's circle by this, its card by this, and the table's edge by this, in U. */
+  circleClearU: number;
+  cardClearU: number;
+  edgeClearU: number;
+  /** The box's width, in U, as in the #114 prototype. */
+  widthU: number;
+}
+
+export const defaultHelpSettings: HelpSettings = { goneS: 1, circleClearU: 0.5, cardClearU: 1, edgeClearU: 0.5, widthU: 9 };
 
 type Content = Pick<HelpBox, "label" | "sentence" | "values">;
 
@@ -64,12 +74,15 @@ function contentOf(marker: number, project: HelpProject): (Content & { length: n
   return { label: labelOf(language.card), sentence: NO_HELP, values: [], length: language.length };
 }
 
-/** The x of the card's outline furthest right: from its marker's centre and angle and its length. */
-const reach = (c: TableCard, length: number): number => Math.max(...corners(cardQuad(c, length)).map(([x]) => x));
+/** How far the card's outline reaches across the table: its least and greatest x. */
+function reach(c: TableCard, length: number): [number, number] {
+  const xs = corners(cardQuad(c, length)).map(([x]) => x);
+  return [Math.min(...xs), Math.max(...xs)];
+}
 
 export interface HelpCorner {
-  /** A table state came, read with this layout. */
-  see(state: TableState, layout: Layout, now: number): void;
+  /** A table state came, read with this layout, with what each corner does. */
+  see(state: TableState, layout: Layout, actions: Readonly<Record<CornerName, CornerAction>>, now: number): void;
   /** The clock. */
   tick(now: number): void;
   readonly box: HelpBox | null;
@@ -77,44 +90,52 @@ export interface HelpCorner {
   readonly wakeAt: number | null;
 }
 
-export function createHelpCorner(project: HelpProject): HelpCorner {
+export function createHelpCorner(project: HelpProject, settings: Partial<HelpSettings> = {}): HelpCorner {
+  const s = { ...defaultHelpSettings, ...settings };
+  const U = SHEET.unitMm;
   let box: HelpBox | null = null;
-  /** When the box's card was first seen gone from the corner, or `null` while it lies there. */
+  /** When the box's card was first seen gone from its corner, or `null` while it lies there. */
   let goneAt: number | null = null;
 
   return {
-    see(state, layout, now) {
-      const corner = layout.corners.find((k) => k.name === HELP_CORNER);
-      const laid = corner
-        ? state.cards.flatMap((c) => {
+    see(state, layout, actions, now) {
+      // A corner turned from Help to None in the menu closes its box at once.
+      if (box && actions[box.anchor] !== "help") box = goneAt = null;
+      const laid = layout.corners
+        .filter((k) => actions[k.name as CornerName] === "help")
+        .flatMap((corner) =>
+          state.cards.flatMap((c) => {
             if (Math.hypot(c.x - corner.x, c.y - corner.y) >= corner.radius) return [];
             const content = contentOf(c.marker, project);
-            return content ? [{ c, content }] : [];
-          })
-        : [];
+            return content ? [{ c, corner, content }] : [];
+          }),
+        );
       // The card shown stays while it lies there; another card takes over only once it's gone.
       const found = laid.find((l) => l.c.track === box?.track) ?? laid[0];
-      if (!found || !corner) {
+      if (!found) {
         goneAt ??= now;
         return this.tick(now);
       }
       goneAt = null;
+      const { c, corner } = found;
       const { length, ...content } = found.content;
-      box = {
-        track: found.c.track,
-        ...content,
-        x: Math.max(corner.x + corner.radius + CIRCLE_CLEAR_MM, reach(found.c, length) + CARD_CLEAR_MM),
-        y: corner.y - EDGE_CLEAR_MM,
-      };
+      const anchor = corner.name as CornerName;
+      const [least, most] = reach(c, length);
+      // Along the corner's edge, on the table's side of the circle and of the card.
+      const x = anchor.endsWith("left")
+        ? Math.max(corner.x + corner.radius + s.circleClearU * U, most + s.cardClearU * U)
+        : Math.min(corner.x - corner.radius - s.circleClearU * U, least - s.cardClearU * U);
+      const y = anchor.startsWith("bottom") ? corner.y - s.edgeClearU * U : corner.y + s.edgeClearU * U;
+      box = { track: c.track, ...content, anchor, x, y, width: s.widthU * U };
     },
     tick(now) {
-      if (box && goneAt !== null && now - goneAt >= HELP_GONE_S) box = null;
+      if (box && goneAt !== null && now - goneAt >= s.goneS) box = null;
     },
     get box() {
       return box;
     },
     get wakeAt() {
-      return box && goneAt !== null ? goneAt + HELP_GONE_S : null;
+      return box && goneAt !== null ? goneAt + s.goneS : null;
     },
   };
 }
