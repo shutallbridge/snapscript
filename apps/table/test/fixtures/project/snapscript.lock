@@ -1,0 +1,3 @@
+# Marker IDs for this project's library cards and textbook pages, kept by pnpm lock.
+400 = call fixture-shapes.square 2
+402 = call fixture-shapes.retired 2

@@ -5,7 +5,8 @@
   "packageManager": "pnpm@11.7.0",
   "scripts": {
     "build": "pnpm -r build",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "lock": "pnpm --filter @snapscript/table lock"
   },
   "devDependencies": {
     "vitest": "catalog:",

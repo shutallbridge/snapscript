@@ -1,0 +1,5 @@
+{
+  "name": "fixture-lessons",
+  "private": true,
+  "volumes": ["first.md", "second.md"]
+}

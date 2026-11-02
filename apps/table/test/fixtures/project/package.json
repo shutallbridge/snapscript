@@ -1,0 +1,9 @@
+{
+  "name": "fixture-project",
+  "private": true,
+  "snapscript": "main.snap",
+  "dependencies": {
+    "fixture-shapes": "workspace:*",
+    "fixture-lessons": "workspace:*"
+  }
+}
