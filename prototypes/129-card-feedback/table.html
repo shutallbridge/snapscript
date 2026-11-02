@@ -70,7 +70,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
   ['Virtual cards', [  // #129
     ['vlook', 'Look', ['ghost', 'outline', 'footprint']],
     ['vdim', 'Stand-in brightness', [25, 35, 45, 60, 75, 100], '%'],
-    ['vedge', 'Guide edge thickness', [1, 1.25, 1.5, 1.75, 2, 2.5, 3], ' mm'],
+    ['vedge', 'Guide edge thickness', [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2], ' mm'],
     ['vdash', 'Guide edge dashes', [2, 4, 6, 8, 12], ' mm'],
     ['vfill', 'Guide background', [0, 5, 10, 15, 20, 30, 40, 60], '%'],
     ['vwb', 'Guide whiteboard edge', [false, true]],
@@ -92,7 +92,7 @@ const SECTIONS = [  // name, [key, label, choices, unit]
 const OPTS = SECTIONS.flatMap(([, opts]) => opts);
 const DEFAULTS = { split: 50, cardU: 4, corner_tl: 'none', corner_tr: 'none', corner_bl: 'help', corner_br: 'none', fake: 'off',
   full: false, centre: true, textPx: 16, bg: 12, margin: 3, halo: 2, radius: 0, program: true, test: false, marks: true, outline: true, hud: true, tableMm: 790,
-  vlook: 'ghost', vdim: 100, vedge: 1.75, vdash: 6, vfill: 0, vwb: false, vprog: true, vargs: false, vmatch: 'same card', vtol: 10, vgap: 1 };
+  vlook: 'ghost', vdim: 100, vedge: 1.75, vdash: 6, vfill: 15, vwb: false, vprog: true, vargs: false, vmatch: 'same card', vtol: 10, vgap: 1 };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.cfg129 || '{}') };
 const save = () => { localStorage.cfg129 = JSON.stringify(cfg); };
 
@@ -145,6 +145,7 @@ addEventListener('keydown', e => {
   // #129: 1 2 3 switch the virtual cards' look
   const LOOKS = ['ghost', 'outline', 'footprint'];
   if (e.key === 'b') { const B = [0, 5, 10, 15, 20, 30, 40]; cfg.vfill = B[(B.indexOf(cfg.vfill) + 1) % B.length]; save(); say(`guide background: ${cfg.vfill ? cfg.vfill + '%' : 'off'}`); return; }  // off, 5, 10, 15, 20, 30, 40 %
+  if (e.key === 'e') { const E = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75]; cfg.vedge = E[(E.indexOf(cfg.vedge) + 1) % E.length]; save(); say(`guide edge: ${cfg.vedge ? cfg.vedge + ' mm' : 'none'}`); return; }  // none to 1.75 mm
   if (e.key === 'w') { cfg.vwb = !cfg.vwb; save(); say(`guide whiteboard edge: ${cfg.vwb ? 'on' : 'off'}`); return; }
   if (LOOKS[+e.key - 1]) { cfg.vlook = LOOKS[+e.key - 1]; save(); say(`${e.key}: ${cfg.vlook === 'ghost' ? 'stand-in' : 'guide, ' + cfg.vlook}`); return; }
   // menu closed: ←→ resize the two windows
@@ -336,8 +337,8 @@ function drawVirtual(g, v) {
     const col = side.k === 'color' ? '#a1a1aa' : side.c.stripe;  // a colour card's edge is grey: its colour is the bar
     if (cfg.vfill) { g.globalAlpha = cfg.vfill / 100; g.fillStyle = side.k === 'color' && !side.label ? '#a1a1aa' : side.c.bg; g.fillRect(MZ, 0, w - MZ, H); g.globalAlpha = 1; }  // the card's colour, dimmed
     g.strokeStyle = col; g.lineCap = 'butt'; g.lineWidth = cfg.vedge; g.setLineDash([cfg.vdash, 2.4]);
-    const e = cfg.vedge / 2; g.strokeRect(e, e, w - 2 * e, H - 2 * e);
-    g.beginPath(); g.moveTo(MZ, e); g.lineTo(MZ, H - e); g.stroke();
+    const e = cfg.vedge / 2;
+    if (cfg.vedge) { g.strokeRect(e, e, w - 2 * e, H - 2 * e); g.beginPath(); g.moveTo(MZ, e); g.lineTo(MZ, H - e); g.stroke(); }  // lineWidth 0 is ignored, so skip
     if (side.k === 'hw' && cfg.vwb) { g.lineWidth = cfg.vedge * 0.6; g.setLineDash([0, cfg.vedge * 2.2]); g.strokeRect(wbX, CARD_S.wbPad, wbW, H - 2 * CARD_S.wbPad); }
     g.setLineDash([]); g.lineCap = 'butt';
     if (side.k === 'color' && side.label) { g.fillStyle = side.c.bg; g.fillRect(MZ, 0, 3, H); }  // the colour as a solid bar: a dark colour's name can't show on a dark table
