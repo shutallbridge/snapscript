@@ -4,6 +4,15 @@ Throwaway, for [Prototype card feedback: error lighting, skipped lines, read-bac
 
 - `cards.json`: paper test cards, marker ID 1000–1029 → card notation. `print-cards.html` prints them at true size with real markers (`results/paper-cards.pdf`). `gen_tags.py` adds their markers to `tags.js`.
 - `Show marker reads` also draws each card's predicted edge in cyan, to check the line-up with a real card.
+- Keys (menu closed), for prototyping only:
+  - `1` stand-ins, `2` guides, `3` footprint: the virtual cards' look
+  - `f` stand-in marker zone fill (0–100 % white), `m` its bracket (none to 2 mm)
+  - `b`, `e`, `w`: guide background, guide edge, guide whiteboard edge
+  - `r` wrong card / error red fill (0–100 %), `t` its edge (none to 3 mm), `o` the edge's brightness
+  - `p` where a line's short error messages go: auto (right, else left), right, left
+  - `k` skipped line look: none, wash, hatch, strike, outline
+- Error lighting is mocked, not checked: a wrong kind in a `circle`/`createCanvas`/… argument's place is a `TypeError`, a `[set{x}to]` with nothing after it is a `SyntaxError`, and a `[get{x}]` of a skipped `x` is a `NameError` naming the skipped line's badge.
+- `cards.json` can give a card's real length under `len` (ID 0 is a 3D-printed 3U `[call(p5.circle)]`).
 
 ---
 
