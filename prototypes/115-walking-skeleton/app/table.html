@@ -29,6 +29,10 @@ function dot(c, fill, crossed) {
   if (crossed) { g.strokeStyle = '#888'; g.lineWidth = 1.2 * k; g.stroke(); g.beginPath(); g.moveTo(x - r * .7, y + r * .7); g.lineTo(x + r * .7, y - r * .7); g.stroke(); }
   else { g.fillStyle = fill; g.fill(); }
 }
+function spinner(c) {  // a white arc, turning once a second
+  const [x, y] = P(add(add(c.tl, c.u, -12), c.v, 15)), r = 5 * k, a = (performance.now() / 1000) * 2 * Math.PI;
+  g.beginPath(); g.arc(x, y, r, a, a + 1.5 * Math.PI); g.strokeStyle = '#fff'; g.lineWidth = 2 * k; g.lineCap = 'round'; g.stroke();
+}
 function badge(c, n, i) {
   const [x, y] = P(add(add(c.tl, c.u, -12 - (i + 1) * 14), c.v, 15)), r = 6 * k;
   g.fillStyle = '#ef4444'; g.fillRect(x - r, y - r, 2 * r, 2 * r);
@@ -48,7 +52,7 @@ function draw() {
   light.lines.forEach((l, i) => {
     const n = i + 1, head = l.cards[0], errs = light.errors.filter(e => e.line === n);
     const skipped = light.skipped.includes(n);
-    if (light.unread.includes(n)) dot(head, '#ffffff');  // not read yet (the decided look is a white spinner)
+    if (light.unread.includes(n)) spinner(head);  // not read yet
     else if (i === 0) dot(head, '#22c55e');
     else if (skipped) dot(head, null, true);
     errs.forEach(e => {
@@ -81,6 +85,7 @@ table.onState((l, h) => {
   requestAnimationFrame(() => table.lit(l.seq, Date.now() / 1000));
 });
 table.onTrip(r => { trips.push(r); if (trips.length > 50) trips.shift(); });
+(function spin() { if (light && light.unread.length) draw(); requestAnimationFrame(spin); })();
 setInterval(draw, 1000);
 draw();
 </script></body></html>
