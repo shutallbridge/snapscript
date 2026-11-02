@@ -14,6 +14,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@snapscript/checker": "workspace:*",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
