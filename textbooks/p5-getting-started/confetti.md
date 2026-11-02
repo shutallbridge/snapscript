@@ -39,7 +39,9 @@ The program runs again after every change. This is the loop you will be in all s
 
 A card like `[call(p5.createCanvas)]` **calls a function**: it runs a named piece of behaviour that somebody else wrote. The cards to its right are its **arguments**: the information the function needs in order to do its job.
 
-Keep whichever canvas size and background colour you like. The rest of this textbook assumes a 500 by 500 canvas, so if you have made yours much smaller, put it back before the next page.
+## Before you move on
+
+Keep whichever background colour you like. The rest of this textbook assumes a 500 by 500 canvas, so if you have made yours much smaller, put it back. Then turn the page: its virtual cards show the next step.
 
 # Put something on it
 
@@ -72,7 +74,7 @@ Keep whichever canvas size and background colour you like. The rest of this text
 
 ## Before you move on
 
-Make sure everyone at the table can put a finger on the card that decides how far **down** a rectangle sits. Then turn the page.
+Make sure everyone at the table can put a finger on the card that decides how far **down** a rectangle sits. Then turn the page: its virtual cards show the next step.
 
 # Colour it in
 
