@@ -4,14 +4,16 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs"
+    ".": "./dist/index.mjs",
+    "./markers.yaml": "./dist/markers.yaml"
   },
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsdown",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc"
   },
   "devDependencies": {
     "tsdown": "catalog:",

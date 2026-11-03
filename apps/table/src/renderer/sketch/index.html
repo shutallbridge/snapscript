@@ -1,0 +1,16 @@
+<!doctype html>
+<!-- The sketch view: laid over the canvas space. Each run draws in its own container, centred. -->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; cursor: none; }
+      .run { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; visibility: hidden; }
+      .run canvas { display: block; flex: none; }
+      .top-left .run { align-items: flex-start; justify-content: flex-start; }
+    </style>
+  </head>
+  <body>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

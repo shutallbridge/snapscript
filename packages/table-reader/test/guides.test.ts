@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import type { ReaderState } from "../src/index.ts";
-import { at, card, code, ids, play, U } from "./fixtures.ts";
+import type { ReaderState, StepOutput } from "../src/index.ts";
+import { at, card, CIRCLE, code, DEFINE, GOLD, ids, NUM, play, SETUP, U } from "./fixtures.ts";
 
 // The project imports snapscript-p5 as p5, and the page as sketch: guides match by marker, so the
 // names needn't agree.
@@ -16,13 +16,13 @@ const page = [
   "[call(sketch.circle)][num{250}]",
 ].join("\n");
 
-const setup = card(1, 1000, 60, 40, { text: "Setup" });
-const draw = card(2, 1000, 60, 300, { text: "draw" });
+const setup = card(1, DEFINE, 60, 40, { text: "Setup" });
+const draw = card(2, DEFINE, 60, 300, { text: "draw" });
 
 describe("page guides", () => {
   test("fasten to the real strip that starts with the same card, its handwriting matched ignoring case", () => {
     const out = play(entry, [{ t: 0, cards: [setup] }], { page }).last;
-    expect(out.virtualCards).toEqual([
+    expect(out.virtualCards.filter((v) => v.id.startsWith("g1."))).toEqual([
       { id: "g1.2.1", kind: "guide", card: "[call(sketch.createCanvas)]", length: 4, ...at(60, 40 + U) },
       { id: "g1.2.2", kind: "guide", card: "[num{500}]", length: 4, ...at(60 + 4 * U, 40 + U) },
       { id: "g1.2.3", kind: "guide", card: "[num{500}]", length: 4, ...at(60 + 8 * U, 40 + U) },
@@ -30,24 +30,76 @@ describe("page guides", () => {
   });
 
   test("follow their real strip's turn", () => {
-    const turned = card(1, 1000, 60, 40, { text: "setup", angle: 10 });
+    const turned = card(1, DEFINE, 60, 40, { text: "setup", angle: 10 });
     const out = play(entry, [{ t: 0, cards: [turned] }], { page }).last;
     const r = (10 * Math.PI) / 180;
     expect(out.virtualCards[0].x).toBeCloseTo(at(60 - U * Math.sin(r), 40 + U * Math.cos(r), 10).x);
     expect(out.virtualCards[0].angle).toBe(10);
   });
 
-  test("a strip head with other handwriting doesn't fasten them", () => {
-    const other = card(1, 1000, 60, 40, { text: "setUp2" });
-    expect(play(entry, [{ t: 0, cards: [other] }], { page }).last.virtualCards).toEqual([]);
+  test("a strip head with other handwriting doesn't fasten them: the page strip lies where auto lays it", () => {
+    const other = card(1, DEFINE, 60, 40, { text: "setUp2" });
+    const out = play(entry, [{ t: 0, cards: [other] }], { page }).last;
+    expect(out.virtualCards.filter((v) => v.id.startsWith("g1."))[0]).toEqual({
+      id: "g1.1.1",
+      kind: "guide",
+      card: "[define{setup}]",
+      length: 5,
+      ...at(4 * U, 4 * U),
+    });
   });
 
-  test("an auto page strip with no matching real strip shows no guides (what auto does then is #157's)", () => {
-    // The gap: auto placement isn't built, so the page's [define{draw}] strip is left out here.
+  test("with no matching real strip, page strips stack where auto lays them, heads and all", () => {
+    const out = play(entry, [{ t: 0, cards: [] }], { page }).last;
+    expect(out.virtualCards).toEqual([
+      { id: "g1.1.1", kind: "guide", card: "[define{setup}]", length: 5, ...at(4 * U, 4 * U) },
+      { id: "g1.2.1", kind: "guide", card: "[call(sketch.createCanvas)]", length: 4, ...at(4 * U, 5 * U) },
+      { id: "g1.2.2", kind: "guide", card: "[num{500}]", length: 4, ...at(8 * U, 5 * U) },
+      { id: "g1.2.3", kind: "guide", card: "[num{500}]", length: 4, ...at(12 * U, 5 * U) },
+      // The setup strip is 2U tall: the draw strip starts 2U below it.
+      { id: "g2.1.1", kind: "guide", card: "[define{draw}]", length: 5, ...at(4 * U, 8 * U) },
+      { id: "g2.2.1", kind: "guide", card: "[call(sketch.circle)]", length: 2, ...at(4 * U, 9 * U) },
+      { id: "g2.2.2", kind: "guide", card: "[num{250}]", length: 4, ...at(6 * U, 9 * U) },
+    ]);
+  });
+
+  test("a fastened strip keeps its place in the stack: the next unfastened one doesn't move up", () => {
     const out = play(entry, [{ t: 0, cards: [setup] }], { page }).last;
-    expect(ids(out).filter((id) => id.startsWith("g2."))).toEqual([]);
+    expect(out.virtualCards.filter((v) => v.id.startsWith("g2."))[0]).toMatchObject({ id: "g2.1.1", ...at(4 * U, 8 * U) });
     const both = play(entry, [{ t: 0, cards: [setup, draw] }], { page }).last;
     expect(ids(both).filter((id) => id.startsWith("g2."))).toEqual(["g2.2.1", "g2.2.2"]);
+  });
+
+  test("with two matching real strips, they fasten to the first in strip order", () => {
+    // The lower strip was laid first, so it comes first in strip order though it lies lower.
+    const lower = card(1, DEFINE, 60, 300, { text: "setup" });
+    const upper = card(3, DEFINE, 60, 40, { text: "SETUP" });
+    const r = play(
+      entry,
+      [
+        { t: 0, cards: [lower] },
+        { t: 1, cards: [lower, upper] },
+      ],
+      { page },
+    );
+    expect(r.last.stripHeads).toEqual([1, 3]);
+    expect(r.last.virtualCards.find((v) => v.id === "g1.2.1")).toMatchObject(at(60, 300 + U));
+  });
+
+  test("a printed head fastens by its marker", () => {
+    const printed = [
+      "/** @table hidden */",
+      "[import(snapscript-p5)as(sketch)]",
+      "",
+      "[define(setup)]",
+      "[call(sketch.createCanvas)][num{500}][num{500}]",
+    ].join("\n");
+    const out = play(entry, [{ t: 0, cards: [card(1, SETUP, 60, 40)] }], { page: printed }).last;
+    expect(ids(out)).toEqual(["g1.2.1", "g1.2.2", "g1.2.3"]);
+    expect(out.virtualCards[0]).toMatchObject(at(60, 40 + U));
+    // A handwritten [define{setup}] is another card: the page strip stays where auto lays it.
+    const handwritten = play(entry, [{ t: 0, cards: [setup] }], { page: printed }).last;
+    expect(handwritten.virtualCards[0]).toMatchObject({ id: "g1.1.1", ...at(4 * U, 4 * U) });
   });
 
   test("are never part of the program", () => {
@@ -66,14 +118,15 @@ describe("places and mismatches on guides", () => {
     const r = play(
       entry,
       [
-        { t: 0, cards: [setup, second(1024)] },
-        { t: 0.5, cards: [setup, second(1024)] },
+        { t: 0, cards: [setup, second(NUM)] },
+        { t: 0.5, cards: [setup, second(NUM)] },
       ],
       { page },
     );
-    expect(ids(r.outputs[0])).toEqual(["g1.2.1", "g1.2.2", "g1.2.3"]);
+    const setupGuides = (out: StepOutput) => ids(out).filter((id) => id.startsWith("g1."));
+    expect(setupGuides(r.outputs[0])).toEqual(["g1.2.1", "g1.2.2", "g1.2.3"]);
     expect(r.outputs[0].wakeAt).toBeCloseTo(0.4);
-    expect(ids(r.last)).toEqual(["g1.2.1", "g1.2.3"]);
+    expect(setupGuides(r.last)).toEqual(["g1.2.1", "g1.2.3"]);
     expect(r.last.places).toEqual([{ track: 5, virtual: "g1.2.2" }]);
     expect(r.last.mismatches).toEqual([]);
   });
@@ -82,8 +135,8 @@ describe("places and mismatches on guides", () => {
     const r = play(
       entry,
       [
-        { t: 0, cards: [setup, card(4, 1040, 60 + U * 0, 40 + U), second(1024), third(1040)] },
-        { t: 1, cards: [setup, card(4, 1040, 60 + U * 0, 40 + U), second(1024), third(1040)] },
+        { t: 0, cards: [setup, card(4, GOLD, 60 + U * 0, 40 + U), second(NUM), third(GOLD)] },
+        { t: 1, cards: [setup, card(4, GOLD, 60 + U * 0, 40 + U), second(NUM), third(GOLD)] },
       ],
       { page },
     );
@@ -101,7 +154,7 @@ describe("places and mismatches on guides", () => {
   });
 
   test("a library card is the right card whatever name the page imports its library as", () => {
-    const circle = card(7, 0, 60, 300 + U);
+    const circle = card(7, CIRCLE, 60, 300 + U);
     const r = play(
       entry,
       [
@@ -115,15 +168,15 @@ describe("places and mismatches on guides", () => {
   });
 
   test("a card keeps a guide's place until it moves past 15 mm or 20°", () => {
-    const laid = [setup, second(1024)];
+    const laid = [setup, second(NUM)];
     const r = play(
       entry,
       [
         { t: 0, cards: laid },
         { t: 1, cards: laid },
-        { t: 2, cards: [setup, second(1024, 14)] },
-        { t: 3, cards: [setup, { ...second(1024, 14), angle: 19 }] },
-        { t: 4, cards: [setup, second(1024, 16)] },
+        { t: 2, cards: [setup, second(NUM, 14)] },
+        { t: 3, cards: [setup, { ...second(NUM, 14), angle: 19 }] },
+        { t: 4, cards: [setup, second(NUM, 16)] },
       ],
       { page },
     );
@@ -138,7 +191,7 @@ describe("places and mismatches on guides", () => {
   });
 
   test("a card slid across a row of guides takes none of their places", () => {
-    const slide = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ t: i * 0.1, cards: [setup, second(1024, i * 15 - 60)] }));
+    const slide = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ t: i * 0.1, cards: [setup, second(NUM, i * 15 - 60)] }));
     const r = play(entry, slide, { page });
     expect(r.outputs.every((o) => o.places.length === 0)).toBe(true);
   });
@@ -148,26 +201,37 @@ describe("value guides", () => {
   // A stand-in [call(p5.circle)] (2U) at (50, 80), on line 3 of the buffer.
   const program = "/** @table 50 50 */\n[define{draw}]\n[call(p5.circle)]";
   const values = (prev: ReaderState) => ({
-    values: [{ version: prev.version, at: { line: 3, start: 0 }, values: ["x", "y", "d"] }],
+    values: [
+      {
+        version: prev.version,
+        at: { line: 3, start: 0 },
+        values: [
+          { name: "x", type: "num" },
+          { name: "c", type: "color" },
+          { name: "d", type: null },
+        ],
+      },
+    ],
   });
 
-  test("are placed after their call card from the expected values passed in", () => {
+  test("are placed after their call card from the expected values passed in, each with its declared type", () => {
     const r = play(program, [{ t: 0, cards: [] }, { t: 1, cards: [] }], values);
     expect(r.last.virtualCards.filter((v) => v.kind === "value")).toEqual([
-      { id: "v.s2.1", kind: "value", value: "x", length: 4, ...at(50 + 2 * U, 80) },
-      { id: "v.s2.2", kind: "value", value: "y", length: 4, ...at(50 + 6 * U, 80) },
-      { id: "v.s2.3", kind: "value", value: "d", length: 4, ...at(50 + 10 * U, 80) },
+      { id: "v.s2.1", kind: "value", value: "x", type: "num", length: 4, ...at(50 + 2 * U, 80) },
+      { id: "v.s2.2", kind: "value", value: "c", type: "color", length: 4, ...at(50 + 6 * U, 80) },
+      // A value with no declared type has none: a plain guide.
+      { id: "v.s2.3", kind: "value", value: "d", type: null, length: 4, ...at(50 + 10 * U, 80) },
     ]);
   });
 
   test("from a buffer version that's gone are ignored", () => {
-    const stale = () => ({ values: [{ version: 99, at: { line: 3, start: 0 }, values: ["x"] }] });
+    const stale = () => ({ values: [{ version: 99, at: { line: 3, start: 0 }, values: [{ name: "x", type: "num" }] }] });
     const r = play(program, [{ t: 0, cards: [] }, { t: 1, cards: [] }], stale);
     expect(r.last.virtualCards.filter((v) => v.kind === "value")).toEqual([]);
   });
 
   test("never give a mismatch: any card in their place takes it", () => {
-    const gold = card(8, 1040, 50 + 2 * U, 80);
+    const gold = card(8, GOLD, 50 + 2 * U, 80);
     const r = play(
       program,
       [
@@ -182,16 +246,18 @@ describe("value guides", () => {
   });
 
   test("follow a real call card", () => {
-    // ID 0 is the 3U [call(p5.circle)].
+    // CIRCLE is the 3U [call(p5.circle)].
     const r = play(
       "/** @table hidden */\n[import(snapscript-p5)as(p5)]",
       [
-        { t: 0, cards: [card(1, 1000, 50, 50, { text: "draw" }), card(3, 0, 50, 50 + U)] },
-        { t: 1, cards: [card(1, 1000, 50, 50, { text: "draw" }), card(3, 0, 50, 50 + U)] },
+        { t: 0, cards: [card(1, DEFINE, 50, 50, { text: "draw" }), card(3, CIRCLE, 50, 50 + U)] },
+        { t: 1, cards: [card(1, DEFINE, 50, 50, { text: "draw" }), card(3, CIRCLE, 50, 50 + U)] },
       ],
       // The buffer: the import (lines 1–2), a blank line, the @table tag, [define{draw}], then the call.
-      (prev) => ({ values: [{ version: prev.version, at: { line: 6, start: 0 }, values: ["x"] }] }),
+      (prev) => ({ values: [{ version: prev.version, at: { line: 6, start: 0 }, values: [{ name: "x", type: "num" }] }] }),
     );
-    expect(r.last.virtualCards).toEqual([{ id: "v.t3.1", kind: "value", value: "x", length: 4, ...at(50 + 3 * U, 80) }]);
+    expect(r.last.virtualCards).toEqual([
+      { id: "v.t3.1", kind: "value", value: "x", type: "num", length: 4, ...at(50 + 3 * U, 80) },
+    ]);
   });
 });

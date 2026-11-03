@@ -1,5 +1,13 @@
 packages:
   - packages/*
+  - apps/*
+  - libraries/*
+  - textbooks/*
+  - projects/*
+
+allowBuilds:
+  # Electron downloads its build the first time it starts; it needs no install script.
+  electron: false
 
 catalog:
   "@types/node": ^24.19.2

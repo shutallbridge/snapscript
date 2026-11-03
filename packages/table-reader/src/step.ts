@@ -21,14 +21,16 @@ import type {
   VirtualCard,
 } from "./types.ts";
 import { hiddenLines, importedNames } from "./entry.ts";
-import { shortestLength, STANDS_ALONE, textStrips } from "./program.ts";
-import { SHEET } from "./sheet.ts";
+import { SHEET, shortestLength } from "@snapscript/faces";
+import { autoPlaces } from "./auto.ts";
+import { STANDS_ALONE, textStrips, type TextStrip } from "./program.ts";
 
 /** The prototypes' measured starting values (#147, #111). */
 export const defaultSettings: ReaderSettings = {
   unitMm: SHEET.unitMm,
-  markerAlongMm: SHEET.markerAlongMm,
-  markerDownMm: SHEET.markerDownMm,
+  // The marker is centred in the marker zone.
+  markerAlongMm: SHEET.markerZoneMm / 2,
+  markerDownMm: SHEET.heightMm / 2,
   maxAngleDeg: 15,
   joinMakeAlongMinMm: -8,
   joinMakeAlongMaxMm: 10,
@@ -50,18 +52,19 @@ export const defaultSettings: ReaderSettings = {
 
 /**
  * The reader before any table state, starting from the project's entry text (there's no prelude).
- * Each strip with a `@table` position becomes stand-ins on its grid. Hidden strips, and for now
- * `auto` ones (#157), are kept exactly as written.
+ * Each strip on the table becomes stand-ins on its grid, at its `@table` position or where auto
+ * lays it. Hidden strips are kept exactly as written.
  */
 export function initialState(entryText = ""): ReaderState {
   const slots: StripSlot[] = [];
   const standIns: StandIn[] = [];
+  let autos = 0;
   for (const strip of textStrips(entryText)) {
-    const place = strip.table;
-    if (typeof place === "string") {
+    if (strip.table === "hidden") {
       slots.push({ verbatim: strip.verbatim });
       continue;
     }
+    const place = strip.table === "auto" ? { auto: autos++ } : strip.table;
     let head: string | undefined;
     strip.lines.forEach((line, lineIndex) => {
       let along = line.column;
@@ -249,6 +252,8 @@ interface Guide {
   kind: "guide" | "value";
   /** The card it asks for, or the value's name. */
   text: string;
+  /** A value's declared type, or null. */
+  type?: string | null;
   /** Which card it asks for, by marker (page guides only). */
   cardKind?: string;
   length: number;
@@ -329,12 +334,22 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
   const still = (c: Placed): boolean => now - stillSince(c) >= s.placeStillS - 1e-9;
   const canTake = (distance: number, turn: number): boolean => distance <= s.placeMakeMm && turn <= s.placeMakeDeg;
 
+  // Where a file's auto strips lie on the coding space as it is now.
+  const autoOf = (strips: readonly TextStrip[]) =>
+    autoPlaces(
+      strips.filter((strip) => strip.table === "auto"),
+      cs.height,
+      s.unitMm,
+    );
+
   // Stand-ins: a real card lying still in one's place replaces it, for good.
+  const entryAuto = prev.standIns.some((si) => "auto" in si.strip) ? autoOf(textStrips(prev.entryText)) : [];
   const standInAt = (si: StandIn): ReturnType<typeof frame> => {
-    const head = add(origin, [si.strip.x, si.strip.y]);
-    const u = unit(si.strip.turn);
+    const strip = "auto" in si.strip ? { ...entryAuto[si.strip.auto]!, turn: 0 } : si.strip;
+    const head = add(origin, [strip.x, strip.y]);
+    const u = unit(strip.turn);
     const v: Vec = [-u[1], u[0]];
-    return frame(add(add(head, u, si.along * s.unitMm), v, si.lineIndex * s.unitMm), si.strip.turn, s);
+    return frame(add(add(head, u, si.along * s.unitMm), v, si.lineIndex * s.unitMm), strip.turn, s);
   };
   const standIns = prev.standIns.map((si) => ({ si, at: standInAt(si) }));
   const replaced = assignPlaces(
@@ -510,12 +525,18 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
   const sources = input.guideSources ?? {};
   if (sources.page !== undefined) {
     const packages = new Map([...importedNames(hiddenLines(sources.page))].map(([pkg, local]) => [local, pkg]));
-    textStrips(sources.page).forEach((strip, n) => {
+    const pageStrips = textStrips(sources.page);
+    const pageAuto = autoOf(pageStrips);
+    let autos = 0;
+    pageStrips.forEach((strip, n) => {
       if (strip.table === "hidden") return;
-      const pageHead = strip.lines[0].cards[0];
-      let start: { tl: Vec; angle: number; withHead: boolean } | undefined;
+      let start: { tl: Vec; angle: number; withHead: boolean };
       if (strip.table === "auto") {
-        // With no matching real strip, auto placement belongs to #157: the strip shows no guides.
+        // Fastened to the first real strip in strip order whose head is the same card: by marker,
+        // and for a handwritten head by its read name too, ignoring case. With none, it lies where
+        // auto lays it, and keeps that place in the stack either way.
+        const place = pageAuto[autos++]!;
+        const pageHead = strip.lines[0].cards[0];
         const kind = textKind(pageHead, packages);
         const handwritten = pageHead.includes("{");
         const head = stripHeads.find(
@@ -524,11 +545,12 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
             h.kind === kind &&
             (!handwritten || h.notation.toLowerCase() === pageHead.toLowerCase()),
         );
-        if (head) start = { tl: head.tl, angle: head.angle, withHead: false };
+        start = head
+          ? { tl: head.tl, angle: head.angle, withHead: false }
+          : { tl: add(origin, [place.x, place.y]), angle: 0, withHead: true };
       } else {
         start = { tl: add(origin, [strip.table.x, strip.table.y]), angle: strip.table.turn, withHead: true };
       }
-      if (!start) return;
       const u = unit(start.angle);
       const v: Vec = [-u[1], u[0]];
       strip.lines.forEach((line, lineIndex) => {
@@ -563,7 +585,8 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
       guides.push({
         id: `v.${key}.${i + 1}`,
         kind: "value",
-        text: value,
+        text: value.name,
+        type: value.type,
         length: s.valueGuideLength,
         at: frame(add(call.tl, call.u, along), call.angle, s),
       });
@@ -610,7 +633,7 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
       .map((g) => {
         const where = { length: g.length, x: g.at.centre[0], y: g.at.centre[1], angle: g.at.angle };
         return g.kind === "value"
-          ? { id: g.id, kind: "value" as const, value: g.text, ...where }
+          ? { id: g.id, kind: "value" as const, value: g.text, type: g.type ?? null, ...where }
           : { id: g.id, kind: "guide" as const, card: g.text, ...where };
       }),
   ];
@@ -629,6 +652,14 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
     if (near) wakeAt = Math.min(wakeAt ?? Infinity, stillSince(card) + s.placeStillS);
   }
 
+  // The current page: the vision service's page track, if the lockfile names its marker a page.
+  const pageCard = input.table.page == null ? undefined : input.table.cards.find((c) => c.track === input.table.page);
+  const pageEntry = pageCard && input.lockfile.get(pageCard.marker);
+  const page =
+    pageEntry?.kind === "page"
+      ? { track: pageCard!.track, textbook: pageEntry.textbook, volume: pageEntry.volume, page: pageEntry.page }
+      : null;
+
   const output = {
     version,
     text,
@@ -641,6 +672,7 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
     virtualCards,
     places,
     mismatches,
+    page,
     ...(wakeAt === undefined ? {} : { wakeAt }),
   };
   return {

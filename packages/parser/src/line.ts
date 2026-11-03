@@ -5,11 +5,17 @@ import type { Card, Expr, Name, Param, Slot, Span } from "./tree.ts";
 /** A problem with a line's own cards: the line can't run as written. */
 export class Fail extends Error {
   readonly spans: Span[];
-  constructor(message: string, spans: Span[]) {
+  /** It is about what one card holds, not how the cards fit together. */
+  readonly aboutCardText: boolean;
+  constructor(message: string, spans: Span[], aboutCardText = false) {
     super(message);
     this.spans = spans;
+    this.aboutCardText = aboutCardText;
   }
 }
+
+/** A problem with what one card holds: `[num{4o}]`, a name that isn't one. */
+const badText = (message: string, card: Card): Fail => new Fail(message, [card.span], true);
 
 const leaves = new Set(["num", "str", "bool", "color", "none", "root", "get"]);
 const valueStarts = new Set([...leaves, "call", "(", "not"]);
@@ -269,21 +275,18 @@ export function leaf(card: Card): Expr {
   switch (card.kind) {
     case "num":
       if (!/^-?\d+(\.\d+)?$/.test(slot.text)) {
-        throw new Fail(
-          `${card.text} is not a number: a number holds digits, with an optional - first and an optional . between digits`,
-          [span],
-        );
+        throw badText(`${card.text} is not a number: a number holds digits, with an optional - first and an optional . between digits`, card);
       }
       return { type: "num", value: Number(slot.text), card, span };
     case "str":
       return { type: "str", value: slot.text.replace(/_/g, " "), card, span };
     case "bool": {
       const value = slot.text.toLowerCase();
-      if (value !== "true" && value !== "false") throw new Fail(`${card.text} is neither true nor false`, [span]);
+      if (value !== "true" && value !== "false") throw badText(`${card.text} is neither true nor false`, card);
       return { type: "bool", value: value === "true", card, span };
     }
     case "color":
-      if (!cssColors.has(slot.text.toLowerCase())) throw new Fail(`${slot.text} is not a CSS color name`, [span]);
+      if (!cssColors.has(slot.text.toLowerCase())) throw badText(`${slot.text} is not a CSS color name`, card);
       return { type: "color", value: slot.text, card, span };
     case "none":
       return { type: "none", card, span };
@@ -304,7 +307,7 @@ export function readName(card: Card, slot: Slot): Name {
 
 /** A name, with a namespace before it when `dotted`: `p5.frameCount`. */
 export function readPath(card: Card, slot: Slot, dotted: boolean): Name[] {
-  if (slot.text === "") throw new Fail(`${card.text} has no name written on it`, [card.span]);
+  if (slot.text === "") throw badText(`${card.text} has no name written on it`, card);
   // Where each character of the gap-free text sits in the raw slot.
   const at: number[] = [];
   for (let i = 0; i < slot.raw.length; i += 1) if (!/\s/.test(slot.raw[i])) at.push(slot.span.start + i);
@@ -312,7 +315,7 @@ export function readPath(card: Card, slot: Slot, dotted: boolean): Name[] {
   let from = 0;
   for (const part of slot.text.split(".")) {
     if (!/^[A-Za-z0-9_]+$/.test(part)) {
-      throw new Fail(`${slot.text} is not a name: a name holds letters, digits and _`, [card.span]);
+      throw badText(`${slot.text} is not a name: a name holds letters, digits and _`, card);
     }
     names.push({
       text: part,
@@ -322,7 +325,7 @@ export function readPath(card: Card, slot: Slot, dotted: boolean): Name[] {
     from += part.length + 1;
   }
   if (!dotted && names.length > 1) {
-    throw new Fail(`${slot.text} is not a name here: ${card.text} takes a name with no namespace`, [card.span]);
+    throw badText(`${slot.text} is not a name here: ${card.text} takes a name with no namespace`, card);
   }
   return names;
 }

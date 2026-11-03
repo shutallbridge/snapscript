@@ -1,0 +1,78 @@
+// snapscript-p5: drawing with p5.js (#156). Each card's doc comment is its
+// help: one sentence, then a line per value.
+
+/**
+ * Makes the canvas you draw on, this many pixels wide and tall.
+ * @param {num} width   how wide, in pixels
+ * @param {num} height  how tall, in pixels
+ * @card
+ * @color setting
+ */
+[extern(createCanvas)][required(width)][required(height)]
+
+/**
+ * Paints the whole canvas one colour, covering what was drawn before.
+ * @param {color} color  the colour to paint it
+ * @card
+ * @color primary
+ */
+[extern(background)][required(color)]
+
+/**
+ * Turns off the outline of every shape drawn after it. Takes no values.
+ * @card
+ * @color setting
+ */
+[extern(noStroke)]
+
+/**
+ * Sets the colour that shapes drawn after it are filled with.
+ * @param {color} color  the colour to fill them with
+ * @card
+ * @color setting
+ */
+[extern(fill)][required(color)]
+
+/**
+ * Draws a rectangle. x and y are its top-left corner, and y grows downward.
+ * @param {num} x       how far from the left edge
+ * @param {num} y       how far down from the top edge
+ * @param {num} width   how wide
+ * @param {num} height  how tall
+ * @card
+ * @color primary
+ */
+[extern(rect)][required(x)][required(y)][required(width)][required(height)]
+
+/**
+ * Draws a circle. x and y are its middle, and y grows downward.
+ * @param {num} x  how far from the left edge
+ * @param {num} y  how far down from the top edge
+ * @param {num} d  how wide across
+ * @card
+ * @color primary
+ */
+[extern(circle)][required(x)][required(y)][required(d)]
+
+/**
+ * Runs once when the program starts.
+ * @card [define(setup)]
+ */
+
+/**
+ * Runs again and again, every frame, after setup.
+ * @card [define(draw)]
+ */
+
+/** Calls the program's setup once, then its draw every frame, if it has them. */
+[extern(run)][required(program)]
+
+/** Stops p5's loop, so it calls draw no more. */
+[extern(noLoop)]
+
+[on(load)]
+[call(run)][root]
+
+// p5 calls draw by itself, after the run has stopped too: so a stopped run stops p5's loop.
+[on(stop)]
+[call(noLoop)]

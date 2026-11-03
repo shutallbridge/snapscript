@@ -1,0 +1,27 @@
+{
+  "name": "snapscript-p5-getting-started",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "volumes": [
+    "confetti.md"
+  ],
+  "files": [
+    "confetti.md",
+    "canvas-coordinates.png"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "snapscript-p5": "workspace:*"
+  },
+  "devDependencies": {
+    "@snapscript/checker": "workspace:*",
+    "@snapscript/table": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

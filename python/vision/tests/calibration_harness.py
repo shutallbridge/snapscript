@@ -22,7 +22,7 @@ ASPECT = 1.5            # the drawn projector's width over its height
 ROOM = 5.0              # the room's light: grey per ms of exposure on white paper
 PROJECTOR = 40.0        # the projector's white, the same way
 CALIBRATION = list(range(300, 312))  # the twelve markers projected in step 1
-RULER, RULER_MM = [2080, 2081], 257.0
+RULER, RULER_MM = [312, 313], 257.0
 TABLE_MARKERS = {**MARKERS, "calibration": CALIBRATION, "ruler": RULER, "ruler_mm": RULER_MM}
 FAKE_CAMERA = Path(__file__).parent / "fake_camera"
 
@@ -65,10 +65,14 @@ def write_markers(d: Path) -> Path:
 class Service:
     """The real service as a process, on a free port, with a JSON-lines connection to it."""
 
-    def __init__(self, d: Path, source: str, lineup: Path, env=None):
+    def __init__(self, d: Path, source: str, lineup: Path, env=None, markers="file"):
+        """`markers`: "file" gives the marker data as `--markers`; "socket" sends it in a `markers` message once
+        connected, as the table app does."""
         reader = write_fake_reader(d, [{"text": "500", "after_s": 2.0}])
         args = [sys.executable, "-m", "snapscript_vision", "--source", source, "--port", "0",
-                "--reader", f"fake:{reader}", "--markers", str(write_markers(d)), "--lineup", str(lineup)]
+                "--reader", f"fake:{reader}", "--lineup", str(lineup)]
+        if markers == "file":
+            args += ["--markers", str(write_markers(d))]
         self.proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                      env={**os.environ, **(env or {})})
         line = self.proc.stdout.readline()
@@ -78,6 +82,11 @@ class Service:
             raise AssertionError(f"service didn't start: {line!r} {self.proc.stderr.read()}")
         self.sock = socket.create_connection(("127.0.0.1", int(m.group(1))), timeout=60)
         self.buf, self.got = b"", []
+        if markers == "socket":
+            self.send({"type": "markers", **TABLE_MARKERS})
+
+    def send(self, msg):
+        self.sock.sendall((json.dumps(msg) + "\n").encode())
 
     def __enter__(self):
         return self
@@ -116,7 +125,7 @@ class Service:
 
     def calibrate(self, step, **kw):
         """Send a calibration step as the table app does, and return its result."""
-        self.sock.sendall((json.dumps({"type": "calibrate", "step": step, **kw}) + "\n").encode())
+        self.send({"type": "calibrate", "step": step, **kw})
         return self.wait_for(lambda m: m["type"] == "calibration" and m["step"] == step)
 
     def state_with(self, ok, timeout=60):

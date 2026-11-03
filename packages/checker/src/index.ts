@@ -1,7 +1,8 @@
 import { parse, type Program, type Span, type StructureError } from "@snapscript/parser";
 import { Modules, type ImportedModules, type LoadedModule, type Member, type ModuleInfo, type ModuleLoader } from "./modules.ts";
 import { checkNames, skippedLinesOf } from "./names.ts";
-import { checkTypes, signaturesOf, type CallExpects } from "./types.ts";
+import type { Param, Type } from "@snapscript/core";
+import { checkTypes, signaturesOf, type CallExpects, type DeclaredParam } from "./types.ts";
 
 export type * from "@snapscript/parser";
 export type { LoadedModule, ModuleLoader } from "./modules.ts";
@@ -21,12 +22,34 @@ export interface CheckedProgram extends Program {
    * a line the table couldn't read, and the lines their skips take with them.
    */
   skippedLines: number[];
+  /**
+   * The module each import line that counts loads, in text order. Only
+   * filled when the check has a loader. The runtime's compiler takes these.
+   */
+  modules: CheckedModule[];
 }
 
-/** One way to call a function: the names of its values in order, and of a slot that takes any number. */
+/** A module an import line loads: its id from the loader, and its checked program. */
+export interface CheckedModule {
+  /** The import line (1-based). */
+  line: number;
+  id: string;
+  program: CheckedProgram;
+}
+
+/**
+ * A value a function expects: its name, and its declared type (from a `@param {…}`, or a builtin's
+ * table), or `null` when it has none.
+ */
+export interface ExpectedValue {
+  name: string;
+  type: Type | null;
+}
+
+/** One way to call a function: its values in order, and a slot that takes any number. */
 export interface ExpectedOverload {
-  values: string[];
-  variadic: string | null;
+  values: ExpectedValue[];
+  variadic: ExpectedValue | null;
 }
 
 /** The values a call card's function expects after it: the table app's value guides. */
@@ -96,7 +119,13 @@ function checkText(text: string, skippedLines: readonly SkippedLine[], modules: 
     (a, b) => a.line - b.line || (a.spans[0]?.start ?? 0) - (b.spans[0]?.start ?? 0),
   );
   const failed = new Set([...absent, ...names.failed, ...types.failed]);
-  const program = { ...parsed.program, skippedLines: skippedLinesOf(parsed.program, failed) };
+  const skipped = skippedLinesOf(parsed.program, failed);
+  const imported: CheckedModule[] = [];
+  for (const [d, info] of loaded.modules) {
+    if (info && !skipped.includes(d.line)) imported.push({ line: d.line, id: info.id, program: info.program });
+  }
+  imported.sort((a, b) => a.line - b.line);
+  const program = { ...parsed.program, skippedLines: skipped, modules: imported };
   const expectedValues = types.expects.sort((a, b) => a.card.start - b.card.start).map((e) => expected(text, e));
   return { result: { errors, program, expectedValues }, imports: loaded.modules };
 }
@@ -112,7 +141,7 @@ function moduleInfo(id: string, { result, imports }: Checked): ModuleInfo {
       case "extern": {
         if (!d.name) break;
         const found = attributes.get(d.name.key);
-        const overloads = [...(found?.type === "function" ? found.overloads : []), ...signaturesOf(d.params)];
+        const overloads = [...(found?.type === "function" ? found.overloads : []), ...signaturesOf(d.params, d.doc)];
         attributes.set(d.name.key, { type: "function", text: found?.type === "function" ? found.text : d.name.text, overloads });
         break;
       }
@@ -124,7 +153,7 @@ function moduleInfo(id: string, { result, imports }: Checked): ModuleInfo {
         break;
     }
   }
-  return { id, attributes };
+  return { id, attributes, program: result.program };
 }
 
 function expected(text: string, { card, name, overloads }: CallExpects): ExpectedValues {
@@ -134,8 +163,14 @@ function expected(text: string, { card, name, overloads }: CallExpects): Expecte
     span: card,
     at: { line, start: card.start - lineStart, end: card.end - lineStart },
     name,
-    overloads: overloads.map((s) => ({ values: s.params.map((p) => p.name), variadic: s.variadic?.name ?? null })),
+    overloads: overloads.map((s) => ({ values: s.params.map(expectedValue), variadic: s.variadic && expectedValue(s.variadic) })),
   };
+}
+
+/** A declared function's value has its declared type; a builtin's, the one type it takes, if it takes only one. */
+function expectedValue(p: Param | DeclaredParam): ExpectedValue {
+  if ("declared" in p) return { name: p.name, type: p.declared };
+  return { name: p.name, type: p.takes !== "any" && p.takes.length === 1 ? p.takes[0]! : null };
 }
 
 const sameLines = (a: ReadonlySet<number>, b: ReadonlySet<number>): boolean => a.size === b.size && [...a].every((l) => b.has(l));

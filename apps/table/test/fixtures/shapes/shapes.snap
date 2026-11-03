@@ -1,0 +1,31 @@
+// A fixture library: two call cards, one function with no card, and two define cards.
+
+/**
+ * Draws a square. x and y are its top-left corner.
+ * @param {num} x     how far from the left edge
+ * @param {num} y     how far down from the top edge
+ * @param {num} size  how wide
+ * @card
+ * @color setting
+ */
+[extern(square)][required(x)][required(y)][required(size)]
+
+/**
+ * Draws a five-pointed star.
+ * @param {num} x  how far from the left edge
+ * @card
+ */
+[extern(starburst)][required(x)]
+
+/** Not a card: no @card tag. */
+[extern(run)][required(program)]
+
+/**
+ * Runs once when the program starts.
+ * @card [define(setup)]
+ */
+
+/**
+ * Runs again and again, every frame, after setup.
+ * @card [define(draw)]
+ */

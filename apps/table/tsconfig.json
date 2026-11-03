@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The project loader and `pnpm lock` read and write the project's files.
+    "types": ["node"]
+  },
+  "include": ["src", "test"]
+}

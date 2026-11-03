@@ -9,6 +9,6 @@ def test_a_recording_replays_with_its_own_time_stamps(tmp_path):
     sent = states(run_service(tmp_path, f"recording:{base}"))
 
     assert [m["t"] for m in sent] == [5000.13, 5000.4]
-    assert sorted(c["marker"] for c in sent[-1]["cards"]) == [0, 1001]
-    circle = next(c for c in sent[-1]["cards"] if c["marker"] == 0)
+    assert sorted(c["marker"] for c in sent[-1]["cards"]) == [400, 402]
+    circle = next(c for c in sent[-1]["cards"] if c["marker"] == 402)
     assert abs(circle["x"] - 300) <= 0.5 and abs(circle["y"] - 200) <= 0.5 and abs(circle["angle"] - 45) <= 0.5

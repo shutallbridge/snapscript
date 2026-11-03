@@ -5,6 +5,8 @@
 // them fails. A value it knows nothing about can be any type.
 import {
   builtins,
+  countOf,
+  describeCounts,
   firstStage,
   forTakes,
   leafTypes,
@@ -16,11 +18,12 @@ import {
   typesWithAttributes,
   type ErrorKind,
   type Operator,
+  type Param as CoreParam,
   type Signature,
   type Takes,
   type Type,
 } from "@snapscript/core";
-import type { Declaration, Expr, Name, Param, Program, Span, Statement } from "@snapscript/parser";
+import type { Declaration, DocComment, Expr, Name, Param, Program, Span, Statement } from "@snapscript/parser";
 import type { CheckError } from "./index.ts";
 import type { ImportedModules, Member, ModuleInfo } from "./modules.ts";
 
@@ -46,25 +49,32 @@ function describeTakes(of: Types, many: boolean): string {
   return describe(of);
 }
 
-/** `no values`, `1 value`, `3 values`, `1 to 3 values`, `1 or 3 values`, `at least 2 values`. */
-function describeCounts(overloads: readonly Signature[]): string {
-  const variadic = overloads.filter((s) => s.variadic !== null).map((s) => s.params.length);
-  if (variadic.length > 0) {
-    const least = Math.min(...variadic);
-    return least === 0 ? "any number of values" : `at least ${least} value${least === 1 ? "" : "s"}`;
-  }
-  const counts = [...new Set(overloads.map((s) => s.params.length))].sort((a, b) => a - b);
-  const plural = (n: number) => (n === 1 ? "value" : "values");
-  if (counts.length === 1) return counts[0] === 0 ? "no values" : `${counts[0]} ${plural(counts[0])}`;
-  const last = counts[counts.length - 1];
-  if (last - counts[0] === counts.length - 1) return `${counts[0]} to ${last} values`;
-  return `${counts.slice(0, -1).join(", ")} or ${last} values`;
+/**
+ * A declared function's value: it takes anything, and `declared` is the type its doc comment's
+ * `@param {…}` gives it, when that is one of the language's types. The declared type is for value
+ * guides only; it isn't checked.
+ */
+export interface DeclaredParam extends CoreParam {
+  declared: Type | null;
 }
 
-/** The ways a `[define{…}]` or an `[extern(…)]` can be called: with every count from its required values to all of them. */
-export function signaturesOf(params: readonly Param[]): Signature[] {
+/** The one type a `@param {…}` declares, or `null` for none, several, or one the language doesn't have. */
+function declaredType(name: string, doc: DocComment | null): Type | null {
+  const found = doc?.params.find((p) => p.name.toLowerCase() === name.toLowerCase());
+  const [only, ...more] = found?.types ?? [];
+  return only !== undefined && more.length === 0 && (types as readonly string[]).includes(only) ? (only as Type) : null;
+}
+
+/**
+ * The ways a `[define{…}]` or an `[extern(…)]` can be called: with every count from its required
+ * values to all of them.
+ */
+export function signaturesOf(params: readonly Param[], doc: DocComment | null = null): Signature[] {
   const required = params.filter((p) => p.type === "required").length;
-  const all = params.map((p) => ({ name: p.name?.text ?? "", takes: "any" as const }));
+  const all = params.map((p): DeclaredParam => {
+    const name = p.name?.text ?? "";
+    return { name, takes: "any", declared: declaredType(name, doc) };
+  });
   const signatures: Signature[] = [];
   for (let n = required; n <= all.length; n += 1) signatures.push({ params: all.slice(0, n), variadic: null, gives: "any" });
   return signatures;
@@ -158,14 +168,14 @@ class TypeChecker {
             this.topLevel.set(declaration.name.key, {
               type: "function",
               text: declaration.name.text,
-              overloads: signaturesOf(declaration.params),
+              overloads: signaturesOf(declaration.params, declaration.doc),
             });
           }
           break;
         case "extern":
           if (declaration.name) {
             const found = externs.get(declaration.name.key) ?? { text: declaration.name.text, overloads: [] };
-            found.overloads.push(...signaturesOf(declaration.params));
+            found.overloads.push(...signaturesOf(declaration.params, declaration.doc));
             externs.set(declaration.name.key, found);
             this.topLevel.set(declaration.name.key, { type: "function", ...found });
           }
@@ -298,7 +308,7 @@ class TypeChecker {
 
   private report(kind: ErrorKind, message: string, span: Span): void {
     if (!this.reporting) return;
-    this.errors.push({ kind, message, stage: firstStage(kind), line: this.line, spans: [span], followsFrom: null, suggestion: null });
+    this.errors.push({ kind, message, stage: firstStage(kind), line: this.line, spans: [span], aboutCardText: false, followsFrom: null, suggestion: null });
     this.failed.add(this.line);
   }
 
@@ -462,7 +472,7 @@ class TypeChecker {
       (s) => s.params.length === args.length || (s.variadic !== null && args.length >= s.params.length),
     );
     if (!signature) {
-      this.report("TypeError", `${text} takes ${describeCounts(overloads)}`, span);
+      this.report("TypeError", `${text} takes ${describeCounts(overloads.map(countOf))}`, span);
       return NOTHING;
     }
     const all = signature.params.map((p) => takesOf(p.takes));

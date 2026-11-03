@@ -1,11 +1,11 @@
-// Hand-written table states for the step function. Marker IDs follow the card feedback prototype (#129):
-// 1000 [define{setup}], 1009 [repeat], 1011 [set{x}to], 1022 [dedent], 1024 [num{250}], 0 the 3U
-// [call(p5.circle)] and so on. Lengths follow the card sheet rule (#101): handwritten cards at least 4U,
-// [define{…}] 5U.
+// Hand-written table states for the step function. Language cards take their marker IDs from the
+// language markers (`language/markers.yaml`, through @snapscript/core); library cards and pages take
+// the fixture lockfile's, from 400. Lengths follow the card sheet rule (#101): handwritten cards at
+// least 4U, [define{…}] 5U.
+import { languageMarkers } from "@snapscript/core";
 import type {
   GuideSources,
   Layout,
-  LanguageMarkers,
   Lockfile,
   ReaderState,
   StepOutput,
@@ -16,26 +16,42 @@ import { initialState, step } from "../src/index.ts";
 
 export const U = 30;
 
-export const languageMarkers: LanguageMarkers = new Map([
-  [1000, { card: "[define{}]", length: 5 }],
-  [1009, { card: "[repeat]", length: 2 }],
-  [1011, { card: "[set{}to]", length: 4 }],
-  [1018, { card: "[get{}]", length: 4 }],
-  [1022, { card: "[dedent]", length: 2 }],
-  [1024, { card: "[num{}]", length: 4 }],
-  [1025, { card: "[num{}]", length: 4 }],
-  [1026, { card: "[num{}]", length: 4 }],
-  [1030, { card: "[on(load)]", length: 3 }],
-  [1031, { card: "[global{}]", length: 5 }],
-  [1032, { card: "[if]", length: 2 }],
-  [1040, { card: "[color(gold)]", length: 4 }],
-]);
+export { languageMarkers };
+
+/** The language marker of a card at a length (its shortest, if it has one only). */
+export function marker(card: string, length?: number): number {
+  const ids = [...languageMarkers].filter(([, m]) => m.card === card && (length === undefined || m.length === length));
+  if (ids.length !== 1) throw new Error(`no one language marker for ${card} ${length ?? ""}`);
+  return ids[0]![0];
+}
+
+export const DEFINE: number = marker("[define{}]", 5);
+export const REPEAT: number = marker("[repeat]");
+export const SET: number = marker("[set{}to]", 4);
+export const GET: number = marker("[get{}]", 4);
+export const DEDENT: number = marker("[dedent]");
+export const NUM: number = marker("[num{}]", 4);
+export const ON_LOAD: number = marker("[on(load)]");
+export const GLOBAL: number = marker("[global{}]", 5);
+export const IF: number = marker("[if]");
+export const GOLD: number = marker("[color(gold)]");
+
+/**
+ * The 3U `[call(p5.circle)]`, `[call(p5.createCanvas)]`, a library the programs don't import, a
+ * page, and the printed `[define(setup)]`.
+ */
+export const CIRCLE: number = 400;
+export const CREATE_CANVAS: number = 401;
+export const PLAY: number = 402;
+export const PAGE: number = 403;
+export const SETUP: number = 404;
 
 export const lockfile: Lockfile = new Map([
-  [0, { kind: "library", card: "call", package: "snapscript-p5", name: "circle", length: 3 }],
-  [1001, { kind: "library", card: "call", package: "snapscript-p5", name: "createCanvas", length: 4 }],
-  [1500, { kind: "library", card: "call", package: "snapscript-sound", name: "play", length: 3 }],
-  [1900, { kind: "page", textbook: "snapscript-p5-getting-started", volume: "confetti", page: 3 }],
+  [CIRCLE, { kind: "library", card: "call", package: "snapscript-p5", name: "circle", length: 3 }],
+  [CREATE_CANVAS, { kind: "library", card: "call", package: "snapscript-p5", name: "createCanvas", length: 4 }],
+  [PLAY, { kind: "library", card: "call", package: "snapscript-sound", name: "play", length: 3 }],
+  [PAGE, { kind: "page", textbook: "snapscript-p5-getting-started", volume: "confetti", page: 3 }],
+  [SETUP, { kind: "library", card: "define", package: "snapscript-p5", name: "setup", length: 4 }],
 ]);
 
 // The coding space is the left half of an 800 x 600 mm table, with a 100 mm help corner bottom-left.

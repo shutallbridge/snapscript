@@ -3,17 +3,17 @@
 import pytest
 from vision_harness import Card, Hand, frame_t, hw_of, reader_calls, run_drawn, states, written
 
-NUM = 1027      # [num{}], 4U: its whiteboard is x 41-117 mm, y 3-27 mm on the sheet
-DEFINE = 1000   # [define{}], 5U
+NUM = 65      # [num{}], 4U: its whiteboard is x 41-117 mm, y 3-27 mm on the sheet
+DEFINE = 90   # [define{}], 5U
 
 
 def test_hw_appears_only_on_handwritten_cards(tmp_path):
-    frames = [[Card(1001, 200, 40), Card(NUM, 120, 120), Card(DEFINE, 120, 200)]] * 4
+    frames = [[Card(400, 200, 40), Card(NUM, 120, 120), Card(DEFINE, 120, 200)]] * 4
     sent = states(run_drawn(tmp_path, frames))
 
     for m in sent:
         has = {c["marker"]: "hw" in c for c in m["cards"]}
-        assert has == {1001: False, NUM: True, DEFINE: True}
+        assert has == {400: False, NUM: True, DEFINE: True}
     assert hw_of(sent, NUM)[0] == {"state": "not read yet"}
 
 

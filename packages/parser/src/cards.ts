@@ -71,7 +71,7 @@ for (const [name, cls] of Object.entries(classes as ClassFile)) {
   }
 }
 
-/** Makes a card from its text in the program, `[`…`]` included, at `start`. */
+/** Makes a card from its text in the program, `[`…`]` included, at `start`. A card the language doesn't know has no kind. */
 export function readCard(text: string, start: number): Card {
   const content = text.slice(1, -1);
   const shape = shapeOf(content);

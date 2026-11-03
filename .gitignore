@@ -1,2 +1,11 @@
 node_modules/
 dist/
+
+# Built beside p5.snap from src/p5.ts.
+libraries/p5/p5.js
+
+# The table app's Electron build.
+apps/table/out/
+
+# pnpm print's PDFs.
+projects/*/print/

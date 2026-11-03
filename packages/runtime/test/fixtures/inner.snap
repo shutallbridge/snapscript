@@ -1,0 +1,3 @@
+// A made-up library imported by outer.snap and by the tests' programs.
+[on(load)]
+[call(print)][str{inner}]
