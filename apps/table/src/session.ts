@@ -179,6 +179,12 @@ interface Run {
   prints: Map<string, { text: string; span: Span }>;
 }
 
+/** A checked buffer a run starts from. */
+interface Start {
+  program: ReturnType<typeof check>["program"];
+  buffer: Buffer;
+}
+
 const refOf = (c: CardMap["cards"][number]): CardRef => ("track" in c ? { track: c.track } : { standIn: c.standIn });
 
 /** The cards a buffer's text positions fall on, in buffer order. */
@@ -241,7 +247,11 @@ export function createSession(options: SessionOptions): Session {
   const guides = createGuides(project);
   const handwriting = createHandwriting(project.languageMarkers, { waitS: settings.handwritingWaitS, flashS: settings.readFlashS });
   /** The checked buffer a new run starts from, while it waits for handwriting. */
-  let pending: { program: ReturnType<typeof check>["program"]; buffer: Buffer } | null = null;
+  let pending: Start | null = null;
+  /** What the newest run started from, to start it again when the canvas space changes size. */
+  let newestFrom: Start | null = null;
+  /** The windows changed since a run last started: a sketch reads the window's size only as it starts. */
+  let relaid = false;
   /** The cards the pending run waits for, and the lines they're on, which hide their follow-on errors meanwhile. */
   let waitingTracks: number[] = [];
   let waitingLines = new Set<number>();
@@ -300,6 +310,7 @@ export function createSession(options: SessionOptions): Session {
   const startIfReady = (now: number, sketch: SketchCommand[]): void => {
     if (!pending || handwriting.readyAt(waitingTracks) > now) return;
     const { program } = pending;
+    newestFrom = pending;
     if (next) stop(next, now, sketch);
     runs += 1;
     next = newest = { id: runs, buffer: pending.buffer, frozenAt: now + settings.frozenS, error: null, prints: new Map() };
@@ -388,6 +399,7 @@ export function createSession(options: SessionOptions): Session {
       else if (event.type === "sketch") onSketch(event.message, event.now, sketch);
       else if (event.type === "layout") {
         layout = event.layout;
+        relaid = true;
         if (last && !calibrating) onTable(last.state, event.now, sketch);
       }
       else if (event.type === "key") {
@@ -410,7 +422,12 @@ export function createSession(options: SessionOptions): Session {
         if (!calibrating && last && Math.min(readerWake ?? Infinity, guides.wakeAt ?? Infinity) <= event.now) onTable(last.state, event.now, sketch);
       }
       if (calibrating && !calibration.active && latest) onTable(latest, event.now, sketch);
-      if (!calibration.active) startIfReady(event.now, sketch);
+      if (!calibration.active) {
+        // The newest run starts again at the new size, unless it froze: its card stays lit until the program changes.
+        if (relaid && !pending && newestFrom && !frozen) pending = newestFrom;
+        relaid = false;
+        startIfReady(event.now, sketch);
+      }
       return { sketch, settings: changed, vision };
     },
     get scene(): Scene {

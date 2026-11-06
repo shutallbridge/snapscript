@@ -198,6 +198,47 @@ describe("the layout", () => {
     expect(session.handle({ type: "layout", now: 1, layout: wider }).sketch).toEqual([{ type: "start", run: 1, js: expect.any(String), natives: [] }]);
   });
 
+  // A responsive sketch reads the window's size only as it starts.
+  const resized = { ...layout, codingSpace: { x: 0, y: 0, width: 300, height: 600 }, canvasSpace: { x: 300, y: 0, width: 500, height: 600 } };
+
+  test("a new canvas space size starts the newest run's program again, and the old run stops at the new one's first frame", () => {
+    const session = createSession({ project, layout });
+    const first = session.handle({ type: "table", now: 0, state: table(0, ...onLoad(1, 30, 30, "1")) }).sketch[0];
+    if (first?.type !== "start") throw new Error("no run started");
+    session.handle({ type: "sketch", now: 0.1, message: { type: "frame", run: 1 } });
+    expect(session.handle({ type: "layout", now: 1, layout: resized }).sketch).toEqual([{ type: "start", run: 2, js: first.js, natives: [] }]);
+    expect(session.handle({ type: "sketch", now: 1.1, message: { type: "frame", run: 2 } }).sketch).toEqual([
+      { type: "show", run: 2 },
+      { type: "stop", run: 1 },
+    ]);
+    expect(session.scene.cards).toEqual([{ track: 1 }, { track: 2 }, { track: 3 }]);
+  });
+
+  test("a run that stopped on an error starts again", () => {
+    const session = running();
+    const error = { type: "runtime", kind: "ZeroDivisionError", message: "can't divide by 0", span: null } as const;
+    session.handle({ type: "sketch", now: 0.5, message: { type: "error", run: 1, error } });
+    expect(session.handle({ type: "layout", now: 1, layout: resized }).sketch).toEqual([{ type: "start", run: 2, js: expect.any(String), natives: [] }]);
+  });
+
+  test("a frozen run doesn't start again", () => {
+    const session = running();
+    session.handle({ type: "tick", now: 3.1 });
+    expect(session.scene.frozen).toBe(true);
+    expect(session.handle({ type: "layout", now: 4, layout: resized }).sketch).toEqual([]);
+    expect(session.scene.frozen).toBe(true);
+  });
+
+  test("a new layout that also changes the program starts one run", () => {
+    const session = createSession({ project, layout });
+    // One strip in the coding space, one in the canvas space (x from 400 mm) that a wider coding space takes in.
+    session.handle({ type: "table", now: 0, state: table(0, ...onLoad(1, 30, 30, "1"), ...onLoad(5, 450, 30, "2")) });
+    session.handle({ type: "sketch", now: 0.1, message: { type: "frame", run: 1 } });
+    const wider = { ...layout, codingSpace: { x: 0, y: 0, width: 600, height: 600 }, canvasSpace: { x: 600, y: 0, width: 200, height: 600 } };
+    expect(session.handle({ type: "layout", now: 1, layout: wider }).sketch).toEqual([{ type: "start", run: 2, js: expect.any(String), natives: [] }]);
+    expect(session.scene.cards).toHaveLength(6);
+  });
+
   test("before any table state, a new layout starts nothing", () => {
     const session = createSession({ project, layout });
     expect(session.handle({ type: "layout", now: 0, layout }).sketch).toEqual([]);

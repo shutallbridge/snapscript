@@ -140,12 +140,14 @@ describe("the Windows settings lay the table out again", () => {
   test("full screen covers the table with the canvas, and cards still count in the coding space's place", () => {
     const { session, key, geometry } = host();
     session.handle({ type: "table", now: 0, state: table(0, ...onLoad(1, 120, 300, "1")) });
+    session.handle({ type: "sketch", now: 0.1, message: { type: "frame", run: 1 } });
     expect(session.scene.cards).toHaveLength(3);
     for (const k of [",", "Enter", "ArrowDown"]) key(k);
     const out = key("ArrowRight");
     expect(geometry().fullScreen).toBe(true);
     expect(geometry().canvasPx).toEqual({ x: 0, y: 0, width: 1620, height: 1080 });
-    expect(out.sketch).toEqual([]);
+    // The canvas space changed size, so the same program starts again at it.
+    expect(out.sketch).toEqual([{ type: "start", run: 2, js: expect.any(String), natives: [] }]);
     expect(session.scene.cards).toHaveLength(3);
   });
 });
