@@ -1,6 +1,6 @@
 // The kit: the cards made for a project and how many sheets of each, from its `kit.yaml`.
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { shortestLength } from "@snapscript/faces";
 import { parse, readCard } from "@snapscript/parser";
 import { parse as parseYaml } from "yaml";
@@ -28,9 +28,10 @@ export interface KitSide {
  * Reads the project's `kit.yaml`: one line per card, `"<card>": <sheets>`, a flip pair written
  * `"[num{}] / [str{}]"`. Library cards are named by the entry module's imports, and every card is
  * at its shortest length. A side with no marker is given with `null`; it is printing's to refuse it.
+ * Another kit file, such as a few sheets to reprint, can be read in its place.
  */
-export function loadKit(project: Project): KitCard[] {
-  const path = join(project.dir, KIT);
+export function loadKit(project: Project, path: string = join(project.dir, KIT)): KitCard[] {
+  const name = basename(path);
   let data: unknown;
   try {
     data = parseYaml(readFileSync(path, "utf8"));
@@ -40,11 +41,12 @@ export function loadKit(project: Project): KitCard[] {
   if (data === null || typeof data !== "object" || Array.isArray(data)) throw new ProjectError(`${path} is one "<card>": <sheets> line per card`);
   const libraries = importsOf(project);
   return Object.entries(data).map(([cards, sheets]): KitCard => {
-    if (!Number.isInteger(sheets) || (sheets as number) < 1) throw new ProjectError(`${KIT}: ${cards} needs a whole number of sheets, not ${sheets}`);
-    const sides = cards.split("/").map((card) => card.trim());
-    if (sides.length > 2) throw new ProjectError(`${KIT}: ${cards} has more than two sides`);
+    if (!Number.isInteger(sheets) || (sheets as number) < 1) throw new ProjectError(`${name}: ${cards} needs a whole number of sheets, not ${sheets}`);
+    // Split between cards, not on the slash a card may hold: "[*] / [/]".
+    const sides = cards.split(/(?<=\])\s*\/\s*(?=\[)/).map((card) => card.trim());
+    if (sides.length > 2) throw new ProjectError(`${name}: ${cards} has more than two sides`);
     for (const card of sides) {
-      if (!/^\[.*\]$/.test(card) || readCard(card, 0).kind === null) throw new ProjectError(`${KIT}: ${card} isn't a card`);
+      if (!/^\[.*\]$/.test(card) || readCard(card, 0).kind === null) throw new ProjectError(`${name}: ${card} isn't a card`);
     }
     return { sides: sides.map((card) => kitSide(card, project, libraries)), sheets: sheets as number };
   });

@@ -11,10 +11,10 @@ import { fixtureProject } from "./helpers.ts";
 const app = fileURLToPath(new URL("../", import.meta.url));
 const confetti = fileURLToPath(new URL("../../../projects/confetti/", import.meta.url));
 
-/** Runs `pnpm print <project> <out>` past its build. */
-function print(project: string): { status: number | null; output: string; out: string } {
+/** Runs `pnpm print <project> <out> [<kit file>]` past its build. */
+function print(project: string, kit?: string): { status: number | null; output: string; out: string } {
   const out = join(mkdtempSync(join(tmpdir(), "snapscript-print-")), "print");
-  const run = spawnSync(process.execPath, ["src/print/run.ts", project, out], { cwd: app, encoding: "utf8", timeout: 60_000 });
+  const run = spawnSync(process.execPath, ["src/print/run.ts", project, out, ...(kit ? [kit] : [])], { cwd: app, encoding: "utf8", timeout: 60_000 });
   return { status: run.status, output: run.stdout + run.stderr, out };
 }
 
@@ -31,10 +31,18 @@ describe("pnpm print", () => {
     const { status, output, out } = print(confetti);
     expect(output).not.toMatch(/error/i);
     expect(status).toBe(0);
-    // The kit's 78 faces on 12 sheets of A4; one page per confetti.md page; the ruler page.
-    expect(pdfPages(join(out, "sheets.pdf"))).toBe(12);
+    // The kit's 111 faces on 16 sheets of A4; one page per confetti.md page; the ruler page.
+    expect(pdfPages(join(out, "sheets.pdf"))).toBe(16);
     expect(pdfPages(join(out, "pages.pdf"))).toBe(9);
     expect(pdfPages(join(out, "ruler.pdf"))).toBe(1);
+  }, 60_000);
+
+  test("prints another kit file's sheets in place of kit.yaml's", () => {
+    const kit = join(mkdtempSync(join(tmpdir(), "snapscript-kit-")), "more.yaml");
+    writeFileSync(kit, '"[repeat]": 1\n');
+    const { status, out } = print(confetti, kit);
+    expect(status).toBe(0);
+    expect(pdfPages(join(out, "sheets.pdf"))).toBe(1);
   }, 60_000);
 
   test("stops on a kit card with no marker, naming it, and writes nothing", () => {

@@ -22,10 +22,10 @@ const pages = (html: string): string[] => html.split(/<section class="page/).sli
 describe("sheets.pdf", () => {
   const { sheets } = printDocuments(confetti);
 
-  test("holds every side of the kit's 57 sheets, each with its marker", () => {
+  test("holds every side of the kit's 81 sheets, each with its marker", () => {
     const all = faces(sheets.html);
-    // 57 sheets, and a back for the 17 literal and 4 colour flip pairs.
-    expect(all).toHaveLength(57 + 17 + 4);
+    // 81 sheets, and a back for the 17 literal, 6 colour and 7 operator flip pairs.
+    expect(all).toHaveLength(81 + 17 + 6 + 7);
     expect(all.every((f) => f.marker !== null)).toBe(true);
     const count = (card: string, marker: number) => all.filter((f) => f.card === card && f.marker === marker).length;
     expect(count("[call(p5.fill)]", 403)).toBe(3);

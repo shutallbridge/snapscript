@@ -1,5 +1,5 @@
 // projects/confetti, the one PoC project (#192): the loader reads it, its lockfile is pnpm lock's,
-// and its kit is the Stage 1 bases' (#158).
+// and its kit is the Stage 1 bases' (#158) and demo programs 2 and 3's (#109).
 import { cpSync, mkdtempSync, readFileSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -62,33 +62,49 @@ describe("projects/confetti", () => {
     expect(readFileSync(join(dir, "snapscript.lock"), "utf8")).toBe(readFileSync(join(confetti, "snapscript.lock"), "utf8"));
   });
 
-  test("its kit is the Stage 1 bases' (#158): 57 sheets, handwritten cards at 4U only, each side with its marker", () => {
+  test("its kit is the Stage 1 bases' (#158) and demo programs 2 and 3's: 81 sheets, handwritten cards at 4U only, each side with its marker", () => {
     const kit = loadKit(loadProject(confetti));
     const side = (card: string, length: number, marker: number) => ({ card, length, marker });
     expect(kit.map(({ sides, sheets }) => [sheets, ...sides.map(({ card, length, marker }) => side(card, length, marker!))])).toEqual([
-      // call 2U ×13
+      // call 2U ×17
       [3, side("[call(p5.fill)]", 2, 403)],
       [3, side("[call(p5.rect)]", 2, 404)],
       [6, side("[call(random)]", 2, 40)],
       [1, side("[call(p5.circle)]", 2, 405)],
-      // call 3U ×2, call 4U ×1, define 4U ×1
+      [1, side("[call(list)]", 2, 31)],
+      [1, side("[call(p5.noise)]", 2, 418)],
+      [2, side("[call(range)]", 2, 29)],
+      // call 3U ×2, call 4U ×1, define 4U ×1, define 3U ×1
       [1, side("[call(p5.background)]", 3, 401)],
       [1, side("[call(p5.noStroke)]", 3, 402)],
       [1, side("[call(p5.createCanvas)]", 4, 400)],
       [1, side("[define(setup)]", 4, 406)],
-      // literal 4U ×17, simple_head 4U ×6, get 4U ×7
+      [1, side("[define(draw)]", 3, 407)],
+      // literal 4U ×17, simple_head 4U ×6, get 4U ×9
       [17, side("[num{}]", 4, 65), side("[str{}]", 4, 70)],
       [6, side("[set{}to]", 4, 50)],
-      [7, side("[get{}]", 4, 55)],
-      // color 4U ×4
+      [9, side("[get{}]", 4, 55)],
+      // snapscript-p5's get 2U ×2, 3U ×3, 4U ×1
+      [1, side("[get(p5.width)]", 2, 419)],
+      [1, side("[get(p5.height)]", 2, 420)],
+      [2, side("[get(p5.frameCount)]", 3, 417)],
+      [1, side("[get(p5.windowWidth)]", 3, 421)],
+      [1, side("[get(p5.windowHeight)]", 4, 422)],
+      // color 4U ×6
       [1, side("[color(mediumblue)]", 4, 42), side("[color(deepskyblue)]", 4, 43)],
       [1, side("[color(gold)]", 4, 44), side("[color(yellow)]", 4, 45)],
       [1, side("[color(hotpink)]", 4, 46), side("[color(tomato)]", 4, 47)],
       [1, side("[color(aquamarine)]", 4, 48), side("[color(limegreen)]", 4, 49)],
-      // block_head 2U ×3, dedent 2U ×3
+      [1, side("[color(black)]", 4, 106), side("[color(red)]", 4, 107)],
+      [1, side("[color(white)]", 4, 108), side("[color(orange)]", 4, 109)],
+      // operator 2U ×7
+      [5, side("[*]", 2, 2), side("[/]", 2, 3)],
+      [2, side("[+]", 2, 0), side("[-]", 2, 1)],
+      // block_head 4U ×2, block_head 2U ×3, dedent 2U ×3
+      [2, side("[for{}in]", 4, 75)],
       [3, side("[repeat]", 2, 19)],
       [3, side("[dedent]", 2, 20)],
     ]);
-    expect(kit.reduce((total, { sheets }) => total + sheets, 0)).toBe(57);
+    expect(kit.reduce((total, { sheets }) => total + sheets, 0)).toBe(81);
   });
 });

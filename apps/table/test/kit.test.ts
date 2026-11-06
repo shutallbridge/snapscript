@@ -25,6 +25,19 @@ describe("the kit", () => {
     ]);
   });
 
+  test("reads another kit file in place of kit.yaml, naming it in its errors", () => {
+    const project = withKit('"[get{}]": 3');
+    const other = join(project.dir, "more.yaml");
+    writeFileSync(other, '"[call(shapes.square)]": 1');
+    expect(loadKit(project, other)).toEqual([{ sides: [{ card: "[call(shapes.square)]", length: 2, marker: 400 }], sheets: 1 }]);
+    writeFileSync(other, '"square": 1');
+    expect(() => loadKit(project, other)).toThrow(new ProjectError("more.yaml: square isn't a card"));
+  });
+
+  test("a flip pair splits between its cards, not on a card's own slash", () => {
+    expect(loadKit(withKit('"[*] / [/]": 1\n"[/]": 1')).map(({ sides }) => sides.map(({ card }) => card))).toEqual([["[*]", "[/]"], ["[/]"]]);
+  });
+
   test("a library card's module and name ignore case (ADR 0008), and keep the kit's spelling", () => {
     expect(loadKit(withKit('"[call(Shapes.SQUARE)]": 1'))).toEqual([{ sides: [{ card: "[call(Shapes.SQUARE)]", length: 2, marker: 400 }], sheets: 1 }]);
   });

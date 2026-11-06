@@ -81,6 +81,11 @@ cards:
   47: {card: "[color(tomato)]", length: 4}
   48: {card: "[color(aquamarine)]", length: 4}
   49: {card: "[color(limegreen)]", length: 4}
+  # Program 3's black and white, after the colour test (#120).
+  106: {card: "[color(black)]", length: 4}
+  107: {card: "[color(red)]", length: 4}
+  108: {card: "[color(white)]", length: 4}
+  109: {card: "[color(orange)]", length: 4}
 
   # Handwritten kinds, at each length from the shortest up to 8U.
   50: {card: "[set{}to]", length: 4}

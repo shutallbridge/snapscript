@@ -3,12 +3,14 @@
 // and writes nothing, for a kit card with no marker, a page whose program has an error, or a page
 // that doesn't fit its A4 sheet.
 //
-// Arguments: the project folder (projects/confetti), then the folder to write to (<project>/print).
+// Arguments: the project folder (projects/confetti), then the folder to write to (<project>/print),
+// then a kit file to print in place of the project's kit.yaml, such as a few sheets more.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow } from "electron";
+import { loadKit } from "../kit.ts";
 import { loadProject, ProjectError } from "../project.ts";
 import { printDocuments, PrintError, type PrintDocument, type PrintDocuments } from "./documents.ts";
 
@@ -17,6 +19,7 @@ const repo = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../.."
 const args = process.argv.slice(process.argv.findIndex((a) => a.endsWith("print.js")) + 1).filter((a) => !a.startsWith("-"));
 const projectDir = resolve(args[0] ?? join(repo, "projects/confetti"));
 const outDir = resolve(args[1] ?? join(projectDir, "print"));
+const kitFile = args[2] === undefined ? undefined : resolve(args[2]);
 
 /** The fonts each document must have before it prints: no fallback face may stand in. */
 const FONTS = ['400 12px "Geist"', '600 12px "Geist"', '500 12px "Geist Mono"', '400 12px "Geist Mono"', '400 12px "Kalam"'];
@@ -60,7 +63,8 @@ async function toPdf(name: string, doc: PrintDocument, scratch: string): Promise
 async function main(): Promise<void> {
   let docs: PrintDocuments;
   try {
-    docs = printDocuments(loadProject(projectDir));
+    const project = loadProject(projectDir);
+    docs = printDocuments(project, loadKit(project, kitFile));
   } catch (error) {
     if (error instanceof PrintError || error instanceof ProjectError) fail(error.message);
     throw error;
