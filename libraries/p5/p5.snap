@@ -8,6 +8,30 @@
 [global(frameCount)][num(0)]
 
 /**
+ * How wide the canvas is, in pixels.
+ * @card
+ */
+[global(width)][num(0)]
+
+/**
+ * How tall the canvas is, in pixels.
+ * @card
+ */
+[global(height)][num(0)]
+
+/**
+ * How wide the window is, in pixels. A canvas this wide fills it.
+ * @card
+ */
+[global(windowWidth)][num(0)]
+
+/**
+ * How tall the window is, in pixels. A canvas this tall fills it.
+ * @card
+ */
+[global(windowHeight)][num(0)]
+
+/**
  * Makes the canvas you draw on, this many pixels wide and tall.
  * @param {num} width   how wide, in pixels
  * @param {num} height  how tall, in pixels

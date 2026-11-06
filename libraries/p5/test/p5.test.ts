@@ -26,6 +26,11 @@ class RecordingP5 {
   setup?: () => void;
   draw?: () => void;
   frameCount = 0;
+  // p5's own sizes: a 100 by 100 canvas until createCanvas, in a window the test can set.
+  width = 100;
+  height = 100;
+  windowWidth = 988;
+  windowHeight = 1317;
 
   constructor(sketch: (p: RecordingP5) => void, readonly container: unknown) {
     RecordingP5.made.push(this);
@@ -38,6 +43,13 @@ class RecordingP5 {
     });
     sketch(recording);
     return recording;
+  }
+
+  /** p5's createCanvas: recorded, and the canvas's size changes. */
+  createCanvas(width: number, height: number): void {
+    this.calls.push(["createCanvas", width, height]);
+    this.width = width;
+    this.height = height;
   }
 
   /** p5's noise, made up: recorded like any other call, and a number from 0 to 1 for the program to use. */
@@ -268,6 +280,112 @@ describe("noise and frameCount", () => {
   });
 });
 
+describe("width, height, windowWidth and windowHeight", () => {
+  const circleAt = (x: string, y: string) => `[call(p5.circle)][get(p5.${x})][get(p5.${y})][num{1}]`;
+
+  test("the window's size is p5's from setup, and the canvas's is p5's before and after createCanvas", () => {
+    const seen = runSketch(
+      lines(
+        "[import(snapscript-p5)as(p5)]",
+        "",
+        "[define(setup)]",
+        circleAt("windowWidth", "windowHeight"),
+        circleAt("width", "height"),
+        "[call(p5.createCanvas)][num{400}][num{300}]",
+        circleAt("width", "height"),
+        "",
+        "[define(draw)]",
+        circleAt("width", "height"),
+      ),
+      1,
+    );
+    expect(seen.checkErrors).toEqual([]);
+    expect(seen.errors).toEqual([]);
+    expect(seen.p5?.calls).toEqual([
+      ["circle", 988, 1317, 1],
+      ["circle", 100, 100, 1],
+      ["createCanvas", 400, 300],
+      ["circle", 400, 300, 1],
+      ["circle", 400, 300, 1],
+    ]);
+  });
+
+  test("demo program 2's responsive version runs: nested loops of confetti across the window (#109)", () => {
+    const seen = runSketch(
+      lines(
+        "[import(snapscript-p5)as(p5)]",
+        "",
+        "[define(setup)]",
+        "[call(p5.createCanvas)][get(p5.windowWidth)][get(p5.windowHeight)]",
+        "[call(p5.background)][color(mediumblue)]",
+        "[call(p5.noStroke)]",
+        "[for{c}in][call(list)][color(gold)][color(hotpink)][color(aquamarine)]",
+        "  [call(p5.fill)][get{c}]",
+        "  [repeat][num{200}]",
+        "    [set{x}to][call(random)][get(p5.width)]",
+        "    [set{y}to][call(random)][get(p5.height)]",
+        "    [call(p5.rect)][get{x}][get{y}][num{10}][num{16}]",
+        "  [dedent]",
+        "[dedent]",
+      ),
+      1,
+    );
+    expect(seen.checkErrors).toEqual([]);
+    expect(seen.errors).toEqual([]);
+    const calls = seen.p5!.calls;
+    expect(calls.slice(0, 3)).toEqual([["createCanvas", 988, 1317], ["background", "mediumblue"], ["noStroke"]]);
+    expect(calls.filter((c) => c[0] === "fill").map((c) => c[1])).toEqual(["gold", "hotpink", "aquamarine"]);
+    const rects = calls.filter((c) => c[0] === "rect");
+    expect(rects).toHaveLength(600);
+    for (const [, x, y] of rects) {
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(x).toBeLessThan(988);
+      expect(y).toBeGreaterThanOrEqual(0);
+      expect(y).toBeLessThan(1317);
+    }
+    // Spread over the whole window, not just the fixed version's 500 by 500.
+    expect(rects.some(([, x]) => (x as number) >= 500)).toBe(true);
+    expect(rects.some(([, , y]) => (y as number) >= 500)).toBe(true);
+  });
+
+  test("demo program 3's responsive version runs: the noise animation across the window (#109)", () => {
+    const seen = runSketch(
+      lines(
+        "[import(snapscript-p5)as(p5)]",
+        "",
+        "[define(setup)]",
+        "[call(p5.createCanvas)][get(p5.windowWidth)][get(p5.windowHeight)]",
+        "[call(p5.noStroke)]",
+        "",
+        "[define(draw)]",
+        "[call(p5.background)][color(black)]",
+        "[call(p5.fill)][color(white)]",
+        "[set{tx}to][get(p5.frameCount)][*][num{0.012}]",
+        "[set{ty}to][get(p5.frameCount)][*][num{0.016}]",
+        "[for{x}in][call(range)][num{12}][get(p5.width)][num{25}]",
+        "  [for{y}in][call(range)][num{12}][get(p5.height)][num{25}]",
+        "    [set{nx}to][get{x}][*][num{0.015}][+][get{tx}]",
+        "    [set{ny}to][get{y}][*][num{0.02}][+][get{ty}]",
+        "    [set{n}to][call(p5.noise)][get{nx}][get{ny}]",
+        "    [call(p5.circle)][get{x}][get{y}][get{n}][*][num{26}]",
+        "  [dedent]",
+        "[dedent]",
+      ),
+      1,
+    );
+    expect(seen.checkErrors).toEqual([]);
+    expect(seen.errors).toEqual([]);
+    const calls = seen.p5!.calls;
+    expect(calls.slice(0, 4)).toEqual([["createCanvas", 988, 1317], ["noStroke"], ["background", "black"], ["fill", "white"]]);
+    const circles = calls.filter((c) => c[0] === "circle");
+    // range(12, 988, 25) is 40 columns, 12 to 987; range(12, 1317, 25) is 53 rows, 12 to 1312.
+    expect(circles).toHaveLength(40 * 53);
+    expect(circles[0]!.slice(1, 3)).toEqual([12, 12]);
+    expect(circles.at(-1)!.slice(1, 3)).toEqual([987, 1312]);
+    expect(seen.frames).toBe(1);
+  });
+});
+
 describe("stopping", () => {
   const drawing = lines("[import(snapscript-p5)as(p5)]", "", "[define(draw)]", "[call(p5.circle)][num{1}][num{2}][num{3}]");
 
@@ -325,6 +443,10 @@ describe("p5.snap's cards (#156)", () => {
       "[call(p5.noise)]": "helper",
       // Get cards are orange: they have no function colour.
       "[get(p5.frameCount)]": null,
+      "[get(p5.width)]": null,
+      "[get(p5.height)]": null,
+      "[get(p5.windowWidth)]": null,
+      "[get(p5.windowHeight)]": null,
       // Printed define cards are teal: they have no function colour.
       "[define(setup)]": null,
       "[define(draw)]": null,

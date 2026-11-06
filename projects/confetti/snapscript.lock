@@ -18,3 +18,7 @@
 416 = page snapscript-p5-getting-started/confetti 9
 417 = get snapscript-p5.frameCount 3
 418 = call snapscript-p5.noise 2
+419 = get snapscript-p5.width 2
+420 = get snapscript-p5.height 2
+421 = get snapscript-p5.windowWidth 3
+422 = get snapscript-p5.windowHeight 4

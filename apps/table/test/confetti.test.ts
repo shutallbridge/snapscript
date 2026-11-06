@@ -35,6 +35,10 @@ describe("projects/confetti", () => {
     expect(project.languageMarkers).toBe(languageMarkers);
     expect(project.cards.map(({ text, length, marker }) => [marker, text, length])).toEqual([
       [417, "[get(snapscript-p5.frameCount)]", 3],
+      [419, "[get(snapscript-p5.width)]", 2],
+      [420, "[get(snapscript-p5.height)]", 2],
+      [421, "[get(snapscript-p5.windowWidth)]", 3],
+      [422, "[get(snapscript-p5.windowHeight)]", 4],
       [400, "[call(snapscript-p5.createCanvas)]", 4],
       [401, "[call(snapscript-p5.background)]", 3],
       [402, "[call(snapscript-p5.noStroke)]", 3],
@@ -49,7 +53,7 @@ describe("projects/confetti", () => {
       [1, 2, 3, 4, 5, 6, 7, 8, 9].map((page) => [407 + page, "snapscript-p5-getting-started/confetti", page]),
     );
     expect(project.pages[0]).toMatchObject({ heading: "Before We Get Started", program: null });
-    expect(project.lockfile.size).toBe(19);
+    expect(project.lockfile.size).toBe(23);
   });
 
   test("its lockfile is pnpm lock's: running it again adds nothing", () => {

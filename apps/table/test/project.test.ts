@@ -152,6 +152,10 @@ describe("snapscript-p5's cards", () => {
     const project = loadProject(fixtureProject({ dependencies: ["snapscript-p5"], lock: null }));
     expect(project.cards.map(({ text, label, functionColor, length }) => ({ text, label, functionColor, length }))).toEqual([
       { text: "[get(snapscript-p5.frameCount)]", label: "frameCount", functionColor: null, length: 3 },
+      { text: "[get(snapscript-p5.width)]", label: "width", functionColor: null, length: 2 },
+      { text: "[get(snapscript-p5.height)]", label: "height", functionColor: null, length: 2 },
+      { text: "[get(snapscript-p5.windowWidth)]", label: "windowWidth", functionColor: null, length: 3 },
+      { text: "[get(snapscript-p5.windowHeight)]", label: "windowHeight", functionColor: null, length: 4 },
       { text: "[call(snapscript-p5.createCanvas)]", label: "createCanvas", functionColor: "setting", length: 4 },
       { text: "[call(snapscript-p5.background)]", label: "background", functionColor: "primary", length: 3 },
       { text: "[call(snapscript-p5.noStroke)]", label: "noStroke", functionColor: "setting", length: 3 },

@@ -8,6 +8,12 @@ interface P5Instance {
   draw?: () => void;
   /** How many frames p5 has drawn, counting the one it is drawing. */
   readonly frameCount: number;
+  /** The canvas's size, which createCanvas sets. */
+  readonly width: number;
+  readonly height: number;
+  /** The size of the window the sketch is in. */
+  readonly windowWidth: number;
+  readonly windowHeight: number;
   createCanvas(width: number, height: number): unknown;
   background(color: string): unknown;
   noStroke(): unknown;
@@ -41,6 +47,14 @@ const instance = (): P5Instance => {
   return p;
 };
 
+/** p5.width, p5.height, p5.windowWidth and p5.windowHeight, the library's globals, follow p5's own. */
+const setSizes = (context: NativeContext, sketch: P5Instance): void => {
+  context.setGlobal("width", sketch.width);
+  context.setGlobal("height", sketch.height);
+  context.setGlobal("windowWidth", sketch.windowWidth);
+  context.setGlobal("windowHeight", sketch.windowHeight);
+};
+
 /** A colour value reaches p5 as its CSS name. */
 const css = (color: Value): string => String(color);
 
@@ -52,19 +66,23 @@ export function run(context: NativeContext, program: Value): void {
   new constructor((sketch) => {
     p = sketch;
     sketch.setup = () => {
+      setSizes(context, sketch);
       if (setup) context.call(setup);
     };
     // p5.frameCount, the library's global, follows p5's own count.
     sketch.draw = () => {
       context.setGlobal("frameCount", sketch.frameCount);
+      setSizes(context, sketch);
       if (draw) context.call(draw);
       context.frame();
     };
   }, container);
 }
 
-export function createCanvas(_context: NativeContext, width: Value, height: Value): void {
-  instance().createCanvas(width as number, height as number);
+export function createCanvas(context: NativeContext, width: Value, height: Value): void {
+  const sketch = instance();
+  sketch.createCanvas(width as number, height as number);
+  setSizes(context, sketch);
 }
 
 export function background(_context: NativeContext, color: Value): void {
