@@ -30,16 +30,18 @@ describe("projects/confetti", () => {
     for (const file of ["snapscript.lock", "kit.yaml"]) expect(() => readFileSync(join(confetti, file))).not.toThrow();
   });
 
-  test("loads: snapscript-p5's cards from 400, then every confetti.md page", () => {
+  test("loads: snapscript-p5's cards from 400, then every confetti.md page, then the cards added since", () => {
     const project = loadProject(confetti);
     expect(project.languageMarkers).toBe(languageMarkers);
     expect(project.cards.map(({ text, length, marker }) => [marker, text, length])).toEqual([
+      [417, "[get(snapscript-p5.frameCount)]", 3],
       [400, "[call(snapscript-p5.createCanvas)]", 4],
       [401, "[call(snapscript-p5.background)]", 3],
       [402, "[call(snapscript-p5.noStroke)]", 3],
       [403, "[call(snapscript-p5.fill)]", 2],
       [404, "[call(snapscript-p5.rect)]", 2],
       [405, "[call(snapscript-p5.circle)]", 2],
+      [418, "[call(snapscript-p5.noise)]", 2],
       [406, "[define(setup)]", 4],
       [407, "[define(draw)]", 3],
     ]);
@@ -47,7 +49,7 @@ describe("projects/confetti", () => {
       [1, 2, 3, 4, 5, 6, 7, 8, 9].map((page) => [407 + page, "snapscript-p5-getting-started/confetti", page]),
     );
     expect(project.pages[0]).toMatchObject({ heading: "Before We Get Started", program: null });
-    expect(project.lockfile.size).toBe(17);
+    expect(project.lockfile.size).toBe(19);
   });
 
   test("its lockfile is pnpm lock's: running it again adds nothing", () => {

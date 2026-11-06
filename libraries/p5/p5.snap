@@ -2,6 +2,12 @@
 // help: one sentence, then a line per value.
 
 /**
+ * How many frames have been drawn, counting the one being drawn now.
+ * @card
+ */
+[global(frameCount)][num(0)]
+
+/**
  * Makes the canvas you draw on, this many pixels wide and tall.
  * @param {num} width   how wide, in pixels
  * @param {num} height  how tall, in pixels
@@ -53,6 +59,15 @@
  * @color primary
  */
 [extern(circle)][required(x)][required(y)][required(d)]
+
+/**
+ * Gives a number from 0 to 1 that changes smoothly as x and y change.
+ * @param {num} x  where across the noise to look
+ * @param {num} y  where down the noise to look
+ * @card
+ * @color helper
+ */
+[extern(noise)][required(x)][required(y)]
 
 /**
  * Runs once when the program starts.

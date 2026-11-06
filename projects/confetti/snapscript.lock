@@ -16,3 +16,5 @@
 414 = page snapscript-p5-getting-started/confetti 7
 415 = page snapscript-p5-getting-started/confetti 8
 416 = page snapscript-p5-getting-started/confetti 9
+417 = get snapscript-p5.frameCount 3
+418 = call snapscript-p5.noise 2

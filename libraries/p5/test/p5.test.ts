@@ -25,6 +25,7 @@ class RecordingP5 {
   readonly calls: unknown[][] = [];
   setup?: () => void;
   draw?: () => void;
+  frameCount = 0;
 
   constructor(sketch: (p: RecordingP5) => void, readonly container: unknown) {
     RecordingP5.made.push(this);
@@ -39,10 +40,19 @@ class RecordingP5 {
     return recording;
   }
 
-  /** What p5 does once it has loaded: setup, then a draw per frame. */
+  /** p5's noise, made up: recorded like any other call, and a number from 0 to 1 for the program to use. */
+  noise(x: number, y: number): number {
+    this.calls.push(["noise", x, y]);
+    return Math.abs(Math.sin(x * 12.9898 + y * 78.233));
+  }
+
+  /** What p5 does once it has loaded: setup, then a draw per frame, counting each one. */
   play(frames: number): void {
     this.setup?.();
-    for (let i = 0; i < frames; i += 1) this.draw?.();
+    for (let i = 0; i < frames; i += 1) {
+      this.frameCount += 1;
+      this.draw?.();
+    }
   }
 }
 
@@ -188,6 +198,76 @@ describe("drawing", () => {
   });
 });
 
+describe("noise and frameCount", () => {
+  test("noise gives p5's noise for x and y", () => {
+    const seen = runSketch(
+      lines("[import(snapscript-p5)as(p5)]", "", "[define(setup)]", "[set{n}to][call(p5.noise)][num{0.5}][num{2}]", "[call(p5.circle)][get{n}][num{0}][num{1}]"),
+      0,
+    );
+    expect(seen.checkErrors).toEqual([]);
+    expect(seen.errors).toEqual([]);
+    const n = Math.abs(Math.sin(0.5 * 12.9898 + 2 * 78.233));
+    expect(seen.p5?.calls).toEqual([["noise", 0.5, 2], ["circle", n, 0, 1]]);
+  });
+
+  test("frameCount is 0 in setup, then p5's count in each draw", () => {
+    const seen = runSketch(
+      lines(
+        "[import(snapscript-p5)as(p5)]",
+        "",
+        "[define(setup)]",
+        "[call(p5.circle)][get(p5.frameCount)][num{0}][num{1}]",
+        "",
+        "[define(draw)]",
+        "[call(p5.circle)][get(p5.frameCount)][num{0}][num{1}]",
+      ),
+      3,
+    );
+    expect(seen.checkErrors).toEqual([]);
+    expect(seen.errors).toEqual([]);
+    expect(seen.p5?.calls.map((c) => c[1])).toEqual([0, 1, 2, 3]);
+  });
+
+  test("demo program 3's fixed version runs: the noise animation (#109)", () => {
+    const seen = runSketch(
+      lines(
+        "[import(snapscript-p5)as(p5)]",
+        "",
+        "[define(setup)]",
+        "[call(p5.createCanvas)][num{400}][num{400}]",
+        "[call(p5.noStroke)]",
+        "",
+        "[define(draw)]",
+        "[call(p5.background)][color(black)]",
+        "[call(p5.fill)][color(white)]",
+        "[set{tx}to][get(p5.frameCount)][*][num{0.012}]",
+        "[set{ty}to][get(p5.frameCount)][*][num{0.016}]",
+        "[for{x}in][call(range)][num{12}][num{400}][num{25}]",
+        "  [for{y}in][call(range)][num{12}][num{400}][num{25}]",
+        "    [set{nx}to][get{x}][*][num{0.015}][+][get{tx}]",
+        "    [set{ny}to][get{y}][*][num{0.02}][+][get{ty}]",
+        "    [set{n}to][call(p5.noise)][get{nx}][get{ny}]",
+        "    [call(p5.circle)][get{x}][get{y}][get{n}][*][num{26}]",
+        "  [dedent]",
+        "[dedent]",
+      ),
+      1,
+    );
+    expect(seen.checkErrors).toEqual([]);
+    expect(seen.errors).toEqual([]);
+    const calls = seen.p5!.calls;
+    expect(calls.slice(0, 4)).toEqual([["createCanvas", 400, 400], ["noStroke"], ["background", "black"], ["fill", "white"]]);
+    const noises = calls.filter((c) => c[0] === "noise");
+    const circles = calls.filter((c) => c[0] === "circle");
+    // range(12, 400, 25): 12, 37, … 387, 16 in each direction.
+    expect(circles).toHaveLength(256);
+    expect(noises[0]).toEqual(["noise", 12 * 0.015 + 0.012, 12 * 0.02 + 0.016]);
+    expect(circles[0]).toEqual(["circle", 12, 12, Math.abs(Math.sin((12 * 0.015 + 0.012) * 12.9898 + (12 * 0.02 + 0.016) * 78.233)) * 26]);
+    expect(circles.at(-1)!.slice(1, 3)).toEqual([387, 387]);
+    expect(seen.frames).toBe(1);
+  });
+});
+
 describe("stopping", () => {
   const drawing = lines("[import(snapscript-p5)as(p5)]", "", "[define(draw)]", "[call(p5.circle)][num{1}][num{2}][num{3}]");
 
@@ -242,6 +322,9 @@ describe("p5.snap's cards (#156)", () => {
       "[call(p5.fill)]": "setting",
       "[call(p5.rect)]": "primary",
       "[call(p5.circle)]": "primary",
+      "[call(p5.noise)]": "helper",
+      // Get cards are orange: they have no function colour.
+      "[get(p5.frameCount)]": null,
       // Printed define cards are teal: they have no function colour.
       "[define(setup)]": null,
       "[define(draw)]": null,

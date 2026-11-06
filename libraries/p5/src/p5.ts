@@ -6,12 +6,15 @@ import type { NativeContext, Value } from "@snapscript/runtime";
 interface P5Instance {
   setup?: () => void;
   draw?: () => void;
+  /** How many frames p5 has drawn, counting the one it is drawing. */
+  readonly frameCount: number;
   createCanvas(width: number, height: number): unknown;
   background(color: string): unknown;
   noStroke(): unknown;
   fill(color: string): unknown;
   rect(x: number, y: number, width: number, height: number): unknown;
   circle(x: number, y: number, d: number): unknown;
+  noise(x: number, y: number): number;
   noLoop(): unknown;
 }
 
@@ -51,7 +54,9 @@ export function run(context: NativeContext, program: Value): void {
     sketch.setup = () => {
       if (setup) context.call(setup);
     };
+    // p5.frameCount, the library's global, follows p5's own count.
     sketch.draw = () => {
+      context.setGlobal("frameCount", sketch.frameCount);
       if (draw) context.call(draw);
       context.frame();
     };
@@ -80,6 +85,10 @@ export function rect(_context: NativeContext, x: Value, y: Value, width: Value, 
 
 export function circle(_context: NativeContext, x: Value, y: Value, d: Value): void {
   instance().circle(x as number, y as number, d as number);
+}
+
+export function noise(_context: NativeContext, x: Value, y: Value): number {
+  return instance().noise(x as number, y as number);
 }
 
 /** The run stopped (its `[on(stop)]`): p5 draws no more frames. The canvas keeps what it drew. */
