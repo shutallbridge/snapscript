@@ -1,8 +1,8 @@
-# Snapscript Language Reference
+# SnapScript Language Reference
 
 ## About this file
 
-The language reference: it defines the Snapscript language and its text notation. A language version locks it. `README.md` says what Snapscript is for, and `CONTEXT.md` defines the physical system that runs it.
+The language reference: it defines the SnapScript language and its text notation. A language version locks it. `README.md` says what SnapScript is for, and `CONTEXT.md` defines the physical system that runs it.
 
 Conventions:
 
@@ -13,7 +13,7 @@ Conventions:
 
 ## 1. Introduction
 
-Snapscript is a block-based language written with cards. A program is made by snapping cards together on a table, and the text notation writes it down, as in a `.snap` file.
+SnapScript is a block-based language written with cards. A program is made by snapping cards together on a table, and the text notation writes it down, as in a `.snap` file.
 
 ### 1.1. Notation
 

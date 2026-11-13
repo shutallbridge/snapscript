@@ -4,7 +4,7 @@ import type { ErrorKind } from "@snapscript/core";
 import type { Span } from "./values.ts";
 
 /** An error the program meets while running: one of the reference's kinds. */
-export class SnapscriptError extends Error {
+export class SnapScriptError extends Error {
   constructor(
     readonly kind: ErrorKind,
     message: string,
@@ -15,11 +15,11 @@ export class SnapscriptError extends Error {
 }
 
 /** One kind's class: `new ValueError(message)`. */
-export type ErrorOfKind = new (message: string) => SnapscriptError;
+export type ErrorOfKind = new (message: string) => SnapScriptError;
 
 /** A class for one kind, for native modules to throw: `throw new ValueError("…")`. */
 const errorOfKind = (kind: ErrorKind): ErrorOfKind =>
-  class extends SnapscriptError {
+  class extends SnapScriptError {
     constructor(message: string) {
       super(kind, message);
     }
@@ -52,10 +52,10 @@ export const errorKinds: Readonly<Record<ErrorKind, ErrorOfKind>> = {
 
 /** Marks a runtime error, so one thrown by another copy of this library still counts. */
 const errorBrand = Symbol.for("@snapscript/runtime.error");
-Object.defineProperty(SnapscriptError.prototype, errorBrand, { value: true });
+Object.defineProperty(SnapScriptError.prototype, errorBrand, { value: true });
 
-export const isSnapscriptError = (e: unknown): e is SnapscriptError =>
-  e instanceof SnapscriptError || (typeof e === "object" && e !== null && (e as Record<symbol, unknown>)[errorBrand] === true);
+export const isSnapScriptError = (e: unknown): e is SnapScriptError =>
+  e instanceof SnapScriptError || (typeof e === "object" && e !== null && (e as Record<symbol, unknown>)[errorBrand] === true);
 
 /** A library's own code broke: its message names the library and the function. */
 export class LibraryError extends Error {}

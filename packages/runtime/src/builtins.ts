@@ -1,7 +1,7 @@
 // The builtins (REFERENCE.md §9) and a list's methods (§3.3): each checks its values against core's
 // table, as the checker does for the values whose types it knows, then runs.
 import { builtins, countOf, methods, type Signature, type Takes } from "@snapscript/core";
-import { SnapscriptError } from "./errors.ts";
+import { SnapScriptError } from "./errors.ts";
 import { article, Dict, isList, show, SnapFunction, typeName, type Value } from "./values.ts";
 
 /** What a function's values must be, said as the checker says it: `a num`, `a list or a str`, `nums`. */
@@ -23,7 +23,7 @@ function checked(name: string, overloads: readonly Signature[], impl: (...args: 
     args.forEach((arg, i) => {
       const takes = (signature.params[i] ?? signature.variadic)!.takes;
       if (takes !== "any" && !takes.includes(typeName(arg))) {
-        throw new SnapscriptError("TypeError", `${name} takes ${describeTakes(overloads, takes)}, not ${article(typeName(arg))}`);
+        throw new SnapScriptError("TypeError", `${name} takes ${describeTakes(overloads, takes)}, not ${article(typeName(arg))}`);
       }
     });
     return impl(...args);
@@ -33,10 +33,10 @@ function checked(name: string, overloads: readonly Signature[], impl: (...args: 
 /** A list position (§3.3): a whole number, a negative one counting from the end. */
 function position(list: Value[], name: string, i: Value): number {
   const at = i as number;
-  if (!Number.isInteger(at)) throw new SnapscriptError("ValueError", `${name} takes a whole number, not ${show(at)}`);
+  if (!Number.isInteger(at)) throw new SnapScriptError("ValueError", `${name} takes a whole number, not ${show(at)}`);
   const index = at < 0 ? list.length + at : at;
   if (index < 0 || index >= list.length) {
-    throw new SnapscriptError("IndexError", `${name} position ${show(at)} is outside a list of ${list.length} item${list.length === 1 ? "" : "s"}`);
+    throw new SnapScriptError("IndexError", `${name} position ${show(at)} is outside a list of ${list.length} item${list.length === 1 ? "" : "s"}`);
   }
   return index;
 }
@@ -52,7 +52,7 @@ const listImpls: Readonly<Record<string, (list: Value[], ...args: Value[]) => Va
     return null;
   },
   pop: (list) => {
-    if (list.length === 0) throw new SnapscriptError("IndexError", "pop from an empty list");
+    if (list.length === 0) throw new SnapScriptError("IndexError", "pop from an empty list");
     return list.pop()!;
   },
 };
@@ -89,13 +89,13 @@ function sine(degrees: number): number {
 function extreme(name: string, values: Value[], larger: boolean): Value {
   const all = values.length === 1 && isList(values[0]) ? values[0] : values;
   if (all.length === 0) {
-    throw new SnapscriptError("ValueError", values.length === 0 ? `${name} takes at least one value` : `${name} of an empty list`);
+    throw new SnapScriptError("ValueError", values.length === 0 ? `${name} takes at least one value` : `${name} of an empty list`);
   }
   const first = typeName(all[0]!);
   for (const v of all) {
     const type = typeName(v);
     if (type !== first || (type !== "num" && type !== "str")) {
-      throw new SnapscriptError("TypeError", `${name} can't compare ${article(first)} and ${article(type)}`);
+      throw new SnapScriptError("TypeError", `${name} can't compare ${article(first)} and ${article(type)}`);
     }
   }
   let best = all[0] as number | string;
@@ -104,7 +104,7 @@ function extreme(name: string, values: Value[], larger: boolean): Value {
 }
 
 const whole = (name: string, values: Value[]): void => {
-  for (const v of values) if (!Number.isInteger(v)) throw new SnapscriptError("ValueError", `${name} takes whole numbers, not ${show(v)}`);
+  for (const v of values) if (!Number.isInteger(v)) throw new SnapScriptError("ValueError", `${name} takes whole numbers, not ${show(v)}`);
 };
 
 /** The builtins' values (REFERENCE.md §9), by name key. Each takes what core's table says. */
@@ -117,7 +117,7 @@ export function builtinValues(print: (line: string) => void): Map<string, Value>
     range: (...a) => {
       whole("range", a);
       const [start, stop, step] = (a.length === 1 ? [0, a[0], 1] : [a[0], a[1], a[2] ?? 1]) as number[];
-      if (step === 0) throw new SnapscriptError("ValueError", "range's step can't be 0");
+      if (step === 0) throw new SnapScriptError("ValueError", "range's step can't be 0");
       const out: number[] = [];
       for (let i = start!; step! > 0 ? i < stop! : i > stop!; i += step!) out.push(i);
       return out;
@@ -131,7 +131,7 @@ export function builtinValues(print: (line: string) => void): Map<string, Value>
     // A half rounds away from zero (ADR 0007), where Python rounds it to even.
     round: (x) => Math.sign(x as number) * Math.round(Math.abs(x as number)) || 0,
     sqrt: (x) => {
-      if ((x as number) < 0) throw new SnapscriptError("ValueError", `sqrt takes a num not below 0, not ${show(x)}`);
+      if ((x as number) < 0) throw new SnapScriptError("ValueError", `sqrt takes a num not below 0, not ${show(x)}`);
       return Math.sqrt(x as number);
     },
     sin: (x) => sine(x as number),

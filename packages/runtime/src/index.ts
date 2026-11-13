@@ -4,7 +4,7 @@
 // output sink, and reads the text position it keeps.
 import { describeCounts, operators, type Count, type ErrorKind, type Operator } from "@snapscript/core";
 import { builtinValues, listMethods } from "./builtins.ts";
-import { isSnapscriptError, LibraryError, RecursionError, SnapscriptError, type RunError } from "./errors.ts";
+import { isSnapScriptError, LibraryError, RecursionError, SnapScriptError, type RunError } from "./errors.ts";
 import { article, Color, Dict, equal, isList, Module, show, SnapFunction, truthy, typeName, type Span, type Value } from "./values.ts";
 
 export { Color, Dict, Module, show, SnapFunction, type Span, type Value } from "./values.ts";
@@ -16,7 +16,7 @@ export {
   IndexError,
   NameError,
   RecursionError,
-  SnapscriptError,
+  SnapScriptError,
   SyntaxError,
   TypeError,
   ValueError,
@@ -111,7 +111,7 @@ class Runtime {
 
   getAttr(m: Module, key: string, text: string): Value {
     const found = m.attributes.get(key);
-    if (!found) throw new SnapscriptError("NameError", `${text} is not defined`);
+    if (!found) throw new SnapScriptError("NameError", `${text} is not defined`);
     return found.value;
   }
 
@@ -140,7 +140,7 @@ class Runtime {
     try {
       return this.native(m, text)(this.context(m), ...args) ?? null;
     } catch (e) {
-      if (isSnapscriptError(e) || e instanceof LibraryError) throw e;
+      if (isSnapScriptError(e) || e instanceof LibraryError) throw e;
       throw new LibraryError(`${m.library ?? m.name} broke inside ${text}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -228,12 +228,12 @@ class Runtime {
   private report(e: unknown): void {
     const span = (typeof e === "object" && e !== null && blamed.get(e)) || this.here();
     const message = e instanceof Error ? e.message : String(e);
-    if (isSnapscriptError(e)) this.host.output.error({ type: "runtime", kind: e.kind, message, span });
+    if (isSnapScriptError(e)) this.host.output.error({ type: "runtime", kind: e.kind, message, span });
     else this.host.output.error({ type: "library", kind: null, message, span });
   }
 
   missing(source: string): never {
-    throw new SnapscriptError("ImportError", `${source} isn't loaded`);
+    throw new SnapScriptError("ImportError", `${source} isn't loaded`);
   }
 
   color(name: string): Color {
@@ -241,13 +241,13 @@ class Runtime {
   }
 
   local(value: Value | typeof UNSET, text: string, title: string): Value {
-    if (value === UNSET) throw new SnapscriptError("NameError", `${text} is a local of ${title}, not set yet`);
+    if (value === UNSET) throw new SnapScriptError("NameError", `${text} is a local of ${title}, not set yet`);
     return value;
   }
 
   builtin(key: string, text: string): Value {
     const found = this.builtins.get(key);
-    if (found === undefined) throw new SnapscriptError("NameError", `${text} is not defined`);
+    if (found === undefined) throw new SnapScriptError("NameError", `${text} is not defined`);
     return found;
   }
 
@@ -375,7 +375,7 @@ class Runtime {
 
   /** Throws a runtime error at a card: one on the table is where it happened, one in a library keeps the table's card that led there. */
   fail(kind: ErrorKind, message: string, module: number, start: number, end: number): never {
-    const error = new SnapscriptError(kind, message);
+    const error = new SnapScriptError(kind, message);
     blamed.set(error, module === this.root?.index ? { start, end } : this.here());
     throw error;
   }
