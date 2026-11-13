@@ -1,7 +1,7 @@
 [project]
 name = "snapscript-vision"
 version = "0.1.0"
-description = "Snapscript's vision service: camera frames to steady table states over local TCP"
+description = "SnapScript's vision service: camera frames to steady table states over local TCP"
 readme = "README.md"
 authors = [
     { name = "Shu Takahashi", email = "7193372+shutallbridge@users.noreply.github.com" }

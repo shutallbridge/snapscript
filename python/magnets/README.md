@@ -1,6 +1,6 @@
 # magnets
 
-Checker and CP-SAT solver for the Snapscript magnet arrangement (see issue
+Checker and CP-SAT solver for the SnapScript magnet arrangement (see issue
 #10 for the model). It is a member of the uv workspace in `python/`; run
 `uv sync` there once, then these from `python/magnets/`.
 

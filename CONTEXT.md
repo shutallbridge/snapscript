@@ -1,4 +1,4 @@
-# Snapscript
+# SnapScript
 
 A table-top block-based programming language: physical cards snap together with magnets to form a program, which a camera reads from above.
 
@@ -101,7 +101,7 @@ _Avoid_: loose card, orphan
 ## Libraries
 
 **Library**:
-A package of Snapscript modules that a program imports by its package name: `[import(snapscript-p5)as(p5)]`. The importing program chooses the name; a library does not namespace itself.
+A package of SnapScript modules that a program imports by its package name: `[import(snapscript-p5)as(p5)]`. The importing program chooses the name; a library does not namespace itself.
 
 **Library card**:
 A printed card that a library offers with a `@card` tag in a doc comment: `[call(p5.circle)]`, `[get(p5.frameCount)]`, or `[define(setup)]` for a function that the program defines. A handwritten card with the same text means the same thing, but shows none of the library card's help.
@@ -212,7 +212,7 @@ How a pocket's two layers are filled: **uniform** (two magnets stacked with the 
 The choice of pockets and their contents on every card. It is named after the language version that first made it (`0.1.0`), and patch versions keep it.
 
 **Flip direction**:
-How every flip pair turns over: top-to-bottom (top and bottom edges change places) or left-to-right (left and right edges change places). One flip direction applies to a whole magnet arrangement. Snapscript's flip pairs turn top-to-bottom; the magnets tool can check and search both.
+How every flip pair turns over: top-to-bottom (top and bottom edges change places) or left-to-right (left and right edges change places). One flip direction applies to a whole magnet arrangement. SnapScript's flip pairs turn top-to-bottom; the magnets tool can check and search both.
 
 **Contact**:
 Two edges of two cards, each of a given length, facing each other at some offset. The same two sides at other lengths make other contacts, even when the same pockets face each other.
@@ -285,7 +285,7 @@ For a contact between two flip pairs, the contact between their other sides wher
 _Avoid_: partner (on its own), flip partner
 
 **Unavoidable**:
-Said of a forbid contact whose partner contact is a connect. It snaps whenever its partner contact snaps, so a valid magnet arrangement always has the leak. Every other forbid is **avoidable**. Only a flip pair whose sides take different roles makes one, so Snapscript's cards have none.
+Said of a forbid contact whose partner contact is a connect. It snaps whenever its partner contact snaps, so a valid magnet arrangement always has the leak. Every other forbid is **avoidable**. Only a flip pair whose sides take different roles makes one, so SnapScript's cards have none.
 
 ## Search
 
@@ -312,7 +312,7 @@ The document that defines the language and its text notation. A language version
 _Avoid_: spec, overview spec
 
 **Language version**:
-One release of Snapscript, with one version number shared by the language and the software that runs it. The language is its language reference, its card classes, its grammar rules and one magnet arrangement; a patch version changes only the software. An instructor prints every base from one arrangement.
+One release of SnapScript, with one version number shared by the language and the software that runs it. The language is its language reference, its card classes, its grammar rules and one magnet arrangement; a patch version changes only the software. An instructor prints every base from one arrangement.
 _Avoid_: release (on its own), arrangement version
 
 **Library version**:

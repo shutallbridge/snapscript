@@ -1,7 +1,7 @@
 [project]
 name = "magnets"
 version = "0.1.0"
-description = "Checker and CP-SAT solver for the Snapscript magnet arrangement"
+description = "Checker and CP-SAT solver for the SnapScript magnet arrangement"
 readme = "README.md"
 authors = [
     { name = "Shu Takahashi", email = "7193372+shutallbridge@users.noreply.github.com" }

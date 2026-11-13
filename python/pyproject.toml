@@ -1,4 +1,4 @@
-# The uv workspace for Snapscript's Python packages. It is virtual: the root
+# The uv workspace for SnapScript's Python packages. It is virtual: the root
 # is no package of its own, only the members are.
 [tool.uv.workspace]
 members = ["magnets", "vision"]

@@ -1,4 +1,4 @@
-"""Checker and CP-SAT solver for the Snapscript magnet arrangement."""
+"""Checker and CP-SAT solver for the SnapScript magnet arrangement."""
 
 from .api import AssemblyPage, CheckResult, ProgramResult, SolveResult, assemblies, assembly_page, bases, card_sheet, check, check_program, solve
 from .assembly import AssemblyFrame, WallPosition

@@ -112,7 +112,7 @@ function sheets(kit: KitCard[], colorOf: (card: string) => FunctionColor | undef
     .map((placed) => `<section class="page">${placed.map((p) => at(p.x, p.y, p.svg)).join("")}${checkBar(PAPER_MARGIN, A4.height - PAPER_MARGIN - 5)}</section>`)
     .join("");
   return {
-    html: document("Snapscript card sheets", `@page { size: A4; margin: 0; } .page { width: ${A4.width}mm; height: ${A4.height}mm; }`, body),
+    html: document("SnapScript card sheets", `@page { size: A4; margin: 0; } .page { width: ${A4.width}mm; height: ${A4.height}mm; }`, body),
     pages: pageFaces.length,
   };
 }
@@ -176,7 +176,7 @@ function pages(project: Project, colorOf: (card: string) => FunctionColor | unde
       );
     })
     .join("");
-  return { html: document("Snapscript textbook pages", PAGES_CSS, body), pages: project.pages.length };
+  return { html: document("SnapScript textbook pages", PAGES_CSS, body), pages: project.pages.length };
 }
 
 /** A page's markdown as HTML, its mini cards drawn by faces. */
@@ -250,7 +250,7 @@ function ruler(): PrintDocument {
     `<text x="${width / 2}" y="${y - 4}" font-size="4" fill="#71717a" text-anchor="middle" font-family="'Geist Mono', monospace" shape-rendering="auto">` +
     `Ruler page: lay it flat in the box during calibration. Marker centres ${distanceMm} mm apart.</text></svg>`;
   const css = `@page { size: A4 landscape; margin: 0; } .page { width: ${width}mm; height: ${height}mm; }`;
-  return { html: document("Snapscript ruler page", css, `<section class="page">${svg}${checkBar(x0, height - PAPER_MARGIN - 10)}</section>`), pages: 1 };
+  return { html: document("SnapScript ruler page", css, `<section class="page">${svg}${checkBar(x0, height - PAPER_MARGIN - 10)}</section>`), pages: 1 };
 }
 
 const escape = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
