@@ -1,49 +1,36 @@
-# Snapscript
+# SnapScript
 
-Snapscript is a table-top block-based programming language and the programming system built around it. It is designed for writing p5.js-like sketches that draw on a canvas to produce drawings and digital art.
+SnapScript is a projection-augmented, tangible computing environment for creative coding. Learners arrange physical cards on a table to form programs that draw 2D graphics.
 
-Programs are written with physical cards. Each card is a block, and cards snap to one another with magnets to form the program.
+A camera above the table reads the cards, and a projector draws on them: hints, errors, help, and the running program's output, live as the cards move.
 
-A camera and a projector are mounted directly above a table, looking down at the cards. The camera reads the arrangement of the cards to determine the program. The projector displays the running sketch on the other side of the table, lights up cards to show errors, and projects virtual blocks that show where cards should be placed.
+[![SnapScript demo video](https://img.youtube.com/vi/jZPvZlf5JxQ/maxresdefault.jpg)](https://www.youtube.com/watch?v=jZPvZlf5JxQ)
 
-The language reference, `REFERENCE.md`, is the full definition of the language and its text notation. This README covers what Snapscript is for and the physical system that runs it.
+[Watch the demo on YouTube](https://www.youtube.com/watch?v=jZPvZlf5JxQ)
 
-This file follows the reference's conventions: it describes the system as it is, concisely and through examples, with no history, no rationale and no distinction between built and unbuilt. Decisions and the reasoning behind them live in `docs/adr/`. Unsettled points are marked **TBD**.
+## Features
+
+- **Write programs with cards.** Each card is one block. Some have a whiteboard for freeform values, like a number or a name, which the system reads from handwriting.
+- **See the output live.** The program's graphics are projected beside the cards and update as the program is arranged, so learners can try something, look and refine it.
+- **Useful hints.** Lay a function card and the table shows the values it still needs, such as the y-position and diameter of a circle.
+- **Meaningful errors.** Errors light up the cards responsible, with a plain message that says how to fix them.
+- **Help on demand.** Place a card in the help corner to see how to use it.
+- **Interactive textbook.** Printed lessons the table recognises. Turn a page and the table shows its example arrangement on the table, so each learner can work at their own pace.
+- **Syntax enforced by magnets** _(in progress)_. Cards that fit together snap; cards that don't, repel or don't snap.
+- **Made for a group.** Everyone sits around one table and works on one program, like a tabletop card game.
 
 ## Goals
 
-Programming is usually a single-player activity in front of a computer. Snapscript moves it onto a table that people sit around together, so writing a program becomes something a group does with their hands, in the same space, at the same time.
+For each part of learning to program, SnapScript removes the friction that doesn't build understanding and keeps the friction that does.
 
-## Guiding Principles
+- **Approachable syntax.** Cards that make sense on their own and read like a sentence, in place of strict syntax, verbose code and intimidating errors. Block-based, like Scratch.
+- **Concepts that transfer.** What learners build on the table carries over to Python.
+- **Learning together.** Sharing work and negotiating ideas with others, in place of working and struggling alone.
+- **Open-ended work with tight feedback.** Exploring and refining your own ideas, in place of closed exercises with slow feedback.
+- **Your own pace.** Each concept builds on the last, without a single fixed pace for everyone.
 
-- Block-based and approachable syntax like Scratch.
-- Concepts and semantics are easily transferable to Python.
-- Where possible, syntax is physically enforced to naturally encourage valid syntax.
+## Status
 
-## The Physical System
+SnapScript is a working prototype, before its first release (0.1.0). The magnet cards are still being prototyped.
 
-Cards snap to one another with magnets. A card with two sides turns over top-to-bottom: its top and bottom edges change places. Where the magnets sit on each card is fixed by the language version's magnet arrangement.
-
-A camera above the table reads the card arrangement. A projector opposite displays the running sketch and draws on the cards.
-
-When the handwriting reader gives back no text for a card with writing on it, the card has a **read error**. Its line is skipped, like a line with a structure or check error. A read error belongs to the physical system, not the language: it has no kind and no stage. A read that breaks its card's rule, such as `[num{4o}]`, is not a read error: it goes into the program as read and is a `SyntaxError`, and the card shows what was read on its whiteboard.
-
-A card the table can't write as text is an **unknown card**: its marker is not in the table's lockfile, or the program does not import its library. The card is lit and its line is skipped.
-
-A handwritten card's text arrives a moment after the card is laid. While it is **not read yet**, the program keeps running as it was, for up to about 5 s; then its line is skipped until the text arrives. When the table cannot reach the handwriting reader, a card that needs reading has a **connection error** and its line is skipped at once. Like a read error, both belong to the physical system.
-
-When the sketch has not finished a frame for about 3 s, as inside `[repeat][num{1000000000}]`, it is a **frozen sketch**: the table stops the run and lights the card it was stuck at. When a library's own code breaks, rather than raising an error against the program, it is a **library error**: the card that called it is lit, and the run stops. Both belong to the physical system too.
-
-Lengths on the table are measured in U. Every card is 1U tall and a whole number of U long. Every card is at least 2U long. Most cards need it for their written text: a handwritten name such as `[define{drawCircle}]`, or a reserved word such as `[repeat]`. Each side of a card also holds a marker, a printed pattern that the camera reads to learn which side it is, where it lies and how it is turned. Cards with one symbol, such as `[(]`, `[)]` and `[+]`, are 2U long too: a sketch at real size showed that a 1U card is too small even for them.
-
-## Feedback
-
-Initial direction:
-
-- Errors light up the cards responsible, with a numbered badge (E1) in the line's gutter, left of the line. The message, in plain words with its kind, is in a status bar along the table's edge: "E1 TypeError: circle's x needs a number. Got a string instead."
-- Errors other than runtime errors show as soon as the cards are placed, whether or not the program is running.
-- Skipped lines look skipped. An error that comes from a skipped line points to it.
-- Cards that are not part of the program look like skipped lines.
-- The grouping the system inferred is outlined in light, including operator precedence and how far each card grabbed.
-- Virtual cards show where cards can be placed: a program opened from a file, a textbook page's cards, and the values a call card expects after it.
-- Picking up a card projects its doc comment.
+The language and its text notation are defined in [`REFERENCE.md`](REFERENCE.md).

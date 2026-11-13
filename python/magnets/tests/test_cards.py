@@ -7,7 +7,7 @@ import pytest
 
 from magnets import ProgramError, check, check_program
 
-# Every card text in REFERENCE.md and README.md, by the class side it belongs to.
+# Every card text in REFERENCE.md, by the class side it belongs to.
 SPEC_CARDS = {
     "simple_head.head": [
         "[return]", "[set{a}to]", "[set{b}to]", "[set{count}to]", "[set{empty}to]", "[set{frame Count}to]",
@@ -51,7 +51,7 @@ SPEC_CARDS = {
         "[optional{size}]", "[optional{suffix}]", "[optional{title}]",
     ],
     "literal.num": [
-        "[num(0)]", "[num(5)]", "[num{0.1}]", "[num{0.2}]", "[num{1000000000}]", "[num{250}]", "[num{4o}]", "[num{-1}]", "[num{-2.5}]", "[num{-5}]", "[num{.5}]", "[num{0.5}]", "[num{0}]", "[num{1 000}]",
+        "[num(0)]", "[num(5)]", "[num{0.1}]", "[num{0.2}]", "[num{250}]", "[num{-1}]", "[num{-2.5}]", "[num{-5}]", "[num{.5}]", "[num{0.5}]", "[num{0}]", "[num{1 000}]",
         "[num{100}]", "[num{10}]", "[num{16}]", "[num{180}]", "[num{1e5}]", "[num{1}]", "[num{2.4}]", "[num{2.5}]", "[num{20}]", "[num{25}]", "[num{2}]",
         "[num{30}]", "[num{3}]", "[num{40}]", "[num{4}]", "[num{5.}]", "[num{500}]", "[num{5}]", "[num{90}]", "[num{9}]", "[num{}]",
         "[num{…}]",
@@ -94,7 +94,7 @@ SPEC_CARDS = {
 # Bracketed text in the spec that is prose shorthand or printed output, not a card.
 PROSE = {"[…]", "[define]", "[call]", "[`, `]", '["a"]', '[1, 2, "a"]'}
 
-SPECS = [Path(__file__).parents[3] / name for name in ("REFERENCE.md", "README.md")]
+SPECS = [Path(__file__).parents[3] / name for name in ("REFERENCE.md",)]
 
 
 def sides_of(cards):

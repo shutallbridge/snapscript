@@ -2,7 +2,7 @@
 
 ## About this file
 
-The language reference: it defines the Snapscript language and its text notation. A language version locks it. What Snapscript is, and the physical system that runs it, are in `README.md`.
+The language reference: it defines the Snapscript language and its text notation. A language version locks it. `README.md` says what Snapscript is for, and `CONTEXT.md` defines the physical system that runs it.
 
 Conventions:
 

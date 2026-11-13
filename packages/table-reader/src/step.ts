@@ -374,8 +374,8 @@ export function step(prev: ReaderState, input: StepInput): StepResult {
 
   // Joins (#147): each card against its neighbour, along and across the line its two angles average to.
   const candidates: { left: Placed; right: Placed; held: boolean; distance: number }[] = [];
-  // A card whose marker the table doesn't know could be any whole number of U long (README: every
-  // card is a whole number of U, at least 2U), so the next card is measured from its marker at each.
+  // A card whose marker the table doesn't know could be any whole number of U long (CONTEXT.md, U:
+  // every card is a whole number of U, at least 2U), so the next card is measured from its marker at each.
   const unknownLengths: number[] = [];
   for (let n = s.unknownMinLength; n <= s.unknownMaxLength; n++) unknownLengths.push(n * s.unitMm);
   for (const left of cards) {

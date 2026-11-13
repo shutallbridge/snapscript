@@ -140,7 +140,7 @@ What went wrong, named as in Python: `SyntaxError`, `NameError`, `TypeError` and
 _Avoid_: error type (say "kind"), error class
 
 **Stage**:
-When an error is found: **structure** (cards that cannot form a program), **check** (found before running, by looking at names and types) or **runtime** (found while running). The same kind can be found at the check stage or at runtime.
+When an error is found: **structure** (cards that cannot form a program), **check** (found before running, by looking at names and types) or **runtime** (found while running). The same kind can be found at the check stage or at runtime. Structure and check errors show as soon as the cards are laid, whether or not the program is running.
 _Avoid_: layer (a layer is a level of a magnet pocket), phase
 
 **Table error**:
@@ -183,7 +183,7 @@ A check error that happens only because another line was skipped, such as a `Nam
 ## Magnets
 
 **U**:
-The unit of length on the table. Every card is 1U tall and a whole number of U long; an indent is 1U. Most cards are at least 2U long, because their written text needs it.
+The unit of length on the table. Every card is 1U tall and a whole number of U long; an indent is 1U. Every card is at least 2U long: most need it for their written text, and one-symbol cards such as `[(]` and `[+]` are 2U too.
 
 **Edge**:
 One of a side's four edges: top, bottom, left, right.
