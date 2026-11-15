@@ -1,0 +1,5 @@
+{
+    "json.schemaDownload.trustedDomains": {
+        "https://t3.codes": true
+    }
+}

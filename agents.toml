@@ -1,0 +1,17 @@
+version = 1
+agents = ["claude"]
+
+[trust]
+allow_all = true
+
+# Matt Pocock's skills: the engineering/ and productivity/ sets his plugin ships.
+# dotagents allows one wildcard per source, so the second entry spells the repo as a git URL.
+[[skills]]
+name = "*"
+source = "mattpocock/skills"
+path = "skills/engineering"
+
+[[skills]]
+name = "*"
+source = "git:https://github.com/mattpocock/skills"
+path = "skills/productivity"
