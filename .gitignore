@@ -1,5 +1,12 @@
+# Node
 node_modules/
 dist/
+
+# Python
+__pycache__/
+
+# Magnet tool outputs
+magnets/out/
 
 # Built beside p5.snap from src/p5.ts.
 libraries/p5/p5.js
